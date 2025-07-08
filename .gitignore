@@ -170,6 +170,7 @@ cython_debug/
 
 # Analysis outputs (optional - uncomment to version control results)
 outputs/*.json
+outputs/*.md
 # !outputs/.gitkeep
 
 # Temporary files
