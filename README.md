@@ -8,8 +8,42 @@ This system performs multi-phase security analysis for blockchain projects, spec
 
 ## How to use
 
-```
+### Basic Setup
+```bash
 uv sync
-uv run python -m utils.static_analyzer ../contracts/src/ -v
+uv run python -m utils.static_analyzer .. --verbose
 claude --dangerously-skip-permissions
 ```
+### Call Graph Visualization
+
+Navigate to the callgraphs directory and visualize specific contracts:
+
+```bash
+cd outputs/callgraphs
+
+# Generate PNG images for key contracts
+dot -Tpng PoolManager.call-graph.dot -o PoolManager.png
+dot -Tpng all_contracts.call-graph.dot -o all_contracts.png
+dot -Tpng Hooks.call-graph.dot -o Hooks.png
+dot -Tpng Pool.call-graph.dot -o Pool.png
+
+# Generate SVG for interactive viewing
+dot -Tsvg all_contracts.call-graph.dot -o all_contracts.svg
+
+# Generate PDF for documentation
+dot -Tpdf PoolManager.call-graph.dot -o PoolManager.pdf
+```
+
+### Requirements
+
+- **Graphviz**: Required for DOT file visualization
+  ```bash
+  # Ubuntu/Debian
+  sudo apt install graphviz
+
+  # macOS
+  brew install graphviz
+
+  # Verify installation
+  dot -V
+  ```

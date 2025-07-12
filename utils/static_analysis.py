@@ -20,6 +20,7 @@ def build_call_graph(ast_objects: Dict[Path, Any]) -> Dict[str, Any]:
     """
     graph = defaultdict(dict)
     external_calls = defaultdict(list)
+    internal_calls = defaultdict(list)
     
     for file_path, plugin_ast in ast_objects.items():
         if not plugin_ast or "functions" not in plugin_ast:
@@ -32,6 +33,7 @@ def build_call_graph(ast_objects: Dict[Path, Any]) -> Dict[str, Any]:
                 "visibility": meta.get("visibility", "private"),
                 "state_mutability": meta.get("mutability", "nonpayable"),
                 "external_calls": meta.get("external_calls", []),
+                "internal_calls": meta.get("internal_calls", []),
                 "state_change_after_call": meta.get("state_change_after", False),
                 "file": str(file_path),  # Convert Path to string
                 "plugin": plugin,
@@ -45,14 +47,25 @@ def build_call_graph(ast_objects: Dict[Path, Any]) -> Dict[str, Any]:
             # Track external calls for vulnerability analysis
             for call in meta.get("external_calls", []):
                 external_calls[fn_sig].append(call)
+            
+            # Track internal calls for flow analysis
+            for call in meta.get("internal_calls", []):
+                internal_calls[fn_sig].append(call)
+    
+    # Build graph structure for visualization
+    graph_structure = _build_graph_structure(graph, internal_calls, external_calls)
     
     return {
         "functions": dict(graph),
         "external_calls": dict(external_calls),
+        "internal_calls": dict(internal_calls),
+        "graph_structure": graph_structure,
         "metadata": {
             "total_functions": len(graph),
             "external_function_count": len([f for f in graph.values() if f["visibility"] in ["public", "external"]]),
-            "potential_reentrancy_points": len([f for f in graph.values() if is_potentially_reentrant(f)])
+            "potential_reentrancy_points": len([f for f in graph.values() if is_potentially_reentrant(f)]),
+            "total_internal_calls": sum(len(calls) for calls in internal_calls.values()),
+            "total_external_calls": sum(len(calls) for calls in external_calls.values())
         }
     }
 
@@ -297,6 +310,166 @@ def generate_security_context(call_graph: Dict[str, Any],
         }
     }
 
+
+def _build_graph_structure(functions: Dict[str, Any], 
+                           internal_calls: Dict[str, List], 
+                           external_calls: Dict[str, List]) -> Dict[str, Any]:
+    """
+    Build graph structure for visualization.
+    
+    Args:
+        functions: Function metadata
+        internal_calls: Internal function calls
+        external_calls: External function calls
+        
+    Returns:
+        Graph structure with nodes and edges
+    """
+    nodes = []
+    edges = []
+    
+    # Create nodes for each function
+    for func_sig, func_meta in functions.items():
+        nodes.append({
+            "id": func_sig,
+            "label": func_sig.split(".")[-1] if "." in func_sig else func_sig,
+            "type": "function",
+            "visibility": func_meta.get("visibility", "private"),
+            "complexity": func_meta.get("complexity_score", 0),
+            "file": func_meta.get("file", ""),
+            "line_number": func_meta.get("line_number", 0),
+            "risk_level": _calculate_node_risk_level(func_meta)
+        })
+    
+    # Create edges for internal calls
+    for caller, calls in internal_calls.items():
+        for call in calls:
+            target_sig = call.get("full_signature", call.get("target"))
+            if target_sig in functions:
+                edges.append({
+                    "source": caller,
+                    "target": target_sig,
+                    "type": "internal_call",
+                    "line_offset": call.get("line_offset", 0)
+                })
+    
+    # Create edges for external calls
+    for caller, calls in external_calls.items():
+        for call in calls:
+            # Create external node if it doesn't exist
+            external_id = f"external_{call.get('target', 'unknown')}"
+            if not any(node["id"] == external_id for node in nodes):
+                nodes.append({
+                    "id": external_id,
+                    "label": call.get("target", "unknown"),
+                    "type": "external",
+                    "visibility": "external",
+                    "complexity": 0,
+                    "file": "external",
+                    "line_number": 0,
+                    "risk_level": "high" if call.get("method") in ["call", "delegatecall"] else "medium"
+                })
+            
+            edges.append({
+                "source": caller,
+                "target": external_id,
+                "type": "external_call",
+                "method": call.get("method", "unknown"),
+                "line_offset": call.get("line_offset", 0)
+            })
+    
+    # Generate DOT format for Graphviz
+    dot_format = _generate_dot_format(nodes, edges)
+    
+    return {
+        "nodes": nodes,
+        "edges": edges,
+        "node_count": len(nodes),
+        "edge_count": len(edges),
+        "dot_format": dot_format
+    }
+
+def _calculate_node_risk_level(func_meta: Dict[str, Any]) -> str:
+    """
+    Calculate risk level for a function node.
+    
+    Args:
+        func_meta: Function metadata
+        
+    Returns:
+        Risk level string
+    """
+    risk_score = 0
+    
+    # External visibility increases risk
+    if func_meta.get("visibility") in ["public", "external"]:
+        risk_score += 2
+    
+    # External calls increase risk
+    risk_score += len(func_meta.get("external_calls", [])) * 2
+    
+    # State changes after external calls are high risk
+    if func_meta.get("state_change_after_call"):
+        risk_score += 3
+    
+    # Complexity increases risk
+    risk_score += func_meta.get("complexity_score", 0) // 3
+    
+    if risk_score >= 5:
+        return "high"
+    elif risk_score >= 2:
+        return "medium"
+    else:
+        return "low"
+
+def _generate_dot_format(nodes: List[Dict[str, Any]], edges: List[Dict[str, Any]]) -> str:
+    """
+    Generate DOT format for Graphviz visualization.
+    
+    Args:
+        nodes: List of graph nodes
+        edges: List of graph edges
+        
+    Returns:
+        DOT format string
+    """
+    dot_lines = ["digraph CallGraph {"]
+    dot_lines.append("  rankdir=TB;")
+    dot_lines.append("  node [shape=box, style=filled];")
+    
+    # Add nodes with color coding by risk level
+    for node in nodes:
+        risk_colors = {
+            "high": "#ff6b6b",
+            "medium": "#ffd93d", 
+            "low": "#6bcf7f"
+        }
+        color = risk_colors.get(node.get("risk_level", "low"), "#e0e0e0")
+        
+        node_attrs = [
+            f'fillcolor="{color}"',
+            f'label="{node["label"]}"'
+        ]
+        
+        if node["type"] == "external":
+            node_attrs.append('shape=ellipse')
+        
+        dot_lines.append(f'  "{node["id"]}" [{";".join(node_attrs)}];')
+    
+    # Add edges with different styles
+    for edge in edges:
+        edge_attrs = []
+        if edge["type"] == "external_call":
+            edge_attrs.append('color=red')
+            edge_attrs.append('style=dashed')
+        else:
+            edge_attrs.append('color=blue')
+        
+        attrs_str = f'[{", ".join(edge_attrs)}]' if edge_attrs else ""
+        dot_lines.append(f'  "{edge["source"]}" -> "{edge["target"]}" {attrs_str};')
+    
+    dot_lines.append("}")
+    return "\n".join(dot_lines)
 
 def _identify_risk_factors(fn_meta: Dict[str, Any], call_analysis: Dict[str, Any]) -> List[str]:
     """

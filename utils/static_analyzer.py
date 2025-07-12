@@ -167,6 +167,12 @@ def main():
         action="store_true",
         help="Enable verbose output"
     )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("outputs"),
+        help="Output directory for analysis results (default: outputs)"
+    )
     
     args = parser.parse_args()
     
@@ -183,9 +189,24 @@ def main():
         if args.verbose:
             print(f"Analyzed {ast_result['analysis_metadata']['total_files_analyzed']} files")
             print(f"Found {callgraph_result['analysis_metadata']['total_functions']} functions")
+            
+            # Print graph statistics
+            call_graph = callgraph_result.get("call_graph", {})
+            metadata = call_graph.get("metadata", {})
+            graph_structure = call_graph.get("graph_structure", {})
+            
+            if metadata:
+                print(f"External functions: {metadata.get('external_function_count', 0)}")
+                print(f"Internal calls: {metadata.get('total_internal_calls', 0)}")
+                print(f"External calls: {metadata.get('total_external_calls', 0)}")
+                print(f"Potential reentrancy points: {metadata.get('potential_reentrancy_points', 0)}")
+            
+            if graph_structure:
+                print(f"Graph nodes: {graph_structure.get('node_count', 0)}")
+                print(f"Graph edges: {graph_structure.get('edge_count', 0)}")
         
         # Create outputs directory
-        outputs_dir = Path("outputs")
+        outputs_dir = args.output_dir
         outputs_dir.mkdir(exist_ok=True)
         
         # Write AST output
@@ -197,6 +218,31 @@ def main():
         callgraph_output_path = outputs_dir / "00_callgraph.json"
         with open(callgraph_output_path, 'w') as f:
             json.dump(callgraph_result, f, indent=2, default=str)
+        
+        # Create callgraphs directory and write DOT format
+        callgraphs_dir = outputs_dir / "callgraphs"
+        callgraphs_dir.mkdir(exist_ok=True)
+        
+        if "graph_structure" in callgraph_result.get("call_graph", {}):
+            dot_content = callgraph_result["call_graph"]["graph_structure"].get("dot_format")
+            if dot_content:
+                dot_output_path = callgraphs_dir / "combined_callgraph.dot"
+                with open(dot_output_path, 'w') as f:
+                    f.write(dot_content)
+                
+                if args.verbose:
+                    print(f"Combined call graph written to: {dot_output_path}")
+        
+        # Report on Slither-generated DOT files
+        for file_path, plugin_ast in ast_result.get("ast_data", {}).items():
+            if plugin_ast.get("dot_files"):
+                if args.verbose:
+                    print(f"Slither call graphs in: {callgraphs_dir}/")
+                    for dot_file in plugin_ast["dot_files"]:
+                        dot_name = Path(dot_file).name
+                        print(f"  - {dot_name}")
+                    print("To visualize: dot -Tpng <file>.dot -o <file>.png")
+                break
         
         if args.verbose:
             print(f"AST data written to: {ast_output_path}")

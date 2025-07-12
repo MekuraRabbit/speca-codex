@@ -3,6 +3,8 @@ Solidity language plugin for AST analysis using multiple approaches.
 """
 
 import re
+import subprocess
+import json
 from typing import Dict, Any, List, Optional
 from pathlib import Path
 from .base_plugin import LanguagePlugin
@@ -24,7 +26,7 @@ class SolidityPlugin(LanguagePlugin):
     
     def build_ast(self, file_path: Path) -> Dict[str, Any]:
         """
-        Build AST for Solidity file using regex-based parsing.
+        Build AST for Solidity file using Slither if available, with regex fallback.
         
         Args:
             file_path: Path to Solidity file
@@ -32,6 +34,12 @@ class SolidityPlugin(LanguagePlugin):
         Returns:
             AST data dictionary
         """
+        # Try Slither first for better accuracy
+        slither_result = self._build_ast_with_slither(file_path)
+        if slither_result and "error" not in slither_result:
+            return slither_result
+        
+        # Fallback to regex parsing
         return self._build_ast_with_regex(file_path)
     
     
@@ -52,6 +60,206 @@ class SolidityPlugin(LanguagePlugin):
                 "functions": {},
                 "imports": []
             }
+    
+    def _build_ast_with_slither(self, file_path: Path) -> Dict[str, Any]:
+        """Build AST using Slither static analyzer."""
+        try:
+            # Run Slither on the file's directory to get call graph
+            project_root = self._find_project_root(file_path)
+            if not project_root:
+                return {"error": "Could not find project root"}
+            
+            # Run Slither with JSON output
+            cmd = [
+                "slither", str(project_root),
+                "--print", "call-graph",
+                "--json", "-",
+                "--disable-color"
+            ]
+            
+            result = subprocess.run(
+                cmd, 
+                capture_output=True, 
+                text=True, 
+                cwd=project_root,
+                timeout=60
+            )
+            
+            if result.returncode != 0:
+                return {"error": f"Slither failed: {result.stderr}"}
+            
+            # Parse Slither JSON output
+            slither_data = json.loads(result.stdout) if result.stdout.strip() else {}
+            
+            # Convert Slither data to our format
+            return self._convert_slither_to_ast(slither_data, file_path, project_root)
+            
+        except subprocess.TimeoutExpired:
+            return {"error": "Slither timeout"}
+        except Exception as e:
+            return {"error": f"Slither execution failed: {str(e)}"}
+    
+    def _find_project_root(self, file_path: Path) -> Optional[Path]:
+        """Find the project root by looking for foundry.toml, hardhat.config.js, etc."""
+        current = file_path.parent
+        
+        # Look for common Solidity project files
+        project_files = [
+            "foundry.toml", "hardhat.config.js", "hardhat.config.ts", 
+            "truffle-config.js", "package.json", "dapp", "brownie-config.yaml"
+        ]
+        
+        while current != current.parent:  # Not at filesystem root
+            for project_file in project_files:
+                if (current / project_file).exists():
+                    return current
+            current = current.parent
+        
+        return None
+    
+    def _convert_slither_to_ast(self, slither_data: Dict[str, Any], file_path: Path, project_root: Path) -> Dict[str, Any]:
+        """Convert Slither output to our AST format."""
+        try:
+            functions = {}
+            contracts = {}
+            
+            # Look for call graph DOT files
+            dot_files = list(project_root.glob("*.call-graph.dot"))
+            
+            if dot_files:
+                # Parse the main call graph
+                all_contracts_dot = next((f for f in dot_files if "all_contracts" in f.name), None)
+                if all_contracts_dot:
+                    functions, contracts = self._parse_dot_file(all_contracts_dot)
+            
+            # If we have Slither JSON data, enhance with that info
+            if "printers" in slither_data:
+                for printer in slither_data["printers"]:
+                    if "call-graph" in printer.get("type", ""):
+                        # Enhance with Slither printer data
+                        pass
+            
+            return {
+                "plugin": "SolidityPlugin",
+                "method": "slither",
+                "pragma_version": "unknown",
+                "contracts": contracts,
+                "functions": functions,
+                "imports": [],
+                "slither_available": True,
+                "dot_files": [str(f) for f in dot_files]
+            }
+            
+        except Exception as e:
+            return {"error": f"Failed to convert Slither data: {str(e)}"}
+    
+    def _parse_dot_file(self, dot_file: Path) -> tuple[Dict[str, Any], Dict[str, Any]]:
+        """Parse Slither-generated DOT file to extract function relationships."""
+        functions = {}
+        contracts = {}
+        
+        try:
+            with open(dot_file, 'r') as f:
+                dot_content = f.read()
+            
+            # Extract subgraph clusters (contracts)
+            subgraph_pattern = r'subgraph cluster_\d+_(\w+) \{\s*label = "(\w+)"'
+            contract_matches = re.finditer(subgraph_pattern, dot_content)
+            
+            for match in contract_matches:
+                contract_name = match.group(2)
+                contracts[contract_name] = {
+                    "type": "contract",
+                    "inherits": [],
+                    "line_number": 0
+                }
+            
+            # Extract function nodes
+            node_pattern = r'"(\d+)_(\w+)" \[label="(\w+)"\]'
+            node_matches = re.finditer(node_pattern, dot_content)
+            
+            for match in node_matches:
+                contract_id = match.group(1)
+                func_name = match.group(3)
+                
+                # Find the contract for this function
+                contract_name = self._find_contract_for_function(dot_content, contract_id)
+                func_signature = f"{contract_name}.{func_name}" if contract_name else func_name
+                
+                functions[func_signature] = {
+                    "visibility": "public",  # Slither usually shows public functions
+                    "mutability": "nonpayable",
+                    "external_calls": [],
+                    "internal_calls": [],
+                    "state_change_after": False,
+                    "complexity_score": 1,
+                    "parameters": [],
+                    "return_type": "void",
+                    "modifiers": [],
+                    "line_number": 0,
+                    "contract": contract_name or "unknown"
+                }
+            
+            # Extract edges (function calls)
+            edge_pattern = r'"(\d+_\w+)" -> "(\d+_\w+)"'
+            edge_matches = re.finditer(edge_pattern, dot_content)
+            
+            for match in edge_matches:
+                source = match.group(1)
+                target = match.group(2)
+                
+                # Find the corresponding function and add the call
+                source_func = self._find_function_by_node_id(functions, source)
+                target_func = self._find_function_by_node_id(functions, target)
+                
+                if source_func and target_func:
+                    if source_func not in functions:
+                        continue
+                    
+                    # Determine if it's internal or external call
+                    source_contract = functions[source_func].get("contract")
+                    target_contract = functions[target_func].get("contract")
+                    
+                    call_info = {
+                        "target": target_func.split(".")[-1],
+                        "full_signature": target_func,
+                        "call_type": "internal" if source_contract == target_contract else "external",
+                        "line_offset": 0
+                    }
+                    
+                    if call_info["call_type"] == "internal":
+                        functions[source_func]["internal_calls"].append(call_info)
+                    else:
+                        functions[source_func]["external_calls"].append(call_info)
+            
+            return functions, contracts
+            
+        except Exception as e:
+            print(f"Warning: Failed to parse DOT file {dot_file}: {e}")
+            return {}, {}
+    
+    def _find_contract_for_function(self, dot_content: str, contract_id: str) -> Optional[str]:
+        """Find which contract a function belongs to based on its ID."""
+        # Look for the subgraph that contains this contract_id
+        pattern = f'subgraph cluster_{contract_id}_(\\w+)'
+        match = re.search(pattern, dot_content)
+        return match.group(1) if match else None
+    
+    def _find_function_by_node_id(self, functions: Dict[str, Any], node_id: str) -> Optional[str]:
+        """Find function signature by node ID."""
+        # Extract function name from node_id (format: contract_id_function_name)
+        parts = node_id.split("_", 1)
+        if len(parts) < 2:
+            return None
+        
+        func_name = parts[1]
+        
+        # Find the function with this name
+        for func_sig in functions.keys():
+            if func_sig.endswith(f".{func_name}") or func_sig == func_name:
+                return func_sig
+        
+        return None
     
     
     def _parse_solidity_content(self, content: str, file_path: Path) -> Dict[str, Any]:
@@ -102,7 +310,7 @@ class SolidityPlugin(LanguagePlugin):
             mutability = self._extract_mutability(func_modifiers)
             modifiers = self._extract_modifiers(func_modifiers)
             
-            # Analyze function body for external calls
+            # Analyze function body for calls
             func_body = self._extract_function_body(content, match.end())
             external_calls = self._find_external_calls(func_body)
             state_change_after = self._has_state_changes_after_calls(func_body)
@@ -111,13 +319,23 @@ class SolidityPlugin(LanguagePlugin):
                 "visibility": visibility,
                 "mutability": mutability,
                 "external_calls": external_calls,
+                "internal_calls": [],  # Will be populated in second pass
                 "state_change_after": state_change_after,
                 "complexity_score": self._calculate_complexity_from_body(func_body),
                 "parameters": [],  # Would need more complex parsing
                 "return_type": "void",  # Would need more complex parsing
                 "modifiers": modifiers,
-                "line_number": content[:match.start()].count('\n') + 1
+                "line_number": content[:match.start()].count('\n') + 1,
+                "body": func_body  # Store for second pass analysis
             }
+        
+        # Second pass: analyze internal calls now that we have all functions
+        for func_sig, func_data in functions.items():
+            if "body" in func_data:
+                internal_calls = self._find_internal_calls(func_data["body"], functions)
+                func_data["internal_calls"] = internal_calls
+                # Remove body to keep output clean
+                del func_data["body"]
         
         return {
             "plugin": "SolidityPlugin",
@@ -207,6 +425,34 @@ class SolidityPlugin(LanguagePlugin):
         
         return external_calls
     
+    def _find_internal_calls(self, func_body: str, functions: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Find internal function calls within the same contract or project."""
+        internal_calls = []
+        
+        # Pattern for function calls: functionName()
+        function_call_pattern = r'\b(\w+)\s*\('
+        matches = re.finditer(function_call_pattern, func_body)
+        
+        for match in matches:
+            called_function = match.group(1)
+            
+            # Skip common keywords and operators
+            if called_function in ['if', 'for', 'while', 'require', 'assert', 'revert', 'emit', 'return']:
+                continue
+            
+            # Check if it's a known function in our analysis
+            for func_sig in functions.keys():
+                if func_sig.endswith(f'.{called_function}') or func_sig == called_function:
+                    internal_calls.append({
+                        "target": called_function,
+                        "full_signature": func_sig,
+                        "call_type": "internal",
+                        "line_offset": func_body[:match.start()].count('\n')
+                    })
+                    break
+        
+        return internal_calls
+    
     def _has_state_changes_after_calls(self, func_body: str) -> bool:
         """Check if there are state changes after external calls."""
         # Simple heuristic: look for assignment operations after call patterns
@@ -269,7 +515,10 @@ class SolidityPlugin(LanguagePlugin):
             "external_functions": len([f for f in functions.values() if f.get("visibility") in ["public", "external"]]),
             "top_functions": top_functions[:10],  # Top 10 functions
             "pragma_version": ast_data.get("pragma_version", "unknown"),
-            "imports": ast_data.get("imports", [])
+            "imports": ast_data.get("imports", []),
+            "analysis_method": ast_data.get("method", "unknown"),
+            "slither_available": ast_data.get("slither_available", False),
+            "dot_files": ast_data.get("dot_files", [])
         }
     
     def _identify_risk_factors(self, func_data: Dict[str, Any]) -> List[str]:
