@@ -1,4 +1,4 @@
-# ================= WHITEHAT_01b_AUDITMAP_ORDER (チャンク版) =================
+# ================= WHITEHAT_01b_AUDITMAP_ORDER =================
 #
 # ■ 目的
 #   - `security-agent/outputs/WHITEHAT_01_SPEC.json` の user_flows を起点に、
@@ -19,7 +19,7 @@
 #           }
 #   2. contracts/**/*.sol   ← 解析対象 Solidity ソース一式
 #
-#   ※ 00_AST.json は使用しない。
+#
 #
 # -----------------------------------------------------------------------
 # ■ 出力
@@ -104,4 +104,3 @@
 #   security-agent/outputs/WHITEHAT_01b_AUDITMAP_ORDER.json の内容
 #   （JSON オブジェクト）だけを返答せよ。
 # =======================================================================
---- PROMPT END ---

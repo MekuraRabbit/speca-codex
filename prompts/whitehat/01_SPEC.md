@@ -1,6 +1,6 @@
 ### 🎯 目的
 
-* https://specs.enzyme.finance/ を中心に、システムの一次資料を **徹底クロール**
+* contracts/DESIGN.md を中心に、システムの一次資料を **徹底クロール**
 * **資産フロー・ロール権限・コントラクト間依存** を把握し、後続パスの基礎となるアーキテクチャ図／マッピングを生成
 * 収集ソースはすべて `research_sources` 配列に列挙
 
@@ -8,7 +8,7 @@
 
 ### 0. 前提環境
 
-* 変数: https://specs.enzyme.finance/（対象ドキュメントサイト）
+* 変数: contracts/DESIGN.md（対象ドキュメントサイト）
 * 利用ツール: **WebSearchTool**（必要に応じ補完検索）
 * 出力先: `security-agent/outputs/WHITEHAT_01_SPEC.json` ※このパスに書き込む想定で JSON を生成
 
