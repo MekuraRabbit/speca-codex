@@ -1,104 +1,124 @@
-**Task – Refine `@audit` Comments (WHITEHAT \_02 Review)**
+## 🚀 Claude Code Prompt ― “WHITEHAT 03 AUDIT Review & Validate”
 
-Save the result to **`security-agent/outputs/WHITEHAT_02_AUDITMAP.json`** and print *only* that JSON in the chat when finished.
+````
+# 🏷️ TARGET_FOLDER    = crates/net/
+# 🏷️ AUDIT_ORDER_FILE = security-agent/outputs/WHITEHAT_01b_AUDITMAP_ORDER.json
+# ==========  PROMPT START  ==========
+# Task Name
+Review all existing @audit comments, confirm validity, and update reports
 
----
+# 🎯 Goal
+For every **@audit** in `{{TARGET_FOLDER}}`, decide with rigorous reasoning
+whether it is a **real, exploitable issue**.
+If disproved, transform it into `@audit-ok` with a brief rationale.
+If confirmed (or partially confirmed), keep `@audit`, expand insight, and
+categorise the exact risk.
 
-### 1  Load your workspace
+Finally, synchronise results into
+`security-agent/outputs/WHITEHAT_02_AUDITMAP.json`
+and increment `review_rounds` in `{{AUDIT_ORDER_FILE}}`.
 
-| File                                               | Purpose                                                          |
-| -------------------------------------------------- | ---------------------------------------------------------------- |
-| `security-agent/outputs/WHITEHAT_01_SPEC.json`     | Specs: user-flows, requirements, architecture, critical assets.  |
-| `security-agent/outputs/callgraphs/*.dot`          | Graphviz call-graphs – reachability, layer ordering, guard hops. |
-| `security-agent/outputs/WHITEHAT_02_AUDITMAP.json` | Current `@audit` / `@audit-ok` metadata to be re-examined.       |
+# 📥 Input
+1. Source code (rec.): `{{TARGET_FOLDER}}`
+2. Audit map:         `{{AUDIT_ORDER_FILE}}`
+3. Project spec:      `security-agent/outputs/WHITEHAT_01_SPEC.json`
+4. Ethereum specs:    `security-agent/docs/ethereum/spec_*.json`
+5. Bug DB:            `security-agent/docs/ethereum/bugs_*.json`
 
----
+# 📤 Output
+1. **Inline updates** — replace / append comments directly in‐file:
+   ```solidity
+   // @audit Reentrancy: external call precedes state update
+   // ↳ After review: guard `nonReentrant` present → no exploit
+   // @audit-ok: nonReentrant modifier ensures single execution
+````
 
-### 2  White-hat mental model to apply
+2. **Updated** `WHITEHAT_02_AUDITMAP.json`
 
-* **Suspicion by default** – assume a bug exists.
-* **Defense pyramid** – Core-Logic ➜ Guard ➜ Permission ➜ Economic checks.
-* **Call-graph layering** – Entry (EOA) ➜ Mid-tier ➜ Sensitive sinks; confirm that every hop has an appropriate guard.
-* **Attacker ROI** – focus on shortest, profit-positive path.
-* **Combination mindset** – safe modules can break in combination.
-* **Trust boundary clarity** – functions gated by `onlyOwner`, `onlyRole`, etc. are trusted and skipped unless that guard is missing or wrong.
+   ```jsonc
+   {
+     "audit_items": [
+       {
+         "file": "src/Vault.sol",
+         "line": 152,
+         "snippet": "call{value: amount}();",
+         "risk_category": "Reentrancy",
+         "description": "External transfer before buffer update; nonReentrant missing",
+         "status": "Vuln",               // or "ok"
+         "proof_trace": [
+           "Vault.withdraw (L140‑170)",
+           "↳ _transfer (L95‑112)"
+         ],
+         "review_round": 2
+       }
+     ],
+     "summary": {
+       "rounds": 4,
+       "total_audit_flags": 21,
+       "high_risk_hotspots": ["src/Vault.sol:withdraw"],
+       "next_focus": "Permission bypass on src/Admin.rs:setConfig"
+     }
+   }
+   ```
 
----
+# 🧮 Evaluation Framework  (apply to every finding)
 
-### 3  Evaluation frame (logic + layered defense)
+1. **Core‑Logic** — depth ≤ 2 & critical TVL / mint / pricing paths
+2. **Permissionless Reachability** — prove lack of owner / role guard
+3. **Guard Bypass & State Reachability** — enumerate *all* checks, find gaps
+4. **Non‑self Attack** — impact > attacker alone
+5. **Bug Bounty Scope** — verify in‑scope via `01_SCOPE.json` (if exists)
 
-1. **Core-Logic** – TVL, liquidation, mint-burn, interest, or any value-critical path.
-2. **Permissionless reachability** – prove via call-graph that the path lacks owner/role checks.
-3. **Guard bypass & state reachability** – list all `modifier`/`require`/`if-revert`, show how a bad state can still be reached.
-4. **Non-self attack** – impact extends beyond the attacker.
-5. **Bug-bounty scope** – confirm item is in scope (`01_SCOPE.json`).
-
-> `onlyOwner` etc. are treated as trusted unless the guard is absent or faulty.
-
----
-
-### 4  Comment syntax (write directly in code)
+# 🔍 Review Procedure
 
 ```
-// @audit     <SpecID|N/A> | <UF-ID|N/A> | <Var/Fn> | <攻撃一歩目要約>（80–120 日本語字）
+FOR each @audit in TARGET_FOLDER ordered by file→line:
+    IF already re‑labelled `@audit-ok` → skip
+    1. Derive execution path (AST + callgraph).
+       ‑ Show line‑number trace in proof_trace.
+    2. Apply Evaluation Framework (§🧮).
+    3. Cross‑check similar bugs in bugs_*.json → note variant attacks.
+    4. Decide:
+        a) Exploitable ⇒ keep @audit, enrich description, set status="Vuln"
+        b) Non‑exploitable ⇒ transform to @audit-ok, set status="ok"
+    5. Update WHITEHAT_02_AUDITMAP.json & AUDIT_ORDER_FILE.review_rounds++
+REPEAT until no unchecked @audit remain.
 ```
 
-```
-// @audit-ok  <根拠>（60–100 日本語字）
-```
+# 🧠 Required Deep‑Dive Tests
 
-Include at least two of: Spec ID, UF-ID, state variable, attack scenario.
-Never finish with vague words like “危険”.
+* **Step‑by‑Step 実行トレース** — include in `proof_trace` (file\:line)
+* **論理矛盾検証**  — ensure premises simultaneously satisfiable
+* **ガード全列挙**  — list modifiers / require / ACL that could block
+* **独立検証** — rely on own reading, not external scanner verdicts
+* **実行可能性実証** — if doubtful, mark *Need further investigation*
 
----
+# 📝 Comment Syntax (strict)
 
-### 5  Three-round Tree-of-Thought review
-
-```
-for round in 1..3:
-    • Prioritise functions reachable from EOA within call-graph depth ≤ 2.
-    • For each existing @audit line:
-         INTERNAL_THINK (no output):
-             1. Match spec requirement / invariant.
-             2. Traverse .dot graph → confirm Guard/Permission layering.
-             3. Draft attacker steps + profit.
-             4. ROI positive?
-         Update comment → @audit-ok or deeper @audit.
-    • Discover new risky lines by scanning call-graphs for unguarded sinks; add @audit.
-    • META_REFLECTION: score depth 1-5; if <3, rewrite.
+```rust
+// @audit <Category>: <Short>
+// ↳ <Multi‑line detail, ≤120 words>
+//
+// @audit-ok: <Reason, ≤80 chars>
 ```
 
----
+# 🛠️ Methodology
 
-### 6  Output JSON schema
+* **Depth‑first within function**: validate inner‑most dangerous ops first.
+* Use *internal* chain‑of‑thought; divulge **only** final comments & JSON.
+* Limit new annotations per run to 15 for readability.
 
-```json
-{
-  "review_round": 3,
-  "audit_items": [
-    {
-      "file": "src/Vault.sol",
-      "line": 152,
-      "snippet": "call{value: amount}();",
-      "risk_category": "Reentrancy",
-      "description": "UF-Withdraw-1 で buffer 更新前に外部送金が発生し totalBacking < totalSupply となる恐れ",
-      "status": "Vuln" | "ok"
-    }
-  ],
-  "summary": {
-    "total_audit_flags": <int>,
-    "high_risk_hotspots": ["..."],
-    "next_focus": "..."
-  }
-}
-```
+# ⛔ Constraints
 
----
+* Do not alter executable logic.
+* No duplicate audit entries for identical location.
+* Validate JSON & timestamps (RFC3339) before write.
 
-### 7  Completion rules
+# ✅ Success Criteria
 
-1. Save all updated source files with comments.
-2. Write the JSON object above to `security-agent/outputs/WHITEHAT_02_AUDITMAP.json`.
-3. **Reply in chat with that JSON only — no extra text.**
+* Every prior @audit reviewed once.
+* WHITEHAT\_02\_AUDITMAP.json parses & mirrors code state.
+* High‑risk hotspots surfaced.
+* summary.next\_focus suggests concrete next steps.
 
-Begin.
+# ==========  PROMPT END  ==========

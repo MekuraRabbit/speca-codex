@@ -1,75 +1,35 @@
-**Task  – Annotate Code with `@audit` Comments (WHITEHAT\_02)**
+## 🚀 Claude Code Prompt ― “WHITEHAT 02 AUDIT Annotator & Map Updater”
 
-Save the result to **`security-agent/outputs/WHITEHAT_02_AUDITMAP.json`** and print *only* that JSON in the chat when finished.
+````
+# 🏷️ TARGET_FOLDER      = crates/net/
+# 🏷️ AUDIT_ORDER_FILE   = security-agent/outputs/WHITEHAT_01b_AUDITMAP_ORDER.json
+# ==========  PROMPT START  ==========
+# Task Name
+Annotate source with @audit / @audit-ok and update WHITEHAT_02_AUDITMAP.json
 
----
+# 🎯 Goal
+Iteratively review **every function** in `{{TARGET_FOLDER}}`, adding
+* `@audit`  ‑ for suspicious or unverified logic
+* `@audit-ok` ‑ for code proven safe
 
-### 1  Load your workspace
+while updating the audit‑order map and producing a structured vulnerability report.
 
-| File                                                      | Purpose                                                              |
-| --------------------------------------------------------- | -------------------------------------------------------------------- |
-| `security-agent/outputs/WHITEHAT_01b_AUDITMAP_ORDER.json` | Ordered `function_chunks` + `done_index` for resume-safe processing. |
-| `security-agent/outputs/WHITEHAT_01_SPEC.json`            | Specs: user-flows, requirements, architecture, critical assets.      |
-| `security-agent/outputs/00_AST.json`                      | AST extract: `stateWrites`, `externalCalls`, `modifiers`.            |
-| `security-agent/outputs/callgraphs/*.dot`                 | Contract call-graphs for reachability & layer checks.                |
+# 📥 Input
+1. **Folder (recursive):** `{{TARGET_FOLDER}}`
+2. **Audit order:** `{{AUDIT_ORDER_FILE}}`
+3. **Specs:**
+   - `security-agent/outputs/WHITEHAT_01_SPEC.json`
+   - `security-agent/docs/ethereum/spec_*.json`
+4. **Known bugs DB:** `security-agent/docs/ethereum/bugs_*.json`
 
----
+# 📤 Outputs
+1. **Inline annotations** in source files (`@audit`, `@audit-ok`).
+2. **Updated order map** — write back to `{{AUDIT_ORDER_FILE}}`
+   - Increment `review_count` for each function touched.
+3. **New report**
+   `security-agent/outputs/WHITEHAT_02_AUDITMAP.json` (schema below).
 
-### 2  White-hat mental model to apply
-
-* **Suspicion by default** – assume a bug exists.
-* **Defense pyramid** – Core-Logic → Guard → Permission → Economic checks.
-* **Call-graph layering** – Entry (EOA) ➜ Mid-tier ➜ Sensitive sinks; confirm each layer.
-* **Attacker ROI** – focus on shortest, profit-positive path.
-* **Trust boundary clarity** – functions gated by `onlyOwner`/`onlyRole`/`onlyTimelock` are trusted and skipped unless the guard is missing or wrong.
-* **Combination mindset** – “safe alone, dangerous together” is always possible.
-
----
-
-### 3  Comment syntax (insert directly in source)
-
-```
-// @audit     <SpecID|N/A> | <UF-ID|N/A> | <Var/Fn> | <攻撃一歩目要約>（80–120 日本語字）
-```
-
-```
-// @audit-ok  <根拠>（60–100 日本語字）
-```
-
-Include at least *two* of: Spec ID, UF-ID, state variable, attack scenario.
-Never finish with vague words such as “危険”.
-
----
-
-### 4  Three-round ToT loop with call-graph reasoning
-
-Process each chunk whose `done_index` is still below `functions.length`.
-
-```
-for round in 1..3:
-    for fn in chunk.functions[done_index:]:
-        if fn has trusted modifier → skip
-        INTERNAL_THINK (no output):
-            1. Match spec requirement / invariant.
-            2. Walk call-graph (.dot) two layers down:
-               • verify Guard → Permission → Sink order.
-               • list missing or bypassable checks.
-            3. Draft attacker steps + profit source.
-            4. Is ROI positive?
-        Insert @audit or @audit-ok comment into code.
-        Append entry to audit_items[].
-        done_index += 1; save order file immediately.
-    META_REFLECTION:
-        self-score comment depth (1–5); if <3, rewrite.
-```
-
-Update `WHITEHAT_01b_AUDITMAP_ORDER.json` after every function so progress survives interruption.
-
----
-
-### 5  Output JSON schema
-
-```json
+```jsonc
 {
   "audit_items": [
     {
@@ -77,25 +37,75 @@ Update `WHITEHAT_01b_AUDITMAP_ORDER.json` after every function so progress survi
       "line": 152,
       "snippet": "call{value: amount}();",
       "risk_category": "Reentrancy",
-      "description": "UF-Withdraw-1 で buffer 更新前に外部送金が発生し totalBacking < totalSupply となる恐れ",
-      "status": "Vuln" | "ok"
+      "description": "UF‑Withdraw‑1 で buffer 更新前に外部送金が発生し totalBacking < totalSupply となる恐れ",
+      "status": "Vuln"  // or "ok"
     }
   ],
   "summary": {
     "rounds": 3,
-    "total_audit_flags": <int>,
-    "high_risk_hotspots": ["..."],
-    "next_focus": "..."
+    "total_audit_flags": 17,
+    "high_risk_hotspots": ["src/Vault.sol:handleWithdraw", "src/Router.rs:swap"],
+    "next_focus": "Deep‑dive into arithmetic underflow guards in src/math.rs"
   }
 }
+````
+
+# 🔍 Review Algorithm
+
+1. **Select next target**
+   ‑ Parse `{{AUDIT_ORDER_FILE}}` → pick function(s) with the lowest `review_count` or `unchecked`.
+2. **Skip** any code already containing `@audit` / `@audit-ok`.
+3. **Analyse** chosen code path:
+
+   * Cross‑reference with specs & bug DB for pattern matches.
+   * Execute logical trace: follow calls & modifiers to sinks.
+4. **Insert annotation** just above the vulnerable / cleared line.
+5. **Classify** `risk_category` (Reentrancy, Auth‑Bypass, DoS, …).
+6. **Append/Update** entry in `WHITEHAT_02_AUDITMAP.json`.
+7. **Increment** `review_count` in `{{AUDIT_ORDER_FILE}}`.
+
+# 🤖 Self‑Reflection Loop (3 rounds)
+
+For each newly added `@audit`:
+
+1. **Step‑by‑Step Execution Trace** — line‑numbered path.
+2. **Logical coherence check** — confirm premises are simultaneously satisfiable.
+3. **Guard surface audit** — enumerate *all* modifiers / require / ACL.
+4. **Independence** — decide using own reading (ignore prior tools for verdict).
+5. **Feasibility proof** — show the state transitions that make exploit run.
+   *If uncertain, mark “Need further investigation”.*
+
+After each round, refine or `@audit-ok` if risk disproved.
+
+# 🛠️ Methodology
+
+* **Breadth‑first‑within‑chunk**: follow ordering in `{{AUDIT_ORDER_FILE}}`.
+* Chain‑of‑thought is internal; expose only annotations & JSON.
+* Use known bug patterns to strengthen or dismiss each finding.
+* Keep individual `description` ≤ 120 words; be precise.
+
+# 📝 Annotation Syntax Rules
+
+```rust
+// @audit <category>: <short description>
+// ↳ <detailed multi‑line explanation if needed>
+//
+// @audit-ok: <reason>
 ```
 
----
+*No other comment markers allowed.*
 
-### 6  Final rules
+# ⛔ Constraints
 
-1. Save all source files with embedded comments.
-2. Write the JSON object above to `security-agent/outputs/WHITEHAT_02_AUDITMAP.json`.
-3. **Respond in the chat with that JSON only — no extra text.**
+* Do **not** modify business logic; comments only.
+* Avoid duplicate annotations for the same line.
+* Maximum 12 audit items per execution to keep diffs readable.
 
-Begin.
+# ✅ Success Criteria
+
+* 100 % of functions eventually have ≥ 1 `review_count`.
+* `WHITEHAT_02_AUDITMAP.json` validates against schema.
+* Zero orphan audit comments (all reflected in JSON).
+* High‑risk hotspots clearly listed in summary.
+
+# ==========  PROMPT END  ==========

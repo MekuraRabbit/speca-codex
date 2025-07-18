@@ -1,65 +1,111 @@
-**Task: Build `WHITEHAT_01b_AUDITMAP_ORDER.json`**
+## 🚀 Claude Code Prompt ― “WHITEHAT 01b AUDITMAP ORDER Generator”
 
-You are a senior white-hat auditor.
-Follow the instructions below exactly and save the resulting JSON file to
-`security-agent/outputs/WHITEHAT_01b_AUDITMAP_ORDER.json`.
-Respond with *nothing* in the chat—write only to the file.
+````
+# 🏷️ TARGET_FOLDER   = crates/net/
+# 🏷️ STATIC_CALLGRAPH = NONE
+# ==========  PROMPT START  ==========
+# Task Name
+Generate WHITEHAT_01b_AUDITMAP_ORDER.json from the sources
 
----
+# 🎯 Goal
+Produce an *ordered* audit map covering **every function** in `{{TARGET_FOLDER}}`, so that a
+security reviewer can progress from outer‑surface attack vectors to deeper
+trust anchors while naturally uncovering hierarchical defences.
 
-### 1. Load the inputs
+# 📥 Input
+1.  **Folder:** `{{TARGET_FOLDER}}` (recursively include sub‑modules / packages).
+2.  **Static call‑graph (optional):** `{{STATIC_CALLGRAPH}}`
+    - If set to `NONE`, derive call relationships yourself.
+3.  **Project specification:**
+    `security-agent/outputs/WHITEHAT_01_SPEC.json`
+4.  **Ethereum canonical specs:**
+    `security-agent/docs/ethereum/spec_*.json` (multiple files, merge).
 
-* `security-agent/outputs/WHITEHAT_01_SPEC.json` – project specs, user-flows, requirements.
-* `security-agent/outputs/callgraphs/*.dot` – Graphviz call-graphs for each contract.
+# 📤 Output
+Create **one** JSON file:
+`security-agent/outputs/WHITEHAT_01b_AUDITMAP_ORDER.json`
 
----
+```jsonc
+{
+  "metadata": {
+    "target_folder": "{{TARGET_FOLDER}}",
+    "static_callgraph": "{{STATIC_CALLGRAPH}}",
+    "spec_loaded": true,
+    "generated_at": "<RFC3339 timestamp>",
+    "schema_version": "1.0.0"
+  },
+  "audit_chunks": [
+    {
+      "chunk_title": "🚪 External entry points ― network packet handlers",
+      "rationale": "First code reached by untrusted input; high‑risk for RCE / DoS",
+      "functions": [
+        {"name": "handle_packet", "file": "src/handler.rs", "line": 42},
+        {"name": "parse_header", "file": "src/parser.rs", "line": 10}
+      ]
+    },
+    {
+      "chunk_title": "🔐 Cryptographic verification",
+      "rationale": "Critical for authenticity; breaks compromise confidentiality",
+      "functions": [ ... ]
+    }
+    // …すべての関数がいずれかのチャンクに登場するまで続く …
+  ],
+  "top_attack_paths": [
+    {
+      "entry_function": "handle_packet",
+      "sink_function": "commit_state",
+      "risk_reason": "Untrusted input → state mutation without full validation"
+    }
+    // 最低 3 経路
+  ],
+  "ordering_strategy": "Breadth‑first from untrusted boundaries inward, guided by call‑graph depth and STRIDE‑like risk categories (S,T,R,I,D,E)."
+}
+````
 
-### 2. Build an exploration order
+**Constraints**
 
-1. **Extract user-flows**
-   Read every `user_flows[]` entry. Note its ID, description, and “criticality”.
-2. **Locate entry functions**
-   For each user-flow, identify the first external/public function(s) that start the flow.
-3. **Expand call-graphs**
-   Using the corresponding `.dot` file, breadth-first search outward (depth ≤ 3) from each entry function. Record every reachable function once.
-4. **Group into “chunks”**
+* Every function in `{{TARGET_FOLDER}}` **must appear exactly once** in
+  `audit_chunks[*].functions`.
+* Preserve source order within each chunk **only** if no call‑graph info exists;
+  otherwise sort by caller‑depth (roots first).
+* Maximum functions per chunk: **12** (split logically if exceeded).
+* Use ✨ Unicode emojis in `chunk_title` to telegraph threat class (optional but preferred).
 
-   * One chunk per user-flow (name it e.g. `UF-Deposit`).
-   * Any function reached by multiple flows goes in an extra chunk called `Shared-Logic`.
-5. **Annotate each chunk**
-   For every chunk include:
+# 🛠️ Methodology
 
-   * `chunk_name` – the ID (`UF-…` or `Shared-…`).
-   * `description` – one-sentence summary in Japanese.
-   * `data_lifecycle` – how assets / state change (“ETH 入金 → share 発行 → buffer 更新”).
-   * `call_sequence` – ordered list of functions from entry to deepest sink.
-   * `permissions` – `anyone`, `role`, or `owner` (use modifier data from `00_AST.json`).
-   * `criticality` – `High`, `Medium`, `Low` (based on TVL and user impact).
-   * `done_index` – always `0` (used later for progress tracking).
+1. **Load specs** → extract trust boundaries, privilege tiers, security‑critical
+   components.
+2. If `STATIC_CALLGRAPH` ≠ NONE
+   → merge its edges into an in‑memory graph; verify completeness; fill gaps
+   via on‑the‑fly parsing.
+3. Else
+   → parse *all* source files; build call‑graph (ignore std lib edges).
+4. Compute node depth; tag entry points (extern "C", public API, CLI, RPC,
+   interrupt handlers, etc.).
+5. Prioritise chunks:
 
----
+   1. Untrusted data entry (network / disk / IPC).
+   2. Privilege‑escalation or crypto‑verification.
+   3. State‑mutation hubs.
+   4. Low‑level utilities & pure helpers.
+6. Within a chunk, list functions **caller‑before‑callee** for natural read‑flow.
+7. Build `top_attack_paths` by traversing shortest paths from entry nodes to any
+   state‑changing sinks with insufficient checks.
+8. Validate final JSON (no duplicate functions, valid RFC3339 timestamp).
+9. **Write** the file and return *nothing* else.
 
-### 3. Apply the white-hat mental model
+# 📚 Quality levers
 
-Before finalising, run two internal reflection passes:
+* Multi‑pass reflection: draft → consistency check → final rewrite.
+* Keep explanations concise (< 60 words per `rationale`).
+* Use internal chain‑of‑thought; expose only final JSON.
+* Fail fast on schema errors; retry once after auto‑fix.
 
-* **Pass A — Completeness check**
-  Ask yourself: “Did I miss any user-flow or shared sink?” If yes, add them.
-* **Pass B — Attacker priority re-ordering**
-  Re-sort chunks so the most profitable or lowest-friction attack paths appear first.
+# ✅ Success criteria
 
-Repeat passes until satisfied.
+* File exists; JSON parsable.
+* 100 % of functions covered; zero duplicates.
+* Chunk sequence moves logically from attack surface to core.
+* ≥ 3 attack paths provided, each plausible and source‑linked.
 
----
-
-### 4. Write the file
-
-Create a single JSON object with a top-level key `function_chunks` containing the ordered list.
-Pretty-print with an indentation of two spaces.
-Save to `security-agent/outputs/WHITEHAT_01b_AUDITMAP_ORDER.json`.
-
----
-
-### 5. Final rule
-
-Write **only** to the file; output nothing else.
+# ==========  PROMPT END  ==========
