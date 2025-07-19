@@ -37,7 +37,7 @@ uv sync
 
 # Create .env file from example
 cp .env.example .env
-# Configure: SOURCE_PATH, BOUNTY_URL, DOCUMENT_URL
+# Configure: SOURCE_PATH, TARGET_DIRECTORY, DOCUMENT_DIRECTORY
 ```
 
 ### Static Analysis
@@ -112,3 +112,7 @@ The system uses specialized agents for different analysis phases:
 - The tool generates sensitive security findings - handle outputs carefully
 - Requires Graphviz for visualization features
 - Uses OpenAI API - ensure API keys are properly configured
+
+## Prompt Guidelines
+
+- これらのプロンプトは審査対象のディレクトリ内での運用を想定しています

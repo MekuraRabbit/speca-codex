@@ -2,25 +2,25 @@
 
 プロジェクトの包括的な仕様書を生成します。
 
-Usage: `/01_spec <target_url>`
-Example: `/01_spec https://reth.rs/overview`
+Usage: `/01_spec <target_directory>`
+Example: `/01_spec ../contracts/docs`
 
 Arguments:
-- target_url: 解析対象のドキュメントURL
+- target_directory: 解析対象のドキュメントディレクトリパス
 
 ---
 
 <% 
 // Parse the argument
 const args = input.trim().split(/\s+/);
-const targetUrl = args[0];
+const targetDirectory = args[0];
 
 // Read the original prompt content
 const fs = require('fs');
 const promptContent = fs.readFileSync('prompts/whitehat/01_SPEC.md', 'utf8');
 
 // Replace the template variable
-const processedContent = promptContent.replace(/\{\{TARGET_URL\}\}/g, targetUrl);
+const processedContent = promptContent.replace(/\{\{TARGET_DIRECTORY\}\}/g, targetDirectory);
 %>
 
 <%= processedContent %>
