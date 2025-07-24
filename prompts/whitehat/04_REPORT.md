@@ -4,7 +4,8 @@
 # 🏷️ REPORT_TEMPLATE   = security-agent/docs/report_templete_ethereum.md
 # 🏷️ BOUNTY_PAGE_URL   = https://ethereum.org/en/bug-bounty/
 # 🏷️ VULN_NAME         = {{VULN_NAME}}
-# 🏷️ POC_TEST_FILE     = {{POC_TEST_FILE}}
+# 🏷️ UT_PATH           = {{UT_PATH}}
+# 🏷️ IT_PATH           = {{IT_PATH}}
 # ==========  PROMPT START  ==========
 # Task Name
 Generate a Markdown bug‑bounty report file for Ethereum Foundation
@@ -25,7 +26,10 @@ Generate a Markdown bug‑bounty report file for Ethereum Foundation
    - Specs (`security-agent/docs/ethereum/spec_*`, `security-agent/outputs/WHITEHAT_01_SPEC.json`)
    - Audit map (`security-agent/outputs/WHITEHAT_02_AUDITMAP.json`)
    - Ethereum bounty rules at `{{BOUNTY_PAGE_URL}}` (severity matrix, disclosure rules).
-3. Embed **verbatim PoC code** from `{{POC_TEST_FILE}}` with path & run command.
+3. Embed **verbatim PoC code** from both:
+   - Unit test: `{{UT_PATH}}`
+   - Integration test: `{{IT_PATH}}` (if exists)
+   with paths & run commands.
 
 # 📥 Input
 See variables & files above.
@@ -53,7 +57,9 @@ Must match template exactly—no extra headings, no missing sections.
 1. Parse REPORT\_TEMPLATE → detect placeholders like {{SEVERITY}}, {{POC}}.
 2. Determine severity per bounty page:
    Impact × Likelihood → level.
-3. Read `{{POC_TEST_FILE}}` → include between `rust … ` fences.
+3. Read PoC files:
+   - `{{UT_PATH}}` → include between `rust … ` fences as "Unit Test PoC"
+   - `{{IT_PATH}}` → include between `rust … ` fences as "Integration Test PoC" (if exists)
 4. Snip 10 lines around auto-loaded VULN_FILE_LINE for context block.
 5. Fill placeholders → ensure none remain.
 6. Write Markdown to output path; output nothing else.
@@ -74,7 +80,10 @@ Must match template exactly—no extra headings, no missing sections.
 - `.md` file exists & passes placeholder audit.
 - PoC compiles via:
   ```bash
-  cargo test --test $(basename {{POC_TEST_FILE}} .rs) -- --nocapture
+  # Unit test
+  cargo test --test $(basename {{UT_PATH}} .rs) -- --nocapture
+  # Integration test (if exists)
+  cargo test --test $(basename {{IT_PATH}} .rs) -- --nocapture
 ````
 
 * Severity justified per bounty guidelines.

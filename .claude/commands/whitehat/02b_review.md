@@ -14,8 +14,8 @@ Arguments:
 <% 
 // Parse arguments
 const args = input.trim().split(/\s+/);
-const targetFolder = args[0] || 'crates/net/';
-const auditOrderFile = args[1] || 'security-agent/outputs/WHITEHAT_01b_AUDITMAP_ORDER.json';
+const targetFolder = args[0];
+const auditOrderFile = args[1];
 
 // Ensure folder has trailing slash
 const normalizedFolder = targetFolder.endsWith('/') ? targetFolder : targetFolder + '/';

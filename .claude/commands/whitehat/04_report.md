@@ -2,20 +2,21 @@
 
 Ethereum Foundation向けのBug Bountyレポートを生成します。
 
-Usage: `/04_report <vuln_name> <poc_test_file>`
-Example: `/04_report DoSUnboundedImport crates/net/network/src/transactions/mod.rs crates/net/network/src/transactions/it_poc_dos_unbounded_import.rs`
+Usage: `/04_report <vuln_name> <ut_path> <it_path>`
+Example: `/04_report DoSUnboundedImport crates/net/network/src/transactions/poc_dos_unbounded_import.rs crates/net/network/tests/it/poc_tx_import.rs`
 
 Arguments:
 - vuln_name: 脆弱性名
-- poc_test_file: PoCテストファイルパス
+- ut_path: Unit TestのPoCファイルパス
+- it_path: Integration TestのPoCファイルパス（オプション: "none"を指定可能）
 
 ---
 
 <% 
 // Parse arguments with support for quoted strings
-const args = input.trim().match(/(?:[^\s"]+|"[^"]*")+/g) || [];
-const vulnName = args[0] || 'DoSUnboundedImport';
-const pocTestFile = args[3] || 'crates/net/network/src/transactions/it_poc_dos_unbounded_import.rs';
+const args = input.trim().match(/(?:[^\s"]+|"[^"]*")+/g);
+const vulnName = args[0];
+const pocTestFile = args[1];
 
 // Read the original prompt content
 const fs = require('fs');

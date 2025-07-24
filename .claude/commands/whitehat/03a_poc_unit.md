@@ -14,8 +14,8 @@ Arguments:
 <% 
 // Parse arguments
 const args = input.trim().match(/(?:[^\s"]+|"[^"]*")+/g) || [];
-const vulnName = args[0] || 'DoSUnboundedImport';
-const outputPath = args[3] || `crates/net/network/src/transactions/poc_${vulnName}.rs`;
+const vulnName = args[0];
+const outputPath = args[1];
 
 // Read the original prompt content
 const fs = require('fs');
