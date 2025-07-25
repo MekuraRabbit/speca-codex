@@ -1,8 +1,8 @@
 ## 🚀 Claude Code Prompt ― “WHITEHAT 02 AUDIT Annotator & Map Updater”
 
 ````
-# 🏷️ TARGET_FOLDER      = crates/net/
-# 🏷️ AUDIT_ORDER_FILE   = security-agent/outputs/WHITEHAT_01b_AUDITMAP_ORDER.json
+# 🏷️ TARGET_FOLDER      = {{TARGET_FOLDER}}
+# 🏷️ AUDIT_ORDER_FILE   = {{AUDIT_ORDER_FILE}}
 # ==========  PROMPT START  ==========
 # Task Name
 Annotate source with @audit / @audit-ok and update WHITEHAT_02_AUDITMAP.json

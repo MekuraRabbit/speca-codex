@@ -1,8 +1,8 @@
 ## 🚀 Claude Code Prompt ― “WHITEHAT 03 AUDIT Review & Validate”
 
 ````
-# 🏷️ TARGET_FOLDER    = crates/net/
-# 🏷️ AUDIT_ORDER_FILE = security-agent/outputs/WHITEHAT_01b_AUDITMAP_ORDER.json
+# 🏷️ TARGET_FOLDER    = {{TARGET_FOLDER}}
+# 🏷️ AUDIT_ORDER_FILE = {{AUDIT_ORDER_FILE}}
 # ==========  PROMPT START  ==========
 # Task Name
 Review all existing @audit comments, confirm validity, and update reports

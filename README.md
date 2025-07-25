@@ -1,20 +1,32 @@
 # Security Agents - Multi-Phase Security Analysis System
 
-An automated security analysis system using OpenAI Agents SDK for comprehensive Bug Bounty research and vulnerability assessment.
+An automated security analysis system using Claude Code for comprehensive Bug Bounty research and vulnerability assessment.
 
 ## Overview
 
-This system performs multi-phase security analysis for blockchain projects, specifically designed for Bug Bounty programs. It uses GPT-4o with WebSearch capabilities to analyze Bug Bounty scopes, technical specifications, and generate attack scenarios.
+This system performs multi-phase security analysis for blockchain projects, specifically designed for Bug Bounty programs. It uses Claude with WebSearch capabilities to analyze Bug Bounty scopes, technical specifications, and generate attack scenarios.
 
 ## How to use
 
-### Basic Setup
+### Generate Callgraph (Optional)
 ```bash
 uv sync
 uv run python -m utils.static_analyzer .. --verbose
+```
+
+### Launch Claude Code
+
+```
 claude --dangerously-skip-permissions
 ```
-### Call Graph Visualization
+
+Use custom slash commands for each task:
+
+<img src="./usage.gif" width="500">
+
+---
+
+## Call Graph Visualization
 
 Navigate to the callgraphs directory and visualize specific contracts:
 
@@ -34,7 +46,7 @@ dot -Tsvg all_contracts.call-graph.dot -o all_contracts.svg
 dot -Tpdf PoolManager.call-graph.dot -o PoolManager.pdf
 ```
 
-### Requirements
+## Requirements
 
 - **Graphviz**: Required for DOT file visualization
   ```bash

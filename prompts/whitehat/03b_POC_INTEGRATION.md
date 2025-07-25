@@ -1,17 +1,17 @@
 ## 🚀 Claude Code Prompt ― “WHITEHAT Integration‑PoC Generator (DoS import)”
 
 ````
-# 🏷️ UNIT_TEST_POC      = crates/net/network/src/transactions/poc_dos_unbounded_import.rs
-# 🏷️ IT_TEST_PATH       = crates/net/network/tests/it/poc_tx_import.rs
-# 🏷️ VULN_NAME          = DoSUnboundedImport
+# 🏷️ UT_PATH      = {{UT_PATH}}
+# 🏷️ IT_PATH       = {{IT_PATH}}
+# 🏷️ VULN_NAME          = {{VULN_NAME}}
 # ==========  PROMPT START  ==========
 # Task Name
 Create an **integration‑level PoC test** reproducing VULN_NAME
 and failing only when the DoS vulnerability is present.
 
 # 🎯 Goal
-1. Generate `{{IT_TEST_PATH}}` that compiles under `cargo test`.
-2. Reuse helpers / mocks from `{{UNIT_TEST_POC}}` and sibling files to minimise boilerplate.
+1. Generate `{{IT_PATH}}` that compiles under `cargo test`.
+2. Reuse helpers / mocks from `{{UT_PATH}}` and sibling files to minimise boilerplate.
 3. Test passes (✅) when the bug manifests (≥ 5 000 pending imports);
    fails (❌) after the fix (≤ 4 096).
 
@@ -26,24 +26,24 @@ and failing only when the DoS vulnerability is present.
 | ⑥ **アサート** | `assert!(count >= 5_000, "DoS not reproduced");` |
 
 # 📥 Input
-- Unit PoC:          `{{UNIT_TEST_POC}}`
+- Unit PoC:          `{{UT_PATH}}`
 - Audit report:      `security-agent/outputs/WHITEHAT_02_AUDITMAP.json`
 - Project spec:      `security-agent/outputs/WHITEHAT_01_SPEC.json`
 - Bug corpus / specs: `security-agent/docs/ethereum/{bugs_*,spec_*}.json`
-- Source tree under  `crates/net/network/`
+- Source tree under the target directory
 
 # 📤 Output Artifacts
-1. **Test file** `{{IT_TEST_PATH}}`
+1. **Test file** `{{IT_PATH}}`
 2. **Run command**
    ```bash
-   cargo test --test poc_tx_import -- --nocapture
+   cargo test --test {{TEST_NAME}} -- --nocapture
 ````
 
 3. **Status update** (append to WHITEHAT\_02\_AUDITMAP.json)
 
    ```jsonc
    {
-     "file": "{{IT_TEST_PATH}}",
+     "file": "{{IT_PATH}}",
      "for_vuln": "{{VULN_NAME}}",
      "integration": true,
      "build_passed": true,
@@ -55,9 +55,9 @@ and failing only when the DoS vulnerability is present.
 # 🔍 Generation Algorithm
 
 ```
-1. Scan sibling tests in crates/net/network/tests/it/ for reusable Testnet helpers.
+1. Scan sibling tests in the project's tests directory for reusable helpers.
 2. Draft Arrange‑Act‑Assert skeleton per Attack Scenario table.
-3. Import mocks or re‑export structs from UNIT_TEST_POC to avoid duplication.
+3. Import mocks or re‑export structs from UT_PATH to avoid duplication.
 4. Compile (`cargo check`) and iterate ≤ 4 times:
       ‑ Fix missing deps / feature flags only (no scenario change).
 5. Run test; ensure it **passes** on vulnerable codebase (simulate ≥ 5 000 count).
@@ -79,7 +79,7 @@ If still blocked → print `"Need guidance: <stderr snippet>"` and stop.
 # ⛔ Constraints
 
 * Do **not** alter production code.
-* Stay within `crates/net/network/tests/it/` for new files.
+* Stay within the project's tests directory for new files.
 * No external crates unless already in Cargo.toml.
 
 # ✅ Success Criteria

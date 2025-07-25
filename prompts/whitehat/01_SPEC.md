@@ -1,6 +1,6 @@
 # ==========  PROMPT START  ==========
 # Task Name
-Generate WHITEHAT_01_SPEC.json from https://reth.rs/overview
+Generate WHITEHAT_01_SPEC.json from target directory
 
 # 🎯 Goal
 Before beginning a source‑code security audit, produce a *comprehensive* specification
@@ -12,8 +12,8 @@ that captures:
 5.   Historical change‑log and version deltas
 
 # 📥 Input
-- Root URL: {{TARGET_URL}}
-- Crawl **all** sidebar / in‑page navigation and descendants using **breadth‑first** strategy.
+- Root Directory: {{TARGET_DIRECTORY}}
+- Recursively read **all** markdown, documentation, and code files in the directory using **breadth‑first** strategy.
 - Select the **latest stable release** when multiple versions exist; fall back to “main” / “master”.
 - While crawling, extract:
   * Markdown, HTML, PDF, code files, CHANGELOGs, RELEASE‑NOTES.
@@ -27,7 +27,7 @@ using the schema below (strict order & naming). **Do not return anything else.**
 ```jsonc
 {
   "metadata": {
-    "source_url": "{{TARGET_URL}}",
+    "source_directory": "{{TARGET_DIRECTORY}}",
     "spec_generated_at": "<RFC3339 timestamp>",
     "latest_tag_or_commit": "<tag|commit-hash>",
     "latest_release_date": "<YYYY-MM-DD>",
@@ -92,8 +92,8 @@ using the schema below (strict order & naming). **Do not return anything else.**
 
 # 🛠️ Methodology (follow rigorously)
 
-1. **Breadth‑first crawl** until every link inside the same domain (or documentation host) is exhausted.
-2. Deduplicate by URL & heading slug to avoid repeated content.
+1. **Breadth‑first traverse** all files and subdirectories in the target directory.
+2. Deduplicate by file path & heading to avoid repeated content.
 3. Prefer *latest* tag/branch; ignore obsolete `legacy/` or `v0.*` unless the latest release references them.
 4. Generate summaries with <= 120 words per section; be factual, no speculation.
 5. Infer implicit security requirements (e.g., “must resist replay attacks”) from protocol descriptions.

@@ -1,13 +1,21 @@
 ## 🚀 Claude Code Prompt ― “WHITEHAT PoC Generator & Self‑Verifying Test”
 
 ````
-# 🏷️ VULN_NAME        = DoSUnboundedImport
-# 🏷️ VULN_SNIPPET     = "fn import_transactions("
-# 🏷️ TARGET_FILE      = crates/net/network/src/transactions/mod.rs:L1326
-# 🏷️ OUTPUT_TEST_PATH = crates/net/network/src/transactions/mod.rs or crates/net/network/src/transactions/poc_{{VULN_NAME}}.rs
+# 🏷️ VULN_NAME        = {{VULN_NAME}}
+# 🏷️ OUTPUT_TEST_PATH = {{OUTPUT_TEST_PATH}}
 # ==========  PROMPT START  ==========
 # Task Name
 Create & validate a minimal PoC test that reproduces VULN_NAME
+
+# 📥 Auto-load from WHITEHAT_02_AUDITMAP.json
+1. **First, read** `security-agent/outputs/WHITEHAT_02_AUDITMAP.json`
+2. **Search for** the vulnerability where:
+   - `audit_items[].risk_category` or `audit_items[].description` contains `{{VULN_NAME}}`
+   - OR a dedicated `vuln_name` field equals `{{VULN_NAME}}`
+3. **Extract the following**:
+   - `VULN_SNIPPET`: from `audit_items[].snippet`
+   - `TARGET_FILE`: from `audit_items[].file` + `:L` + `audit_items[].line`
+4. **If not found**: abort with error "Vulnerability '{{VULN_NAME}}' not found in WHITEHAT_02_AUDITMAP.json"
 
 # 🎯 Goal
 Produce a **single Rust test file** that:
@@ -20,11 +28,11 @@ Produce a **single Rust test file** that:
 - Project spec:        `security-agent/outputs/WHITEHAT_01_SPEC.json`
 - Ethereum bug corpus: `security-agent/docs/ethereum/bugs_*.json`
 - Ethereum specs:      `security-agent/docs/ethereum/spec_*.json`
-- Source code:         `{{TARGET_FILE}}` (and neighbours)
+- Source code:         Auto-loaded `TARGET_FILE` from JSON (and neighbours)
 
 # 🧩 Pre‑work (internal)
-1. **Locate exact code** containing `{{VULN_SNIPPET}}` → capture line range.
-2. **Read existing tests / mocks** under `crates/net/` → identify helpers to reuse.
+1. **Locate exact code** containing auto-loaded `VULN_SNIPPET` → capture line range.
+2. **Read existing tests / mocks** under the target directory → identify helpers to reuse.
 3. **Formulate exploit scenario** using:
    - State pre‑conditions from spec & audit comment.
    - Similar known bugs for edge‑case inspiration.
@@ -42,13 +50,21 @@ Produce a **single Rust test file** that:
 
 3. **Status JSON** (append to `WHITEHAT_02_AUDITMAP.json`):
 
+   
+   Add a new field `poc_tests` to the matching vulnerability entry:
    ```jsonc
    {
-     "file": "{{OUTPUT_TEST_PATH}}",
-     "for_vuln": "{{VULN_NAME}}",
-     "build_passed": true,
-     "test_result": "fail_before_fix_pass_after_fix|pass_when_exploitable",
-     "attempts": 1
+     "audit_items": [{
+       // ... existing fields ...
+       "poc_tests": [{
+         "type": "unit",
+         "file": "{{OUTPUT_TEST_PATH}}",
+         "build_passed": true,
+         "test_result": "fail_before_fix_pass_after_fix|pass_when_exploitable",
+         "attempts": 1,
+         "created_at": "<timestamp>"
+       }]
+     }]
    }
    ```
 
@@ -111,8 +127,9 @@ fn poc_{{VULN_NAME}}() {
 
 # ✅ Success Criteria
 
+* Vulnerability found in WHITEHAT_02_AUDITMAP.json using VULN_NAME.
 * File exists, compiles, and test passes **only** when bug present.
-* Status JSON appended & valid.
+* Status JSON appended to matching vulnerability entry & valid.
 * If hindered >3 compile failures → ask user.
 
 # ==========  PROMPT END  ==========
