@@ -11,6 +11,7 @@ This system performs multi-phase security analysis for blockchain projects, spec
 ### Launch Claude Code
 
 ```bash
+git clone git@github.com:NyxFoundation/security-agent.git
 rm -rf security-agent/.git
 mv security-agent/.claude .claude
 claude --dangerously-skip-permissions
