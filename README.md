@@ -15,7 +15,7 @@ Before using this agent, please setup below tools.
 - Claude Code
 - Serena MCP
 
-### Launch Claude Code
+### Repogitory Initialization
 
 1. setup repository
 
@@ -28,8 +28,13 @@ mv security-agent/.claude .claude
 2. setup serena MCP server
 
 ```bash
-$ claude mcp add serena-mcp-server "uvx --from git+https://github.com/oraios/serena serena-mcp-server --context ide-assistant --project $(pwd)"
+claude mcp add serena-mcp-server "uvx --from git+https://github.com/oraios/serena serena-mcp-server --context ide-assistant --project $(pwd)"
+
+# initialize serena memory
+/mcp__serena__initial_instructions
 ```
+
+### Running Security Agent
 
 3. Launch claude code, confirm that serena MCP is running.
 
