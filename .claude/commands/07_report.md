@@ -1,7 +1,7 @@
 ---
 Description: Bug-Bounty Report Builder
-Usage: `/04_report <VULN_ID> <REPORT_TEMPLATE> <BOUNTY_PAGE_URL>`
-Example: `/04_report 0023344 security-agent/docs/report_template_ethereum.md https://ethereum.org/en/bug-bounty/`
+Usage: `/07_report <VULN_ID> <REPORT_TEMPLATE> <BOUNTY_PAGE_URL>`
+Example: `/07_report 0023344 security-agent/docs/report_template_ethereum.md https://ethereum.org/en/bug-bounty/`
 Arguments:
 - **VULN_ID**         : `audit_items[].id` in `03_AUDITMAP.json`
 - **REPORT_TEMPLATE** : Path to the Markdown template

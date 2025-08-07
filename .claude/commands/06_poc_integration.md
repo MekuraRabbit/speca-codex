@@ -1,7 +1,7 @@
 ---
 Description: Integration-PoC Generator
-Usage: `/03b_poc_integration <IT_PATH> <VULN_ID>`
-Example: `/03b_poc_integration tests/integration/poc_reentrancy.rs 0023344`
+Usage: `/06_poc_integration <IT_PATH> <VULN_ID>`
+Example: `/06_poc_integration tests/integration/poc_reentrancy.rs 0023344`
 Arguments:
 - **IT_PATH** : Path for the new integration-level test file
 - **VULN_ID** : `audit_items[].id` found in `03_AUDITMAP.json`

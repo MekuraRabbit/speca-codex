@@ -1,7 +1,7 @@
 ---
 Description: PoC Generator & Self-Verifying Test
-Usage: `/03a_poc_unit <VULN_ID> <OUTPUT_TEST_PATH>`
-Example: `/03a_poc_unit 03523523 crates/net/network/src/transactions/poc_reentrancy.rs`
+Usage: `/05_poc_unit <VULN_ID> <OUTPUT_TEST_PATH>`
+Example: `/05_poc_unit 03523523 crates/net/network/src/transactions/poc_reentrancy.rs`
 Arguments:
 - **VULN_ID**: `03_AUDITMAP.json` 内の `audit_items[].id`
 - **OUTPUT_TEST_PATH**: 生成するテストファイルの保存先
