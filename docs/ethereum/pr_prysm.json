@@ -23,13 +23,30 @@
     "url": "https://github.com/OffchainLabs/prysm/pull/15640"
   },
   {
+    "body": "**What type of PR is this?**\r\n\r\nBug fix\r\n\r\n\r\n**What does this PR do? Why is it needed?**\r\n\r\nThis drops unscheduled forks (defined as epoch == FAR_FUTURE_EPOCH) from the network schedule. Without this change we were using the fulu entry for the next_fork_version.\r\n\r\n**Other notes for review**\r\n\r\n**Acknowledgements**\r\n\r\n- [x] I have read [CONTRIBUTING.md](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md).\r\n- [x] I have included a uniquely named [changelog fragment file](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md#maintaining-changelogmd).\r\n- [x] I have added a description to this PR with sufficient context for reviewers to understand this PR.\r\n",
+    "closedAt": "0001-01-01T00:00:00Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "open",
+    "title": "exclude unscheduled forks from the schedule",
+    "updatedAt": "2025-10-02T22:44:55Z",
+    "url": "https://github.com/OffchainLabs/prysm/pull/15799"
+  },
+  {
     "body": "### Describe the bug\n\nFrom time to time, after a BN start, a lot of\n\n```\nlevel=debug msg=\"Provided topic already has an active subscription running\" prefix=sync topic=\"/eth2/ad532ceb/beacon_attestation_3/ssz_snappy\"\n```\n\nlogs are displayed.\n\nGenerally, these logs disappear after a reboot.\n\nWe should:\n1. Find if there logs are expected, and why.\n2. If they are not expected, fix the root cause. If they are expected, reduce the log volume",
     "closedAt": "0001-01-01T00:00:00Z",
     "isPullRequest": false,
-    "labels": [],
+    "labels": [
+      {
+        "color": "5967ba",
+        "description": "",
+        "id": "MDU6TGFiZWwyMDYxMDQwMDQ4",
+        "name": "sync"
+      }
+    ],
     "state": "open",
     "title": "Fix `Provided topic already has an active subscription running` log",
-    "updatedAt": "2025-09-26T13:10:24Z",
+    "updatedAt": "2025-10-02T12:01:42Z",
     "url": "https://github.com/OffchainLabs/prysm/issues/15738"
   },
   {
@@ -43,31 +60,33 @@
     "url": "https://github.com/OffchainLabs/prysm/pull/15088"
   },
   {
-    "body": "**What type of PR is this?**\r\n\r\nBug fix\r\n\r\n**What does this PR do? Why is it needed?**\r\n\r\nThis is an attempt to make a simple fix to the double topic registration that occurs when the node exits initial-sync, by adding a basic map with a mutex to hold digests of calls to `registerSubscribers` and early exit if the method was previously called with the given digest.\r\n\r\n**Which issues(s) does this PR fix?**\r\n\r\nFixes #15738\r\n\r\n**Alternative proposals:**\r\n- https://github.com/OffchainLabs/prysm/pull/15769\r\n- https://github.com/OffchainLabs/prysm/pull/15771\r\n- https://github.com/OffchainLabs/prysm/pull/15780\r\n\r\n**Acknowledgements**\r\n\r\n- [x] I have read [CONTRIBUTING.md](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md).\r\n- [x] I have included a uniquely named [changelog fragment file](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md#maintaining-changelogmd).\r\n- [x] I have added a description to this PR with sufficient context for reviewers to understand this PR.\r\n",
+    "body": "\r\n<!-- Thanks for sending a PR! Before submitting:\r\n\r\n1. If this is your first PR, check out our contribution guide here https://docs.prylabs.network/docs/contribute/contribution-guidelines\r\n   You will then need to sign our Contributor License Agreement (CLA), which will show up as a comment from a bot in this pull request after you open it. We cannot review code without a signed CLA.\r\n2. Please file an associated tracking issue if this pull request is non-trivial and requires context for our team to understand. All features and most bug fixes should have\r\n   an associated issue with a design discussed and decided upon. Small bug\r\n   fixes and documentation improvements don't need issues.\r\n3. New features and bug fixes must have tests. Documentation may need to\r\n   be updated. If you're unsure what to update, send the PR, and we'll discuss\r\n   in review.\r\n4. Note that PRs updating dependencies and new Go versions are not accepted.\r\n   Please file an issue instead.\r\n5. A changelog entry is required for user facing issues.\r\n-->\r\n\r\n**What type of PR is this?**\r\n\r\nOther\r\n\r\n**What does this PR do? Why is it needed?**\r\n\r\nbased on discord discussions our configs endpoint still contains a lot of prysm specific items or deprecated items\r\n\r\nhidden prysm specific items\r\n- EPOCHS_PER_RANDOM_SUBNET_SUBSCRIPTION\r\n- NODE_ID_BITS\r\n- TARGET_BLOBS_PER_BLOCK_ELECTRA\r\n- INTERVALS_PER_SLOT\r\n\r\ndeleted\r\n- MAX_PARTIAL_WITHDRAWALS_PER_PAYLOAD\r\n- MAX_BLOBS_PER_BLOCK_FULU\r\n\r\n\r\n**Which issues(s) does this PR fix?**\r\n\r\nFixes #\r\n\r\n**Other notes for review**\r\n\r\n**Acknowledgements**\r\n\r\n- [x] I have read [CONTRIBUTING.md](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md).\r\n- [x] I have included a uniquely named [changelog fragment file](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md#maintaining-changelogmd).\r\n- [x] I have added a description to this PR with sufficient context for reviewers to understand this PR.\r\n",
     "closedAt": "0001-01-01T00:00:00Z",
     "isPullRequest": true,
-    "labels": [],
-    "state": "open",
-    "title": "make registerSubscribers idempotent",
-    "updatedAt": "2025-09-30T18:29:48Z",
-    "url": "https://github.com/OffchainLabs/prysm/pull/15779"
-  },
-  {
-    "body": "### Describe the bug\n\nAfter setting up a new development chain using a custom genesis (via eth-genesis-generator), the beacon node crashes when restarting the network following a temporary outage (validators went offline). The chain starts producing slots again, but block proposals fail due to eth1data errors and ultimately panic with a nil pointer dereference in forkchoice/doubly-linked-tree.\n\n### Has this worked before in a previous version?\n\n```text\nFirst time trying it\n```\n\n### 🔬 Minimal Reproduction\n\nSteps to reproduce:\n\nGenerate a custom genesis using eth-genesis-generator and start a local devnet (beacon + validator + execution node).\n\nLet the chain run briefly with some validators online.\n\nShut down all components for a while (simulating an outage).\n\nRestart beacon node and validator with the same config.\n\n\n\n### Error\n\n```text\n[2025-05-27 13:52:00]  INFO rpc/validator: Begin building block sinceSlotStartTime=1.743244494s slot=50558\n[2025-05-27 13:52:02] ERROR rpc/validator: Could not get last block by latest valid time error=(1748292671 > 1748276411): provided time is later than the current eth1 head\n[2025-05-27 13:52:02]  WARN rpc/validator: Beacon Node is no longer connected to an ETH1 chain, so ETH1 data votes are now random.\n[2025-05-27 13:52:02] ERROR rpc/validator: Finished building block error=rpc error: code = Internal desc = Could not get local payload: nil payload with block hash: 0xac3a33bc2ec8a50ce83478b693bc034ae7e3b85279a30c3488b1c1b4db658902 sinceSlotStartTime=3.141360491s slot=50558 validator=0\n[2025-05-27 13:52:02] ERROR rpc/validator: Could not pack deposits and attestations error=rpc error: code = Internal desc = Could not get ETH1 deposits: could not fetch eth1data height: could not query block with given hash: Post \"http://127.0.0.1:8551\": context canceled\npanic: runtime error: invalid memory address or nil pointer dereference\n[signal SIGSEGV: segmentation violation code=0x1 addr=0x0 pc=0x37f363e]\n\ngoroutine 4821 [running]:\ngithub.com/prysmaticlabs/prysm/v5/beacon-chain/forkchoice/doubly-linked-tree.(*Store).setOptimisticToInvalid(...)\n    beacon-chain/forkchoice/doubly-linked-tree/optimistic_sync.go:26 +0x5e\n...\n```\n\n### Platform(s)\n\nLinux (x86)\n\n### What version of Prysm are you running? (Which release)\n\n1.15\n\n### Anything else relevant (validator index / public key)?\n\nI'm not sure if this is a bug or expected behavior, but the application crashes with a panic. However, if I attempt the same operation within 5 minutes of stopping it, it works fine but when I leave it more than an hour it panic stops. Is there a recommended way to handle this scenario,\n\n_No response_",
-    "closedAt": "0001-01-01T00:00:00Z",
-    "isPullRequest": false,
     "labels": [
       {
-        "color": "D41D88",
+        "color": "30ef13",
         "description": "",
-        "id": "LA_kwDOBvuov88AAAABgYRS9g",
-        "name": "custom-devnet"
+        "id": "MDU6TGFiZWwxNzAxNzQwNTQz",
+        "name": "api"
+      },
+      {
+        "color": "affdd1",
+        "description": "Flags, network setups and other configuration",
+        "id": "LA_kwDOBvuov88AAAACD5Qiug",
+        "name": "config"
+      },
+      {
+        "color": "dbcea4",
+        "description": "PR improving code health",
+        "id": "LA_kwDOBvuov88AAAACHRJjFQ",
+        "name": "cleanup"
       }
     ],
     "state": "open",
-    "title": "Beacon node crash when restarting devnet chain: invalid memory address or nil pointer dereference",
-    "updatedAt": "2025-07-10T13:22:48Z",
-    "url": "https://github.com/OffchainLabs/prysm/issues/15352"
+    "title": "removing old unused configs and hiding prysm specific configs",
+    "updatedAt": "2025-10-02T18:25:03Z",
+    "url": "https://github.com/OffchainLabs/prysm/pull/15797"
   },
   {
     "body": "<!-- Thanks for sending a PR! Before submitting:\r\n\r\n1. If this is your first PR, check out our contribution guide here https://docs.prylabs.network/docs/contribute/contribution-guidelines\r\n   You will then need to sign our Contributor License Agreement (CLA), which will show up as a comment from a bot in this pull request after you open it. We cannot review code without a signed CLA.\r\n2. Please file an associated tracking issue if this pull request is non-trivial and requires context for our team to understand. All features and most bug fixes should have\r\n   an associated issue with a design discussed and decided upon. Small bug\r\n   fixes and documentation improvements don't need issues.\r\n3. New features and bug fixes must have tests. Documentation may need to\r\n   be updated. If you're unsure what to update, send the PR, and we'll discuss\r\n   in review.\r\n4. Note that PRs updating dependencies and new Go versions are not accepted.\r\n   Please file an issue instead.\r\n5. A changelog entry is required for user facing issues.\r\n-->\r\n\r\n**What type of PR is this?**\r\n\r\n Bug fix\r\n\r\n\r\n**What does this PR do? Why is it needed?**\r\n\r\nearliest_available_slot needs to be updated (if required) when pruning occurs. Since peers will think we have data for slot `n`, while in reality, we wiped data up to slot `m` with `n < m`. \r\n\r\n**Which issues(s) does this PR fix?**\r\n\r\nPart of https://github.com/OffchainLabs/prysm/pull/14129\r\n\r\n**Other notes for review**\r\n\r\nKurtosis Config File:\r\n```\r\nparticipants:\r\n  - el_type: geth\r\n    el_image: \"ethereum/client-go:v1.16.1\"\r\n    cl_type: prysm\r\n    cl_image: \"prysm-bn-custom-image:minimal-build\"\r\n    vc_image: \"prysm-vc-custom-image:minimal-build\"\r\n    supernode: true\r\n    cl_extra_params:\r\n      - --minimum-peers-per-subnet=0\r\n      - --verbosity=debug\r\n      - --pruner-retention-epochs=2\r\n      - --beacon-db-pruning\r\nnetwork_params:\r\n  preset: minimal\r\n  electra_fork_epoch: 1\r\n  fulu_fork_epoch: 2\r\nadditional_services:\r\n  - dora        \r\n  - spamoor\r\nspamoor_params:\r\n  image: ethpandaops/spamoor:master\r\n  max_mem: 4000\r\n  spammers:\r\n    - scenario: eoatx\r\n      config:\r\n        throughput: 200\r\n    - scenario: blobs\r\n      config:\r\n        throughput: 20 \r\n```\r\n\r\n**Acknowledgements**\r\n\r\n- [x] I have read [CONTRIBUTING.md](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md).\r\n- [x] I have included a uniquely named [changelog fragment file](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md#maintaining-changelogmd).\r\n- [x] I have added a description to this PR with sufficient context for reviewers to understand this PR.\r\n",
@@ -95,18 +114,35 @@
     ],
     "state": "open",
     "title": "Update Earliest available slot when pruning",
-    "updatedAt": "2025-10-01T13:11:12Z",
+    "updatedAt": "2025-10-02T12:40:51Z",
     "url": "https://github.com/OffchainLabs/prysm/pull/15694"
   },
   {
-    "body": "**What type of PR is this?**\r\nOther\r\n\r\n**What does this PR do? Why is it needed?**\r\n`NewGenesisBlockForState`: Add Fulu.\r\n\r\n**Acknowledgements**\r\n- [x] I have read [CONTRIBUTING.md](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md).\r\n- [x] I have included a uniquely named [changelog fragment file](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md#maintaining-changelogmd).\r\n- [x] I have added a description to this PR with sufficient context for reviewers to understand this PR.\r\n\r\nTo test it in Kurtosis:\r\n```yaml\r\nparticipants:\r\n  # Super-nodes\r\n  - el_type: geth\r\n    el_image: ethpandaops/geth:fusaka-devnet-3\r\n    cl_type: prysm\r\n    vc_image: prysm-vc-custom-image:latest\r\n    cl_image: prysm-bn-custom-image:latest\r\n    count: 2\r\n    supernode: true\r\n    cl_extra_params:\r\n      - --subscribe-all-subnets\r\n  # Full-nodes\r\n  - el_type: geth\r\n    el_image: ethpandaops/geth:fusaka-devnet-3\r\n    cl_type: prysm\r\n    vc_image: prysm-vc-custom-image:latest\r\n    cl_image: prysm-bn-custom-image:latest\r\n    count: 2\r\n    cl_extra_params:\r\n      - --subscribe-all-subnets\r\n\r\nadditional_services:\r\n  - dora\r\n\r\nnetwork_params:\r\n  fulu_fork_epoch: 0 # <-- This is the important line\r\n  seconds_per_slot: 6\r\n\r\nglobal_log_level: debug\r\n```\r\n",
-    "closedAt": "2025-09-22T14:01:17Z",
+    "body": "**What type of PR is this?**\r\n\r\nBug fix\r\n\r\n**What does this PR do? Why is it needed?**\r\n\r\nThis is an attempt to make a simple fix to the double topic registration that occurs when the node exits initial-sync, by adding a basic map with a mutex to hold digests of calls to `registerSubscribers` and early exit if the method was previously called with the given digest.\r\n\r\n**Which issues(s) does this PR fix?**\r\n\r\nFixes #15738\r\n\r\n**Alternative proposals:**\r\n- https://github.com/OffchainLabs/prysm/pull/15769\r\n- https://github.com/OffchainLabs/prysm/pull/15771\r\n- https://github.com/OffchainLabs/prysm/pull/15780\r\n\r\n**Acknowledgements**\r\n\r\n- [x] I have read [CONTRIBUTING.md](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md).\r\n- [x] I have included a uniquely named [changelog fragment file](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md#maintaining-changelogmd).\r\n- [x] I have added a description to this PR with sufficient context for reviewers to understand this PR.\r\n",
+    "closedAt": "0001-01-01T00:00:00Z",
     "isPullRequest": true,
     "labels": [],
-    "state": "closed",
-    "title": "`NewGenesisBlockForState`: Add Fulu.",
-    "updatedAt": "2025-09-22T14:01:30Z",
-    "url": "https://github.com/OffchainLabs/prysm/pull/15727"
+    "state": "open",
+    "title": "make registerSubscribers idempotent",
+    "updatedAt": "2025-10-02T14:17:59Z",
+    "url": "https://github.com/OffchainLabs/prysm/pull/15779"
+  },
+  {
+    "body": "### Describe the bug\n\nAfter setting up a new development chain using a custom genesis (via eth-genesis-generator), the beacon node crashes when restarting the network following a temporary outage (validators went offline). The chain starts producing slots again, but block proposals fail due to eth1data errors and ultimately panic with a nil pointer dereference in forkchoice/doubly-linked-tree.\n\n### Has this worked before in a previous version?\n\n```text\nFirst time trying it\n```\n\n### 🔬 Minimal Reproduction\n\nSteps to reproduce:\n\nGenerate a custom genesis using eth-genesis-generator and start a local devnet (beacon + validator + execution node).\n\nLet the chain run briefly with some validators online.\n\nShut down all components for a while (simulating an outage).\n\nRestart beacon node and validator with the same config.\n\n\n\n### Error\n\n```text\n[2025-05-27 13:52:00]  INFO rpc/validator: Begin building block sinceSlotStartTime=1.743244494s slot=50558\n[2025-05-27 13:52:02] ERROR rpc/validator: Could not get last block by latest valid time error=(1748292671 > 1748276411): provided time is later than the current eth1 head\n[2025-05-27 13:52:02]  WARN rpc/validator: Beacon Node is no longer connected to an ETH1 chain, so ETH1 data votes are now random.\n[2025-05-27 13:52:02] ERROR rpc/validator: Finished building block error=rpc error: code = Internal desc = Could not get local payload: nil payload with block hash: 0xac3a33bc2ec8a50ce83478b693bc034ae7e3b85279a30c3488b1c1b4db658902 sinceSlotStartTime=3.141360491s slot=50558 validator=0\n[2025-05-27 13:52:02] ERROR rpc/validator: Could not pack deposits and attestations error=rpc error: code = Internal desc = Could not get ETH1 deposits: could not fetch eth1data height: could not query block with given hash: Post \"http://127.0.0.1:8551\": context canceled\npanic: runtime error: invalid memory address or nil pointer dereference\n[signal SIGSEGV: segmentation violation code=0x1 addr=0x0 pc=0x37f363e]\n\ngoroutine 4821 [running]:\ngithub.com/prysmaticlabs/prysm/v5/beacon-chain/forkchoice/doubly-linked-tree.(*Store).setOptimisticToInvalid(...)\n    beacon-chain/forkchoice/doubly-linked-tree/optimistic_sync.go:26 +0x5e\n...\n```\n\n### Platform(s)\n\nLinux (x86)\n\n### What version of Prysm are you running? (Which release)\n\n1.15\n\n### Anything else relevant (validator index / public key)?\n\nI'm not sure if this is a bug or expected behavior, but the application crashes with a panic. However, if I attempt the same operation within 5 minutes of stopping it, it works fine but when I leave it more than an hour it panic stops. Is there a recommended way to handle this scenario,\n\n_No response_",
+    "closedAt": "0001-01-01T00:00:00Z",
+    "isPullRequest": false,
+    "labels": [
+      {
+        "color": "D41D88",
+        "description": "",
+        "id": "LA_kwDOBvuov88AAAABgYRS9g",
+        "name": "custom-devnet"
+      }
+    ],
+    "state": "open",
+    "title": "Beacon node crash when restarting devnet chain: invalid memory address or nil pointer dereference",
+    "updatedAt": "2025-07-10T13:22:48Z",
+    "url": "https://github.com/OffchainLabs/prysm/issues/15352"
   },
   {
     "body": "\r\n**What type of PR is this?**\r\n\r\nFeature\r\n\r\n**What does this PR do? Why is it needed?**\r\n\r\nAdds data column support to backfill.\r\n\r\n**Other notes for review**\r\n\r\n- WIP - needs some additional cleanup and testing.\r\n- In the case where custody_group_count is the minimal `CUSTODY_REQUIREMENT`, we actually download `SAMPLES_PER_SLOT` for simplicity (otherwise DA check code needs to get more complicated). This is an easy thing to improve in a follow up if we decide to.\r\n\r\n**Acknowledgements**\r\n\r\n- [x] I have read [CONTRIBUTING.md](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md).\r\n- [x] I have included a uniquely named [changelog fragment file](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md#maintaining-changelogmd).\r\n- [x] I have added a description to this PR with sufficient context for reviewers to understand this PR.\r\n",
@@ -138,6 +174,16 @@
     "url": "https://github.com/OffchainLabs/prysm/pull/15580"
   },
   {
+    "body": "**What type of PR is this?**\r\nOther\r\n\r\n**What does this PR do? Why is it needed?**\r\n`NewGenesisBlockForState`: Add Fulu.\r\n\r\n**Acknowledgements**\r\n- [x] I have read [CONTRIBUTING.md](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md).\r\n- [x] I have included a uniquely named [changelog fragment file](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md#maintaining-changelogmd).\r\n- [x] I have added a description to this PR with sufficient context for reviewers to understand this PR.\r\n\r\nTo test it in Kurtosis:\r\n```yaml\r\nparticipants:\r\n  # Super-nodes\r\n  - el_type: geth\r\n    el_image: ethpandaops/geth:fusaka-devnet-3\r\n    cl_type: prysm\r\n    vc_image: prysm-vc-custom-image:latest\r\n    cl_image: prysm-bn-custom-image:latest\r\n    count: 2\r\n    supernode: true\r\n    cl_extra_params:\r\n      - --subscribe-all-subnets\r\n  # Full-nodes\r\n  - el_type: geth\r\n    el_image: ethpandaops/geth:fusaka-devnet-3\r\n    cl_type: prysm\r\n    vc_image: prysm-vc-custom-image:latest\r\n    cl_image: prysm-bn-custom-image:latest\r\n    count: 2\r\n    cl_extra_params:\r\n      - --subscribe-all-subnets\r\n\r\nadditional_services:\r\n  - dora\r\n\r\nnetwork_params:\r\n  fulu_fork_epoch: 0 # <-- This is the important line\r\n  seconds_per_slot: 6\r\n\r\nglobal_log_level: debug\r\n```\r\n",
+    "closedAt": "2025-09-22T14:01:17Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "closed",
+    "title": "`NewGenesisBlockForState`: Add Fulu.",
+    "updatedAt": "2025-09-22T14:01:30Z",
+    "url": "https://github.com/OffchainLabs/prysm/pull/15727"
+  },
+  {
     "body": "<!-- Thanks for sending a PR! Before submitting:\r\n\r\n1. If this is your first PR, check out our contribution guide here https://docs.prylabs.network/docs/contribute/contribution-guidelines\r\n   You will then need to sign our Contributor License Agreement (CLA), which will show up as a comment from a bot in this pull request after you open it. We cannot review code without a signed CLA.\r\n2. Please file an associated tracking issue if this pull request is non-trivial and requires context for our team to understand. All features and most bug fixes should have\r\n   an associated issue with a design discussed and decided upon. Small bug\r\n   fixes and documentation improvements don't need issues.\r\n3. New features and bug fixes must have tests. Documentation may need to\r\n   be updated. If you're unsure what to update, send the PR, and we'll discuss\r\n   in review.\r\n4. Note that PRs updating dependencies and new Go versions are not accepted.\r\n   Please file an issue instead.\r\n5. A changelog entry is required for user facing issues.\r\n-->\r\n\r\n**What type of PR is this?**\r\n\r\n Other\r\n\r\n**What does this PR do? Why is it needed?**\r\n\r\nAdds missing spec tests from the general package to prysm for fulu, excludes some fulu tests we don't need\r\n\r\nadded \r\n```\r\nmissing tests/general/fulu/kzg/compute_cells_and_kzg_proofs\r\nmissing tests/general/fulu/kzg/verify_cell_kzg_proof_batch\r\nmissing tests/general/fulu/kzg/compute_cells\r\nmissing tests/general/fulu/kzg/recover_cells_and_kzg_proofs\r\n```\r\n\r\nexcluded\r\n```\r\nmissing tests/minimal/fulu/light_client/single_merkle_proof\r\nmissing tests/mainnet/fulu/light_client/single_merkle_proof\r\nmissing tests/general/fulu/kzg/compute_verify_cell_kzg_proof_batch_challenge\r\n```\r\n\r\n**Which issues(s) does this PR fix?**\r\n\r\nFixes #\r\n\r\n**Other notes for review**\r\n\r\n**Acknowledgements**\r\n\r\n- [x] I have read [CONTRIBUTING.md](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md).\r\n- [x] I have included a uniquely named [changelog fragment file](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md#maintaining-changelogmd).\r\n- [x] I have added a description to this PR with sufficient context for reviewers to understand this PR.\r\n",
     "closedAt": "2025-09-15T15:54:08Z",
     "isPullRequest": true,
@@ -159,6 +205,16 @@
     "title": "Fulu general spectests",
     "updatedAt": "2025-09-15T15:54:09Z",
     "url": "https://github.com/OffchainLabs/prysm/pull/15682"
+  },
+  {
+    "body": "**What type of PR is this?**\r\n\r\nBug fix\r\n\r\n**What does this PR do? Why is it needed?**\r\n\r\n[15604](https://github.com/OffchainLabs/prysm/pull/15604) introduced a more strict filtering rule that impacts pre-fulu by rejecting connections where the peer has a different fork version (so long as our next for epochs are in agreement). When the next fork epoch is far future epoch, clients can give different versions depending on whether they are considering that epoch to be a real next fork with an unscheduled fork epoch (like fulu in prysm's case with v6.1.0) or the current epoch. This PR relaxes the filtering to ignore mismatches when the next for epoch is FAR_FUTURE_EPOCH.\r\n\r\n**Which issues(s) does this PR fix?**\r\n\r\nFixes #\r\n\r\n**Other notes for review**\r\n\r\n**Acknowledgements**\r\n\r\n- [x] I have read [CONTRIBUTING.md](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md).\r\n- [x] I have included a uniquely named [changelog fragment file](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md#maintaining-changelogmd).\r\n- [x] I have added a description to this PR with sufficient context for reviewers to understand this PR.\r\n",
+    "closedAt": "2025-10-02T20:05:10Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "ignore version|digest mismatch if far future",
+    "updatedAt": "2025-10-02T20:05:12Z",
+    "url": "https://github.com/OffchainLabs/prysm/pull/15798"
   },
   {
     "body": "This PR supports Fulu genesis block.",
@@ -553,6 +609,16 @@
     "url": "https://github.com/OffchainLabs/prysm/issues/15757"
   },
   {
+    "body": "**What type of PR is this?**\r\n\r\nDocumentation\r\n\r\n**What does this PR do? Why is it needed?**\r\n\r\nThis PR adds a directory with specification references. These are used to map specification items (configs, presets, functions, etc) to client implementations (code in Prysm). This is much less invasive than my original idea of adding spec tags all across the codebase. These specification references are meant to (1) help developers keep track of specification changes and (2) make it easier for third-parties (eg EF Protocol Security) to verify clients adhere to the specifications.\r\n\r\nNote, we recently did the same thing for Teku. View that PR for more details.\r\n\r\n* https://github.com/Consensys/teku/pull/9731\r\n\r\n**Other notes for review**\r\n\r\nIf we decide to merge this PR, we can remove the existing [`spec-checker`](https://github.com/OffchainLabs/prysm/tree/develop/tools/specs-checker) tool.\r\n\r\nDepends on #15590.\r\n\r\n**Acknowledgements**\r\n\r\n- [x] I have read [CONTRIBUTING.md](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md).\r\n- [x] I have included a uniquely named [changelog fragment file](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md#maintaining-changelogmd).\r\n- [x] I have added a description to this PR with sufficient context for reviewers to understand this PR.\r\n",
+    "closedAt": "2025-08-21T15:02:07Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "Add spec references, a mapping of spec to implementation",
+    "updatedAt": "2025-08-21T15:31:38Z",
+    "url": "https://github.com/OffchainLabs/prysm/pull/15592"
+  },
+  {
     "body": "  **Description:**\r\n  Implement the post-Fulu changes where MEV-boost relays only return HTTP status codes instead of execution payloads for blinded blocks.\r\n\r\n  **Changes include:**\r\n\r\n  **New API Methods**\r\n  - Add `SubmitBlindedBlockPostFulu()` to builder client interface and implementation\r\n  - Post-Fulu method only expects status codes, not payload responses\r\n  - Maintains backward compatibility with existing `SubmitBlindedBlock()`\r\n\r\n  **ProposeBeaconBlock Logic**\r\n  - Add early return path for post-Fulu blinded blocks: `if block.IsBlinded() && slots.ToEpoch(block.Block().Slot()) >= params.BeaconConfig().FuluForkEpoch`\r\n  - Post-Fulu blinded blocks submit to relay and return immediately\r\n  - Pre-Fulu blinded blocks continue using existing `handleBlindedBlock` path",
     "closedAt": "2025-08-12T01:20:09Z",
     "isPullRequest": true,
@@ -568,16 +634,6 @@
     "title": "Implement fulu mev-boost change for blinded block submission",
     "updatedAt": "2025-08-12T01:20:10Z",
     "url": "https://github.com/OffchainLabs/prysm/pull/15486"
-  },
-  {
-    "body": "**What type of PR is this?**\r\n\r\nDocumentation\r\n\r\n**What does this PR do? Why is it needed?**\r\n\r\nThis PR adds a directory with specification references. These are used to map specification items (configs, presets, functions, etc) to client implementations (code in Prysm). This is much less invasive than my original idea of adding spec tags all across the codebase. These specification references are meant to (1) help developers keep track of specification changes and (2) make it easier for third-parties (eg EF Protocol Security) to verify clients adhere to the specifications.\r\n\r\nNote, we recently did the same thing for Teku. View that PR for more details.\r\n\r\n* https://github.com/Consensys/teku/pull/9731\r\n\r\n**Other notes for review**\r\n\r\nIf we decide to merge this PR, we can remove the existing [`spec-checker`](https://github.com/OffchainLabs/prysm/tree/develop/tools/specs-checker) tool.\r\n\r\nDepends on #15590.\r\n\r\n**Acknowledgements**\r\n\r\n- [x] I have read [CONTRIBUTING.md](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md).\r\n- [x] I have included a uniquely named [changelog fragment file](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md#maintaining-changelogmd).\r\n- [x] I have added a description to this PR with sufficient context for reviewers to understand this PR.\r\n",
-    "closedAt": "2025-08-21T15:02:07Z",
-    "isPullRequest": true,
-    "labels": [],
-    "state": "merged",
-    "title": "Add spec references, a mapping of spec to implementation",
-    "updatedAt": "2025-08-21T15:31:38Z",
-    "url": "https://github.com/OffchainLabs/prysm/pull/15592"
   },
   {
     "body": "Must have\n---\n- [x] Implement `is_better_update`\n- [x] Add Capella/Deneb changes from corresponding `full-node.md` spec files\n- [x] Add SSZ support for Beacon API endpoints\n- [x] Store light client updates in the database (possibly one update per period, but we have to take into account the following:\n> Also keep in mind, that there may be networks where the sync committee period boundary does not align with the fork schedule, so the database should be flexible enough to support that.\n- [x] Update the https://ethereum.github.io/beacon-APIs/?urls.primaryName=dev#/Beacon/getLightClientUpdatesByRange endpoint to return values from the database\n- [x] Review the two other endpoints to make sure they return correct data and have good performance\n- [x] Implement the p2p spec: https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/p2p-interface.md (and update it for Capella/Deneb)\n- [x] Verify light client support in the event stream endpoint works correctly: https://ethereum.github.io/beacon-APIs/?urls.primaryName=dev#/Events/eventstream (it was implemented by the previous contributor)\n- [x] Make sure we follow this part of the spec:\n> Full nodes SHOULD provide the best derivable LightClientUpdate (according to is_better_update) for each sync committee period covering any epochs in range [max(ALTAIR_FORK_EPOCH, current_epoch - MIN_EPOCHS_FOR_BLOCK_REQUESTS), current_epoch] where current_epoch is defined by the current wall-clock time. Full nodes MAY also provide LightClientUpdate for other sync committee periods.\n> - LightClientUpdate are assigned to sync committee periods based on their attested_header.beacon.slot\n> - LightClientUpdate are only considered if compute_sync_committee_period_at_slot(update.attested_header.beacon.slot) == compute_sync_committee_period_at_slot(update.signature_slot)\n> - Only LightClientUpdate with next_sync_committee as selected by fork choice are provided, regardless of ranking by is_better_update. To uniquely identify a non-finalized sync committee fork, all of period, current_sync_committee and next_sync_committee need to be incorporated, as sync committees may reappear over time.\n- [x] Resolve https://github.com/prysmaticlabs/prysm/issues/14206\n- [x] Conditionally check for light client flag where appropriate to not process light client data without the flag\n- [x] Only process finality updates on a new finalized checkpoint instead of for every block\n- [x] Implement https://github.com/ethereum/consensus-specs/pull/3553\n- [ ] spec tests (including Fulu, see https://github.com/OffchainLabs/prysm/pull/15682)\n- [ ] Check out the gossip-spamming issue\n\nNice to have\n---\n- [x] Change the sync committee requirement for finalized update from 2/3 of all members to `MIN_SYNC_COMMITTEE_PARTICIPANTS`\n- [ ] Profile the node to assert that enabling light client support does not consume excessive memory/CPU/bandwidth\n- [ ] Add light client to e2e/Kurtosis\n\nFixes\n---\n- [x] Beacon API handler to retrieve updates by range has lots of unnecessary code calculating periods etc \n\nCosmetic\n---\n- [x] Stateless function that do not use the blockchain service, such as the ones in `/beacon-chain/blockchain/lightclient.go`, should be placed under `beacon-chain/core`. Let's create a new `/beacon-chain/core/light-client` package and move such functions there.\n- [x] Declare/use protos in `v1aplha1` instead of `v1`/`v2`\n- [x] Rename flag from `enable-lightclient` to `enable-light-client`\n- [ ] Add more solid unit tests to HTTP handlers, as commented here: https://github.com/prysmaticlabs/prysm/pull/12984#discussion_r1347569661\n- [ ] Use `t.Run` in HTTP handler tests and reduce duplication (for example, save updates to the DB once instead of for every test)\n- [ ] Go through all light client code and see if all functions have appropriate tests.\n- [ ] Circular imports that cause duplication in tests: https://github.com/prysmaticlabs/prysm/pull/14531#discussion_r1818573817 and https://github.com/prysmaticlabs/prysm/pull/14531#discussion_r1818598866\n- [ ] Do a final pass and look for code health improvements\n\nOther\n---\n- [ ] Analyze https://discord.com/channels/595666850260713488/595701319793377299/1078345359643918396\n- [ ] Think about DB storage optimization. Reference: https://discord.com/channels/476244492043812875/1250034167945760868/1300810377420079136\n",
@@ -607,23 +663,6 @@
     "url": "https://github.com/OffchainLabs/prysm/pull/15590"
   },
   {
-    "body": "<!-- Thanks for sending a PR! Before submitting:\r\n\r\n1. If this is your first PR, check out our contribution guide here https://docs.prylabs.network/docs/contribute/contribution-guidelines\r\n   You will then need to sign our Contributor License Agreement (CLA), which will show up as a comment from a bot in this pull request after you open it. We cannot review code without a signed CLA.\r\n2. Please file an associated tracking issue if this pull request is non-trivial and requires context for our team to understand. All features and most bug fixes should have\r\n   an associated issue with a design discussed and decided upon. Small bug\r\n   fixes and documentation improvements don't need issues.\r\n3. New features and bug fixes must have tests. Documentation may need to\r\n   be updated. If you're unsure what to update, send the PR, and we'll discuss\r\n   in review.\r\n4. Note that PRs updating dependencies and new Go versions are not accepted.\r\n   Please file an issue instead.\r\n5. A changelog entry is required for user facing issues.\r\n-->\r\n\r\n**What type of PR is this?**\r\n Other\r\n\r\n**What does this PR do? Why is it needed?**\r\n\r\nupdates spec tests from v1.6.0-alpha.5 to v1.6.0-alpha.6 \r\n\r\nEnsures existing tests continue to pass, but does not add any missed tests. Fulu spec tests should still be reviewed and added in subsequent PRs\r\n\r\n**Which issues(s) does this PR fix?**\r\n\r\nFixes #\r\n\r\n**Other notes for review**\r\n\r\n**Acknowledgements**\r\n\r\n- [x] I have read [CONTRIBUTING.md](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md).\r\n- [x] I have included a uniquely named [changelog fragment file](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md#maintaining-changelogmd).\r\n- [x] I have added a description to this PR with sufficient context for reviewers to understand this PR.\r\n",
-    "closedAt": "2025-09-05T17:29:49Z",
-    "isPullRequest": true,
-    "labels": [
-      {
-        "color": "51F3FB",
-        "description": "",
-        "id": "LA_kwDOBvuov87jC1EE",
-        "name": "spec-tests"
-      }
-    ],
-    "state": "merged",
-    "title": "update to v1.6.0-alpha.6",
-    "updatedAt": "2025-09-05T17:29:50Z",
-    "url": "https://github.com/OffchainLabs/prysm/pull/15658"
-  },
-  {
     "body": "**What type of PR is this?**\n\nFeature\n\n**What does this PR do? Why is it needed?**\n\nAdds fulu block support for this grpc streaming endpoint.\n\n**Which issues(s) does this PR fix?**\n\n**Other notes for review**\n\n**Acknowledgements**\n\n- [x] I have read [CONTRIBUTING.md](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md).\n- [x] I have included a uniquely named [changelog fragment file](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md#maintaining-changelogmd).\n- [x] I have added a description to this PR with sufficient context for reviewers to understand this PR.\n",
     "closedAt": "2025-08-12T22:34:18Z",
     "isPullRequest": true,
@@ -645,6 +684,23 @@
     "title": "Add missing Fulu block type in stream handler (grpc StreamBlocksAltair)",
     "updatedAt": "2025-08-13T14:07:22Z",
     "url": "https://github.com/OffchainLabs/prysm/pull/15583"
+  },
+  {
+    "body": "<!-- Thanks for sending a PR! Before submitting:\r\n\r\n1. If this is your first PR, check out our contribution guide here https://docs.prylabs.network/docs/contribute/contribution-guidelines\r\n   You will then need to sign our Contributor License Agreement (CLA), which will show up as a comment from a bot in this pull request after you open it. We cannot review code without a signed CLA.\r\n2. Please file an associated tracking issue if this pull request is non-trivial and requires context for our team to understand. All features and most bug fixes should have\r\n   an associated issue with a design discussed and decided upon. Small bug\r\n   fixes and documentation improvements don't need issues.\r\n3. New features and bug fixes must have tests. Documentation may need to\r\n   be updated. If you're unsure what to update, send the PR, and we'll discuss\r\n   in review.\r\n4. Note that PRs updating dependencies and new Go versions are not accepted.\r\n   Please file an issue instead.\r\n5. A changelog entry is required for user facing issues.\r\n-->\r\n\r\n**What type of PR is this?**\r\n Other\r\n\r\n**What does this PR do? Why is it needed?**\r\n\r\nupdates spec tests from v1.6.0-alpha.5 to v1.6.0-alpha.6 \r\n\r\nEnsures existing tests continue to pass, but does not add any missed tests. Fulu spec tests should still be reviewed and added in subsequent PRs\r\n\r\n**Which issues(s) does this PR fix?**\r\n\r\nFixes #\r\n\r\n**Other notes for review**\r\n\r\n**Acknowledgements**\r\n\r\n- [x] I have read [CONTRIBUTING.md](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md).\r\n- [x] I have included a uniquely named [changelog fragment file](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md#maintaining-changelogmd).\r\n- [x] I have added a description to this PR with sufficient context for reviewers to understand this PR.\r\n",
+    "closedAt": "2025-09-05T17:29:49Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "51F3FB",
+        "description": "",
+        "id": "LA_kwDOBvuov87jC1EE",
+        "name": "spec-tests"
+      }
+    ],
+    "state": "merged",
+    "title": "update to v1.6.0-alpha.6",
+    "updatedAt": "2025-09-05T17:29:50Z",
+    "url": "https://github.com/OffchainLabs/prysm/pull/15658"
   },
   {
     "body": "**What type of PR is this?**\n\nBug fix\n\n**What does this PR do? Why is it needed?**\n\nThis adds a smiple validation that could prevent a panic if the code were misused or run in an unusual/impossible scenario.\n\n**Which issues(s) does this PR fix?**\n\nNo known issues. Data columns are in fulu which has not occurred in any testnet or mainnet yet.\n\n**Other notes for review**\n\n\n\n**Acknowledgements**\n\n- [x] I have read [CONTRIBUTING.md](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md).\n- [x] I have included a uniquely named [changelog fragment file](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md#maintaining-changelogmd).\n- [x] I have added a description to this PR with sufficient context for reviewers to understand this PR.\n",
