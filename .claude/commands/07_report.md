@@ -31,14 +31,13 @@ Generate a complete **Markdown bug-bounty report** for the Ethereum Foundation.
 
 # 🎯 Goal
 1. **Read** `{{REPORT_TEMPLATE}}` and fill *all* placeholders while preserving heading order.
-2. Use data from
-   - Ethereum specs (`security-agent/docs/ethereum/spec_*`, `security-agent/outputs/01_SPEC.json`)
-   - Audit map (`03_AUDITMAP.json`)
-   - Bounty rules at `{{BOUNTY_PAGE_URL}}` (impact & severity matrix, disclosure policy).
-3. Embed **verbatim PoC code** from:
+2. Use internal data sources (Ethereum specs, audit map, bounty rules) strictly for authoring context—never surface repository paths or filenames in the final report.
+   - Pull from `security-agent/docs/ethereum/spec_*`, `security-agent/outputs/01_SPEC.json`, and `security-agent/outputs/03_AUDITMAP.json` as needed, but redact those identifiers from the deliverable.
+   - Reference `{{BOUNTY_PAGE_URL}}` for impact & severity details without citing internal shorthand like 03_AUDITMAP/AP/SR.
+3. Embed **verbatim PoC code** from sanitized sources:
    - Unit test → `{{UT_PATH}}`
    - Integration test → `{{IT_PATH}}` (if present)
-   together with file paths and run commands.
+   Provide human-friendly labels and run commands that omit `security-agent/` prefixes or other repository-only context.
 
 # 📤 Output
 Write exactly **one Markdown file**:
@@ -68,6 +67,7 @@ Must Follow templete
 # ⛔ Constraints
 - **Do not** wrap Markdown in JSON.
 - No public URLs for PoC code; assume local testnet execution.
+- Never mention internal identifiers like `03_AUDITMAP`, `AP`, `SR`, or any `security-agent/` paths in the generated report.
 - All links must be fully-qualified `https://`.
 
 # ✅ Success Criteria

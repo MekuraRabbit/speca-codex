@@ -1,13 +1,13 @@
-## Title
+### Title
 
 {actor} will {impact} {affected party}
 
-## Summary
+### Summary
 
 A summary with the following structure: {root cause} will cause [a/an] {impact} for {affected party} as {actor} will {attack path}
 
 
-## Root Cause
+### Root Cause
 
 In case it’s a mistake in the code: In {link to code} the {root cause}
 
@@ -17,7 +17,7 @@ In case it’s a conceptual mistake: The choice to {design choice} is a mistake 
 
 Example: - The choice to use Uniswap as an oracle is a mistake as the price can be manipulated - The choice to depend on Protocol X for admin calls is a mistake as it will cause any call to revert
 
-## Internal Pre-conditions
+### Internal Pre-conditions
 
 A numbered list of conditions to allow the attack path or vulnerability path to happen:
 
@@ -26,20 +26,20 @@ A numbered list of conditions to allow the attack path or vulnerability path to 
 
 Example: - Admin needs to call setFee() to set fee to be exactly 1 ETH - Number of ETH in the stake.sol contract to be at least 500 ETH
 
-## External Pre-conditions
+### External Pre-conditions
 
 > Similar to internal pre-conditions but it describes changes in the external protocols
 
 Example: - ETH oracle needs to go from 4000 to 5000 within 2 minutes - Gas price needs to be exactly 100 wei
 
-## Attack Path
+### Attack Path
 
 A numbered list of steps, talking through the attack path:
 
 1. {Role} calls {function} {extra context}
 2. ..
 
-## Impact
+### Impact
 
 In case it's an attack path: The {affected party} suffers an approximate loss of {value}. [The attacker gains {gain} or loses {loss}].
 
@@ -49,11 +49,11 @@ In case it's a vulnerability path: The {affected party} [suffers an approximate 
 
 Example: - The users suffer an approximate loss of 0.01% due to precision loss. - The user cannot mint tokens.
 
-## PoC
+### PoC
 
 A coded PoC. Strongly recommended in some cases but optional for other cases.
 https://docs.sherlock.xyz/audits/judging/guidelines#vi.-recommendations
 
-## Mitigation
+### Mitigation
 
 Mitigation of the issue (optional)

@@ -26,7 +26,7 @@ Create & validate a minimal PoC test that reproduces **VULN_ID**
 # 🎯 Goal
 Produce **one Rust test file** that:
 1. Compiles & runs under `cargo test` (or Foundry, if Solidity)
-2. **Fails (or panics) only when the vulnerability is present**
+2. **Passes only when the vulnerability is present (and must fail when it is absent)**
 3. Requires *no* external binaries or network deps
 
 # 📥 Input
@@ -98,7 +98,7 @@ fn poc_{{TITLE_SLUG}}() {
     let res = import_transactions(/* crafted args */);
 
     // Assert
-    assert!(matches!(res, Err(_)), "exploit succeeded");
+    assert!(res.is_ok(), "expected exploit to be reproducible");
 }
 ```
 
@@ -114,6 +114,6 @@ fn poc_{{TITLE_SLUG}}() {
 # ✅ Success Criteria
 
 * Entry with `id == VULN_ID` found
-* Test fails only when bug present
+* Test passes only when bug present (and must fail once patched)
 * Status JSON correctly appended
 * > 3 compile failures → prompt user
