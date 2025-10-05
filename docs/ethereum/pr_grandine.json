@@ -10,46 +10,6 @@
     "url": "https://github.com/grandinetech/grandine/issues/336"
   },
   {
-    "body": "",
-    "closedAt": "0001-01-01T00:00:00Z",
-    "isPullRequest": false,
-    "labels": [],
-    "state": "open",
-    "title": "Merge & Review latest `eth2_libp2p/peerdas-fulu` to develop",
-    "updatedAt": "2025-10-01T16:12:05Z",
-    "url": "https://github.com/grandinetech/grandine/issues/397"
-  },
-  {
-    "body": "This should save some CPU cycles for Fulu. ",
-    "closedAt": "0001-01-01T00:00:00Z",
-    "isPullRequest": false,
-    "labels": [],
-    "state": "open",
-    "title": "Do not verify blobs imported from EL",
-    "updatedAt": "2025-09-02T13:37:49Z",
-    "url": "https://github.com/grandinetech/grandine/issues/203"
-  },
-  {
-    "body": "",
-    "closedAt": "2025-09-05T10:07:53Z",
-    "isPullRequest": false,
-    "labels": [],
-    "state": "closed",
-    "title": "Merge fulu to develop",
-    "updatedAt": "2025-09-05T10:07:53Z",
-    "url": "https://github.com/grandinetech/grandine/issues/337"
-  },
-  {
-    "body": "",
-    "closedAt": "2025-09-05T10:07:52Z",
-    "isPullRequest": true,
-    "labels": [],
-    "state": "merged",
-    "title": "Peerdas fulu",
-    "updatedAt": "2025-09-05T10:07:52Z",
-    "url": "https://github.com/grandinetech/grandine/pull/297"
-  },
-  {
     "body": "Fixes these rate limiter warnings: \r\n\r\n```\r\n[2025-09-17T12:55:44.976+00:00] [ERROR] [eth2_libp2p::rpc::self_limiter] [peers: 29/100] Self rate limiting error for a batch that will never fit. Sending request anyway. Check configuration parameters., service: libp2p_rpc, service: libp2p, protocol: blob_sidecars_by_range\r\n[2025-09-17T12:55:44.976+00:00] [ERROR] [eth2_libp2p::rpc::self_limiter] [peers: 29/100] Self rate limiting error for a batch that will never fit. Sending request anyway. Check configuration parameters., service: libp2p_rpc, service: libp2p, protocol: blob_sidecars_by_range\r\n```\r\n\r\nThis happens when syncing **without checkpoint-sync** and when _current fork according to the wall clock is Fulu but head is still in Electra._ Max expected responses are calculated by current fork which is based on wall clock and not on the head state / sync state. This only affects blob sidecars by range",
     "closedAt": "2025-09-23T12:05:51Z",
     "isPullRequest": true,
@@ -58,16 +18,6 @@
     "title": "Fix expected max responses for `BlobsByRange` requests",
     "updatedAt": "2025-09-23T12:05:51Z",
     "url": "https://github.com/grandinetech/grandine/pull/381"
-  },
-  {
-    "body": "* remove `NumberOfColumns` in `types/src/fulu/consts.rs`\r\n* move `dashmap` in `http_api` module to `dev-dependencies`",
-    "closedAt": "2025-08-20T09:46:32Z",
-    "isPullRequest": true,
-    "labels": [],
-    "state": "merged",
-    "title": "Remove `NumberOfColumns` as constant",
-    "updatedAt": "2025-08-20T09:46:32Z",
-    "url": "https://github.com/grandinetech/grandine/pull/308"
   },
   {
     "body": "Hey Saulius and team,\n\nWhile doing some Fusaka tests I encountered this bug where Grandine refuses post-Fulu blocks on the `/eth/v2/beacon/blocks` Beacon API endpoint. Grandine appears to think the submitted blocks are Electra blocks, even though they are Fulu blocks as indicated by the `Eth-Consensus-Version` header. Grandine's error message:\n\n`{\"code\":400,\"message\":\"invalid block: state and block phases do not match (state: fulu, block: electra)\"}`\n\nI discovered this only happens for JSON-encoded blocks, SSZ works fine. I haven't tested the blinded block paths but I suspect those could be affected in the same way.\n\nKurtosis reproducer config:\n\n```\nparticipants:\n  - el_type: geth\n    el_image: docker.ethquokkaops.io/dh/ethpandaops/geth:fusaka-devnet-3\n    cl_type: grandine\n    cl_image: docker.ethquokkaops.io/dh/ethpandaops/grandine:fusaka-devnet-3\n    use_separate_vc: true\n    vc_type: vero\n    vc_image: ghcr.io/serenita-org/vero:fusaka\n    use_remote_signer: true\n\nadditional_services:\n  - dora\n  - prometheus_grafana\n\nnetwork_params:\n  genesis_delay: 60\n  electra_fork_epoch: 0\n  fulu_fork_epoch: 1\n  seconds_per_slot: 3\n```",
@@ -80,16 +30,6 @@
     "url": "https://github.com/grandinetech/grandine/issues/281"
   },
   {
-    "body": "Unify Deneb and Fulu KzgProof collections into a single combined enum type to align with the specification instead of using one generic type.",
-    "closedAt": "2025-08-19T11:36:17Z",
-    "isPullRequest": true,
-    "labels": [],
-    "state": "closed",
-    "title": "Combine different KzgProof collections into a combined type",
-    "updatedAt": "2025-08-20T03:14:50Z",
-    "url": "https://github.com/grandinetech/grandine/pull/307"
-  },
-  {
     "body": "",
     "closedAt": "2025-09-04T10:54:19Z",
     "isPullRequest": true,
@@ -100,26 +40,6 @@
     "url": "https://github.com/grandinetech/grandine/pull/349"
   },
   {
-    "body": "Update spec tests to https://github.com/ethereum/consensus-specs/releases/tag/v1.6.0-alpha.4, there are 2 new SSZ types has been introduced in EIP7916, since those types are not relevant to Fulu, and PeerDAS specifically, I have just excluded from the script test. In this PR, I also (`mostly`) move `NumberOfColumns` into preset to compliant with the [spec change](https://github.com/ethereum/consensus-specs/pull/4485) while keep it as constant in some place where involve too deep changes. \r\n\r\n",
-    "closedAt": "2025-08-12T10:47:45Z",
-    "isPullRequest": true,
-    "labels": [],
-    "state": "merged",
-    "title": "Update consensus-spec-tests to v1.6.0-alpha.4",
-    "updatedAt": "2025-08-12T10:47:45Z",
-    "url": "https://github.com/grandinetech/grandine/pull/294"
-  },
-  {
-    "body": "scheduled",
-    "closedAt": "2025-07-30T00:02:06Z",
-    "isPullRequest": true,
-    "labels": [],
-    "state": "merged",
-    "title": "Do not publish data after submitted blinded block if fulu fork is",
-    "updatedAt": "2025-07-30T00:02:06Z",
-    "url": "https://github.com/grandinetech/grandine/pull/278"
-  },
-  {
     "body": "this PR include:\r\n* fix missing blobs sync after fulu activated\r\n* reconstruct using data column sidecars from cached and storage\r\n* request data columns by root to the most coverage peer if any\r\n* ~~request data columns by range to a subset of available peers, leaving some for by root requests~~",
     "closedAt": "2025-06-09T05:53:04Z",
     "isPullRequest": true,
@@ -128,55 +48,5 @@
     "title": "Fix missing blobs sync after fulu activated",
     "updatedAt": "2025-06-09T05:53:04Z",
     "url": "https://github.com/grandinetech/grandine/pull/220"
-  },
-  {
-    "body": "",
-    "closedAt": "2025-07-17T04:16:34Z",
-    "isPullRequest": true,
-    "labels": [],
-    "state": "merged",
-    "title": "Update consensus-spec-tests to v1.6.0-alpha.3",
-    "updatedAt": "2025-07-17T04:16:34Z",
-    "url": "https://github.com/grandinetech/grandine/pull/247"
-  },
-  {
-    "body": "",
-    "closedAt": "2025-05-24T05:27:08Z",
-    "isPullRequest": true,
-    "labels": [],
-    "state": "closed",
-    "title": "Add PeerDAS implementation with Fulu fork activation ",
-    "updatedAt": "2025-05-24T05:27:08Z",
-    "url": "https://github.com/grandinetech/grandine/pull/196"
-  },
-  {
-    "body": "update `MAX_DEPOSIT_REQUESTS_PER_PAYLOAD` and `MAX_WITHDRAWAL_REQUESTS_PER_PAYLOAD` minimal preset same as mainnet as reported by @barnabasbusa [here](https://discord.com/channels/595666850260713488/1375353810138038364)",
-    "closedAt": "2025-05-28T12:25:16Z",
-    "isPullRequest": true,
-    "labels": [],
-    "state": "merged",
-    "title": "Update consensus spec tests to v1.6.0-alpha-0",
-    "updatedAt": "2025-05-28T12:25:16Z",
-    "url": "https://github.com/grandinetech/grandine/pull/211"
-  },
-  {
-    "body": "extend phase with `fulu` fork, which is just an alias to `electra` fork\r\n\r\nNOTE: create a draft pr right now, do not merge until the spec test is released and passed the tests,\r\n",
-    "closedAt": "2025-05-14T04:24:19Z",
-    "isPullRequest": true,
-    "labels": [],
-    "state": "closed",
-    "title": "WIP: Fulu fork",
-    "updatedAt": "2025-05-14T04:24:19Z",
-    "url": "https://github.com/grandinetech/grandine/pull/58"
-  },
-  {
-    "body": "this pull request will rebase the functionality of PeerDAS onto `electra` fork, this [final update](https://hackmd.io/@hangleang/epf5-final) should express the current status of the implementation. this will be ready for review once these following PRs in other parts of the codebase merged into the upstream branch, then I will link the submodules to those commits:\r\n\r\n- grandinetech/grandine-snapshot-tests#2\r\n- grandinetech/eth2_libp2p#3",
-    "closedAt": "2025-05-14T04:24:05Z",
-    "isPullRequest": true,
-    "labels": [],
-    "state": "closed",
-    "title": "rebase PeerDAS onto electra",
-    "updatedAt": "2025-06-13T03:52:35Z",
-    "url": "https://github.com/grandinetech/grandine/pull/55"
   }
 ]
