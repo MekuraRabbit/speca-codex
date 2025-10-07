@@ -1,0 +1,297 @@
+[
+  {
+    "body": "### Describe the bug\n\nFrom time to time, after a BN start, a lot of\n\n```\nlevel=debug msg=\"Provided topic already has an active subscription running\" prefix=sync topic=\"/eth2/ad532ceb/beacon_attestation_3/ssz_snappy\"\n```\n\nlogs are displayed.\n\nGenerally, these logs disappear after a reboot.\n\nWe should:\n1. Find if there logs are expected, and why.\n2. If they are not expected, fix the root cause. If they are expected, reduce the log volume",
+    "closedAt": "0001-01-01T00:00:00Z",
+    "isPullRequest": false,
+    "labels": [
+      {
+        "color": "5967ba",
+        "description": "",
+        "id": "MDU6TGFiZWwyMDYxMDQwMDQ4",
+        "name": "sync"
+      }
+    ],
+    "state": "open",
+    "title": "Fix `Provided topic already has an active subscription running` log",
+    "updatedAt": "2025-10-02T12:01:42Z",
+    "url": "https://github.com/OffchainLabs/prysm/issues/15738"
+  },
+  {
+    "body": "### Describe the bug\n\nAfter setting up a new development chain using a custom genesis (via eth-genesis-generator), the beacon node crashes when restarting the network following a temporary outage (validators went offline). The chain starts producing slots again, but block proposals fail due to eth1data errors and ultimately panic with a nil pointer dereference in forkchoice/doubly-linked-tree.\n\n### Has this worked before in a previous version?\n\n```text\nFirst time trying it\n```\n\n### 🔬 Minimal Reproduction\n\nSteps to reproduce:\n\nGenerate a custom genesis using eth-genesis-generator and start a local devnet (beacon + validator + execution node).\n\nLet the chain run briefly with some validators online.\n\nShut down all components for a while (simulating an outage).\n\nRestart beacon node and validator with the same config.\n\n\n\n### Error\n\n```text\n[2025-05-27 13:52:00]  INFO rpc/validator: Begin building block sinceSlotStartTime=1.743244494s slot=50558\n[2025-05-27 13:52:02] ERROR rpc/validator: Could not get last block by latest valid time error=(1748292671 > 1748276411): provided time is later than the current eth1 head\n[2025-05-27 13:52:02]  WARN rpc/validator: Beacon Node is no longer connected to an ETH1 chain, so ETH1 data votes are now random.\n[2025-05-27 13:52:02] ERROR rpc/validator: Finished building block error=rpc error: code = Internal desc = Could not get local payload: nil payload with block hash: 0xac3a33bc2ec8a50ce83478b693bc034ae7e3b85279a30c3488b1c1b4db658902 sinceSlotStartTime=3.141360491s slot=50558 validator=0\n[2025-05-27 13:52:02] ERROR rpc/validator: Could not pack deposits and attestations error=rpc error: code = Internal desc = Could not get ETH1 deposits: could not fetch eth1data height: could not query block with given hash: Post \"http://127.0.0.1:8551\": context canceled\npanic: runtime error: invalid memory address or nil pointer dereference\n[signal SIGSEGV: segmentation violation code=0x1 addr=0x0 pc=0x37f363e]\n\ngoroutine 4821 [running]:\ngithub.com/prysmaticlabs/prysm/v5/beacon-chain/forkchoice/doubly-linked-tree.(*Store).setOptimisticToInvalid(...)\n    beacon-chain/forkchoice/doubly-linked-tree/optimistic_sync.go:26 +0x5e\n...\n```\n\n### Platform(s)\n\nLinux (x86)\n\n### What version of Prysm are you running? (Which release)\n\n1.15\n\n### Anything else relevant (validator index / public key)?\n\nI'm not sure if this is a bug or expected behavior, but the application crashes with a panic. However, if I attempt the same operation within 5 minutes of stopping it, it works fine but when I leave it more than an hour it panic stops. Is there a recommended way to handle this scenario,\n\n_No response_",
+    "closedAt": "0001-01-01T00:00:00Z",
+    "isPullRequest": false,
+    "labels": [
+      {
+        "color": "D41D88",
+        "description": "",
+        "id": "LA_kwDOBvuov88AAAABgYRS9g",
+        "name": "custom-devnet"
+      }
+    ],
+    "state": "open",
+    "title": "Beacon node crash when restarting devnet chain: invalid memory address or nil pointer dereference",
+    "updatedAt": "2025-07-10T13:22:48Z",
+    "url": "https://github.com/OffchainLabs/prysm/issues/15352"
+  },
+  {
+    "body": "<!-- Thanks for sending a PR! Before submitting:\r\n\r\n1. If this is your first PR, check out our contribution guide here https://docs.prylabs.network/docs/contribute/contribution-guidelines\r\n   You will then need to sign our Contributor License Agreement (CLA), which will show up as a comment from a bot in this pull request after you open it. We cannot review code without a signed CLA.\r\n2. Please file an associated tracking issue if this pull request is non-trivial and requires context for our team to understand. All features and most bug fixes should have\r\n   an associated issue with a design discussed and decided upon. Small bug\r\n   fixes and documentation improvements don't need issues.\r\n3. New features and bug fixes must have tests. Documentation may need to\r\n   be updated. If you're unsure what to update, send the PR, and we'll discuss\r\n   in review.\r\n4. Note that PRs updating dependencies and new Go versions are not accepted.\r\n   Please file an issue instead.\r\n5. A changelog entry is required for user facing issues.\r\n-->\r\n\r\n**What type of PR is this?**\r\n\r\n Bug fix\r\n\r\n\r\n**What does this PR do? Why is it needed?**\r\n\r\n**Which issues(s) does this PR fix?**\r\n\r\n follow up to https://github.com/OffchainLabs/prysm/pull/15534\r\n\r\n**Other notes for review**\r\n\r\n**Acknowledgements**\r\n\r\n- [ ] I have read [CONTRIBUTING.md](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md).\r\n- [ ] I have included a uniquely named [changelog fragment file](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md#maintaining-changelogmd).\r\n- [ ] I have added a description to this PR with sufficient context for reviewers to understand this PR.\r\n",
+    "closedAt": "2025-08-29T18:19:22Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "30ef13",
+        "description": "",
+        "id": "MDU6TGFiZWwxNzAxNzQwNTQz",
+        "name": "api"
+      },
+      {
+        "color": "ff1744",
+        "description": "",
+        "id": "LA_kwDOBvuov88AAAACFCoVqw",
+        "name": "bug-fix"
+      }
+    ],
+    "state": "closed",
+    "title": "fix proposer duties fulu",
+    "updatedAt": "2025-08-29T18:19:23Z",
+    "url": "https://github.com/OffchainLabs/prysm/pull/15624"
+  },
+  {
+    "body": "use correct path for submit blind block v2",
+    "closedAt": "2025-09-18T00:53:22Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "fix: use v2 endpoint for blinded block submission post-Fulu",
+    "updatedAt": "2025-09-18T00:53:23Z",
+    "url": "https://github.com/OffchainLabs/prysm/pull/15716"
+  },
+  {
+    "body": "When requesting proposer duties for next epoch, even on Fulu, we need to have the state in at least the current epoch so as to have the correct dependent root. ",
+    "closedAt": "2025-08-29T21:56:11Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "30ef13",
+        "description": "",
+        "id": "MDU6TGFiZWwxNzAxNzQwNTQz",
+        "name": "api"
+      },
+      {
+        "color": "D5BFDD",
+        "description": "",
+        "id": "LA_kwDOBvuov88AAAAB2sZEvg",
+        "name": "fulu"
+      },
+      {
+        "color": "ff1744",
+        "description": "",
+        "id": "LA_kwDOBvuov88AAAACFCoVqw",
+        "name": "bug-fix"
+      }
+    ],
+    "state": "merged",
+    "title": "Fix next epoch proposer duties",
+    "updatedAt": "2025-08-29T21:56:12Z",
+    "url": "https://github.com/OffchainLabs/prysm/pull/15642"
+  },
+  {
+    "body": "### Describe the bug\n\nprysmctl panics with these input files:\n\nconfig.yaml:\n```\nCONFIG_NAME: crywell-testnet # A unique name for your testnet.\n\nPRESET_BASE: interop # A simplified preset for testing.\n\nSECONDS_PER_SLOT: 6 # Time between blocks. Mainnet is 12 seconds.\nSLOTS_PER_EPOCH: 4 # Number of slots in an epoch. Mainnet is 32.\n\nGENESIS_FORK_VERSION: 0x1a2b3c4d\nALTAIR_FORK_EPOCH: 0\nALTAIR_FORK_VERSION: 0x00000002\nBELLATRIX_FORK_EPOCH: 0\nBELLATRIX_FORK_VERSION: 0x00000003\nCAPELLA_FORK_EPOCH: 0\nCAPELLA_FORK_VERSION: 0x00000004\nDENEB_FORK_EPOCH: 0\nDENEB_FORK_VERSION: 0x00000005\nELECTRA_FORK_EPOCH: 0\nELECTRA_FORK_VERSION: 0x00000005\nFULU_FORK_EPOCH: 0\nFULU_FORK_VERSION: 0x00000007\n\nTERMINAL_TOTAL_DIFFICULTY: 0\nTERMINAL_BLOCK_HASH: 0x0000000000000000000000000000000000000000000000000000000000000000\nTERMINAL_BLOCK_HASH_ACTIVATION_EPOCH: 0\n\nDEPOSIT_CONTRACT_ADDRESS: 0xbCF1A7543Ed877Bc12D18C326176DD679EB029bb\n\nDEPOSIT_CHAIN_ID: 2448\n```\n\ngenesis.json:\n```\n{\n  \"config\": {\n    \"chainId\": 2448,\n    \"homesteadBlock\": 0,\n    \"eip150Block\": 0,\n    \"eip155Block\": 0,\n    \"eip158Block\": 0,\n    \"byzantiumBlock\": 0,\n    \"constantinopleBlock\": 0,\n    \"petersburgBlock\": 0,\n    \"terminalTotalDifficulty\": 1,\n    \"ethash\": {}\n  },\n  \"difficulty\": \"1\",\n  \"gasLimit\": \"8000000\",\n  \"alloc\": {\n    \"0xbCF1A7543Ed877Bc12D18C326176DD679EB029bb\": {\n      \"balance\": \"100000000000000000000000000\"\n    },\n    \"0xcB34872B9DC80E8b76306BE0Be9690f8D4bdCA85\": {\n      \"balance\": \"1000000\"\n    }\n  }\n}\n```\n\nThis is what I run:\n```\nprysmctl testnet generate-genesis \\\n       --fork fulu \\\n        --chain-config-file beacon_config.yaml \\\n        --num-validators 1 \\\n        --genesis-time-delay 600 \\\n        --geth-genesis-json-in genesis.json \\\n        --geth-genesis-json-out genesis_o.json \\\n        --output-ssz genesis.ssz\n```\n\nThis is the output:\n\nINFO[0000] Specified a chain config file: beacon_config.yaml  prefix=genesis\nINFO[0000] No genesis time specified, defaulting to now()  prefix=genesis\nINFO[0000] Delaying genesis 1757597138 by 600 seconds    prefix=genesis\nINFO[0000] Genesis is now 1757597738                     prefix=genesis\nINFO[0000] Setting fork geth times                       cancun=1757597738 prague=1757597738 prefix=genesis shanghai=1757597738\npanic: runtime error: invalid memory address or nil pointer dereference\n[signal SIGSEGV: segmentation violation code=0x2 addr=0x10 pc=0x104c2a08c]\n\ngoroutine 1 [running]:\nmath/big.(*Int).Bytes(0x0)\n\t/opt/homebrew/Cellar/go/1.25.1/libexec/src/math/big/int.go:531 +0x1c\ngithub.com/OffchainLabs/prysm/v6/runtime/interop.(*PremineGenesisConfig).setExecutionPayload(0x1400051cdc8?, {0x106866040, 0x1400051cdc8})\n\t/Users/johnwells/gopath/src/github.com/OffchainLabs/prysm/runtime/interop/premine-state.go:643 +0xb38\ngithub.com/OffchainLabs/prysm/v6/runtime/interop.(*PremineGenesisConfig).populate(0x140003e2a00, {0x106866040, 0x1400051cdc8})\n\t/Users/johnwells/gopath/src/github.com/OffchainLabs/prysm/runtime/interop/premine-state.go:319 +0x3a0\ngithub.com/OffchainLabs/prysm/v6/runtime/interop.(*PremineGenesisConfig).prepare(0x140003e2a00, {0x106835440, 0x107b226e0})\n\t/Users/johnwells/gopath/src/github.com/OffchainLabs/prysm/runtime/interop/premine-state.go:81 +0x74\ngithub.com/OffchainLabs/prysm/v6/runtime/interop.NewPreminedGenesis({0x106835440, 0x107b226e0}, {0x1400067b000?, 0x40a?, 0x107aef5c0?}, 0x1, 0x0, 0x6, 0x1400078ac60, {0x14000729270, ...})\n\t/Users/johnwells/gopath/src/github.com/OffchainLabs/prysm/runtime/interop/premine-state.go:64 +0x100\ngithub.com/OffchainLabs/prysm/v6/cmd/prysmctl/testnet.generateGenesis({0x106835440, 0x107b226e0})\n\t/Users/johnwells/gopath/src/github.com/OffchainLabs/prysm/cmd/prysmctl/testnet/generate_genesis.go:300 +0x900\ngithub.com/OffchainLabs/prysm/v6/cmd/prysmctl/testnet.cliActionGenerateGenesisState(0x14000421140)\n\t/Users/johnwells/gopath/src/github.com/OffchainLabs/prysm/cmd/prysmctl/testnet/generate_genesis.go:172 +0x13c\ngithub.com/OffchainLabs/prysm/v6/cmd/prysmctl/testnet.init.func1(0x14000421140?)\n/Users/johnwells/gopath/src/github.com/OffchainLabs/prysm/cmd/prysmctl/testnet/generate_genesis.go:69 +0x24\ngithub.com/urfave/cli/v2.(*Command).Run(0x107ac0500, 0x14000421140, {0x1400056e4b0, 0xf, 0xf})\n\t/Users/johnwells/gopath/pkg/mod/github.com/urfave/cli/v2@v2.27.5/command.go:276 +0x580\ngithub.com/urfave/cli/v2.(*Command).Run(0x107ac0660, 0x14000421080, {0x14000734900, 0x10, 0x10})\n\t/Users/johnwells/gopath/pkg/mod/github.com/urfave/cli/v2@v2.27.5/command.go:269 +0x774\ngithub.com/urfave/cli/v2.(*Command).Run(0x14000434dc0, 0x14000420fc0, {0x140001be6c0, 0x11, 0x12})\n\t/Users/johnwells/gopath/pkg/mod/github.com/urfave/cli/v2@v2.27.5/command.go:269 +0x774\ngithub.com/urfave/cli/v2.(*App).RunContext(0x14000648400, {0x106835440, 0x107b226e0}, {0x140001be6c0, 0x11, 0x12})\n\t/Users/johnwells/gopath/pkg/mod/github.com/urfave/cli/v2@v2.27.5/app.go:333 +0x4c8\ngithub.com/urfave/cli/v2.(*App).Run(...)\n\t/Users/johnwells/gopath/pkg/mod/github.com/urfave/cli/v2@v2.27.5/app.go:307\nmain.main()\n\t/Users/johnwells/gopath/src/github.com/OffchainLabs/prysm/cmd/prysmctl/main.go:22 +0x7c\n\n### Has this worked before in a previous version?\n\n```text\nI don't knkow\n```\n\n### 🔬 Minimal Reproduction\n\n_No response_\n\n### Error\n\n```text\n\n```\n\n### Platform(s)\n\nMac (Apple Silicon)\n\n### What version of Prysm are you running? (Which release)\n\n_No response_\n\n### Anything else relevant (validator index / public key)?\n\n_No response_",
+    "closedAt": "2025-09-18T21:55:43Z",
+    "isPullRequest": false,
+    "labels": [
+      {
+        "color": "E51A66",
+        "description": "Metrics, prysm.sh and all the other tooling",
+        "id": "MDU6TGFiZWwzMTY0NDEyNTcz",
+        "name": "tools"
+      },
+      {
+        "color": "affdd1",
+        "description": "Flags, network setups and other configuration",
+        "id": "LA_kwDOBvuov88AAAACD5Qiug",
+        "name": "config"
+      }
+    ],
+    "state": "closed",
+    "title": "prysmctl panics with this config file",
+    "updatedAt": "2025-09-18T21:55:43Z",
+    "url": "https://github.com/OffchainLabs/prysm/issues/15683"
+  },
+  {
+    "body": "`GetProposerDuties` only accepts input epochs that are:\r\n1. Old\r\n2. Current\r\n3. Current + 1\r\n\r\nIn the event that is current + 1, I dont think we should be advancing the state, we should be current state's cached look ahead cache if it's Fulu state.\r\n\r\nNote to the reviewer: still working on unit test but want ack if this makes sense",
+    "closedAt": "2025-08-05T15:49:23Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "D5BFDD",
+        "description": "",
+        "id": "LA_kwDOBvuov88AAAAB2sZEvg",
+        "name": "fulu"
+      },
+      {
+        "color": "ff1744",
+        "description": "",
+        "id": "LA_kwDOBvuov88AAAACFCoVqw",
+        "name": "bug-fix"
+      }
+    ],
+    "state": "merged",
+    "title": "Beacon api: fix proposer duty computation for fulu",
+    "updatedAt": "2025-08-05T15:49:23Z",
+    "url": "https://github.com/OffchainLabs/prysm/pull/15534"
+  },
+  {
+    "body": "**What type of PR is this?**\r\n\r\nBug fix\r\n\r\n**What does this PR do? Why is it needed?**\r\n\r\nPrevents a panic on the condition that the entry has no sidecars or less than the commitments. The panic was an out of bounds exception.\r\n\r\n**Which issues(s) does this PR fix?**\r\n\r\nFound testing in fusaka-devnet-4.\r\n\r\n**Other notes for review**\r\n\r\nNot sure if it is a realistic scenario but it happened to me in an incomplete implementation of fulu.\r\n\r\n**Acknowledgements**\r\n\r\n- [x] I have read [CONTRIBUTING.md](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md).\r\n- [x] I have included a uniquely named [changelog fragment file](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md#maintaining-changelogmd).\r\n- [x] I have added a description to this PR with sufficient context for reviewers to understand this PR.\r\n",
+    "closedAt": "2025-08-12T04:06:48Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "Fix panic in blob cache when scs array is empty or shorter than commitments",
+    "updatedAt": "2025-08-12T04:06:49Z",
+    "url": "https://github.com/OffchainLabs/prysm/pull/15581"
+  },
+  {
+    "body": "This PR implements version compatibility logic to allow Electra builder bids with Fulu blocks and simplifies fork version validation logic by removing string comparisons",
+    "closedAt": "2025-07-29T14:40:58Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "Builder: fix builder bid version compatibility to support Electra bids with Fulu blocks",
+    "updatedAt": "2025-07-29T14:40:59Z",
+    "url": "https://github.com/OffchainLabs/prysm/pull/15536"
+  },
+  {
+    "body": "**What type of PR is this?**\r\n\r\nOther\r\n\r\n**What does this PR do? Why is it needed?**\r\n\r\nThis PR fixes the proofs limit used in `BlobsBundleV2`, `BlobAndProofV2`, and `BeaconBlockContentsFulu`.\r\n\r\nFor reference, see the following [`fulu.BlobsBundle`](https://github.com/ethereum/builder-specs/blob/ae1d97d080a12bfb7ca248b58fb1fc6b10aed02e/specs/fulu/builder.md?plain=1#L31) in the builder specs.\r\n\r\nHow do I re-generate all of the ssz.go & proto.go files? There's some bazel command, right?\r\n\r\n**Acknowledgements**\r\n\r\n- [x] I have read [CONTRIBUTING.md](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md).\r\n- [x] I have included a uniquely named [changelog fragment file](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md#maintaining-changelogmd).\r\n- [x] I have added a description to this PR with sufficient context for reviewers to understand this PR.\r\n",
+    "closedAt": "2025-08-05T21:41:41Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "D5BFDD",
+        "description": "",
+        "id": "LA_kwDOBvuov88AAAAB2sZEvg",
+        "name": "fulu"
+      }
+    ],
+    "state": "merged",
+    "title": "Fix `BlobsBundleV2` proofs limit",
+    "updatedAt": "2025-08-05T23:13:13Z",
+    "url": "https://github.com/OffchainLabs/prysm/pull/15530"
+  },
+  {
+    "body": "**What type of PR is this?**\r\n\r\nBug fix\r\n\r\n**What does this PR do? Why is it needed?**\r\n\r\nThis PR uses the Beacon DB to save metadata sequence number if either of the following conditions is met:\r\n- the static peer ID flag is set (`p2p-static-id`)\r\n- Fulu enabled\r\n\r\nSo far, the node never persists its sequence number (#13586) which might lead to malfunctioning in P2P service. Peers will continuously decline the node with 1) same identity (using `p2p-static-id`) but 2) having `0` sequence number. `p2p-metadata` **only helps** this problem iff user provides an properly SSZ-encoded file, which is not that practical. This PR also deprecates `p2p-metadata` flag.\r\n\r\n**Which issues(s) does this PR fix?**\r\n\r\nFixes #15544 and #13586.\r\n\r\n**Other notes for review**\r\n\r\n- #14401 contains a context of why this change is needed.\r\n- Tested the functionality with the [ephemery testnet](https://github.com/ephemery-testnet/ephemery-resources) and [boltbrowser](https://github.com/br0xen/boltbrowser?tab=readme-ov-file) (to explore and modify DB manually).\r\n- Added some confusing points (mostly design decision) below.\r\n\r\n**Acknowledgements**\r\n\r\n- [x] I have read [CONTRIBUTING.md](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md).\r\n- [x] I have included a uniquely named [changelog fragment file](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md#maintaining-changelogmd).\r\n- [x] I have added a description to this PR with sufficient context for reviewers to understand this PR.\r\n",
+    "closedAt": "2025-08-06T20:49:21Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "c7a5f7",
+        "description": "",
+        "id": "MDU6TGFiZWwxNTAwNTg1Nzcz",
+        "name": "networking"
+      },
+      {
+        "color": "D5BFDD",
+        "description": "",
+        "id": "LA_kwDOBvuov88AAAAB2sZEvg",
+        "name": "fulu"
+      },
+      {
+        "color": "ff1744",
+        "description": "",
+        "id": "LA_kwDOBvuov88AAAACFCoVqw",
+        "name": "bug-fix"
+      }
+    ],
+    "state": "merged",
+    "title": "Persist metadata sequence number using Beacon DB",
+    "updatedAt": "2025-08-06T20:49:21Z",
+    "url": "https://github.com/OffchainLabs/prysm/pull/15554"
+  },
+  {
+    "body": "**What type of PR is this?**\r\nBug fix\r\n\r\n**What does this PR do? Why is it needed?**\r\nThis PR addresses the versioning bug in our lc APIs. previously when we served the lc data with a \"version\" field, we used the version of the struct, which was not correct since some versions share the same underlying struct. Now the version comes from the slot of the attested header of a light client data type.\r\n\r\n**Which issues(s) does this PR fix?**\r\nFixes #15393 ",
+    "closedAt": "2025-07-01T22:05:04Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "Fix LC versioning bug",
+    "updatedAt": "2025-07-01T22:05:04Z",
+    "url": "https://github.com/OffchainLabs/prysm/pull/15400"
+  },
+  {
+    "body": "This PR implements EIP 7917 as a Fulu feature. \r\n\r\nThis PR should be reviewed commit by commit\r\n## List of commits\r\n\r\n- Create a new state object for Fulu with the corresponding protobufs. Initialize the state at fulu with the new proposer lookahead list. Create the native beacon state field, its getter and setter.\r\n- Add the hashing logic for the new vector. \r\n- Add the functions to convert the proto state to the native state\r\n- Add the new lookahead as shared member: It makes sense for it to be shared since the field does not change for an entire epoch. However we do not use the trie for rehashing because when it changes it changes completely. \r\n- Add the epoch transition code (this is the core of the EIP)\r\n- Short circuit the proposer cache to simply use the passed state on Fulu (here there could be bad bugs regarding requesting of proposers when there are more than 2 epochs without blocks. Need to carefully review this path)\r\n- Marshal the JSON state when returning on the beacon API\r\n- Update spectests and fix the runner for 1.6.0-alpha.1 (this has the lookahead)\r\n- Cherry Picked Terence's PR to remove the blob schedule from the config. \r\n\r\n## Tested\r\n\r\n- Kurtosis, Prysm only devnet finalizes after Fulu and the state shows the right lookahead, checked that at epoch transition the lookahead shifts as expected.\r\n- Spectests passing as of 1.6.0-alpha.1",
+    "closedAt": "2025-06-12T21:07:54Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "EIP 7917",
+    "updatedAt": "2025-06-13T15:09:35Z",
+    "url": "https://github.com/OffchainLabs/prysm/pull/15129"
+  },
+  {
+    "body": "**What type of PR is this?**\r\n\r\nBug fix\r\n\r\n**What does this PR do? Why is it needed?**\r\n\r\nThis PR addresses Issue #13586, where the beacon-chain does not update the `metaData` file as expected. The issue arises because there is currently no code to write to the `metaData` file after initialization. As a result, the sequence number stored on disk always remains **zero**. This behavior is acceptable when the `--p2p-static-id` flag is not provided. However, it causes significant issues in the P2P processes when a user intends to maintain the same peer ID across sessions. (especially when ping to peers, but those peers found that the sequence number of sender is lower than they manage in their own tables.)\r\n\r\n**Which issues(s) does this PR fix?**\r\n\r\nFixes #13586\r\n\r\n**Other notes for review**\r\n\r\n- There is a migration code(`migrateFromProtoToSsz`) in case user has `metaData` file already.\r\n- A point of discussion: Should we handle potential errors when the P2P service encounters issues while writing to files? Currently, these errors are ignored. Feedback on this approach would be appreciated.\r\n\r\n**Acknowledgements**\r\n\r\n- [x] I have read [CONTRIBUTING.md](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md).\r\n- [x] I have made an appropriate entry to [CHANGELOG.md](https://github.com/prysmaticlabs/prysm/blob/develop/CHANGELOG.md).\r\n- [x] I have added a description to this PR with sufficient context for reviewers to understand this PR.\r\n",
+    "closedAt": "2025-07-29T15:40:34Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "c7a5f7",
+        "description": "",
+        "id": "MDU6TGFiZWwxNTAwNTg1Nzcz",
+        "name": "networking"
+      },
+      {
+        "color": "ff1744",
+        "description": "",
+        "id": "LA_kwDOBvuov88AAAACFCoVqw",
+        "name": "bug-fix"
+      }
+    ],
+    "state": "closed",
+    "title": "fix: update p2p `metaData` file when it is changed",
+    "updatedAt": "2025-07-29T15:40:35Z",
+    "url": "https://github.com/OffchainLabs/prysm/pull/14401"
+  },
+  {
+    "body": "**Please read commit by commit.**\r\n\r\n**What type of PR is this?**\r\nThis PR fixes `UpgradeToFulu` and add corresponding spectests.\r\n\r\nUncomment one line below and remove others.\r\nBug fix\r\n\r\n**Acknowledgements**\r\n\r\n- [x] I have read [CONTRIBUTING.md](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md).\r\n- [x] I have included a uniquely named [changelog fragment file](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md#maintaining-changelogmd).\r\n- [x] I have added a description to this PR with sufficient context for reviewers to understand this PR.\r\n",
+    "closedAt": "2025-04-17T14:26:17Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "1F26F7",
+        "description": "",
+        "id": "LA_kwDOBvuov88AAAABlWDyhw",
+        "name": "peer-das"
+      }
+    ],
+    "state": "merged",
+    "title": "Upgrade to fulu: Fix and add spectests",
+    "updatedAt": "2025-04-17T14:26:18Z",
+    "url": "https://github.com/OffchainLabs/prysm/pull/15190"
+  },
+  {
+    "body": "### Describe the bug\n\nAs `SignedBlindedBeaconBlockFulu` is same as `SignedBlindedBeaconBlockElectra` submitting blinded block on https://github.com/prysmaticlabs/prysm/blob/8c4ea850baec0a8579e80d44af44943f50a18d3e/beacon-chain/rpc/eth/beacon/handlers.go#L542 sepolia fails with `Internal desc = handle block failed: submit blinded block failed: req=electra, recv=fulu: builder API response uses a different version than requested in Eth-Consensus-Version header` on `develop` it seems to be fixed, issue is only on `v5.3.0`\n\n### Has this worked before in a previous version?\n\n```text\nyes\n```\n\n### 🔬 Minimal Reproduction\n\n_No response_\n\n### Error\n\n```text\nInternal desc = handle block failed: submit blinded block failed: req=electra, recv=fulu: builder API response uses a different version than requested in Eth-Consensus-Version header\n```\n\n### Platform(s)\n\nLinux (x86)\n\n### What version of Prysm are you running? (Which release)\n\nv5.3.0\n\n### Anything else relevant (validator index / public key)?\n\n_No response_",
+    "closedAt": "2025-03-06T12:27:24Z",
+    "isPullRequest": false,
+    "labels": [],
+    "state": "closed",
+    "title": "Fail to submit blinded blocks on sepolia",
+    "updatedAt": "2025-03-06T12:27:26Z",
+    "url": "https://github.com/OffchainLabs/prysm/issues/15017"
+  },
+  {
+    "body": "<!-- Thanks for sending a PR! Before submitting:\r\n\r\n1. If this is your first PR, check out our contribution guide here https://docs.prylabs.network/docs/contribute/contribution-guidelines\r\n   You will then need to sign our Contributor License Agreement (CLA), which will show up as a comment from a bot in this pull request after you open it. We cannot review code without a signed CLA.\r\n2. Please file an associated tracking issue if this pull request is non-trivial and requires context for our team to understand. All features and most bug fixes should have\r\n   an associated issue with a design discussed and decided upon. Small bug\r\n   fixes and documentation improvements don't need issues.\r\n3. New features and bug fixes must have tests. Documentation may need to\r\n   be updated. If you're unsure what to update, send the PR, and we'll discuss\r\n   in review.\r\n4. Note that PRs updating dependencies and new Go versions are not accepted.\r\n   Please file an issue instead.\r\n5. A changelog entry is required for user facing issues.\r\n-->\r\n\r\n**What type of PR is this?**\r\n\r\n Bug fix\r\n\r\n**What does this PR do? Why is it needed?**\r\n\r\nThe following error was reported by Chris Berry on the vouch team on POST request endpoint ` /eth/v2/beacon/blocks`\r\n```\r\n{\r\n  \"message\": \"rpc error: code = Internal desc = Could not broadcast/receive block: broadcast/receive block failed: failed to validate consensus state transition function: could not execute state transition: could not process block: state and block are different version. 5 != 6\",\r\n  \"code\": 500\r\n}\r\n```\r\n\r\nthis error is caused by how we have handled blocks in our publish block function. a new fork block type ( FULU) was added which has the same structure as the electra block type, the existing code believed the block was a fulu type.\r\nThis fix handles the API in 2 different ways. \r\n- v2 requires a header type for the fork version, this should be checked before unmarshalling.\r\n- v1 does not require this header type so we try to retrieve this header type by calculating the current fork from the current slot. \r\n\r\n**Which issues(s) does this PR fix?**\r\n\r\nFixes #\r\n\r\n**Other notes for review**\r\n\r\n**Acknowledgements**\r\n\r\n- [x] I have read [CONTRIBUTING.md](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md).\r\n- [x] I have included a uniquely named [changelog fragment file](https://github.com/prysmaticlabs/prysm/blob/develop/CONTRIBUTING.md#maintaining-changelogmd).\r\n- [x] I have added a description to this PR with sufficient context for reviewers to understand this PR.\r\n",
+    "closedAt": "2025-02-10T23:57:17Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "30ef13",
+        "description": "",
+        "id": "MDU6TGFiZWwxNzAxNzQwNTQz",
+        "name": "api"
+      }
+    ],
+    "state": "merged",
+    "title": "fix: /eth/v2/beacon/blocks post api to handle electra and fulu blocks correctly ",
+    "updatedAt": "2025-02-10T23:57:18Z",
+    "url": "https://github.com/OffchainLabs/prysm/pull/14897"
+  }
+]

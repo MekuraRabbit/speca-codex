@@ -18,47 +18,43 @@ Generate a complete **Markdown bug-bounty report** for the Ethereum Foundation.
 1. **Read** `security-agent/outputs/03_AUDITMAP.json`.
 2. **Locate** the entry where `audit_items[].id == {{VULN_ID}}`.
 3. **Extract**
-   - `SNIPPET`        ← `audit_items[].snippet`
-   - `VULN_FILE_LINE` ← `audit_items[].file` + `:L` + `audit_items[].line`
-   - `UT_PATH`        ← first `poc_tests[].file` with `"type": "unit"`
-   - `IT_PATH`        ← first `integration_tests[].file` (if any)
+   - `SNIPPET`        <- `audit_items[].snippet`
+   - `SRC_FILE`       <- `audit_items[].file`
+   - `SRC_FUNCTION`   <- infer the enclosing function or method name (fallback: short descriptive label)
+   - `UT_PATH`        <- first `poc_tests[].file` with `"type": "unit"`
+   - `IT_PATH`        <- first `integration_tests[].file` (if any)
+   - `VULN_TITLE_RAW` <- `audit_items[].description`
+   - `VULN_TITLE`     <- text before the first colon (`:`) in `VULN_TITLE_RAW`, or the full string if no colon exists. If empty, craft a concise fallback title without embedding `VULN_ID`.
+   - `TITLE_SLUG`     <- `VULN_TITLE` transformed to lowercase snake_case containing only ASCII letters, digits, and underscores (convert spaces/punctuation to underscores, collapse repeats, strip leading/trailing underscores).
 4. **If not found** → abort with
    `"Vulnerability '{{VULN_ID}}' not found in 03_AUDITMAP.json"`.
 
 # 🎯 Goal
 1. **Read** `{{REPORT_TEMPLATE}}` and fill *all* placeholders while preserving heading order.
-2. Use data from
-   - Ethereum specs (`security-agent/docs/ethereum/spec_*`, `security-agent/outputs/01_SPEC.json`)
-   - Audit map (`03_AUDITMAP.json`)
-   - Bounty rules at `{{BOUNTY_PAGE_URL}}` (impact & severity matrix, disclosure policy).
-3. Embed **verbatim PoC code** from:
+2. Use internal data sources (Ethereum specs, audit map, bounty rules) strictly for authoring context—never surface repository paths or filenames in the final report.
+   - Pull from `security-agent/docs/ethereum/spec_*`, `security-agent/outputs/01_SPEC.json`, and `security-agent/outputs/03_AUDITMAP.json` as needed, but redact those identifiers from the deliverable.
+   - Reference `{{BOUNTY_PAGE_URL}}` for impact & severity details without citing internal shorthand like 03_AUDITMAP/AP/SR.
+3. Embed **verbatim PoC code** from sanitized sources:
    - Unit test → `{{UT_PATH}}`
    - Integration test → `{{IT_PATH}}` (if present)
-   together with file paths and run commands.
+   Provide human-friendly labels and run commands that omit `security-agent/` prefixes or other repository-only context.
 
 # 📤 Output
 Write exactly **one Markdown file**:
-`security-agent/outputs/REPORT_{{VULN_ID}}.md`
+`security-agent/outputs/report_{{TITLE_SLUG}}.md`
 (no extra headings, no missing sections).
 
-# 📝 Mandatory Sections  (as defined in template)
-1. Summary
-2. Severity & Impact
-3. Reproduction Steps
-4. Proof of Concept (code fenced)
-5. Affected Code (10-line context around `SNIPPET`)
-6. Root Cause Analysis
-7. Suggested Fix / Mitigation
-8. References
-9. Disclosure Policy Acknowledgement
+# 📝 Mandatory Sections
+
+Must Follow templete
 
 # 🛠️ Generation Workflow
 ```
 
 1. Parse REPORT\_TEMPLATE → collect placeholders like {{SEVERITY}}, {{POC}}.
 2. Determine severity per bounty rules (Impact × Likelihood).
-3. Read PoC files (UT\_PATH and IT\_PATH) and include in fenced code blocks.
-4. Grab 10 lines of source around VULN\_FILE\_LINE for context.
+3. Read PoC files (UT_PATH and IT_PATH) and include in fenced code blocks.
+4. Grab ~10 lines of source around the vulnerable logic, annotating references using `SRC_FILE` + `SRC_FUNCTION` only (no raw line numbers, GitHub URLs, or absolute paths).
 5. Replace all placeholders; verify none remain.
 6. Save Markdown to output path.
 
@@ -71,11 +67,12 @@ Write exactly **one Markdown file**:
 # ⛔ Constraints
 - **Do not** wrap Markdown in JSON.
 - No public URLs for PoC code; assume local testnet execution.
+- Never mention internal identifiers like `03_AUDITMAP`, `AP`, `SR`, or any `security-agent/` paths in the generated report.
 - All links must be fully-qualified `https://`.
 
 # ✅ Success Criteria
 - Entry with `id == VULN_ID` found.
-- `REPORT_{{VULN_ID}}.md` created and passes placeholder audit.
+- `report_{{TITLE_SLUG}}.md` created and passes placeholder audit.
 - PoCs compile via the project’s test runner, e.g.
   ```bash
   # Unit test
@@ -87,4 +84,3 @@ Write exactly **one Markdown file**:
 * Severity is justified per bounty guidelines.
 
 ```
-

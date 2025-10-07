@@ -1,0 +1,377 @@
+[
+  {
+    "body": "There appear to be some redundant conversions in the input processing e.g. clampedToInt(clampedToLong()) in `BigIntegerModularExponentiationPrecompiledContract`.\n\nThe long values are used for gas calculation but maybe we can use ints due to https://eips.ethereum.org/EIPS/eip-7823#analysis\nThis may only be possible post-osaka; maybe also possible for pre-osaka mainnet based on the usage analysis (assuming we don't get some txs with > int values executed in the meantime).\nPerhaps on other networks we would still need to support longs for the inputs though.\n\n---\n\nRegardless, we can split these input processing/gas calculation codepaths if it proves to be a worthwhile optimisation.",
+    "closedAt": "0001-01-01T00:00:00Z",
+    "isPullRequest": false,
+    "labels": [
+      {
+        "color": "d29ce2",
+        "description": "",
+        "id": "MDU6TGFiZWwyMDU4MTI5NTU1",
+        "name": "performance"
+      }
+    ],
+    "state": "open",
+    "title": "Review ModExp Code Post-Fusaka",
+    "updatedAt": "2025-07-09T06:52:20Z",
+    "url": "https://github.com/hyperledger/besu/issues/8813"
+  },
+  {
+    "body": "## PR description\r\n\r\nAdd BPOs to `admin_nodeInfo`. After this PR:\r\n\r\n\r\n```diff\r\n{\r\n    \"jsonrpc\": \"2.0\",\r\n    \"id\": 1,\r\n    \"result\": {\r\n        \"enode\": \"enode://67144cdf5cb9d5ef4ef0301a9d38a9ceff034d09d9e51549d3cd6bfe3c88fa88a6c897e5e8a560270ed1c245fd390a814fb00eda78c41907ca42311775db7276@127.0.0.1:30303\",\r\n        \"listenAddr\": \"127.0.0.1:30303\",\r\n        \"activeFork\": \"BPO5\",\r\n        \"ip\": \"127.0.0.1\",\r\n        \"name\": \"besu/v25.10-develop-a8d3cb8/osx-aarch_64/corretto-java-21\",\r\n        \"id\": \"67144cdf5cb9d5ef4ef0301a9d38a9ceff034d09d9e51549d3cd6bfe3c88fa88a6c897e5e8a560270ed1c245fd390a814fb00eda78c41907ca42311775db7276\",\r\n        \"ports\": {\r\n            \"discovery\": 30303,\r\n            \"listener\": 30303\r\n        },\r\n        \"protocols\": {\r\n            \"eth\": {\r\n                \"config\": {\r\n                    \"chainId\": 7023102237,\r\n                    \"homesteadBlock\": 0,\r\n                    \"eip150Block\": 0,\r\n                    \"eip158Block\": 0,\r\n                    \"byzantiumBlock\": 0,\r\n                    \"constantinopleBlock\": 0,\r\n                    \"petersburgBlock\": 0,\r\n                    \"istanbulBlock\": 0,\r\n                    \"berlinBlock\": 0,\r\n                    \"londonBlock\": 0,\r\n                    \"shanghaiTime\": 0,\r\n                    \"cancunTime\": 0,\r\n                    \"pragueTime\": 0,\r\n                    \"osakaTime\": 1753379304,\r\n                    \"bpo1Time\": 1753477608,\r\n                    \"bpo2Time\": 1753575912,\r\n                    \"bpo3Time\": 1753674216,\r\n                    \"bpo4Time\": 1753772520,\r\n                    \"bpo5Time\": 1753889256,\r\n                    \"withdrawalRequestContractAddress\": \"0x00000961ef480eb55e80d19ad83579a64c007002\",\r\n                    \"depositContractAddress\": \"0x00000000219ab540356cbb839cbe05303d7705fa\",\r\n                    \"consolidationRequestContractAddress\": \"0x0000bbddc7ce488642fb579f8b00f3a590007251\",\r\n                    \"ethash\": {},\r\n                    \"blobSchedule\": {\r\n                        \"cancun\": {\r\n                            \"baseFeeUpdateFraction\": 3338477,\r\n                            \"max\": 6,\r\n                            \"target\": 3\r\n                        },\r\n                        \"prague\": {\r\n                            \"baseFeeUpdateFraction\": 5007716,\r\n                            \"max\": 9,\r\n                            \"target\": 6\r\n                        },\r\n                        \"osaka\": {\r\n                            \"baseFeeUpdateFraction\": 5007716,\r\n                            \"max\": 9,\r\n                            \"target\": 6\r\n                        },\r\n+                        \"bpo1\": {\r\n+                           \"baseFeeUpdateFraction\": 5007716,\r\n+                            \"max\": 12,\r\n+                           \"target\": 9\r\n+                      },\r\n+                        \"bpo2\": {\r\n+                            \"baseFeeUpdateFraction\": 5007716,\r\n+                            \"max\": 15,\r\n+                            \"target\": 12\r\n+                        },\r\n+                        \"bpo3\": {\r\n+                            \"baseFeeUpdateFraction\": 5007716,\r\n+                            \"max\": 18,\r\n+                            \"target\": 15\r\n+                        },\r\n+                        \"bpo4\": {\r\n+                           \"baseFeeUpdateFraction\": 5007716,\r\n+                            \"max\": 9,\r\n+                            \"target\": 6\r\n+                        },\r\n+                        \"bpo5\": {\r\n+                            \"baseFeeUpdateFraction\": 5007716,\r\n+                            \"max\": 20,\r\n+                            \"target\": 15\r\n+                        }\r\n                    }\r\n                },\r\n                \"difficulty\": 0,\r\n                \"genesis\": \"0x3a8c8cef63859865aa1d40ded77b083eef06a1702b8188d5586434b9c3adc4be\",\r\n                \"head\": \"0x0f0b122cc8bd8f6ce9ee134439c34b8c43ab2ff7237cff112d63d3a385f620bd\",\r\n                \"network\": 7023102237\r\n            }\r\n        }\r\n    }\r\n}\r\n```\r\n\r\n",
+    "closedAt": "2025-10-02T01:50:57Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "fix: addd bpos to admin_nodeInfo",
+    "updatedAt": "2025-10-02T01:50:57Z",
+    "url": "https://github.com/hyperledger/besu/pull/9263"
+  },
+  {
+    "body": "## PR description\r\n\r\nFix failing tests for: fusaka-devnet-5 https://github.com/ethereum/execution-spec-tests/releases/tag/fusaka-devnet-5@v1.0.0\r\n\r\n- test_excess_blob_gas.py::test_correct_decreasing_blob_gas_costs[fork_Osaka-parent_blobs_5-parent_excess_blobs_1695-blockchain_test-new_blobs_1][Osaka]]\r\n- tests/cancun/eip4844_blobs/test_excess_blob_gas.py::test_correct_decreasing_blob_gas_costs[fork_Osaka-parent_blobs_5-parent_excess_blobs_1845-blockchain_test-new_blobs_1][Osaka]]\r\n- tests/cancun/eip4844_blobs/test_excess_blob_gas.py::test_correct_increasing_blob_gas_costs[fork_Osaka-parent_blobs_7-parent_excess_blobs_1244-blockchain_test-new_blobs_1][Osaka]]\r\n- tests/cancun/eip4844_blobs/test_excess_blob_gas.py::test_correct_increasing_blob_gas_costs[fork_Osaka-parent_blobs_7-parent_excess_blobs_1694-blockchain_test-new_blobs_1][Osaka]]\r\n- tests/cancun/eip4844_blobs/test_excess_blob_gas.py::test_correct_increasing_blob_gas_costs[fork_Osaka-parent_blobs_7-parent_excess_blobs_1844-blockchain_test-new_blobs_1][Osaka]]",
+    "closedAt": "2025-08-21T01:12:41Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "052998",
+        "description": "Osaka fork related - part of Fusaka",
+        "id": "LA_kwDODE2jmc8AAAAB5zMlnQ",
+        "name": "Osaka"
+      }
+    ],
+    "state": "merged",
+    "title": "fix(osaka): fix overflow multiplication",
+    "updatedAt": "2025-08-21T01:18:57Z",
+    "url": "https://github.com/hyperledger/besu/pull/9093"
+  },
+  {
+    "body": "Closes #9144 \r\nDue to the addition of the Osaka fork, this comment is now out of date",
+    "closedAt": "2025-09-10T21:11:38Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "closed",
+    "title": "fix(block-validator): Invalid Java Documentation comment with Osaka method added",
+    "updatedAt": "2025-09-10T21:11:38Z",
+    "url": "https://github.com/hyperledger/besu/pull/9145"
+  },
+  {
+    "body": "## PR description\r\nfix(engine) - validate fork engine get payload v4\r\n",
+    "closedAt": "2025-09-30T02:54:34Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "052998",
+        "description": "Osaka fork related - part of Fusaka",
+        "id": "LA_kwDODE2jmc8AAAAB5zMlnQ",
+        "name": "Osaka"
+      }
+    ],
+    "state": "merged",
+    "title": "fix(engine) - validate fork engine get payload v4",
+    "updatedAt": "2025-09-30T02:59:29Z",
+    "url": "https://github.com/hyperledger/besu/pull/9233"
+  },
+  {
+    "body": "### Description \r\n\r\n- Moves blob gas limit validation and versioned hash checks out of commitments validation.\r\n- Relocates remaining blob transaction checks from the general transaction validator into the dedicated blob validator.\r\n- Adds tests to cover all remaining validation cases.",
+    "closedAt": "2025-09-11T03:33:53Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "052998",
+        "description": "Osaka fork related - part of Fusaka",
+        "id": "LA_kwDODE2jmc8AAAAB5zMlnQ",
+        "name": "Osaka"
+      }
+    ],
+    "state": "merged",
+    "title": "fix(osaka): move tx blob count validation outside of commitments validation",
+    "updatedAt": "2025-09-30T03:00:09Z",
+    "url": "https://github.com/hyperledger/besu/pull/9164"
+  },
+  {
+    "body": "## PR description\r\nfix(osaka): Fix gas cost when base and modulus length are zero\r\nContext: https://discord.com/channels/595666850260713488/1402573131692118118\r\n\r\n### Testing\r\n\r\n- All relevant reference tests pass successfully.\r\n- Specifically, this fix enables the following hive test to pass, which was previously failing:\r\n- https://hive.ethpandaops.io/#/test/fusaka-devnet-3/1754678285-0d41efb29658860fb9d2f0ecc91b11f3?testnumber=1427",
+    "closedAt": "2025-08-11T07:09:38Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "fix(modexp): Fix gas cost when base and modulus length are zero",
+    "updatedAt": "2025-08-11T07:09:38Z",
+    "url": "https://github.com/hyperledger/besu/pull/9054"
+  },
+  {
+    "body": "## PR description\r\n\r\nOsaka transaction gas cap is changed to 16M\r\n\r\nFixes #8933\r\n",
+    "closedAt": "2025-07-10T07:50:55Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "feat: EIP-7825 update transaction gas cap to 16M",
+    "updatedAt": "2025-07-10T07:50:55Z",
+    "url": "https://github.com/hyperledger/besu/pull/8945"
+  },
+  {
+    "body": "Logs show that the tx pool got disabled but the node continued to import blocks, building resulted in blocks with not transactions",
+    "closedAt": "0001-01-01T00:00:00Z",
+    "isPullRequest": false,
+    "labels": [
+      {
+        "color": "d73a4a",
+        "description": "Something isn't working",
+        "id": "MDU6TGFiZWwxNTM3MzYyNDkw",
+        "name": "bug"
+      },
+      {
+        "color": "ff9900",
+        "description": "High (ex: Degrading performance issues, unexpected behavior of core features (DevP2P, syncing, etc))",
+        "id": "MDU6TGFiZWwyMDUxNjgzMjQ4",
+        "name": "P2"
+      },
+      {
+        "color": "052998",
+        "description": "Osaka fork related - part of Fusaka",
+        "id": "LA_kwDODE2jmc8AAAAB5zMlnQ",
+        "name": "Osaka"
+      }
+    ],
+    "state": "open",
+    "title": "Tx pool not enabled in holesky shadow fork",
+    "updatedAt": "2025-09-30T02:53:06Z",
+    "url": "https://github.com/hyperledger/besu/issues/9240"
+  },
+  {
+    "body": "## PR description\r\n\r\n## Fixed Issue(s)\r\n<!-- Please link to fixed issue(s) here using format: fixes #<issue number> -->\r\n<!-- Example: \"fixes #2\" -->\r\n\r\n\r\n### Thanks for sending a pull request! Have you done the following?\r\n\r\n- [ ] Checked out our [contribution guidelines](https://github.com/hyperledger/besu/blob/main/CONTRIBUTING.md)?\r\n- [ ] Considered documentation and added the `doc-change-required` label to this PR [if updates are required](https://wiki.hyperledger.org/display/BESU/Documentation).\r\n- [ ] Considered the changelog and included an [update if required](https://wiki.hyperledger.org/display/BESU/Changelog).\r\n- [ ] For database changes (e.g. KeyValueSegmentIdentifier) considered compatibility and performed forwards and backwards compatibility tests\r\n\r\n### Locally, you can run these tests to catch failures early:\r\n\r\n- [ ] spotless: `./gradlew spotlessApply`\r\n- [ ] unit tests: `./gradlew build`\r\n- [ ] acceptance tests: `./gradlew acceptanceTest`\r\n- [ ] integration tests: `./gradlew integrationTest`\r\n- [ ] reference tests: `./gradlew ethereum:referenceTests:referenceTests`\r\n\r\n",
+    "closedAt": "2025-06-23T03:18:53Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "[fusaka-devnet-2] Fix osaka precompile range",
+    "updatedAt": "2025-06-23T03:18:53Z",
+    "url": "https://github.com/hyperledger/besu/pull/8842"
+  },
+  {
+    "body": "avoid division by zero; return minimum gas cost of max input length is zero\r\n\r\nSigned-off-by: Sally MacFarlane [macfarla.github@gmail.com](mailto:macfarla.github@gmail.com)\r\n\r\n## Fixed Issue(s)\r\nfixes 2 referenceTests\r\n\r\nTODO\r\n- [ ] cherry pick this on top of #8766\r\n\r\n```\r\nExecutionSpecBlockchainTest_65 > execution(String, BlockchainReferenceTestCaseSpec, boolean) > Name: tests/byzantium/eip198_modexp_precompile/test_modexp.py::test_modexp[fork_Osaka-blockchain_test_from_state_test-ModExpInput_base_0x-exponent_0x-modulus_0x-ModExpOutput_returned_data_0x][Osaka] FAILED\r\n    org.opentest4j.AssertionFailedError at ExecutionSpecBlockchainTest_65.java:37\r\n\r\nExecutionSpecStateTest_44 > execution(String, GeneralStateTestCaseEipSpec, boolean) > Name: tests/byzantium/eip198_modexp_precompile/test_modexp.py::test_modexp[fork_Osaka-state_test-ModExpInput_base_0x-exponent_0x-modulus_0x-ModExpOutput_returned_data_0x]-Osaka FAILED\r\n    java.lang.AssertionError at ExecutionSpecStateTest_44.java:37\r\n```\r\n\r\n\r\n### Thanks for sending a pull request! Have you done the following?\r\n\r\n- [ ] Checked out our [contribution guidelines](https://github.com/hyperledger/besu/blob/main/CONTRIBUTING.md)?\r\n- [ ] Considered documentation and added the `doc-change-required` label to this PR [if updates are required](https://wiki.hyperledger.org/display/BESU/Documentation).\r\n- [ ] Considered the changelog and included an [update if required](https://wiki.hyperledger.org/display/BESU/Changelog).\r\n- [ ] For database changes (e.g. KeyValueSegmentIdentifier) considered compatibility and performed forwards and backwards compatibility tests\r\n\r\n### Locally, you can run these tests to catch failures early:\r\n\r\n- [ ] spotless: `./gradlew spotlessApply`\r\n- [ ] unit tests: `./gradlew build`\r\n- [ ] acceptance tests: `./gradlew acceptanceTest`\r\n- [ ] integration tests: `./gradlew integrationTest`\r\n- [ ] reference tests: `./gradlew ethereum:referenceTests:referenceTests`\r\n\r\n",
+    "closedAt": "2025-06-11T09:28:43Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "[fusaka-devnet-2] EIP-7883",
+    "updatedAt": "2025-06-12T11:02:10Z",
+    "url": "https://github.com/hyperledger/besu/pull/8797"
+  },
+  {
+    "body": "## PR description\r\nAddress case where the pure java p256Verify implementation was not explicitly checking the public-key input is on-curve prior to verifying the signature.  This code path is not part of mainnet ethereum, but some specific configurations of besu on a dev net could have triggered this exception:\r\n```\r\nInvalid point coordinates\r\njava.lang.IllegalArgumentException: Invalid point coordinates\r\n\tat org.bouncycastle.math.ec.ECCurve.validatePoint(Unknown Source)\r\n\tat org.bouncycastle.math.ec.ECCurve.decodePoint(Unknown Source)\r\n\tat org.hyperledger.besu.crypto.AbstractSECP256.verify(AbstractSECP256.java:373)\r\n\tat org.hyperledger.besu.crypto.SECP256R1.verifyMalleable(SECP256R1.java:132)\r\n\tat org.hyperledger.besu.evm.precompile.P256VerifyPrecompiledContract.computeDefault(P256VerifyPrecompiledContract.java:237)\r\n\tat org.hyperledger.besu.evm.precompile.P256VerifyPrecompiledContractTest.testInvalidCurvePointReturnsInvalid(P256VerifyPrecompiledContractTest.java:123)\r\n\tat java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)\r\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:580)\r\n\r\n```\r\n\r\nWhich would have caused these specifically configured instances of besu to ~~refuse to import or create a block with such an  invalid public key~~ rely on exceptional logic to attribute the precompile result as invalid, rather than proactively checking the public key is valid.\r\n\r\nThx @0xMushow for probing about point-validity in the besu implementation of eip-7951.  \r\n\r\n\r\n## Fixed Issue(s)\r\n<!-- Please link to fixed issue(s) here using format: fixes #<issue number> -->\r\n<!-- Example: \"fixes #2\" -->\r\nadds point-on-curve check in the pure java bouncy castle implementation, and adds unit tests to assert the behavior across pure java and native implementation.\r\n\r\n\r\n### Thanks for sending a pull request! Have you done the following?\r\n\r\n- [ ] Checked out our [contribution guidelines](https://github.com/hyperledger/besu/blob/main/CONTRIBUTING.md)?\r\n- [ ] Considered documentation and added the `doc-change-required` label to this PR [if updates are required](https://wiki.hyperledger.org/display/BESU/Documentation).\r\n- [ ] Considered the changelog and included an [update if required](https://wiki.hyperledger.org/display/BESU/Changelog).\r\n- [ ] For database changes (e.g. KeyValueSegmentIdentifier) considered compatibility and performed forwards and backwards compatibility tests\r\n\r\n### Locally, you can run these tests to catch failures early:\r\n\r\n- [ ] spotless: `./gradlew spotlessApply`\r\n- [ ] unit tests: `./gradlew build`\r\n- [ ] acceptance tests: `./gradlew acceptanceTest`\r\n- [ ] integration tests: `./gradlew integrationTest`\r\n- [ ] reference tests: `./gradlew ethereum:referenceTests:referenceTests`\r\n- [ ] hive tests: [Engine or other RPCs modified?](https://lf-hyperledger.atlassian.net/wiki/spaces/BESU/pages/22156302/Using+Hive+Test+Suite)\r\n\r\n\r\n",
+    "closedAt": "2025-09-10T17:24:41Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "Add explict check for points-on-curve in p256_verify bouncycastle implementation",
+    "updatedAt": "2025-09-10T17:24:45Z",
+    "url": "https://github.com/hyperledger/besu/pull/9146"
+  },
+  {
+    "body": "## PR description\r\n\r\n## Fixed Issue(s)\r\n<!-- Please link to fixed issue(s) here using format: fixes #<issue number> -->\r\n<!-- Example: \"fixes #2\" -->\r\n\r\n\r\n### Thanks for sending a pull request! Have you done the following?\r\n\r\n- [ ] Checked out our [contribution guidelines](https://github.com/hyperledger/besu/blob/main/CONTRIBUTING.md)?\r\n- [ ] Considered documentation and added the `doc-change-required` label to this PR [if updates are required](https://wiki.hyperledger.org/display/BESU/Documentation).\r\n- [ ] Considered the changelog and included an [update if required](https://wiki.hyperledger.org/display/BESU/Changelog).\r\n- [ ] For database changes (e.g. KeyValueSegmentIdentifier) considered compatibility and performed forwards and backwards compatibility tests\r\n\r\n### Locally, you can run these tests to catch failures early:\r\n\r\n- [ ] spotless: `./gradlew spotlessApply`\r\n- [ ] unit tests: `./gradlew build`\r\n- [ ] acceptance tests: `./gradlew acceptanceTest`\r\n- [ ] integration tests: `./gradlew integrationTest`\r\n- [ ] reference tests: `./gradlew ethereum:referenceTests:referenceTests`\r\n\r\n",
+    "closedAt": "2025-06-11T13:46:37Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "[berlinterop-devnet-2] Fix for osaka blob schedule",
+    "updatedAt": "2025-06-11T13:46:37Z",
+    "url": "https://github.com/hyperledger/besu/pull/8805"
+  },
+  {
+    "body": "## PR description\r\n\r\nBuilt on top of https://github.com/hyperledger/besu/pull/8736\r\n\r\nImplement [EIP-7825: Transaction gas limit cap](https://eips.ethereum.org/EIPS/eip-7825)\r\nThe gas limit cap is driven by the protocol schedule, and at Osaka fork will be 30M, while before Osaka it is Long.MAX_VALUE that is a safe assumption, since no transactions have every or will reach that value before Osaka activation.\r\nThe 30M value is currently hard coded, but a future development can make it configurable, in case there is a need for that feature.\r\n\r\nThe transaction gas limit cap is also supported during simulations, with the following behavior:\r\n- when estimating gas, the limit is enforced, following the fact that we already enforce the gas limit accordingly to the block gas limit or the sender balance\r\n- instead for eth_call related calls, the limit is not enforced, since there it is already possible to specify a higher limit that the block gas limit, and the max depends on the [configuration option `rpc_gas_cap` ](https://besu.hyperledger.org/public-networks/reference/cli/options#rpc-gas-cap)\r\n\r\n## Fixed Issue(s)\r\n<!-- Please link to fixed issue(s) here using format: fixes #<issue number> -->\r\n<!-- Example: \"fixes #2\" -->\r\n\r\nfixes #8604 \r\n\r\n### Thanks for sending a pull request! Have you done the following?\r\n\r\n- [ ] Checked out our [contribution guidelines](https://github.com/hyperledger/besu/blob/main/CONTRIBUTING.md)?\r\n- [ ] Considered documentation and added the `doc-change-required` label to this PR [if updates are required](https://wiki.hyperledger.org/display/BESU/Documentation).\r\n- [ ] Considered the changelog and included an [update if required](https://wiki.hyperledger.org/display/BESU/Changelog).\r\n- [ ] For database changes (e.g. KeyValueSegmentIdentifier) considered compatibility and performed forwards and backwards compatibility tests\r\n\r\n### Locally, you can run these tests to catch failures early:\r\n\r\n- [ ] spotless: `./gradlew spotlessApply`\r\n- [ ] unit tests: `./gradlew build`\r\n- [ ] acceptance tests: `./gradlew acceptanceTest`\r\n- [ ] integration tests: `./gradlew integrationTest`\r\n- [ ] reference tests: `./gradlew ethereum:referenceTests:referenceTests`\r\n\r\n",
+    "closedAt": "2025-06-04T08:12:30Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "052998",
+        "description": "Osaka fork related - part of Fusaka",
+        "id": "LA_kwDODE2jmc8AAAAB5zMlnQ",
+        "name": "Osaka"
+      }
+    ],
+    "state": "merged",
+    "title": "EIP-7825: Transaction gas limit cap",
+    "updatedAt": "2025-06-04T08:43:58Z",
+    "url": "https://github.com/hyperledger/besu/pull/8700"
+  },
+  {
+    "body": "## PR description\r\nMakes changes for gas calculation in Osaka as described in EIP 7883\r\n\r\n## Fixed Issue(s)\r\nfixes #8603\r\n\r\n\r\n",
+    "closedAt": "2025-05-22T05:46:07Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "052998",
+        "description": "Osaka fork related - part of Fusaka",
+        "id": "LA_kwDODE2jmc8AAAAB5zMlnQ",
+        "name": "Osaka"
+      }
+    ],
+    "state": "closed",
+    "title": "[fusaka-devnet-0] EIP-7883",
+    "updatedAt": "2025-05-28T04:02:57Z",
+    "url": "https://github.com/hyperledger/besu/pull/8657"
+  },
+  {
+    "body": "## PR description\r\n\r\nThis PR implements the changes described in EIP 7883 for the gas calculation for modexp\r\n",
+    "closedAt": "2025-05-28T23:23:20Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "052998",
+        "description": "Osaka fork related - part of Fusaka",
+        "id": "LA_kwDODE2jmc8AAAAB5zMlnQ",
+        "name": "Osaka"
+      }
+    ],
+    "state": "merged",
+    "title": "EIP-7883 modexp gas calculation changes for Osaka",
+    "updatedAt": "2025-05-28T23:29:14Z",
+    "url": "https://github.com/hyperledger/besu/pull/8707"
+  },
+  {
+    "body": "## PR description\r\n\r\nPR against main needs more testing: https://github.com/hyperledger/besu/pull/8632\r\n\r\n## Fixed Issue(s)\r\n<!-- Please link to fixed issue(s) here using format: fixes #<issue number> -->\r\n<!-- Example: \"fixes #2\" -->\r\n\r\n\r\n### Thanks for sending a pull request! Have you done the following?\r\n\r\n- [ ] Checked out our [contribution guidelines](https://github.com/hyperledger/besu/blob/main/CONTRIBUTING.md)?\r\n- [ ] Considered documentation and added the `doc-change-required` label to this PR [if updates are required](https://wiki.hyperledger.org/display/BESU/Documentation).\r\n- [ ] Considered the changelog and included an [update if required](https://wiki.hyperledger.org/display/BESU/Changelog).\r\n- [ ] For database changes (e.g. KeyValueSegmentIdentifier) considered compatibility and performed forwards and backwards compatibility tests\r\n\r\n### Locally, you can run these tests to catch failures early:\r\n\r\n- [ ] spotless: `./gradlew spotlessApply`\r\n- [ ] unit tests: `./gradlew build`\r\n- [ ] acceptance tests: `./gradlew acceptanceTest`\r\n- [ ] integration tests: `./gradlew integrationTest`\r\n- [ ] reference tests: `./gradlew ethereum:referenceTests:referenceTests`\r\n\r\n",
+    "closedAt": "2025-05-22T12:47:42Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "052998",
+        "description": "Osaka fork related - part of Fusaka",
+        "id": "LA_kwDODE2jmc8AAAAB5zMlnQ",
+        "name": "Osaka"
+      }
+    ],
+    "state": "merged",
+    "title": "[fusaka-devnet-0] EIP-7823 Set upper bounds for MODEXP",
+    "updatedAt": "2025-05-22T12:49:09Z",
+    "url": "https://github.com/hyperledger/besu/pull/8644"
+  },
+  {
+    "body": "Signed-off-by: Sally MacFarlane <macfarla.github@gmail.com>## PR description\r\n\r\n## Fixed Issue(s)\r\nReplacement for #8657 \r\nFixes #8603\r\n\r\n\r\n### Thanks for sending a pull request! Have you done the following?\r\n\r\n- [ ] Checked out our [contribution guidelines](https://github.com/hyperledger/besu/blob/main/CONTRIBUTING.md)?\r\n- [ ] Considered documentation and added the `doc-change-required` label to this PR [if updates are required](https://wiki.hyperledger.org/display/BESU/Documentation).\r\n- [ ] Considered the changelog and included an [update if required](https://wiki.hyperledger.org/display/BESU/Changelog).\r\n- [ ] For database changes (e.g. KeyValueSegmentIdentifier) considered compatibility and performed forwards and backwards compatibility tests\r\n\r\n### Locally, you can run these tests to catch failures early:\r\n\r\n- [ ] spotless: `./gradlew spotlessApply`\r\n- [ ] unit tests: `./gradlew build`\r\n- [ ] acceptance tests: `./gradlew acceptanceTest`\r\n- [ ] integration tests: `./gradlew integrationTest`\r\n- [ ] reference tests: `./gradlew ethereum:referenceTests:referenceTests`\r\n\r\nSigned-off-by: stefan.pingel@consensys.net <stefan.pingel@consensys.net>",
+    "closedAt": "2025-05-22T06:26:44Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "052998",
+        "description": "Osaka fork related - part of Fusaka",
+        "id": "LA_kwDODE2jmc8AAAAB5zMlnQ",
+        "name": "Osaka"
+      }
+    ],
+    "state": "merged",
+    "title": "[fusaka-devnet-0] EIP-7883, modexp gas calculation for Osaka",
+    "updatedAt": "2025-06-03T22:58:10Z",
+    "url": "https://github.com/hyperledger/besu/pull/8667"
+  },
+  {
+    "body": "## PR description\r\n\r\nDraft Implementation of RIP-7212 / EIP-7951.  \r\n\r\nOutstanding to-dos:\r\n* ~~enable non-canonical/malleable signatures (needs besu-native and besu-native-ec changes)~~\r\n* ~~benchmarking~~\r\n* ~~check/verify malleable signatures with bouncycastle~~\r\n* ~~add secp256r1 to mainnet required native libs~~\r\n* ~~caching~~\r\n* security fixes:\r\n  * ~~address point-at-infinity~~\r\n  * ~~modular comparison~~\r\n\r\n## Fixed Issue(s)\r\n<!-- Please link to fixed issue(s) here using format: fixes #<issue number> -->\r\n<!-- Example: \"fixes #2\" -->\r\nfixes #8605 \r\n~~blocked by [pr 270](https://github.com/hyperledger/besu-native/pull/270)~~\r\n~~blocked by [pr 22](https://github.com/Consensys/besu-native-ec/pull/22)~~\r\n\r\n### Thanks for sending a pull request! Have you done the following?\r\n\r\n- [ ] Checked out our [contribution guidelines](https://github.com/hyperledger/besu/blob/main/CONTRIBUTING.md)?\r\n- [ ] Considered documentation and added the `doc-change-required` label to this PR [if updates are required](https://wiki.hyperledger.org/display/BESU/Documentation).\r\n- [ ] Considered the changelog and included an [update if required](https://wiki.hyperledger.org/display/BESU/Changelog).\r\n- [ ] For database changes (e.g. KeyValueSegmentIdentifier) considered compatibility and performed forwards and backwards compatibility tests\r\n\r\n### Locally, you can run these tests to catch failures early:\r\n\r\n- [ ] spotless: `./gradlew spotlessApply`\r\n- [ ] unit tests: `./gradlew build`\r\n- [ ] acceptance tests: `./gradlew acceptanceTest`\r\n- [ ] integration tests: `./gradlew integrationTest`\r\n- [ ] reference tests: `./gradlew ethereum:referenceTests:referenceTests`\r\n\r\n",
+    "closedAt": "2025-06-26T00:23:24Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "052998",
+        "description": "Osaka fork related - part of Fusaka",
+        "id": "LA_kwDODE2jmc8AAAAB5zMlnQ",
+        "name": "Osaka"
+      }
+    ],
+    "state": "merged",
+    "title": "Implementation of RIP-7212 / EIP-7951",
+    "updatedAt": "2025-06-26T03:31:30Z",
+    "url": "https://github.com/hyperledger/besu/pull/8750"
+  },
+  {
+    "body": "Signed-off-by: Sally MacFarlane <macfarla.github@gmail.com>\r\n## PR description\r\nhttps://eips.ethereum.org/EIPS/eip-7918#functions\r\n\r\n## Fixed Issue(s)\r\nfixes #8608\r\n\r\nTODO\r\n\r\n- [x] confirm test vectors - expecting these to be included in EEST fusaka-devnet-1 release [WIP PR](https://github.com/ethereum/execution-spec-tests/pull/1685/files#diff-74e82fed735a75dc81ad1d6de01749bd9b537024a67ca3afbde48e9f3fbe82e4R1363-R1376)\r\n- [ ] check status of [this PR](https://github.com/ethereum/EIPs/pull/9855) after ACDE and update formula if needed\r\n\r\n### Thanks for sending a pull request! Have you done the following?\r\n\r\n- [ ] Checked out our [contribution guidelines](https://github.com/hyperledger/besu/blob/main/CONTRIBUTING.md)?\r\n- [ ] Considered documentation and added the `doc-change-required` label to this PR [if updates are required](https://wiki.hyperledger.org/display/BESU/Documentation).\r\n- [ ] Considered the changelog and included an [update if required](https://wiki.hyperledger.org/display/BESU/Changelog).\r\n- [ ] For database changes (e.g. KeyValueSegmentIdentifier) considered compatibility and performed forwards and backwards compatibility tests\r\n\r\n### Locally, you can run these tests to catch failures early:\r\n\r\n- [ ] spotless: `./gradlew spotlessApply`\r\n- [ ] unit tests: `./gradlew build`\r\n- [ ] acceptance tests: `./gradlew acceptanceTest`\r\n- [ ] integration tests: `./gradlew integrationTest`\r\n- [ ] reference tests: `./gradlew ethereum:referenceTests:referenceTests`\r\n\r\n",
+    "closedAt": "2025-06-06T03:58:52Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "EIP-7918 blob base fee bounded by execution cost",
+    "updatedAt": "2025-06-26T03:26:48Z",
+    "url": "https://github.com/hyperledger/besu/pull/8724"
+  },
+  {
+    "body": "## PR description\r\n\r\n> We introduce an upper bound to the inputs of the precompile, each of the length inputs (length_of_BASE, length_of_EXPONENT and length_of_MODULUS) MUST be less than or equal to 8192 bits (1024 bytes).\r\n\r\n> If any of these inputs are larger than the limit, the precompile execution stops, returns an error, and consumes all gas.\r\n\r\nTODO \r\n- [x] Osaka fork activation\r\n- [x] units\r\n- [x] ~Separate issue: update EEST version~ https://github.com/hyperledger/besu/issues/8641\r\n- [x] Confirm no (performance?) issue introducing explicit upperBound test to Byzantium (Long.MAX_VALUE)\r\n- [x] Regression test (mainnet sync versus control)\r\n- [x] Performance test / benchmarks\r\n\r\n## Fixed Issue(s)\r\n<!-- Please link to fixed issue(s) here using format: fixes #<issue number> -->\r\n<!-- Example: \"fixes #2\" -->\r\n\r\nFixes https://github.com/hyperledger/besu/issues/8602\r\n\r\n### Thanks for sending a pull request! Have you done the following?\r\n\r\n- [ ] Checked out our [contribution guidelines](https://github.com/hyperledger/besu/blob/main/CONTRIBUTING.md)?\r\n- [ ] Considered documentation and added the `doc-change-required` label to this PR [if updates are required](https://wiki.hyperledger.org/display/BESU/Documentation).\r\n- [ ] Considered the changelog and included an [update if required](https://wiki.hyperledger.org/display/BESU/Changelog).\r\n- [ ] For database changes (e.g. KeyValueSegmentIdentifier) considered compatibility and performed forwards and backwards compatibility tests\r\n\r\n### Locally, you can run these tests to catch failures early:\r\n\r\n- [ ] spotless: `./gradlew spotlessApply`\r\n- [ ] unit tests: `./gradlew build`\r\n- [ ] acceptance tests: `./gradlew acceptanceTest`\r\n- [ ] integration tests: `./gradlew integrationTest`\r\n- [ ] reference tests: `./gradlew ethereum:referenceTests:referenceTests`\r\n\r\n",
+    "closedAt": "2025-06-04T11:06:25Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "052998",
+        "description": "Osaka fork related - part of Fusaka",
+        "id": "LA_kwDODE2jmc8AAAAB5zMlnQ",
+        "name": "Osaka"
+      }
+    ],
+    "state": "merged",
+    "title": "EIP-7823 - Modexp upper bounds",
+    "updatedAt": "2025-06-04T12:40:51Z",
+    "url": "https://github.com/hyperledger/besu/pull/8632"
+  },
+  {
+    "body": "## Description \r\n\r\nFixes #8331, #8612\r\n\r\nThis PR implements EIP‑7594 “Peerdas changes” which update the handling of blob transactions and associated proofs across the protocol, transaction encoding/decoding, API endpoints, and internal data structures.\r\n\r\n- Introduces support for multiple blob proof bundle versions (VERSION_0_KZG_PROOFS and VERSION_1_KZG_CELL_PROOFS) in protocol specifications and transaction processing.\r\n- Updates encoding/decoding logic and builders to include a version ID, and adds new JSON‑RPC methods (e.g., `EngineGetPayloadV5` and `EngineGetBlobsV2`).\r\n- Refactors internal data structures, replacing the BlobQuad with the new BlobProofBundle and adjusting tests accordingly.\r\n- Adds a new `OsakaTransactionPoolPreProcessor` to upgrade locally submitted transactions with version 0 blob commitments to version 1 during pre-processing. ",
+    "closedAt": "2025-06-02T15:17:13Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "052998",
+        "description": "Osaka fork related - part of Fusaka",
+        "id": "LA_kwDODE2jmc8AAAAB5zMlnQ",
+        "name": "Osaka"
+      }
+    ],
+    "state": "merged",
+    "title": "feat: implement EIP-7594 - PeerDAS",
+    "updatedAt": "2025-06-02T15:17:14Z",
+    "url": "https://github.com/hyperledger/besu/pull/8631"
+  },
+  {
+    "body": "## PR description\r\nIn the case where the system contract doesn't exist, Besu currently fails silently. The specs have been updated to say (withdrawal and consolidation requests only):\r\n\r\nhttps://eips.ethereum.org/EIPS/eip-2935 (Same as before)\r\n> * if no code exists at HISTORY_STORAGE_ADDRESS, the call must fail silently,\r\n\r\nhttps://eips.ethereum.org/EIPS/eip-7002 (New behaviour)\r\n> * If there is no code at `WITHDRAWAL_REQUEST_PREDEPLOY_ADDRESS`, the corresponding block **MUST** be marked invalid.\r\n\r\nhttps://eips.ethereum.org/EIPS/eip-7251 (New behaviour)\r\n> * If there is no code at CONSOLIDATION_REQUEST_PREDEPLOY_ADDRESS, the corresponding block MUST be marked invalid.\r\n\r\n## Fixed Issue(s)\r\nfixes #8511 ",
+    "closedAt": "2025-04-23T20:41:03Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "9D578C",
+        "description": "",
+        "id": "MDU6TGFiZWwzMDEzNTU5MjAy",
+        "name": "mainnet"
+      },
+      {
+        "color": "1AD4FB",
+        "description": "",
+        "id": "LA_kwDODE2jmc8AAAABkYQwLg",
+        "name": "Prague"
+      },
+      {
+        "color": "305279",
+        "description": "relating to hive tests",
+        "id": "LA_kwDODE2jmc8AAAAB8YkwUA",
+        "name": "hive"
+      }
+    ],
+    "state": "merged",
+    "title": "fix: fail system call if contract does not exist or code is empty",
+    "updatedAt": "2025-04-23T20:41:03Z",
+    "url": "https://github.com/hyperledger/besu/pull/8573"
+  },
+  {
+    "body": "<!-- Have you done the following? -->\n<!--   * read the Code of Conduct? By filing an Issue, you are expected to -->  \n<!--     comply with it, including treating everyone with respect: -->\n<!--     https://github.com/hyperledger/besu/blob/main/CODE_OF_CONDUCT.md -->\n<!--   * Reproduced the issue in the latest version of the software -->\n<!--   * Read the debugging docs: https://besu.hyperledger.org/private-networks/how-to -->\n<!--   * Duplicate Issue check:  https://github.com/search?q=+is%3Aissue+repo%3Ahyperledger/Besu -->\n\n### Overview\n\nHello developers.\n\nI'm running a separate Pectra PoS testnet chain for API testing. During testing, I observed discrepancies in the JSON-RPC responses from execution clients—geth, besu, nethermind, and reth. Specifically, when calling `engine_getBlobsV1`, Besu returns an error with HTTP status code 400, while the other three clients respond successfully.\n\nThanks for your time!\n\n### Steps to Reproduce\n\nCall the `engine_getBlobsV1` with:\n\n```shell\ncurl POST -v http://127.0.0.1:8551 \\\n   -H \"Content-Type: application/json\" \\\n   -H \"Authorization: Bearer your_encoded_jwt_token\" \\\n   -d '{\n   \"id\": 1,\n   \"jsonrpc\": \"2.0\",\n   \"method\": \"engine_getBlobsV1\",\n   \"params\": [ [\"0x000657f37554c781402a22917dee2f75def7ab966d7b770905398eba3c444014\"] ]\n }'\n```\n\n\n**Expected behavior:** [What you expect to happen]\n\nReturn status code 200 with:\n```json\n{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": [null]}\n```\n**Actual behavior:** [What actually happens]\nReturn 400 with:\n```shell\n*   Trying 127.0.0.1:8551...\n* TCP_NODELAY set\n* Connected to 127.0.0.1 (127.0.0.1) port 8551(#0)\n> POST / HTTP/1.1\n> Host: 127.0.0.1:8551\n> User-Agent: curl/7.68.0\n> Accept: */*\n> Content-Type: application/json\n> Authorization: Bearer your_encoded_jwt_token\n> Content-Length: 154\n> \n* upload completely sent off: 154 out of 154 bytes\n* Mark bundle as not supporting multiuse\n< HTTP/1.1 400 Bad Request\n< Content-Type: application/json\n< transfer-encoding: chunked\n< \n* Connection #0 to host 127.0.0.1 left intact\n{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32600,\"message\":\"Invalid Request\"}}\n```\n**Frequency:** [What percentage of the time does it occur?]\n\nAlways, on four kinds of besu-CL clients.\n\n### Logs\n\nResults from other EL clients.\n```json\n{\"jsonrpc\": \"2.0\", \"id\": 1, \"error\": {\"code\": -32600, \"message\": \"Invalid Request\"}} # besu\n{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": [null]} # geth\n{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": [null]} # nethermind\n{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": [null]} # reth\n```\n\n### Versions\n* OS Name & Version: Ubuntu-20.04\n\nClient versions\n\n- Besu/v25.4.1/linux-x86_64/openjdk-java-21\n- Geth/v1.15.12-unstable-3e356d69-20250507/linux-amd64/go1.24.3\n- Nethermind/v1.32.0-unstable+ff9befb5/linux-x64/dotnet9.0.4\n- Reth/v1.3.12-6f8e725/x86_64-unknown-linux-gnu\n\nwith \n\n- Prysm/v6.0.0 (linux amd64)\n- Lighthouse/v7.0.1-e42406d/x86_64-linux\n- Nimbus/v25.4.1-77cfa7-stateofus\n- Teku/v25.4.1/linux-x86_64/-eclipseadoptium-openjdk64bitservervm-java-21\n",
+    "closedAt": "2025-05-14T12:58:41Z",
+    "isPullRequest": false,
+    "labels": [
+      {
+        "color": "d73a4a",
+        "description": "Something isn't working",
+        "id": "MDU6TGFiZWwxNTM3MzYyNDkw",
+        "name": "bug"
+      },
+      {
+        "color": "ffff00",
+        "description": "Medium (ex: JSON-RPC request not working with a specific client library due to loose spec assumtion)",
+        "id": "MDU6TGFiZWwyMDUxNjgzNTcz",
+        "name": "P3"
+      }
+    ],
+    "state": "closed",
+    "title": "`engine_getBlobsV1` Fails on Besu with 400 Error",
+    "updatedAt": "2025-05-14T12:58:43Z",
+    "url": "https://github.com/hyperledger/besu/issues/8624"
+  }
+]

@@ -1,220 +1,420 @@
----
-**Description:** produce a *comprehensive* specification
-**Usage:** `/01_spec <target_folder>`
-**Example:** `/01_spec ../contracts/docs`
-**Arguments:**
-* **TARGET\_DIRECTORY**: Path or URL of the documentation directory to analyze
----
-**Always use `/serena` for these development tasks to maximize token efficiency.**
+# === Fusaka (Osaka+Fulu) Spec: Deep Crawl & Natural‑Language Spec Generation ===
+# Task Owner: /01_spec
+# Usage: /01_spec <TARGET_DIRECTORY>
+# Example: /01_spec ../contracts/docs
+#
+# Description:
+# Produce a *comprehensive*, natural‑language specification for the Fusaka upgrade, covering
+#   • Osaka (Execution Layer) and
+#   • Fulu (Consensus Layer),
+# by recursively traversing the seed links and all relevant sublinks (docs, code, READMEs),
+# extracting authoritative details, and augmenting with web search. Emit a single JSON file
+# at security-agent/outputs/01_SPEC.json that conforms to the NEW schema below (supports
+# narrative procedures, step lists, error catalogs, invariants, runbooks, and worked examples).
+#
+# IMPORTANT:
+# • Always run with `/serena` to maximize token efficiency.
+# • Language: English.
+# • Scope: Fusaka only (Osaka EL + Fulu CL). Include cross‑layer interfaces (Engine API, requests_hash, PeerDAS) where they constrain behavior.
+# • Aggressively follow sublinks from the seeds; prefer primary sources.
+# • Cite sources *inside strings* with [S1], [S2], … and append plain‑text `Sources:` mapping at the end of each string.
+# • Output only the JSON file; no extra prints. Use the schema below exactly (order & names are strict).
 
-## 🔧 Mandatory Revisions
+SEED_URLS (breadth‑first across domains; then depth‑first up to depth=5 per domain):
+1) Osaka EL (Python spec): https://github.com/ethereum/execution-specs/tree/forks/osaka/src/ethereum/forks/osaka
+2) Fulu CL (MD spec): https://github.com/ethereum/consensus-specs/tree/master/specs/fulu
+3) Auditor guide (index to EIPs, client links, devnets): https://notes.ethereum.org/@fredrik/fusaka-auditor-guide
 
-1. **Web search is required**
+CRAWLING RULES (strict):
+- Start from SEED_URLS. Enumerate and visit all intra‑site references and inter‑repo links that define Osaka/Fulu behavior:
+  * For Osaka: EL state transition, tx validation, gas accounting, EVM changes, precompiles, JSON‑RPC deltas (`eth_config`), blob fees/limits, requests pipeline.
+  * For Fulu: fork activation, proposer lookahead, PeerDAS (data columns/sidecars, gossip topics, Req/Resp), custody/sampling, CL‑EL boundaries (Engine API expectations, requests_hash commitment).
+- Include: READMEs, design/docs, CHANGELOG/RELEASE NOTES, test vectors/fixtures, in‑source docstrings/comments, p2p/Beacon API docs that are tagged for Fulu/Osaka.
+- Prefer latest *stable* releases (tags `v*`, `release-*`). If unavailable, use `forks/osaka` tip and `consensus-specs/master` for Fulu. Record selected tag/commit and dates per fork.
+- Exclude legacy or unrelated branches unless referenced by the latest fork docs. Skip examples unless they illustrate Fusaka behavior.
 
-   * Proactively discover and collect official documentation, API/CLI references, whitepapers, design docs, CHANGELOGs/RELEASE NOTES, and **bug bounty requirements** (scope, exclusions, reporting process, impact criteria, reward policy) via web search.
-   * Prioritize primary sources: **official website & official GitHub/Docs > Foundation/EIP/Ethereum.org and other standards > official audit reports > recognized bug bounty platforms (Immunefi / Code4rena / Sherlock / HackerOne, etc.)**.
-   * Cite collected URLs using **inline footnote markers** within strings (e.g., `... [S1], [S2]`). At the end of each section string, append a plain‑text mapping list (e.g., `Sources: [S1] https://..., [S2] https://...`). **Do not change the JSON structure; include citations only as text inside strings.**
+MANDATORY — Web Search:
+- After repo crawling, perform web search to collect: official docs, EIPs included in Fusaka, Engine API refs, Beacon API refs, design notes, release posts, **bug bounty requirements** (scope/exclusions/reporting/severity/rewards) from recognized platforms (Sherlock/Code4rena/Immunefi/HackerOne).
+- Prioritize: official GitHub/Docs > Foundation/EIP/Ethereum.org > official audits > recognized bounty platforms.
+- Use inline `[S#]` footnotes in strings; append `Sources: [S1] https://..., [S2] https://...`.
 
-2. **Auto‑detect repository genre & tailor flows accordingly**
+AUTO‑DETECT GENRE:
+- Expect **Ethereum Client** (EL/CL specs). If multi‑domain patterns appear (e.g., WebApp docs), still capture but tag flows accordingly.
 
-   * Infer the repository’s **genre** from its contents: **Ethereum Client / ZK (circuits, prover/verifier) / Web App / Smart Contract / Multi‑Domain**.
-   * Build **genre‑optimized user flows and requirements**.
-   * For **Multi‑Domain**, prefix each user flow `title` with a domain tag `[Client]`, `[SmartContract]`, `[ZK]`, or `[WebApp]`, and list all flows in a single `user_flows` array (IDs are sequential).
-   * **Enumerate all documented use cases** without omission and deduplicate. Target **≥ 80% feature coverage**.
+🎯 GOALS — Before a security audit, capture:
+1) Current architecture per fork (components, state machines, data flows, cross‑layer interfaces).
+2) **Natural‑language normative behavior**: detailed “what” and **procedural “how”** with numbered steps.
+3) APIs & key algorithms (Engine/Beacon APIs, fee math, sampling, validation gates) with **error catalogs**.
+4) Security‑critical invariants and requirements (DoS limits, custody thresholds, consensus safety).
+5) Historical deltas (latest two versions/commits) and **worked examples** for edge cases.
 
----
+📥 INPUT POLICY:
+- Root Directory: {{TARGET_DIRECTORY}}
+- Traverse Markdown/HTML/PDF/**code** breadth‑first; dedupe by path/heading.
+- Prefer latest stable; else branch tips as above.
+- Augment via web search; embed per‑string citations and source lists.
+- **Fusaka‑only filter**: only include Osaka/Fulu items or cross‑layer elements affecting them.
 
-## 🎯 Goal
+📤 OUTPUT:
+- Write one file: `security-agent/outputs/01_SPEC.json`.
+- Use the NEW schema (below). Do not add keys or comments beyond the schema. Textual fields may be long and should use RFC 2119 keywords (MUST/SHOULD/MAY) where applicable.
 
-Before starting a source‑code security audit, produce a *comprehensive* specification that captures:
-
-1. Current architecture (components, data flow, deployment topology)
-2. Concrete end‑to‑end **user flows (numbered)**
-3. API / CLI surface & key algorithms
-4. Security‑critical behavior & requirements
-5. Historical change log and recent version deltas
-
----
-
-## 🧭 Genre Auto‑Detection Heuristics (examples)
-
-* **Ethereum Client:** Go/Rust; p2p; RLPx/discv4/5; Engine API; eth/66; mempool; fork‑choice; Beacon/EL boundary
-* **Smart Contract:** `.sol`; Foundry/Hardhat; proxies (UUPS/Transparent); ERC interfaces; `scripts/deploy`
-* **ZK:** `circom`/`halo2`/`gnark`/`arkworks`/`plonk`; `prover`/`verifier`; `vk`/`pk`; transcript/CRS
-* **Web App:** Next.js/React/Vite; Node/Go/Python APIs; OAuth/OIDC; CSR/SSR; DB/Cache/Queue
-* **Multi‑Domain:** mixture of the above
-
----
-
-## 📥 Input
-
-* **Root Directory:** {{TARGET\_DIRECTORY}}
-* Recursively traverse all Markdown, HTML, PDF, and code files **breadth‑first** (prefer latest references; include `legacy/` or `v0.*` only if explicitly referenced by the latest release).
-* Prefer the **latest stable release** (e.g., `latest` tag, stable SemVer tags, `release-*` branches). Fall back to `main` / `master`.
-* While crawling, extract: README, design docs, CHANGELOGs, RELEASE NOTES, and in‑source docs (Javadoc/Rustdoc/GoDoc, etc.).
-* **Augment via web search**:
-
-  * Official docs, API specs, audit reports, roadmaps, and **bug bounty requirement pages** (scope, impacts, reporting, verification steps, environments).
-  * Append a per‑section **plain‑text source list** with `[S#] URL` entries at the end of that section’s string.
-
----
-
-## 📤 Output
-
-Write a **single JSON file** to `security-agent/outputs/01_SPEC.json`. **Do not output anything else.**
-**Do not change the schema** (order & naming are strict). **Embed sources as footnotes inside strings**; do **not** add extra keys or JSON comments.
-
-```jsonc
-{
-  "metadata": {
-    "source_directory": "{{TARGET_DIRECTORY}}",
-    "spec_generated_at": "<RFC3339 timestamp>",
-    "latest_tag_or_commit": "<tag|commit-hash>",
-    "latest_release_date": "<YYYY-MM-DD>",
-    "schema_version": "1.0.0"
-  },
-  "architecture": {
-    "overview": "High‑level paragraph summary.",
-    "components": [
-      {
-        "name": "ComponentA",
-        "type": "service|library|contract|ui|db|other",
-        "description": "What it does and boundaries.",
-        "technology": ["Go", "PostgreSQL", "EVM bytecode"],
-        "depends_on": ["ComponentB", "ExternalAPI"]
-      }
-    ],
-    "data_flow_diagram": "Mermaid code block in string form (flowchart TD…)"
-  },
-  "user_flows": [
-    {
-      "id": 1,
-      "title": "User registers and performs first transaction",
-      "actors": ["EndUser", "BackendService"],
-      "preconditions": ["Wallet installed"],
-      "steps": [
-        "1. User navigates to /signup",
-        "2. System validates email and creates account",
-        "3. …"
-      ],
-      "postconditions": ["Account state = Active"]
-    }
-  ],
-  "api_surface": {
-    "rest_endpoints": [
-      {"method": "POST", "path": "/v1/login", "auth": "JWT", "description": "…"}
-    ],
-    "cli_commands": [
-      {"command": "tool build --release", "description": "Compile binary"}
-    ],
-    "smart_contract_interfaces": [
-      {"name": "IERC20.transfer", "selector": "0xa9059cbb", "description": "…"}
-    ]
-  },
-  "changelog": {
-    "latest_version": "<vX.Y.Z>",
-    "since_previous": [
-      {"commit": "abc1234", "date": "2025-06-01", "summary": "Fixed re‑entrancy bug"}
-    ],
-    "breaking_changes": ["Removed legacy /v0 endpoints"]
-  },
-  "security_requirements": [
-    {
-      "id": "SR‑001",
-      "description": "All state‑transition functions must be idempotent.",
-      "risk_category": "integrity",
-      "related_components": ["SmartContracts/Exchange"],
-      "references": ["CWE‑1148", "EIP‑2535"]
-    }
-  ]
-}
+SCHEMA (NEW, natural‑language capable; schema_version = "2.0.0-nl"):
 ```
 
----
+{
+"metadata": {
+"source\_directory": "{{TARGET\_DIRECTORY}}",
+"spec\_generated\_at": "<RFC3339 timestamp>",
+"latest\_tags\_or\_commits": {
+"osaka": "\<tag|commit-hash>",
+"fulu": "\<tag|commit-hash>"
+},
+"latest\_release\_dates": {
+"osaka": "<YYYY-MM-DD>",
+"fulu": "<YYYY-MM-DD>"
+},
+"schema\_version": "2.0.0-nl"
+},
+"forks": \[
+{
+"name": "Osaka",
+"layer": "Execution",
+"genre": "Ethereum Client Spec",
+"architecture": {
+"overview": "Natural-language paragraph describing Osaka scope, activation conditions, components, and CL boundary (Engine API, requests\_hash). \[S1]\[S2] Sources: \[S1] https\://..., \[S2] https\://...",
+"components": \[
+{
+"name": "State Transition",
+"type": "service|library|module",
+"description": "Role, boundaries, and trust assumptions. \[S1] Sources: \[S1] https\://...",
+"depends\_on": \["Tx Validation", "EVM", "Engine API"],
+"technology": \["Python", "EVM", "RLP"]
+}
+],
+"state\_machines": \[
+{
+"name": "Block Execution",
+"inputs": \["BlockEnvironment", "Transactions", "Parent Header"],
+"outputs": \["State Root", "Receipts Root", "Requests Hash"],
+"invariants": \[
+"Total gas used MUST NOT exceed block gas limit. \[S1] Sources: \[S1] https\://..."
+],
+"transitions": \[
+"1. Validate header fields (timestamps, limits, base fee).",
+"2. For each transaction, apply Osaka tx rules and execute EVM.",
+"3. Accumulate receipts, logs bloom, blob/fee accounting, requests."
+]
+}
+],
+"data\_flow\_diagram": "Mermaid code block (flowchart or sequence) showing Osaka datapaths and CL interface. \[S1] Sources: \[S1] https\://..."
+},
+"normative\_spec": \[
+{
+"id": "OSK-TX-VALIDATION",
+"title": "Transaction Validation under Osaka",
+"summary": "What the validator MUST/SHOULD do before execution. \[S1]\[S2] Sources: ...",
+"preconditions": \[
+"Fork activation time reached; chain config loaded. \[S1] Sources: ..."
+],
+"inputs": \["Typed transaction", "Chain config", "Account state"],
+"procedure": \[
+"1. Decode typed transaction; reject if unknown type.",
+"2. Enforce TX\_MAX\_GAS\_LIMIT and calldata floor pricing.",
+"3. Verify nonce, signature/auth (e.g., SetCode auth), and balances.",
+"4. If blob tx: validate blob hashes, count, and price bounds."
+],
+"postconditions": \[
+"Transaction is either accepted into execution or rejected with precise error."
+],
+"errors": \[
+{"code": "ERR\_TX\_GAS\_CAP", "when": "gas > 2^24", "effect": "reject"},
+{"code": "ERR\_BLOB\_COUNT", "when": ">6 per tx", "effect": "reject"}
+],
+"rationale": "Defends against DoS from over‑sized transactions and enforces fee market rules. \[S1] Sources: ..."
+}
+],
+"algorithms": \[
+{
+"name": "Blob Base Fee Update (Osaka)",
+"purpose": "Compute blob gas price from excess\_blob\_gas with lower bound.",
+"pseudocode": "`pseudo\nfunction blob_gas_price(excess): ...\n` \[S1] Sources: \[S1] https\://...",
+"complexity": "O(1)",
+"notes": "Monotonicity MUST hold; no under/overflow. \[S1] Sources: ..."
+}
+],
+"apis": {
+"interfaces": \[
+{
+"kind": "json\_rpc",
+"name": "eth\_config",
+"stability": "stable",
+"request\_schema": "{...}",
+"response\_schema": "{...}",
+"errors": \["InvalidParams", "InternalError"],
+"notes": "Expose Osaka constants and blob schedule. \[S1] Sources: ..."
+},
+{
+"kind": "engine\_api",
+"name": "forkchoiceUpdatedV\*",
+"stability": "stable",
+"sequence\_diagram": "Mermaid sequence of CL→EL FCU with Osaka fields. \[S1] Sources: ..."
+}
+]
+},
+"wire\_protocol": {
+"topics": \[],
+"notes": "EL wire protocols referenced (if any). Keep brief; most wire‑level changes are on CL side."
+},
+"constants": \[
+{"name": "TX\_MAX\_GAS\_LIMIT", "value": "16777216", "units": "gas", "notes": "2^24. \[S1] Sources: ..."}
+],
+"invariants": \[
+"RLP execution block size MUST NOT exceed MAX\_RLP\_BLOCK\_SIZE. \[S1] Sources: ..."
+],
+"user\_flows": \[
+{
+"id": 1,
+"title": "\[Client] New transaction inclusion (Osaka rules)",
+"actors": \["User", "EL Client", "CL via Engine API"],
+"preconditions": \["Osaka active", "Engine API connected"],
+"steps": \[
+"1. Receive tx via RPC/p2p.",
+"2. Run OSK-TX-VALIDATION procedure.",
+"3. Execute EVM; update receipts, requests\_hash.",
+"4. Return payload result to CL."
+],
+"postconditions": \["State updated; payload advertised. \[S1] Sources: ..."]
+}
+],
+"worked\_examples": \[
+{
+"id": "EX-OSK-BLOB-PRICE",
+"title": "Blob gas price under low demand",
+"scenario": "excess\_blob\_gas below threshold",
+"given": "target=..., base cost=..., excess=...",
+"when": "block contains k blobs",
+"then": "blob gas price is bounded by execution cost lower bound. \[S1] Sources: ..."
+}
+],
+"edge\_cases": \[
+"CLZ opcode with input=0 MUST return 256. \[S1] Sources: ..."
+],
+"compatibility": {
+"backwards": "Describe incompatibilities vs previous fork.",
+"cross\_layer": "Summarize Osaka↔Fulu interplay (requests\_hash, blob availability). \[S1]\[S2] Sources: ..."
+},
+"changelog": {
+"latest\_version": "\<tag|branch>",
+"since\_previous": \[
+{"commit": "<hash>", "date": "<YYYY-MM-DD>", "summary": "User‑visible Osaka delta. \[S1] Sources: ..."}
+],
+"breaking\_changes": \[
+"List explicit breaking behaviors (caps, limits, new opcodes). \[S1] Sources: ..."
+]
+},
+"bug\_bounty": {
+"scope": "Repos/branches, in‑scope Osaka components. \[S1] Sources: ...",
+"impact": "Critical/High definitions (funds at risk, consensus split, auth bypass). \[S1] Sources: ...",
+"exclusions": "Non‑issues and out‑of‑scope items. \[S1] Sources: ...",
+"reproduction": "Required PoC format, env, funding limits. \[S1] Sources: ...",
+"reporting": "Channel/PGP/SLA. \[S1] Sources: ...",
+"rewards": "Policy/tiers. \[S1] Sources: ..."
+}
+},
+{
+"name": "Fulu",
+"layer": "Consensus",
+"genre": "Ethereum Client Spec",
+"architecture": {
+"overview": "Natural-language paragraph describing Fulu scope (e.g., PeerDAS, proposer lookahead), activation, and EL boundary expectations. \[S1]\[S2] Sources: ...",
+"components": \[
+{
+"name": "PeerDAS Sampling",
+"type": "service|module",
+"description": "Sampling, custody assignment, sidecar handling, validation gates. \[S1] Sources: ..."
+}
+],
+"state\_machines": \[
+{
+"name": "Proposer Lookahead",
+"inputs": \["Beacon state", "Epoch transitions"],
+"outputs": \["Deterministic schedule"],
+"invariants": \["Lookahead vector MUST be deterministic for pre‑confirmation safety. \[S1] Sources: ..."],
+"transitions": \[
+"1. Compute lookahead at epoch boundary.",
+"2. Persist in state for external verification."
+]
+}
+],
+"data\_flow\_diagram": "Mermaid showing gossip topics (data\_column\_sidecar\_\*), Req/Resp, sampling & custody. \[S1] Sources: ..."
+},
+"normative\_spec": \[
+{
+"id": "FULU-PEERDAS",
+"title": "Data Availability Sampling (PeerDAS)",
+"summary": "Node MUST sample columns and verify cell KZG proofs; proposer MUST assemble sidecars correctly. \[S1] Sources: ...",
+"preconditions": \["Fork active; subnet subscriptions in place. \[S1] Sources: ..."],
+"inputs": \["Block body", "Data columns/sidecars", "KZG commitments"],
+"procedure": \[
+"1. Subscribe to per‑column subnets.",
+"2. Sample assigned columns; verify KZG proofs.",
+"3. Mark custody and contribute to availability decision."
+],
+"postconditions": \["Availability considered satisfied if sampling thresholds met. \[S1] Sources: ..."],
+"errors": \[
+{"code": "ERR\_INSUFFICIENT\_SAMPLES", "when": "below threshold", "effect": "treat as unavailable"}
+],
+"rationale": "Enables scalable blob throughput while bounding verification cost. \[S1] Sources: ..."
+}
+],
+"algorithms": \[
+{
+"name": "Custody Assignment",
+"purpose": "Assign columns to validators each slot/epoch.",
+"pseudocode": "`pseudo\nassign_custody(state, slot): ...\n` \[S1] Sources: ...",
+"notes": "Uniform distribution; resilience under churn. \[S1] Sources: ..."
+}
+],
+"apis": {
+"interfaces": \[
+{
+"kind": "beacon\_api",
+"name": "GET /eth/v2/beacon/blocks/{slot}",
+"stability": "stable",
+"notes": "Document fields relevant to PeerDAS/requests. \[S1] Sources: ..."
+}
+]
+},
+"wire\_protocol": {
+"topics": \[
+"data\_column\_sidecar\_{subnet\_id}"
+],
+"notes": "Req/Resp RPCs for column range fetch. \[S1] Sources: ..."
+},
+"constants": \[
+{"name": "SAMPLES\_PER\_BLOCK", "value": "<n>", "units": "columns", "notes": "If specified. \[S1] Sources: ..."}
+],
+"invariants": \[
+"Proposer lookahead MUST be derivable from beacon root. \[S1] Sources: ..."
+],
+"user\_flows": \[
+{
+"id": 1,
+"title": "\[Client] PeerDAS sampling cycle",
+"actors": \["Validator", "Beacon Node"],
+"preconditions": \["Subscribed to column subnets"],
+"steps": \[
+"1. Receive sidecars; verify proofs.",
+"2. Sample assigned columns; record custody.",
+"3. Contribute to availability verdict."
+],
+"postconditions": \["Block considered available/unavailable. \[S1] Sources: ..."]
+}
+],
+"worked\_examples": \[
+{
+"id": "EX-FULU-SAMPLING",
+"title": "Sampling with partial sidecar loss",
+"scenario": "Lost sidecars in some subnets",
+"given": "Assignment across k subnets",
+"when": "Missing m sidecars",
+"then": "Availability decision still satisfied if threshold met. \[S1] Sources: ..."
+}
+],
+"edge\_cases": \[
+"Sidecar with invalid cell proof MUST be rejected and penalized per rules. \[S1] Sources: ..."
+],
+"compatibility": {
+"cross\_layer": "Fulu expectations on EL payloads (e.g., requests\_hash, blob accounting). \[S1]\[S2] Sources: ..."
+},
+"changelog": {
+"latest\_version": "\<tag|branch>",
+"since\_previous": \[
+{"commit": "<hash>", "date": "<YYYY-MM-DD>", "summary": "User‑visible Fulu delta. \[S1] Sources: ..."}
+],
+"breaking\_changes": \[
+"List explicit changes affecting client behavior. \[S1] Sources: ..."
+]
+},
+"bug\_bounty": {
+"scope": "Repos/branches, in‑scope Fulu components. \[S1] Sources: ...",
+"impact": "Consensus split, slashable faults, DoS. \[S1] Sources: ...",
+"exclusions": "Telemetry-only, cosmetic issues. \[S1] Sources: ...",
+"reproduction": "Devnet/testnet steps; PoC requirements. \[S1] Sources: ...",
+"reporting": "Channel/PGP/SLA. \[S1] Sources: ...",
+"rewards": "Policy/tiers. \[S1] Sources: ..."
+}
+}
+],
+"cross\_layer": {
+"interfaces": \[
+{
+"name": "Engine API / Fork Choice",
+"preconditions": \["EL/CL versions compatible; JWT/auth as required"],
+"sequence\_diagram": "Mermaid sequence of CL→EL FCU, payload attributes/payload status, with requests\_hash and excess\_blob\_gas fields. \[S1] Sources: ...",
+"errors": \["INVALID\_PARAMS", "SYNCING", "INVALID\_BLOCK\_HASH"],
+"timeouts": "Document expected timeouts and retries. \[S1] Sources: ...",
+"notes": "Map Fulu expectations to Osaka commitments (headers, receipts). \[S1] Sources: ..."
+}
+],
+"data\_availability": "Summarize how PeerDAS (Fulu) and blob pricing/limits (Osaka) interact. \[S1]\[S2] Sources: ..."
+},
+"security\_requirements": \[
+{
+"id": "SR-EL-001",
+"description": "EL MUST enforce Osaka gas/size caps before execution; reject malformed payloads deterministically. \[S1] Sources: ...",
+"risk\_category": "integrity",
+"related\_components": \["Tx Validation", "State Transition"]
+},
+{
+"id": "SR-CL-001",
+"description": "CL MUST ensure DA sampling thresholds and proof verification before attesting. \[S1] Sources: ...",
+"risk\_category": "consensus",
+"related\_components": \["PeerDAS Sampling"]
+},
+{
+"id": "SR-XL-001",
+"description": "EL/CL interface MUST keep FCU/finality consistent; unvalidated payloads must not alter canonical state. \[S1] Sources: ...",
+"risk\_category": "consistency",
+"related\_components": \["Engine API"]
+},
+{
+"id": "SR-EL-002",
+"description": "Blob fee invariants MUST be monotonic with defined lower bound; prevent arithmetic under/overflow. \[S1] Sources: ...",
+"risk\_category": "economic",
+"related\_components": \["Fee Market"]
+},
+{
+"id": "SR-CL-002",
+"description": "Proposer lookahead MUST be deterministic from beacon state and verifiable externally. \[S1] Sources: ...",
+"risk\_category": "liveness",
+"related\_components": \["Proposer Lookahead"]
+}
+]
+}
 
-## 🧪 Bug Bounty Integration (required)
+```
 
-Include and cite with `[S#]` footnotes in relevant sections:
+USER‑FLOW CONSTRUCTION (by genre):
+- **[Ethereum Client]** Focus on inter‑node requests & consensus boundaries:
+  Peer discovery → Handshake (eth/69 or Beacon gossip) → Tx/Blob propagation → Block import → FCU → Engine/Beacon API → Sync/Pruning → Metrics/Healthcheck.
 
-* **Scope** (contract addresses, networks, branches, in‑scope components)
-* **Impact/Severity criteria** (definitions of High/Critical, funds at risk, auth bypass, DoS, etc.)
-* **Exclusions** (known non‑issues, informational)
-* **Reproduction requirements** (PoC format, environment, tools, funding limits, attack allowances)
-* **Reporting channel** (format, PGP/contact, SLA)
+QUALITY & WRITING RULES:
+- Use RFC‑2119 keywords (MUST/SHOULD/MAY) in **normative_spec**.
+- Each **procedure** is a *numbered* step list; each **errors** entry names a code, condition, and effect.
+- Keep each narrative chunk concise but self‑contained (≤ 250 words).
+- End every string with `Sources: [S#] URL, ...`
 
----
+BUG BOUNTY INTEGRATION:
+- Populate `bug_bounty` for both forks with: Scope, Impact, Exclusions, Reproduction, Reporting (PGP/contact/SLA), Rewards.
+- Prefer official EF posts/pages and recognized platforms.
 
-## 🧩 User‑Flow Construction Guide (by genre)
+CHANGE LOG:
+- Diff the two most recent releases/commits per fork; list **only user‑visible** changes. Mark breaking changes and migrations.
 
-Each flow **must** include `actors`, `preconditions`, **numbered** `steps`, and `postconditions`.
-
-* **\[Ethereum Client]** Focus on **inter‑node requests** and **consensus/fork‑choice**:
-  Peer Discovery → Handshake (RLPx) → Tx Propagation → Block Import → Fork‑Choice (FCU) → Engine API (EL/CL) → Pruning/Sync (Headers/Snap/Beam) → JSON‑RPC handling → Metrics/Healthcheck.
-
-* **\[Smart Contract]** Focus on **user‑initiated transaction requests**:
-  Approve/Transfer, Deposit/Withdraw, Mint/Burn, Swap/LP, Liquidation, Auction/Bid, Governance (Vote/Queue/Execute), Upgrade (Proxy/UUPS), Role/AccessControl, Oracle updates, Permit (EIP‑2612).
-
-* **\[ZK]** Focus on **proof generation and verification paths**:
-  Witness creation → Prover (circuit constraints) → Proof generation → Aggregation (optional) → On‑chain Verifier / Off‑chain verification → State reflection (e.g., L1 bridge).
-
-* **\[Web App]** Focus on **auth/session/privileged ops**:
-  Signup/Login/MFA, Session lifecycle, RBAC, settings change, payments/signatures, webhook intake, admin actions, rate‑limit/replay protection, secrets rotation.
-
-* **Multi‑Domain:** Provide 3–8 key flows per domain and **tag** titles with the domain.
-
----
-
-## 🔐 Security Requirements (suggested areas)
-
-* **Ethereum Client:** peer validation & anti‑DoS, txpool replacement (EIP‑1559)/nonce racing, FCU/finality consistency, robust Engine API error handling, time sync/slot drift, isolation of unvalidated blocks.
-* **Smart Contract:** reentrancy, privilege boundaries, precision/rounding, price‑oracle dependencies, threshold signatures, `delegatecall`/initializer locks, upgrade authority, checks‑effects‑interactions.
-* **ZK:** Fiat‑Shamir boundaries, CRS/trapdoor handling, input binding, public‑input malleability, verification‑key integrity.
-* **Web App:** auth/CSRF/XSS/SSRF, JWT/OIDC `exp/iss/aud` validation, privilege escalation, IDOR, rate limiting, audit‑log integrity.
-  → Encode as **concrete specification items** in `security_requirements` (≥ 5 entries), each with **related\_components** and **references** (CWE/EIP/RFC/ISO, etc.).
-
----
-
-## 📜 Change Log
-
-Diff the **two most recent releases** and list **only user‑visible behavior changes**.
-Explicitly note breaking changes, deprecations, and migration steps.
-
----
-
-## 🛠️ Methodology (strict)
-
-1. **Breadth‑first traverse** all files and subdirectories; deduplicate by path and heading.
-2. **Select latest stable** by SemVer; exclude `rc`/`beta` (if none, use `main`/`master`).
-3. **Auto‑detect genre** using the heuristics above.
-4. **Augment via web search**: collect official docs/audits/bug‑bounty requirements and embed **per‑section** `[S#]` citations and source lists **inside strings**.
-5. **Summarize**: ≤ 120 words per section; factual only—no speculation.
-6. **Infer implicit security requirements** (e.g., replay resistance) from protocol descriptions.
-7. **Changelog**: compare only the latest two versions; omit incidental technical noise.
-8. **Validate JSON** strictly against the schema (no comments/extra keys).
-9. **Output** nothing to chat; write only `security-agent/outputs/01_SPEC.json`.
-
----
-
-## 📚 Quality Levers
-
-* Use **bullet extraction → reflection → rewriting** loops to maximize fidelity.
-* **Embed citations as footnotes inside strings** (e.g., `... [S1][S2] Sources: [S1] https://... [S2] https://...`).
-* For Multi‑Domain, clarify with **title tags**.
-* For API/CLI/interfaces, extract **actual signatures** and **error conditions**.
-* In the Mermaid DFD, show primary data paths and trust boundaries (external services/secret storage).
-
----
-
-## ✅ Success Criteria
-
-* File exists and is **valid JSON**.
-* All five sections are populated and non‑empty.
-* **User flows cover ≥ 80% of documented features**, numbered and concrete.
-* **≥ 5 security requirements**, each mapped to components with standard references.
-* Bug bounty requirements are reflected and **footnoted**.
-
----
-
-**Runtime note:** If web search is unavailable, **abort execution** and treat as a retryable error (do **not** emit an incomplete spec).
+RUNTIME NOTE:
+- If web search is unavailable, **abort** and treat as retryable error (do **not** emit a partial spec).
+```
 
 ---

@@ -1,0 +1,173 @@
+[
+  {
+    "body": "Similar to https://github.com/ethereum/go-ethereum/pull/32731, add a check the activation of osaka in getBlobsV1 request\r\n\r\n\r\ncloses #18668",
+    "closedAt": "2025-09-26T13:14:10Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "D4C5F9",
+        "description": "Related to the Osaka network upgrade",
+        "id": "LA_kwDOIAWIw88AAAABx6mdQA",
+        "name": "E-osaka"
+      }
+    ],
+    "state": "merged",
+    "title": "fix(rpc/engine): check osaka in getBlobsV1",
+    "updatedAt": "2025-09-26T13:14:10Z",
+    "url": "https://github.com/paradigmxyz/reth/pull/18669"
+  },
+  {
+    "body": "fixes `consume-engine tests/osaka` eest failures, for instance in `tests/osaka/eip7825_transaction_gas_limit_cap/test_tx_gas_limit::py::test_tx_gas_limit_cap_access_list_with_diff_addr[fork_Osaka-blockchain_test_engine_from_state_test-exceed_tx_gas_li\r\n  mit_True-correct_intrinsic_cost_in_transaction_gas_limit_True]-reth FAILED [1/1]`:\r\n\r\n```\r\n =================================== FAILURES ===================================\r\n  _ tests/osaka/eip7825_transaction_gas_limit_cap/test_tx_gas_limit.py::test_tx_gas_limit_cap_access_list_with_diff_addr[fork_Osaka-blockchain_test_engine_from_state_test-exceed_tx_gas_l\r\n  imit_True-correct_intrinsic_cost_in_transaction_gas_limit_True]-reth _\r\n  src/pytest_plugins/consume/simulators/simulator_logic/test_via_engine.py:126: in test_blockchain_via_engine\r\n      raise LoggedError(message)\r\n  E   pytest_plugins.consume.simulators.simulator_logic.test_via_engine.LoggedError: Undefined exception message: expected exception: \"TransactionException.GAS_LIMIT_EXCEEDS_MAXIMUM\",\r\n  returned exception: \"transaction 0xd1d93e2014af0a1f0b52642b7a9ffb882f4631b03a75f33291e70b557605bdbf gas limit 16778100 exceeds maximum 16777216\" (mapper: \"RethExceptionMapper\")\r\n```  \r\n\r\nsuccessful execution from this branch: https://github.com/paradigmxyz/reth/actions/runs/17827583370/job/50685994149",
+    "closedAt": "2025-09-18T13:38:02Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "F9D0C4",
+        "description": "A change that impacts how or what we test",
+        "id": "LA_kwDOIAWIw88AAAABFTaVyQ",
+        "name": "C-test"
+      },
+      {
+        "color": "ACC5DE",
+        "description": "Used for labelling automated issues relating to hive test failures",
+        "id": "LA_kwDOIAWIw88AAAABi685dA",
+        "name": "C-hivetest"
+      },
+      {
+        "color": "FEF2C0",
+        "description": "Related to github workflows or other build and lint tools",
+        "id": "LA_kwDOIAWIw88AAAABn_-ZNA",
+        "name": "A-ci"
+      }
+    ],
+    "state": "merged",
+    "title": "chore(consensus): update EIP-7825 error message format",
+    "updatedAt": "2025-09-18T13:38:03Z",
+    "url": "https://github.com/paradigmxyz/reth/pull/18549"
+  },
+  {
+    "body": "Currently we don't check for `is_osaka` before erroring in `default_ethereum_payload`. \r\n\r\nThis could result in a scenario where valid full blocks are discarded by the proposer before osaka\r\n\r\nThe below check exists but only helps prevent erroring after osaka\r\n```rust\r\n        if is_osaka && estimated_block_size_with_tx > MAX_RLP_BLOCK_SIZE {\r\n            best_txs.mark_invalid(\r\n                &pool_tx,\r\n                InvalidPoolTransactionError::OversizedData(\r\n                    estimated_block_size_with_tx,\r\n                    MAX_RLP_BLOCK_SIZE,\r\n                ),\r\n            );\r\n            continue;\r\n        }\r\n```\r\n",
+    "closedAt": "2025-09-10T07:23:17Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "FEF2C0",
+        "description": "Related to block building",
+        "id": "LA_kwDOIAWIw88AAAABFTY-oA",
+        "name": "A-block-building"
+      }
+    ],
+    "state": "merged",
+    "title": "fix: add is_osaka check before erroring in default_ethereum_payload",
+    "updatedAt": "2025-09-10T07:23:17Z",
+    "url": "https://github.com/paradigmxyz/reth/pull/18355"
+  },
+  {
+    "body": "Adds pre-execution (already exists in revm) validation similar to the other EL clients to save resources by not trying to execute transactions that exceed the maximum gas limit defined by EIP-7825. Introduces a new ConsensusError variant for transactions exceeding this limit.",
+    "closedAt": "2025-09-15T10:40:25Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "FEF2C0",
+        "description": "Related to the consensus engine",
+        "id": "LA_kwDOIAWIw88AAAABFTYjXQ",
+        "name": "A-consensus"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Related to the Osaka network upgrade",
+        "id": "LA_kwDOIAWIw88AAAABx6mdQA",
+        "name": "E-osaka"
+      }
+    ],
+    "state": "merged",
+    "title": "perf: Enforce EIP-7825 transaction gas limit for Osaka",
+    "updatedAt": "2025-09-15T10:40:25Z",
+    "url": "https://github.com/paradigmxyz/reth/pull/18439"
+  },
+  {
+    "body": "Fixes #18110\r\n\r\nadd EIP-7934 block size validation to validateBuilderSubmissionV5\r\n\r\nEnforce MAX_RLP_BLOCK_SIZE limit when Osaka hardfork is active.",
+    "closedAt": "2025-08-28T08:14:16Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "FEF2C0",
+        "description": "Related to the RPC implementation",
+        "id": "LA_kwDOIAWIw88AAAABFTYaug",
+        "name": "A-rpc"
+      }
+    ],
+    "state": "merged",
+    "title": "feat: add EIP-7934 block size check to validateBuilderSubmissionV5",
+    "updatedAt": "2025-08-28T08:14:16Z",
+    "url": "https://github.com/paradigmxyz/reth/pull/18111"
+  },
+  {
+    "body": "## Description\r\n\r\nExtracted from https://github.com/paradigmxyz/reth/tree/fusaka/devnet1. Remove pre-emptive excess blob gas check as it's no longer feasible after Osaka due to [EIP-7918](https://eips.ethereum.org/EIPS/eip-7918) and was not needed in the first place.",
+    "closedAt": "2025-06-09T14:41:15Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "feat: remove preemptive excess blob gas check",
+    "updatedAt": "2025-06-09T14:41:16Z",
+    "url": "https://github.com/paradigmxyz/reth/pull/16729"
+  },
+  {
+    "body": "## Description\r\n\r\nReject EIP-7594 sidecars pre-Osaka and EIP-4844 sidecars post-Osaka.",
+    "closedAt": "2025-05-20T15:36:52Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "F9D0C4",
+        "description": "New feature or request",
+        "id": "LA_kwDOIAWIw88AAAABDoop9g",
+        "name": "C-enhancement"
+      },
+      {
+        "color": "FEF2C0",
+        "description": "Related to the transaction mempool",
+        "id": "LA_kwDOIAWIw88AAAABFTZDgg",
+        "name": "A-tx-pool"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Related to the Osaka network upgrade",
+        "id": "LA_kwDOIAWIw88AAAABx6mdQA",
+        "name": "E-osaka"
+      }
+    ],
+    "state": "merged",
+    "title": "feat(txpool): properly validate sidecar according to the active fork",
+    "updatedAt": "2025-05-20T15:36:53Z",
+    "url": "https://github.com/paradigmxyz/reth/pull/16370"
+  },
+  {
+    "body": "Implements https://eips.ethereum.org/EIPS/eip-7934",
+    "closedAt": "2025-07-15T02:16:49Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "E99695",
+        "description": "This cannot more forward until something else changes",
+        "id": "LA_kwDOIAWIw88AAAABFTVsoA",
+        "name": "S-blocked"
+      },
+      {
+        "color": "C5DEF5",
+        "description": "This issue is a tracking issue for a devnet",
+        "id": "LA_kwDOIAWIw88AAAABS0pzmQ",
+        "name": "M-devnet"
+      },
+      {
+        "color": "cfd3d7",
+        "description": "This issue/PR is stale and will close with no further activity",
+        "id": "LA_kwDOIAWIw88AAAABU1GWAw",
+        "name": "S-stale"
+      }
+    ],
+    "state": "closed",
+    "title": "feat: implement EIP-7934",
+    "updatedAt": "2025-07-15T09:04:52Z",
+    "url": "https://github.com/paradigmxyz/reth/pull/16726"
+  }
+]

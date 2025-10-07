@@ -1,0 +1,52 @@
+[
+  {
+    "body": "@hangleang disabled syncing from the current head - 1 epoch because it redownloaded too much. I propose we do 5 resyncs from current head and if it fails we do another 5 resynces from current head - 1 epoch. @Tumas implemented it. He will push it now and it should redeploy automatically to devnet. Tomorrow we will check did it help.",
+    "closedAt": "0001-01-01T00:00:00Z",
+    "isPullRequest": false,
+    "labels": [],
+    "state": "open",
+    "title": "Fix Fulu devnet syncing",
+    "updatedAt": "2025-09-03T04:25:31Z",
+    "url": "https://github.com/grandinetech/grandine/issues/336"
+  },
+  {
+    "body": "Fixes these rate limiter warnings: \r\n\r\n```\r\n[2025-09-17T12:55:44.976+00:00] [ERROR] [eth2_libp2p::rpc::self_limiter] [peers: 29/100] Self rate limiting error for a batch that will never fit. Sending request anyway. Check configuration parameters., service: libp2p_rpc, service: libp2p, protocol: blob_sidecars_by_range\r\n[2025-09-17T12:55:44.976+00:00] [ERROR] [eth2_libp2p::rpc::self_limiter] [peers: 29/100] Self rate limiting error for a batch that will never fit. Sending request anyway. Check configuration parameters., service: libp2p_rpc, service: libp2p, protocol: blob_sidecars_by_range\r\n```\r\n\r\nThis happens when syncing **without checkpoint-sync** and when _current fork according to the wall clock is Fulu but head is still in Electra._ Max expected responses are calculated by current fork which is based on wall clock and not on the head state / sync state. This only affects blob sidecars by range",
+    "closedAt": "2025-09-23T12:05:51Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "Fix expected max responses for `BlobsByRange` requests",
+    "updatedAt": "2025-09-23T12:05:51Z",
+    "url": "https://github.com/grandinetech/grandine/pull/381"
+  },
+  {
+    "body": "Hey Saulius and team,\n\nWhile doing some Fusaka tests I encountered this bug where Grandine refuses post-Fulu blocks on the `/eth/v2/beacon/blocks` Beacon API endpoint. Grandine appears to think the submitted blocks are Electra blocks, even though they are Fulu blocks as indicated by the `Eth-Consensus-Version` header. Grandine's error message:\n\n`{\"code\":400,\"message\":\"invalid block: state and block phases do not match (state: fulu, block: electra)\"}`\n\nI discovered this only happens for JSON-encoded blocks, SSZ works fine. I haven't tested the blinded block paths but I suspect those could be affected in the same way.\n\nKurtosis reproducer config:\n\n```\nparticipants:\n  - el_type: geth\n    el_image: docker.ethquokkaops.io/dh/ethpandaops/geth:fusaka-devnet-3\n    cl_type: grandine\n    cl_image: docker.ethquokkaops.io/dh/ethpandaops/grandine:fusaka-devnet-3\n    use_separate_vc: true\n    vc_type: vero\n    vc_image: ghcr.io/serenita-org/vero:fusaka\n    use_remote_signer: true\n\nadditional_services:\n  - dora\n  - prometheus_grafana\n\nnetwork_params:\n  genesis_delay: 60\n  electra_fork_epoch: 0\n  fulu_fork_epoch: 1\n  seconds_per_slot: 3\n```",
+    "closedAt": "2025-09-10T14:53:21Z",
+    "isPullRequest": false,
+    "labels": [],
+    "state": "closed",
+    "title": "Grandine fails to process JSON-encoded Fulu blocks on `POST /eth/v2/beacon/blocks`",
+    "updatedAt": "2025-09-10T14:53:21Z",
+    "url": "https://github.com/grandinetech/grandine/issues/281"
+  },
+  {
+    "body": "",
+    "closedAt": "2025-09-04T10:54:19Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "HTTP API: return error on data column sidecars for pre-fulu block",
+    "updatedAt": "2025-09-04T10:54:19Z",
+    "url": "https://github.com/grandinetech/grandine/pull/349"
+  },
+  {
+    "body": "this PR include:\r\n* fix missing blobs sync after fulu activated\r\n* reconstruct using data column sidecars from cached and storage\r\n* request data columns by root to the most coverage peer if any\r\n* ~~request data columns by range to a subset of available peers, leaving some for by root requests~~",
+    "closedAt": "2025-06-09T05:53:04Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "Fix missing blobs sync after fulu activated",
+    "updatedAt": "2025-06-09T05:53:04Z",
+    "url": "https://github.com/grandinetech/grandine/pull/220"
+  }
+]

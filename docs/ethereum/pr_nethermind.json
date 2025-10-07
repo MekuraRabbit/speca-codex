@@ -1,0 +1,73 @@
+[
+  {
+    "body": "## Changes\r\n\r\n- Caps eth_estimateGas with EIP-7825 limit\r\n- Moves tests to Osaka spec (`DevBlockProducerTests` failed, left on Cancun)\r\n- Some general small refactors\r\n\r\n## Types of changes\r\n\r\n#### What types of changes does your code introduce?\r\n\r\n- [x] New feature (a non-breaking change that adds functionality)\r\n\r\n## Testing\r\n\r\n#### Requires testing\r\n\r\n- [x] Yes\r\n- [ ] No\r\n\r\n#### If yes, did you write tests?\r\n\r\n- [x] Yes\r\n- [ ] No",
+    "closedAt": "2025-09-23T14:49:56Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "Feature/cap estimate gas to 7825",
+    "updatedAt": "2025-09-23T14:49:59Z",
+    "url": "https://github.com/NethermindEth/nethermind/pull/9331"
+  },
+  {
+    "body": "Before Osaka it was enough to check transactions when it was getting into the pool. On new fork rules were not invalidated. Now we have 3 new things that potentially invalidate transaction on new head(which can be new fork):\r\n- tx gas limit (30MGas, with no cap before)\r\n- proof version (v0 but with fork we expect v1, we agreed to not transform proofs as it is too expensive and risky)\r\n- max blob count (can become 6 after was set to 9)\r\n\r\nSo we need to remove transactions from tx pool in rare case of Osaka fork, we do the checks in UpdateGasBottleneck\r\nWith new head such transactions will be removed, but when we are asked to produce a block, they can still be there\r\nSo we add additional filtering for transactions when they are being picked by block producer\r\n\r\n3 checks in total\r\n\r\n## Changes\r\n\r\n- Clean up tx pool from such txs on fork activation\r\n- Filter out them in block production\r\n\r\n\r\n## Types of changes\r\n\r\n#### What types of changes does your code introduce?\r\n\r\n- [x] Bugfix (a non-breaking change that fixes an issue)\r\n- [x] New feature (a non-breaking change that adds functionality)\r\n- [ ] Breaking change (a change that causes existing functionality not to work as expected)\r\n- [ ] Optimization\r\n- [ ] Refactoring\r\n- [ ] Documentation update\r\n- [ ] Build-related changes\r\n- [ ] Other: _Description_\r\n\r\n## Testing\r\n\r\n#### Requires testing\r\n\r\n- [x] Yes\r\n- [ ] No\r\n\r\n#### If yes, did you write tests?\r\n\r\n- [x] Yes\r\n- [ ] No\r\n",
+    "closedAt": "2025-07-22T13:20:40Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "1311A4",
+        "description": "Fusaka Hard Fork",
+        "id": "LA_kwDOBggaLc8AAAAB4zttYg",
+        "name": "osaka"
+      }
+    ],
+    "state": "merged",
+    "title": "Ignore and decline gas intensive transactions when eip-7825 is activated",
+    "updatedAt": "2025-07-22T13:20:42Z",
+    "url": "https://github.com/NethermindEth/nethermind/pull/8747"
+  },
+  {
+    "body": "## Changes\r\n\r\n- Rename RIP-7212 to EIP-7951\r\n- Enable in Osaka\r\n- Ignore `reharsal` chain in Superchain Registry\r\n\r\n## Types of changes\r\n\r\n#### What types of changes does your code introduce?\r\n\r\n- [ ] Bugfix (a non-breaking change that fixes an issue)\r\n- [ ] New feature (a non-breaking change that adds functionality)\r\n- [ ] Breaking change (a change that causes existing functionality not to work as expected)\r\n- [ ] Optimization\r\n- [x] Refactoring\r\n- [ ] Documentation update\r\n- [ ] Build-related changes\r\n- [x] Other: Config\r\n\r\n## Testing\r\n\r\n#### Requires testing\r\n\r\n- [ ] Yes\r\n- [x] No\r\n\r\n#### If yes, did you write tests?\r\n\r\n- [ ] Yes\r\n- [x] No\r\n\r\n## Documentation\r\n\r\n#### Requires documentation update\r\n\r\n- [ ] Yes\r\n- [x] No\r\n\r\n#### Requires explanation in Release Notes\r\n\r\n- [ ] Yes\r\n- [x] No\r\n\r\n#### Remarks\r\n\r\n`reharsal` chains in the Superchain Registry are testnet chains that we're not interested in supporting.",
+    "closedAt": "2025-06-20T14:53:07Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "Rename RIP-7212 to EIP-7951 & enable in Osaka",
+    "updatedAt": "2025-06-20T14:53:10Z",
+    "url": "https://github.com/NethermindEth/nethermind/pull/8753"
+  },
+  {
+    "body": "Replaces https://github.com/NethermindEth/nethermind/pull/8757\r\n\r\n## Changes\r\n\r\n- Implement EIP-7934, check encoded block RLP size on validation\r\n\r\n## Types of changes\r\n\r\n#### What types of changes does your code introduce?\r\n\r\n- [ ] Bugfix (a non-breaking change that fixes an issue)\r\n- [x] New feature (a non-breaking change that adds functionality)\r\n- [ ] Breaking change (a change that causes existing functionality not to work as expected)\r\n- [ ] Optimization\r\n- [ ] Refactoring\r\n- [ ] Documentation update\r\n- [ ] Build-related changes\r\n- [ ] Other: _Description_\r\n\r\n## Testing\r\n\r\n#### Requires testing\r\n\r\n- [x] Yes\r\n- [ ] No\r\n\r\n#### If yes, did you write tests?\r\n\r\n- [x] Yes\r\n- [ ] No\r\n\r\n## Documentation\r\n\r\n#### Requires documentation update\r\n\r\n- [ ] Yes\r\n- [x] No\r\n\r\n#### Requires explanation in Release Notes\r\n\r\n- [ ] Yes\r\n- [x] No\r\n",
+    "closedAt": "2025-07-02T15:02:41Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "1311A4",
+        "description": "Fusaka Hard Fork",
+        "id": "LA_kwDOBggaLc8AAAAB4zttYg",
+        "name": "osaka"
+      }
+    ],
+    "state": "merged",
+    "title": "Implement EIP-7934: RLP Execution Block Size Limit #8757",
+    "updatedAt": "2025-07-02T15:02:43Z",
+    "url": "https://github.com/NethermindEth/nethermind/pull/8815"
+  },
+  {
+    "body": "## Changes\r\n\r\nEngine API [(spec)](https://github.com/ethereum/execution-apis/pull/630/files):\r\n- added `engine_getPayloadV5` and `BlobsBundleV2`\r\n- added `engine_getBlobsV2` and `BlobAndProofV2`\r\n\r\nEIP-7594 [(spec)](https://github.com/ethereum/EIPs/pull/9378/files):\r\n- added `ProofVersion` to network wrapper\r\n- added support for version 0x1 of network wrapper (cell proofs)\r\n\r\nOther:\r\n- bumped ckzg package from `2.0.1.1258` to `2.1.0.1342`\r\n- added tests for storage of blob transactions with cell proofs\r\n\r\nTODO:\r\n\r\n- [x] p2p logic (send wrapper 0x00 only before fork and 0x01 only after fork)\r\n- [ ] p2p perf improvement (after fork skip requesting blob txs with size lower than min size of blob tx with cell proofs as it is 100% old format which will be rejected anyway)\r\n- [x] (optional) add config `proofsTranslationEnabled` - if `true`, after the fork accept txs from RPC endpoint with network wrapped in old format and translate to the new one (so calculate cell proofs)\r\n- [ ] benchmark, improve proof verification (and probably proof generation) performance \r\n\r\n## Types of changes\r\n\r\n#### What types of changes does your code introduce?\r\n\r\n- [ ] Bugfix (a non-breaking change that fixes an issue)\r\n- [x] New feature (a non-breaking change that adds functionality)\r\n- [ ] Breaking change (a change that causes existing functionality not to work as expected)\r\n- [ ] Optimization\r\n- [ ] Refactoring\r\n- [ ] Documentation update\r\n- [ ] Build-related changes\r\n- [ ] Other: _Description_\r\n\r\n## Testing\r\n\r\n#### Requires testing\r\n\r\n- [x] Yes\r\n- [ ] No\r\n\r\n#### If yes, did you write tests?\r\n\r\n- [x] Yes\r\n- [ ] No\r\n\r\n#### Notes on testing\r\n\r\nTo activate peerdas in chainspec the following changes are required:\r\n\r\n```json\r\n{\r\n  ...\r\n  \"params\": {\r\n    ...\r\n    \"blobSchedule\": [\r\n      ...\r\n      {\r\n        \"timestamp\": \"osaka timestamp\"\r\n        \"target\": 48,\r\n        \"max\": 72,\r\n        \"baseFeeUpdateFraction\": 40061728\r\n      }\r\n    ],\r\n   ...\r\n    \"eip7594TransitionTimestamp\": \"0x...\"\r\n  },\r\n  ...\r\n}\r\n```\r\n\r\nNethermind client docker image: `nethermindeth/nethermind:peerdas-c3d12c7`\r\nSend blobs tool docker image: `nethermindeth/send-blobs:latest` (pass `--fork Osaka` flag to send blobs with proof type V2)\r\n\r\n#### Requires explanation in Release Notes\r\n\r\n- [x] Yes\r\n- [ ] No\r\n\r\nPeerDAS support for Fusaka",
+    "closedAt": "2025-05-26T13:16:09Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "1311A4",
+        "description": "Fusaka Hard Fork",
+        "id": "LA_kwDOBggaLc8AAAAB4zttYg",
+        "name": "osaka"
+      }
+    ],
+    "state": "merged",
+    "title": "EIP-7594: PeerDAS",
+    "updatedAt": "2025-05-26T13:16:14Z",
+    "url": "https://github.com/NethermindEth/nethermind/pull/8417"
+  }
+]

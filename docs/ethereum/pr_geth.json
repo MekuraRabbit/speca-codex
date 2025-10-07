@@ -1,0 +1,82 @@
+[
+  {
+    "body": "The parent header was missing the BaseFee field when calculating the reserve price for EIP-7918 in the Osaka fork, causing a nil pointer dereference. This fix ensures BaseFee is properly set from ParentBaseFee in the environment.\r\n\r\nAdded regression test case 34 to verify Osaka fork blob gas calculation works correctly with parent base fee.",
+    "closedAt": "2025-09-23T12:39:45Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "6be514",
+        "description": "",
+        "id": "MDU6TGFiZWwxMTMyNjg5NTc3",
+        "name": "status:triage"
+      },
+      {
+        "color": "2D10D1",
+        "description": "",
+        "id": "LA_kwDOAOvK988AAAAB0Okrow",
+        "name": "osaka"
+      }
+    ],
+    "state": "merged",
+    "title": "cmd/evm/internal/t8ntool: fix nil pointer dereference in Osaka blob gas calculation",
+    "updatedAt": "2025-09-23T12:39:48Z",
+    "url": "https://github.com/ethereum/go-ethereum/pull/32714"
+  },
+  {
+    "body": "As reported by @pk910 when doing an eth_call post Osaka and not providing any gas limit, geth will assume the rpc cap (50m). However that ends up being higher than the new tx gas limit (EIP-7825) and causes an error.\n\n- We should disable the tx gas limit check when doing eth_call and debug_traceCall (how we disable the nonce check etc.).\n- As for eth_estimateGas I'd argue it's a different case. We should change it so that the high bound it starts with is the tx gas limit.\n- As for eth_simulate the gas limit check should be disabled for normal mode, but enabled for the strict validation mode.",
+    "closedAt": "2025-09-23T14:40:34Z",
+    "isPullRequest": false,
+    "labels": [
+      {
+        "color": "FF5E5E",
+        "description": "",
+        "id": "MDU6TGFiZWw3MjIzMzY1MA==",
+        "name": "type:bug"
+      },
+      {
+        "color": "2D10D1",
+        "description": "",
+        "id": "LA_kwDOAOvK988AAAAB0Okrow",
+        "name": "osaka"
+      }
+    ],
+    "state": "closed",
+    "title": "eth_call default gas limit fails post-Osaka",
+    "updatedAt": "2025-09-23T14:40:34Z",
+    "url": "https://github.com/ethereum/go-ethereum/issues/32625"
+  },
+  {
+    "body": "#### System information\n\nGeth version: 1.16.3\n\n#### Expected behaviour\n\nNothing should have changed before Osaka being activated. Max blobs per tx should remain at 7.\n\n#### Actual behaviour\n\nNew limitation of 6 blobs is applied due to https://github.com/ethereum/go-ethereum/pull/32246's global param being used in the txpool validation.\n\n#### Backtrace\n\nSince the upgrade to 1.16.3 on Ethereum Sepolia, our L2 blob transactions get rejected with this error:\n\n```\nerr=\\\"transaction blob limit exceeded: blob count 7, limit 6\\\"\"\n```",
+    "closedAt": "2025-09-09T15:20:25Z",
+    "isPullRequest": false,
+    "labels": [
+      {
+        "color": "FF5E5E",
+        "description": "",
+        "id": "MDU6TGFiZWw3MjIzMzY1MA==",
+        "name": "type:bug"
+      }
+    ],
+    "state": "closed",
+    "title": "Osaka's Max blobs per transactions new value is applied to before proper hardfork",
+    "updatedAt": "2025-09-09T16:42:32Z",
+    "url": "https://github.com/ethereum/go-ethereum/issues/32560"
+  },
+  {
+    "body": "This PR makes 2 changes to how [EIP-7825](https://github.com/ethereum/go-ethereum/pull/31824) behaves. \r\n\r\nWhen `eth_estimateGas` or `eth_createAccessList` is called without any gas limit in the payload, geth will choose the block's gas limit or the `RPCGasCap`, which can be larger than the `maxTxGas`. \r\n\r\nWhen this happens for `estimateGas`, the gas estimation just errors out and ends, when it should continue doing binary search to find the lowest possible gas limit. \r\n\r\nThis PR will: \r\n- Add a check to see if `hi` is larger than `maxTxGas` and cap it to `maxTxGas` if it's larger. And add a special case handling for gas estimation execute when it errs with `ErrGasLimitTooHigh`\r\n\r\n- Decrease the `RPCGasCap` to 30M (== maxTxGas) to make `createAccessList` choose 30M as the highest gas cap for the tx. This can also be fixed by adding a check like this to use `maxTxGas` when the specified `RPCGasCap` is larger than `maxTxGas`. I'd be glad to fix it either way!\r\n```\r\ngasCap :=b.RPCGasCap()  \r\nif gasCap > params.MaxTxGas { \r\n    gasCap = params.MaxTxGas\r\n}\r\n```\r\n\r\nI've created this PR for fusaka-devnet-3 first, and will open another pr to master (or there is some periodic merges to master) if needed. ",
+    "closedAt": "2025-08-05T11:57:20Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "2D10D1",
+        "description": "",
+        "id": "LA_kwDOAOvK988AAAAB0Okrow",
+        "name": "osaka"
+      }
+    ],
+    "state": "closed",
+    "title": "eth/gasestimator: check ErrGasLimitTooHigh conditions",
+    "updatedAt": "2025-08-05T11:57:20Z",
+    "url": "https://github.com/ethereum/go-ethereum/pull/32268"
+  }
+]

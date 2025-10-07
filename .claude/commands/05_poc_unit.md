@@ -3,8 +3,8 @@ Description: PoC Generator & Self-Verifying Test
 Usage: `/05_poc_unit <VULN_ID> <OUTPUT_TEST_PATH>`
 Example: `/05_poc_unit 03523523 crates/net/network/src/transactions/poc_reentrancy.rs`
 Arguments:
-- **VULN_ID**: `03_AUDITMAP.json` 内の `audit_items[].id`
-- **OUTPUT_TEST_PATH**: 生成するテストファイルの保存先
+- **VULN_ID**: value of `audit_items[].id` in `03_AUDITMAP.json`
+- **OUTPUT_TEST_PATH**: destination path for the generated test file
 ---
 
 Create & validate a minimal PoC test that reproduces **VULN_ID**
@@ -15,15 +15,18 @@ Create & validate a minimal PoC test that reproduces **VULN_ID**
 1. **Read** `security-agent/outputs/03_AUDITMAP.json`
 2. **Find** the entry where `audit_items[].id == {{VULN_ID}}`
 3. **Extract**
-   - `VULN_SNIPPET` ← `audit_items[].snippet`
-   - `TARGET_FILE` ← `audit_items[].file` + `:L` + `audit_items[].line`
+   - `VULN_SNIPPET` <- `audit_items[].snippet`
+   - `TARGET_FILE` <- `audit_items[].file` + `:L` + `audit_items[].line`
+   - `VULN_TITLE_RAW` <- `audit_items[].description`
+   - `VULN_TITLE` <- text before the first colon (`:`) in `VULN_TITLE_RAW`, or the full string if no colon is present. If `VULN_TITLE` is empty, craft a concise fallback title (e.g., "Peer DAS sampling cache bypass") that still avoids embedding `VULN_ID`.
+   - `TITLE_SLUG` <- `VULN_TITLE` transformed to lowercase snake_case containing only ASCII letters, digits, and underscores (convert spaces and punctuation to underscores, collapse repeats, strip leading/trailing underscores).
 4. **If not found** → abort with error
    `"Vulnerability '{{VULN_ID}}' not found in 03_AUDITMAP.json"`
 
 # 🎯 Goal
 Produce **one Rust test file** that:
 1. Compiles & runs under `cargo test` (or Foundry, if Solidity)
-2. **Fails (or panics) only when the vulnerability is present**
+2. **Passes only when the vulnerability is present (and must fail when it is absent)**
 3. Requires *no* external binaries or network deps
 
 # 📥 Input
@@ -31,7 +34,7 @@ Produce **one Rust test file** that:
 - Project spec:        `security-agent/outputs/01_SPEC.json`
 - Ethereum bug corpus: `security-agent/docs/ethereum/bugs_*.json`
 - Ethereum specs:      `security-agent/docs/ethereum/spec_*.json`
-- Source code:         Auto-loaded `TARGET_FILE` と周辺
+- Source code:         Auto-load `TARGET_FILE` and nearby context
 
 # 🧩 Pre-work (internal)
 1. Locate exact code containing `VULN_SNIPPET`
@@ -40,9 +43,10 @@ Produce **one Rust test file** that:
 
 # 📤 Output Artifacts
 1. **PoC test file** → `{{OUTPUT_TEST_PATH}}`
+   - `{OUTPUT_TEST_PATH}` must include `poc_{TITLE_SLUG}` and must not include `VULN_ID`.
 2. **Run command**
    ```bash
-   cargo test --test poc_{{VULN_ID}} -- --nocapture
+   cargo test --test poc_{{TITLE_SLUG}} -- --nocapture
 ````
 
 3. **Status JSON** (append into same vulnerability entry)
@@ -82,11 +86,11 @@ FOR attempt in 1..=4:
 * Invariant double-check & patched-code control
 * No silent `unwrap()`
 
-# 📝 Test Style Guide
+# 📝 Test Style Guide (never embed VULN_ID in names)
 
 ```rust
 #[test]
-fn poc_{{VULN_ID}}() {
+fn poc_{{TITLE_SLUG}}() {
     // Arrange
     /* minimal setup */
 
@@ -94,9 +98,12 @@ fn poc_{{VULN_ID}}() {
     let res = import_transactions(/* crafted args */);
 
     // Assert
-    assert!(matches!(res, Err(_)), "exploit succeeded");
+    assert!(res.is_ok(), "expected exploit to be reproducible");
 }
 ```
+
+- File names, module names, test function names, and any identifiers must use `TITLE_SLUG` and never include `VULN_ID`.
+- If `VULN_TITLE` is empty after extraction, replace it with a descriptive fallback title (without `VULN_ID`), derive a slug from that value, and log the chosen title in the command output.
 
 # ⛔ Constraints
 
@@ -107,6 +114,6 @@ fn poc_{{VULN_ID}}() {
 # ✅ Success Criteria
 
 * Entry with `id == VULN_ID` found
-* Test fails only when bug present
+* Test passes only when bug present (and must fail once patched)
 * Status JSON correctly appended
 * > 3 compile failures → prompt user

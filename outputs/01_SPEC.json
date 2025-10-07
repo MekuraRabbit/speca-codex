@@ -1,0 +1,1376 @@
+{
+  "metadata": {
+    "source_directory": "EL: execution-specs/src/ethereum/forks/osaka ; CL: consensus-specs/specs/fulu [S1][S2] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py, [S2] https://github.com/ethereum/consensus-specs/blob/340d23358a0cdb4f4b547226dadd36d1cf775f20/specs/fulu/beacon-chain.md",
+    "spec_generated_at": "2025-09-18T07:07:54.956705+09:00",
+    "latest_tags_or_commits": {
+      "osaka": "5ddb904fa7ba27daeff423e78466744c51e8cb6a [S1] Sources: [S1] https://github.com/ethereum/execution-specs/commit/5ddb904fa7ba27daeff423e78466744c51e8cb6a",
+      "fulu": "340d23358a0cdb4f4b547226dadd36d1cf775f20 [S1] Sources: [S1] https://github.com/ethereum/consensus-specs/commit/340d23358a0cdb4f4b547226dadd36d1cf775f20"
+    },
+    "latest_release_dates": {
+      "osaka": "2025-09-15 [S1] Sources: [S1] https://github.com/ethereum/execution-specs/commit/5ddb904fa7ba27daeff423e78466744c51e8cb6a",
+      "fulu": "2025-09-17 [S1] Sources: [S1] https://github.com/ethereum/consensus-specs/commit/340d23358a0cdb4f4b547226dadd36d1cf775f20"
+    },
+    "schema_version": "2.0.0-nl"
+  },
+  "forks": [
+    {
+      "name": "Osaka",
+      "layer": "Execution",
+      "genre": "Ethereum Client Spec",
+      "architecture": {
+        "overview": "Osaka extends the executable EL spec with stricter transaction caps, blob fee bounds, new CLZ opcode, secp256r1 precompile, and requests hashing so the consensus layer can audit deposits and custody-linked payloads through Engine API exchanges. [S1][S2] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/__init__.py, [S2] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py",
+        "components": [
+          {
+            "name": "State Transition",
+            "type": "service",
+            "description": "Applies header validation, enforced RLP block size, blob gas accounting, withdrawals, and request hashing before mutating state roots. [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py",
+            "depends_on": [
+              "Transactions",
+              "Fee Market",
+              "Engine API"
+            ],
+            "technology": [
+              "Python",
+              "EVM",
+              "RLP"
+            ]
+          },
+          {
+            "name": "Transaction Validation",
+            "type": "module",
+            "description": "Checks Osaka intrinsic gas floor, 2**24 gas cap, nonce bounds, calldata pricing, and blob bundle integrity prior to execution. [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/transactions.py",
+            "depends_on": [
+              "State Transition",
+              "EVM"
+            ],
+            "technology": [
+              "Python",
+              "EVM"
+            ]
+          },
+          {
+            "name": "Requests Pipeline",
+            "type": "service",
+            "description": "Extracts deposit, withdrawal, and consolidation requests from receipts, encodes them, and computes the block-level requests_hash exposed to the CL. [S1][S2] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/requests.py, [S2] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py",
+            "depends_on": [
+              "State Transition",
+              "Trie"
+            ],
+            "technology": [
+              "Python",
+              "SHA2-256"
+            ]
+          },
+          {
+            "name": "Precompile Suite",
+            "type": "library",
+            "description": "Implements P256VERIFY with strict field bounds, constant 6,900 gas charge, and 160-byte input contract to validate secp256r1 signatures without reverts. [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/vm/precompiled_contracts/p256verify.py",
+            "depends_on": [
+              "EVM",
+              "Gas Accounting"
+            ],
+            "technology": [
+              "Python",
+              "ECC"
+            ]
+          }
+        ],
+        "state_machines": [
+          {
+            "name": "Block Execution",
+            "inputs": [
+              "BlockEnvironment from fork choice [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py",
+              "Ordered transactions with blob sidecars [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py",
+              "Parent header fields and requests list [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py"
+            ],
+            "outputs": [
+              "Updated state root [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py",
+              "Receipts root and logs bloom [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py",
+              "requests_hash commitment [S1][S2] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py, [S2] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/requests.py"
+            ],
+            "invariants": [
+              "Total gas used must not exceed the header gas limit or the block is invalid. [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py",
+              "Blob gas used must match header blob_gas_used and stay within MAX_BLOB_GAS_PER_BLOCK. [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py"
+            ],
+            "transitions": [
+              "1. Validate header envelope and enforce MAX_RLP_BLOCK_SIZE before execution. [S1][S2] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py, [S2] https://eips.ethereum.org/EIPS/eip-7934",
+              "2. Iterate transactions, running Osaka validation then EVM execution with updated gas accounting and requests tracking. [S1][S2] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/transactions.py, [S2] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py",
+              "3. Seal block outputs, recompute trie roots, logs bloom, blob metrics, and aggregate requests_hash for CL consumption. [S1][S2] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py, [S2] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/requests.py"
+            ]
+          }
+        ],
+        "data_flow_diagram": "```mermaid\ngraph TD\n  FCU[CL forkchoiceUpdated] -->|payloadAttributes| Builder\n  Builder -->|transactions| TxPool\n  TxPool -->|validated tx| EL[Osaka State Transition]\n  EL -->|requests_hash, receipts| EngineAPI\n  EL -->|blob_gas_used/excess| FCU\n``` [S1][S2] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py, [S2] https://github.com/ethereum/consensus-specs/blob/340d23358a0cdb4f4b547226dadd36d1cf775f20/specs/fulu/beacon-chain.md"
+      },
+      "normative_spec": [
+        {
+          "id": "OSK-TX-VALIDATION",
+          "title": "Transaction Validation under Osaka [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/transactions.py",
+          "summary": "Nodes must apply Osaka intrinsic gas floors, 2**24 cap, nonce and signature bounds, and blob bundle checks before accepting a transaction for execution. [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/transactions.py",
+          "preconditions": [
+            "Osaka fork flag enabled in chain configuration. [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/__init__.py",
+            "Typed transaction decoded per EIP envelopes. [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/transactions.py"
+          ],
+          "inputs": [
+            "Signed or authorized transaction envelope [S1][S2] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/transactions.py, [S2] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/vm/eoa_delegation.py",
+            "Current account state and chain config [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/transactions.py",
+            "Blob bundle metadata when transaction type requires [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/transactions.py"
+          ],
+          "procedure": [
+            "1. Decode tx type; reject unknown prefixes or missing authorizations for SetCode transactions. [S1][S2] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/transactions.py, [S2] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/vm/eoa_delegation.py",
+            "2. Compute intrinsic gas with calldata floor pricing and ensure tx.gas covers both intrinsic and floor costs. [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/transactions.py",
+            "3. Enforce TX_MAX_GAS_LIMIT = 16,777,216, nonce < 2**64-1, signature bounds, and balance sufficiency. [S1][S2] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/transactions.py, [S2] https://eips.ethereum.org/EIPS/eip-7825",
+            "4. For blob transactions, verify versioned hashes, max blob count, fee caps, and inclusion of blob data commitments. [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/transactions.py"
+          ],
+          "postconditions": [
+            "Validation returns intrinsic gas and calldata floor cost or raises a structured error. [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/transactions.py"
+          ],
+          "errors": [
+            {
+              "code": "ERR_TX_GAS_CAP",
+              "when": "gas > TX_MAX_GAS_LIMIT = 2**24. [S1][S2] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/transactions.py, [S2] https://eips.ethereum.org/EIPS/eip-7825",
+              "effect": "Reject transaction before execution. [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/transactions.py"
+            },
+            {
+              "code": "ERR_BLOB_PRICE",
+              "when": "Blob fee caps below required base price or missing blob data. [S1][S2] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/transactions.py, [S2] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py",
+              "effect": "Reject blob transaction and surface InsufficientMaxFeePerBlobGasError. [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py"
+            },
+            {
+              "code": "ERR_AUTH_EMPTY",
+              "when": "Authorization list empty for SetCode transaction. [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py",
+              "effect": "Raise EmptyAuthorizationListError and reject tx. [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py"
+            }
+          ],
+          "rationale": "Protects execution layer from DoS and consensus splits by enforcing deterministic bounds on gas, calldata pricing, and blob inclusion semantics. [S1][S2][S3] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/transactions.py, [S2] https://eips.ethereum.org/EIPS/eip-7825, [S3] https://eips.ethereum.org/EIPS/eip-7918"
+        },
+        {
+          "id": "OSK-PEERDAS-CELL-PROOFS",
+          "title": "PeerDAS Tx Wrapper Cell Proofs Validation [EIP7594] Sources: [EIP7594] https://eips.ethereum.org/EIPS/eip-7594",
+          "summary": "Tx gossip wrapper MUST include cell proofs for all extended cells per blob. Clients MUST verify count and batch-verify proofs against commitments before admitting tx to pool.",
+          "preconditions": [
+            "PeerDAS-enabled tx gossip wrapper present in PooledTransactions response. [EIP7594] Sources: [EIP7594] https://eips.ethereum.org/EIPS/eip-7594"
+          ],
+          "inputs": [
+            "tx_payload_body, wrapper_version=1, blobs, commitments, cell_proofs [EIP7594] Sources: [EIP7594] https://eips.ethereum.org/EIPS/eip-7594"
+          ],
+          "procedure": [
+            "1. Ensure len(blob_versioned_hashes) == len(blobs) == len(commitments).",
+            "2. Ensure len(cell_proofs) == CELLS_PER_EXT_BLOB * len(blobs).",
+            "3. Verify commitments hash to versioned hashes.",
+            "4. Compute extension cells for each blob; batch-verify all cell proofs via verify_cell_kzg_proof_batch."
+          ],
+          "postconditions": [
+            "Wrapper accepted only if proofs and lengths match; otherwise tx is dropped."
+          ],
+          "errors": [
+            {
+              "code": "ERR_WRAPPER_LENGTH",
+              "when": "cell_proofs length mismatch",
+              "effect": "Drop tx from pool"
+            },
+            {
+              "code": "ERR_CELL_PROOF_INVALID",
+              "when": "Batch verification fails",
+              "effect": "Drop tx and penalize peer in devp2p scoring"
+            }
+          ],
+          "rationale": "Shift expensive proof generation off the proposer; keep verification cheap and safe. [EIP7594] Sources: [EIP7594] https://eips.ethereum.org/EIPS/eip-7594"
+        },
+        {
+          "id": "OSK-BLOCK-HASHING",
+          "title": "Block Import and Requests Hashing [S1][S2] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py, [S2] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/requests.py",
+          "summary": "During block import, nodes must cap encoded block size, recompute trie roots, and build requests_hash from deposit, withdrawal, and consolidation side-effects before sealing the header. [S1][S2] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py, [S2] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/requests.py",
+          "preconditions": [
+            "Parent block finalized and Osaka fork rules active. [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py",
+            "Block body includes receipts for deposit contract events. [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/requests.py"
+          ],
+          "inputs": [
+            "Block header, transactions, withdrawals, receipts tries [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py",
+            "Execution receipts with deposit logs [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/requests.py"
+          ],
+          "procedure": [
+            "1. Reject blocks whose RLP encoding exceeds MAX_RLP_BLOCK_SIZE (10,485,760 - 2,097,152 safety margin). [S1][S2] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py, [S2] https://eips.ethereum.org/EIPS/eip-7934",
+            "2. Apply transactions and withdrawals, updating state, blob metrics, and receipts trie; verify gas used and roots match header values. [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py",
+            "3. Parse deposit logs into request payloads, compute SHA2-based requests_hash, and compare to header field. [S1][S2][EIP7685] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/requests.py, [S2] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py, [EIP7685] https://eips.ethereum.org/EIPS/eip-7685"
+          ],
+          "postconditions": [
+            "Block accepted only if roots, blob metrics, and requests_hash align with execution outputs. [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py"
+          ],
+          "errors": [
+            {
+              "code": "ERR_BLOCK_RLP_OVERFLOW",
+              "when": "len(rlp.encode(block)) > MAX_RLP_BLOCK_SIZE. [S1][S2] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py, [S2] https://eips.ethereum.org/EIPS/eip-7934",
+              "effect": "Raise InvalidBlock and reject the payload. [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py"
+            },
+            {
+              "code": "ERR_REQUEST_HASH_MISMATCH",
+              "when": "Computed requests_hash differs from header field. [S1][S2] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py, [S2] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/requests.py",
+              "effect": "Reject block and signal INVALID_BLOCK via Engine API. [S1] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py"
+            }
+          ],
+          "rationale": "Aligns execution outputs with consensus references so Fulu can trust requests commitments and avoid oversized payload DoS. [S1][S2] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py, [S2] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/requests.py"
+        }
+      ],
+      "algorithms": [
+        {
+          "name": "Blob Base Fee Update (Osaka) [S1][EIP7918] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/vm/gas.py, [EIP7918] https://eips.ethereum.org/EIPS/eip-7918",
+          "purpose": "Compute blob gas price from excess_blob_gas with enforced execution-cost floor.",
+          "pseudocode": "`pseudo\\nfunction calculate_blob_gas_price(excess_blob_gas):\\n    price = blob_base_fee_per_excess(excess_blob_gas)\\n    return max(price, MIN_BLOB_GAS_PRICE)\\n`",
+          "complexity": "O(1) arithmetic per block.",
+          "notes": "Ensure monotonic price evolution and prevent underflow/overflow when updating excess_blob_gas."
+        }
+      ],
+      "apis": {
+        "interfaces": [
+          {
+            "kind": "json_rpc",
+            "name": "eth_config [EIP7910] Sources: [EIP7910] https://eips.ethereum.org/EIPS/eip-7910",
+            "stability": "Stable after Osaka activation.",
+            "request_schema": "`{\"id\":1,\"method\":\"eth_config\",\"params\":[]}`",
+            "response_schema": "Returns fork versioning, blob schedule, and gas caps keyed by fork name.",
+            "errors": [
+              "InvalidParams when params array non-empty.",
+              "InternalError if fork table unavailable."
+            ],
+            "notes": "Clients must surface Osaka gas caps and blob schedule for tooling parity."
+          },
+          {
+            "kind": "engine_api",
+            "name": "engine_newPayloadV3 [S1][S2] Sources: [S1] https://github.com/ethereum/execution-specs/blob/5ddb904fa7ba27daeff423e78466744c51e8cb6a/src/ethereum/forks/osaka/fork.py, [S2] https://github.com/ethereum/consensus-specs/blob/340d23358a0cdb4f4b547226dadd36d1cf775f20/specs/fulu/beacon-chain.md",
+            "stability": "Stable for Fusaka devnets.",
+            "sequence_diagram": "```mermaid\nsequenceDiagram\n  CL->>EL: engine_newPayloadV3(payload, versioned_hashes, parent_beacon_root, execution_requests)\n  EL-->>CL: VALID\n  CL->>EL: engine_forkchoiceUpdatedV3(state, payloadAttributes)\n  EL-->>CL: PayloadStatus(executionStatus, blobStatus)\n```",
+            "notes": "Osaka must verify blob metrics and requests_hash before acknowledging payload to Fulu."
+          }
+        ]
+      },
+      "wire_protocol": {
+        "topics": [],
+        "notes": "Osaka references eth/69 history expiry and relies on CL PeerDAS topics for **data_column_sidecar** propagation handled in Fulu networking. [S2] Sources: [S2] https://ethereum.github.io/consensus-specs/specs/fulu/p2p-interface/"
+      },
+      "constants": [
+        {
+          "name": "TX_MAX_GAS_LIMIT",
+          "value": "16777216",
+          "units": "gas",
+          "notes": "Defines the 2**24 cap enforced during validation. [EIP7825] Sources: [EIP7825] https://eips.ethereum.org/EIPS/eip-7825"
+        },
+        {
+          "name": "MAX_RLP_BLOCK_SIZE",
+          "value": "8388608",
+          "units": "bytes",
+          "notes": "10,485,760 byte hard cap minus 2,097,152 safety margin per Osaka. [EIP7934] Sources: [EIP7934] https://eips.ethereum.org/EIPS/eip-7934"
+        },
+        {
+          "name": "MAX_BLOBS_PER_BLOCK",
+          "value": "6",
+          "units": "blobs",
+          "notes": "Consensus-level per-block blob cap (Deneb/4844). Enforced by CL via blob parameters schedule. EL must reflect metrics in headers."
+        },
+        {
+          "name": "MAX_BLOBS_PER_TX",
+          "value": "6",
+          "units": "blobs/tx",
+          "notes": "Per-transaction blob cap introduced by PeerDAS/EIP-7594; clients MUST enforce at pool, network, and block production. [EIP7594] Sources: [EIP7594] https://eips.ethereum.org/EIPS/eip-7594"
+        },
+        {
+          "name": "GAS_P256VERIFY",
+          "value": "6900",
+          "units": "gas",
+          "notes": "Fixed gas charged before P256 signature verification."
+        }
+      ],
+      "invariants": [
+        "Engine must emit requests_hash consistent with parsed deposit events.",
+        "MODEXP execution must respect tightened bounds to avoid underpriced inputs.",
+        "CLZ opcode returns 256 when operand is zero, ensuring consensus alignment."
+      ],
+      "user_flows": [
+        {
+          "id": 1,
+          "title": "[Client] Osaka Payload Build",
+          "actors": [
+            "Tx Pool",
+            "Execution Engine",
+            "Consensus Layer"
+          ],
+          "preconditions": [
+            "Osaka rules activated and Engine API authenticated."
+          ],
+          "steps": [
+            "1. Tx pool filters incoming tx via OSK-TX-VALIDATION; for blob tx, applies OSK-PEERDAS-CELL-PROOFS and MAX_BLOBS_PER_TX.",
+            "2. Builder selects transactions, applies state transition, and records requests outputs.",
+            "3. Engine returns payload via get_payload including blob metrics.",
+            "4. Consensus layer submits engine_newPayloadV3 and awaits VALID status."
+          ],
+          "postconditions": [
+            "Payload ready for forkchoiceUpdated with matching blob and request commitments."
+          ]
+        }
+      ],
+      "worked_examples": [
+        {
+          "id": "EX-OSK-CALLDATA-FLOOR",
+          "title": "Calldata Floor Gas Rejection",
+          "scenario": "User submits a blobless transaction with 1,024 non-zero calldata bytes.",
+          "given": "Intrinsic gas = 21,000; calldata floor adds 4,096 tokens * 10 gas.",
+          "when": "If supplied gas < 61,000, validation raises InsufficientTransactionGasError.",
+          "then": "Transaction dropped before execution, preventing state changes."
+        }
+      ],
+      "edge_cases": [
+        "SetCode transactions without at least one authorization MUST trigger EmptyAuthorizationListError and fail.",
+        "Blob transaction carrying >6 versioned hashes MUST raise BlobCountExceededError.",
+        "P256VERIFY input shorter than 160 bytes MUST return empty output without reverting."
+      ],
+      "compatibility": {
+        "cross_layer": "Osaka exposes requests_hash and blob gas metrics that Fulu verifies via engine_newPayload/process_execution_payload, so both layers must agree on hash construction and blob limits."
+      },
+      "changelog": {
+        "latest_version": "forks/osaka@5ddb904f",
+        "since_previous": [
+          {
+            "commit": "5ddb904fa7ba27daeff423e78466744c51e8cb6a",
+            "date": "2025-09-15",
+            "summary": "Refactored fork metadata into namespace package, clarifying Osaka module layout."
+          },
+          {
+            "commit": "12cc993674d3ffa6e7c4e50647c197ae7148144f",
+            "date": "2025-09-15",
+            "summary": "Reorganized forks directory to prepare for Osaka inclusion."
+          }
+        ],
+        "breaking_changes": [
+          "Enforced TX_MAX_GAS_LIMIT per EIP-7825 requires client config updates.",
+          "MAX_RLP_BLOCK_SIZE enforcement per EIP-7934 affects block production and sync.",
+          "Mandatory requests_hash field couples EL outputs to CL processing per EIP-7685."
+        ]
+      },
+      "bug_bounty": {
+        "scope": "Execution clients implementing Osaka, executable spec, and associated test vectors are in scope.",
+        "impact": "Consensus faults, payload invalidation, or DoS due to Osaka gas, blob, or requests handling qualify for rewards.",
+        "exclusions": "UI, telemetry, or documentation-only findings remain out of scope.",
+        "reproduction": "Proofs must include reproducible payload or transaction demonstrating Osaka rule violation on supported clients.",
+        "reporting": "Report privately via bounty.ethereum.org or bounty@ethereum.org with optional PGP per EF policy.",
+        "rewards": "Rewards follow EF tiers scaled by consensus impact and ease of exploitation."
+      }
+    },
+    {
+      "name": "Fulu",
+      "layer": "Consensus",
+      "genre": "Ethereum Client Spec",
+      "architecture": {
+        "overview": "Fulu augments the beacon chain with PeerDAS data column sampling, proposer lookahead storage, and extended execution payload validation including blob schedule control and execution_requests forwarding.",
+        "components": [
+          {
+            "name": "Beacon State",
+            "type": "state_machine",
+            "description": "Extends BeaconState with proposer_lookahead array, blob parameters, and execution payload header fields for PeerDAS enforcement.",
+            "depends_on": [
+              "Fork Logic",
+              "Execution Payload"
+            ],
+            "technology": [
+              "SSZ",
+              "Python"
+            ]
+          },
+          {
+            "name": "PeerDAS Core",
+            "type": "service",
+            "description": "Defines custody groups, sampling requirements, DataColumnSidecar format, and reconstruction helpers for erasure-coded blob data.",
+            "depends_on": [
+              "Polynomial Commitments",
+              "Networking"
+            ],
+            "technology": [
+              "SSZ",
+              "KZG",
+              "libp2p"
+            ]
+          },
+          {
+            "name": "Networking",
+            "type": "service",
+            "description": "Upgrades gossip, Req/Resp, and discovery protocols with data_column_sidecar topics, custody_group_count metadata, and Status v2 earliest_available_slot.",
+            "depends_on": [
+              "PeerDAS Core",
+              "Beacon Node"
+            ],
+            "technology": [
+              "libp2p",
+              "gossipsub",
+              "SSZ"
+            ]
+          },
+          {
+            "name": "Validator Duties",
+            "type": "service",
+            "description": "Adjusts custody obligations, payload requests via GetPayloadResponse, and sidecar publishing/retention for validators.",
+            "depends_on": [
+              "PeerDAS Core",
+              "Execution Engine"
+            ],
+            "technology": [
+              "Python",
+              "SSZ"
+            ]
+          }
+        ],
+        "state_machines": [
+          {
+            "name": "process_execution_payload",
+            "inputs": [
+              "BeaconState with proposer_lookahead",
+              "BeaconBlockBody carrying blob_kzg_commitments and execution_requests",
+              "Execution engine interface"
+            ],
+            "outputs": [
+              "Updated latest_execution_payload_header",
+              "Blob schedule enforcement results",
+              "Notification to execution engine via verify_and_notify_new_payload"
+            ],
+            "invariants": [
+              "len(blob_kzg_commitments) must not exceed get_blob_parameters(epoch).max_blobs_per_block.",
+              "execution_engine.verify_and_notify_new_payload must succeed or block processing aborts."
+            ],
+            "transitions": [
+              "1. Check parent hash, prev_randao, and timestamp consistency.",
+              "2. Enforce blob commitment limit via blob parameters schedule.",
+              "3. Call execution engine with versioned hashes and execution_requests, then cache payload header."
+            ]
+          }
+        ],
+        "data_flow_diagram": "```mermaid\nsequenceDiagram\n  Validator->>CL: Propose beacon block + data_column_sidecars\n  CL->>EL: engine_newPayloadV3(payload, versioned_hashes, execution_requests)\n  EL-->>CL: VALID\n  Peer->>Validator: data_column_sidecar gossip\n  Validator-->>Peers: Req/Resp DataColumnSidecarsByRange\n```"
+      },
+      "normative_spec": [
+        {
+          "id": "FULU-PEERDAS-SAMPLING",
+          "title": "PeerDAS Custody Sampling",
+          "summary": "Nodes must advertise custody_group_count, join corresponding subnets, and sample at least SAMPLES_PER_SLOT columns, escalating to reconstruction if coverage drops.",
+          "preconditions": [
+            "Node has computed custody groups via get_custody_groups."
+          ],
+          "inputs": [
+            "Node ID and custody_group_count",
+            "Column subscriptions and sidecar feeds"
+          ],
+          "procedure": [
+            "1. Determine custody groups and columns using get_custody_groups(node_id, custody_group_count) and compute_columns_for_custody_group(g).",
+            "2. Join data_column_sidecar_{subnet_id} topics for assigned groups and begin sampling >= max(SAMPLES_PER_SLOT, custody_group_count).",
+            "3. Validate sidecars via verify_data_column_sidecar, inclusion proof, and KZG batch verification before marking samples available.",
+            "4. If coverage < threshold, reconstruct missing columns via recover_matrix and cross-seed if subscribed."
+          ],
+          "postconditions": [
+            "Node updates custody records and exposes availability to peers."
+          ],
+          "errors": [
+            {
+              "code": "ERR_PEERDAS_INVALID_SIDECAR",
+              "when": "Sidecar fails structural / inclusion / KZG verification.",
+              "effect": "Reject gossip message and penalize peer per scoring rules."
+            },
+            {
+              "code": "ERR_CUSTODY_UNDER_SAMPLED",
+              "when": "Node fails to fetch required samples per slot.",
+              "effect": "Trigger recovery or mark column unavailable impacting attestations."
+            }
+          ],
+          "rationale": "Ensures data availability guarantees and resilience against partial sidecar loss."
+        },
+        {
+          "id": "FULU-CUSTODY-CALC",
+          "title": "Deterministic Custody Assignment",
+          "summary": "Custody groups and columns MUST be selected deterministically from node_id and custody_group_count so any peer can reproduce a node\u2019s obligations.",
+          "preconditions": [
+            "NUMBER_OF_CUSTODY_GROUPS > 0",
+            "NUMBER_OF_COLUMNS % NUMBER_OF_CUSTODY_GROUPS == 0"
+          ],
+          "inputs": [
+            "node_id (stable peer/node identifier)",
+            "custody_group_count (>= CUSTODY_REQUIREMENT)"
+          ],
+          "procedure": [
+            "1. groups = get_custody_groups(node_id, custody_group_count)  // unique, sorted, prefix-stable as count increases.",
+            "2. For each g in groups, columns_g = compute_columns_for_custody_group(g).",
+            "3. sampling_size = max(SAMPLES_PER_SLOT, custody_group_count); sample groups' columns each slot."
+          ],
+          "postconditions": [
+            "Peers can re-compute a node's custody set from advertised cgc and node_id.",
+            "Custody set is stable across restarts given stable node_id."
+          ],
+          "errors": [
+            {
+              "code": "ERR_DUPLICATE_GROUPS",
+              "when": "get_custody_groups returns duplicates",
+              "effect": "Implementation bug; MUST NOT happen (assert uniqueness)."
+            }
+          ],
+          "rationale": "Public, deterministic selection prevents bias and enables network-wide auditing of custody coverage."
+        },
+        {
+          "id": "FULU-RS-RECONSTRUCTION",
+          "title": "Reed\u2013Solomon Matrix Reconstruction and Cross\u2011Seeding",
+          "summary": "If a node has \u2265 50% of the columns, it SHOULD reconstruct the full data matrix and treat reconstructed columns as if received via gossip, including anti\u2011equivocation updates.",
+          "preconditions": [
+            "Have partial matrix entries (cells + proofs) for at least ceil(NUMBER_OF_COLUMNS/2) columns across all rows"
+          ],
+          "inputs": [
+            "partial_matrix: Sequence<MatrixEntry>",
+            "blob_count for the block"
+          ],
+          "procedure": [
+            "1. Use recover_matrix(partial_matrix, blob_count) which calls recover_cells_and_kzg_proofs per row.",
+            "2. For each reconstructed column: (a) package DataColumnSidecar with kzg_commitments and proofs; (b) if subscribed to its subnet, gossip it; else mark availability for req/resp.",
+            "3. Optionally randomize reconstruction delay to reduce thundering-herd; bound CPU."
+          ],
+          "postconditions": [
+            "All columns available locally; reconstructed ones exposed to peers according to subscription."
+          ],
+          "errors": [
+            {
+              "code": "ERR_INSUFFICIENT_COLUMNS",
+              "when": "Available columns < ceil(NUMBER_OF_COLUMNS/2)",
+              "effect": "MUST NOT attempt reconstruction."
+            },
+            {
+              "code": "ERR_RECON_KZG_INCONSISTENT",
+              "when": "Recovered cells/proofs inconsistent with commitments",
+              "effect": "Abort and quarantine inputs; do not gossip reconstructed sidecars."
+            }
+          ],
+          "rationale": "50%+ column availability suffices to recover all rows; cross\u2011seeding stabilizes availability during proposer failures."
+        },
+        {
+          "id": "FULU-SUBNET-ASSIGNMENT",
+          "title": "Subnet Mapping for Data Columns",
+          "summary": "Each column index maps deterministically to a gossip subnet id.",
+          "preconditions": [
+            "DATA_COLUMN_SIDECAR_SUBNET_COUNT > 0"
+          ],
+          "inputs": [
+            "column_index: ColumnIndex"
+          ],
+          "procedure": [
+            "1. subnet_id = column_index % DATA_COLUMN_SIDECAR_SUBNET_COUNT.",
+            "2. Publish/accept DataColumnSidecar only on its correct subnet; otherwise REJECT."
+          ],
+          "postconditions": [
+            "No cross\u2011subnet leakage; predictable routing and mesh construction."
+          ],
+          "errors": [
+            {
+              "code": "ERR_WRONG_SUBNET",
+              "when": "sidecar observed on subnet != compute_subnet_for_data_column_sidecar(index)",
+              "effect": "REJECT before verification."
+            }
+          ],
+          "rationale": "Ensures balanced dissemination and prevents partitioning due to inconsistent routing."
+        },
+        {
+          "id": "FULU-DISTRIBUTED-BLOB-PUBLISHING",
+          "title": "Distributed Blob Publishing (DBP)",
+          "summary": "If proposer fails or is late publishing columns, honest nodes SHOULD fetch blobs from local EL via engine_getBlobsV2, convert to columns, and import/gossip them as if received from gossip, with anti\u2011equivocation updates.",
+          "preconditions": [
+            "Received a valid beacon_block or some DataColumnSidecar for the block",
+            "Local EL exposes matching blobs for the block\u2019s KZG commitments"
+          ],
+          "inputs": [
+            "engine_getBlobsV2(kzg_commitments) -> blobs",
+            "compute_cells / recover_cells_and_kzg_proofs"
+          ],
+          "procedure": [
+            "1. Query engine_getBlobsV2 immediately after receiving the block/sidecar.",
+            "2. Convert blobs to columns; obtain/derive KZG proofs for required cells.",
+            "3. Import as DataColumnSidecar: apply same validation and anti\u2011equivocation as gossip path; publish only if subscribed to the subnet."
+          ],
+          "postconditions": [
+            "Columns available for attesters; network recovers from missing publisher."
+          ],
+          "errors": [
+            {
+              "code": "ERR_EL_BLOB_MISSING",
+              "when": "EL returns a subset/mismatch of blobs",
+              "effect": "Do not import; continue normal sampling/reconstruction."
+            }
+          ],
+          "rationale": "Improves liveness by letting non\u2011proposers backfill columns when proposer is faulty or slow."
+        },
+        {
+          "id": "FULU-PROPOSER-LOOKAHEAD",
+          "title": "Proposer Lookahead Maintenance",
+          "summary": "Beacon nodes must maintain proposer_lookahead across epochs and verify proposer indices for sidecar validation.",
+          "preconditions": [
+            "State upgraded via upgrade_to_fulu with proposer_lookahead initialized."
+          ],
+          "inputs": [
+            "BeaconState with proposer_lookahead",
+            "Current epoch and custody scheduling parameters"
+          ],
+          "procedure": [
+            "1. During epoch processing, run process_proposer_lookahead to refresh indices for (MIN_SEED_LOOKAHEAD+1)*SLOTS_PER_EPOCH slots.",
+            "2. When validating data_column_sidecar, confirm proposer_index matches lookahead entry for slot.",
+            "3. If mismatch detected, queue sidecar until proposer shuffling confirmed or reject if proven invalid."
+          ],
+          "postconditions": [
+            "Lookahead array stays aligned with fork choice and custody validations."
+          ],
+          "errors": [
+            {
+              "code": "ERR_LOOKAHEAD_DESYNC",
+              "when": "proposer_index differs from expected index for slot",
+              "effect": "Client ignores sidecar until proposer mapping recomputed."
+            }
+          ],
+          "rationale": "Provides deterministic proposer verification for PeerDAS sidecars and attestation duties."
+        }
+      ],
+      "algorithms": [
+        {
+          "name": "Custody Assignment",
+          "purpose": "Assign custody groups and columns per node deterministically.",
+          "pseudocode": "`pseudo\\nfunction assign_custody(node_id, custody_group_count):\\n    groups = get_custody_groups(node_id, custody_group_count)\\n    return {g: compute_columns_for_custody_group(g) for g in groups}\\n`",
+          "notes": "Avoids duplicates, supports super-full nodes, and scales with NUMBER_OF_CUSTODY_GROUPS."
+        }
+      ],
+      "apis": {
+        "interfaces": [
+          {
+            "kind": "beacon_api",
+            "name": "GET /eth/v2/beacon/blocks/{slot}",
+            "stability": "Stable with PeerDAS extensions.",
+            "notes": "Responses include blob_kzg_commitments and execution_requests needed for Osaka verification."
+          },
+          {
+            "kind": "req_resp",
+            "name": "DataColumnSidecarsByRange v1",
+            "stability": "Experimental for Fusaka devnets.",
+            "notes": "Serves DataColumnSidecar payloads over SSZ chunks within MIN_EPOCHS_FOR_DATA_COLUMN_SIDECARS_REQUESTS window."
+          }
+        ]
+      },
+      "wire_protocol": {
+        "topics": [
+          "data_column_sidecar_{subnet_id}"
+        ],
+        "notes": "Nodes must validate subnet routing, anti-equivocation, proposer signature, inclusion proof, and KZG proofs before forwarding sidecars."
+      },
+      "constants": [
+        {
+          "name": "SAMPLES_PER_SLOT",
+          "value": "8",
+          "units": "columns",
+          "notes": "Minimum samples honest node must download each slot."
+        },
+        {
+          "name": "NUMBER_OF_CUSTODY_GROUPS",
+          "value": "128",
+          "units": "groups",
+          "notes": "Total custody groups available across PeerDAS network."
+        },
+        {
+          "name": "NUMBER_OF_COLUMNS",
+          "value": "128",
+          "units": "columns",
+          "notes": "Columns in the extended data matrix; equals CELLS_PER_EXT_BLOB."
+        },
+        {
+          "name": "DATA_COLUMN_SIDECAR_SUBNET_COUNT",
+          "value": "128",
+          "units": "subnets",
+          "notes": "Number of gossip subnets dedicated to column distribution."
+        },
+        {
+          "name": "MIN_EPOCHS_FOR_DATA_COLUMN_SIDECARS_REQUESTS",
+          "value": "4096",
+          "units": "epochs",
+          "notes": "Retention window for serving DataColumnSidecar requests."
+        }
+      ],
+      "invariants": [
+        "Proposer lookahead array length equals (MIN_SEED_LOOKAHEAD+1)*SLOTS_PER_EPOCH.",
+        "earliest_available_slot in Status v2 must reflect oldest stored data column sidecars.",
+        "Custody requirement for validator-attached nodes scales with effective balance."
+      ],
+      "user_flows": [
+        {
+          "id": 1,
+          "title": "[Validator] PeerDAS Sampling Cycle",
+          "actors": [
+            "Validator",
+            "Beacon Node"
+          ],
+          "preconditions": [
+            "Validator metadata advertises custody_group_count >= CUSTODY_REQUIREMENT."
+          ],
+          "steps": [
+            "1. At slot start, compute sampling groups using total_node_balance derived requirement.",
+            "2. Subscribe to required data_column_sidecar subnets and request missing columns.",
+            "3. Verify sidecars and record custody proofs; reconstruct if partial coverage.",
+            "4. Publish attestations only if sampling thresholds satisfied."
+          ],
+          "postconditions": [
+            "Validator ready to attest with availability evidence or abstain if data incomplete."
+          ]
+        }
+      ],
+      "worked_examples": [
+        {
+          "id": "EX-FULU-SAMPLING",
+          "title": "Sampling with Partial Sidecar Loss",
+          "scenario": "Node misses two custody groups due to slow gossip.",
+          "given": "custody_group_count = 8 requiring >=8 samples per slot.",
+          "when": "Node retrieves 6 sidecars via gossip and requests remaining 2 via DataColumnSidecarsByRange.",
+          "then": "If Req/Resp succeeds before attestation deadline, node attests; otherwise it must abstain to avoid invalid vote."
+        }
+      ],
+      "edge_cases": [
+        "Sidecar with empty kzg_commitments list must be rejected before gossip propagation.",
+        "Node advertising reduced custody_group_count must still serve historical higher count.",
+        "BlobSidecarsByRange requests beyond retention window may return empty without peer penalty.",
+        "If proposer shuffling is not yet confirmed, clients SHOULD queue (not reject) sidecars until lookahead aligns, to avoid false negatives."
+      ],
+      "compatibility": {
+        "cross_layer": "Fulu verifies Osaka requests_hash, blob_gas_used, and excess_blob_gas through engine APIs while enforcing blob schedule via get_blob_parameters."
+      },
+      "changelog": {
+        "latest_version": "specs/fulu@340d2335",
+        "since_previous": [
+          {
+            "commit": "340d23358a0cdb4f4b547226dadd36d1cf775f20",
+            "date": "2025-09-17",
+            "summary": "Adjusted pyspec test generation to gate ssz_static creation in generator mode, keeping PeerDAS fixtures lean."
+          },
+          {
+            "commit": "1af06e9781ccc8471b53166d5e7109478ac5d874",
+            "date": "2025-09-17",
+            "summary": "Forwarded verbose flag to pyspec rebuild step, aiding debug of Fulu generators."
+          }
+        ],
+        "breaking_changes": [
+          "DataColumnSidecar gossip replaces blob_sidecar topics, requiring networking upgrades.",
+          "Status v2 earliest_available_slot field mandated for PeerDAS availability tracking.",
+          "Validators must satisfy upgraded custody requirements tied to effective balances."
+        ]
+      },
+      "bug_bounty": {
+        "scope": "Consensus clients implementing Fulu networking, PeerDAS sampling, and proposer lookahead fall within EF bounty scope.",
+        "impact": "Findings causing consensus splits, invalid availability votes, or custody bypass qualify for higher tiers.",
+        "exclusions": "Cosmetic issues in specs or non-security documentation remain out of scope.",
+        "reproduction": "Reports must include reproducible beacon node traces or failing test vectors demonstrating PeerDAS or lookahead faults.",
+        "reporting": "Submit via bounty.ethereum.org or bounty@ethereum.org following responsible disclosure timelines.",
+        "rewards": "Rewards mirror EF consensus bounty tiers scaled by slashable fault risk."
+      }
+    }
+  ],
+  "cross_layer": {
+    "interfaces": [
+      {
+        "name": "Engine API / Fork Choice",
+        "preconditions": [
+          "EL and CL share JWT auth and advertise matching fork versions."
+        ],
+        "sequence_diagram": "```mermaid\nsequenceDiagram\n  CL->>EL: engine_newPayloadV3(payload, hashes, parent_root, execution_requests)\n  EL-->>CL: PayloadStatus(VALID|INVALID, blobStatus)\n  CL->>EL: engine_forkchoiceUpdatedV3(state, payloadAttributes)\n  EL-->>CL: PayloadId / SYNCING\n```",
+        "errors": [
+          "INVALID_PARAMS when payload structure malformed.",
+          "SYNCING when EL behind finalized head.",
+          "INVALID_BLOCK_HASH when requests_hash or blob metrics mismatch."
+        ],
+        "timeouts": "Clients should retry forkchoiceUpdated if EL does not respond within slot time, backing off exponentially.",
+        "notes": "Fulu relies on Osaka to reject invalid blob bundles and publish execution_requests for CL processing."
+      }
+    ],
+    "data_availability": "Osaka enforces blob fee floors and per-tx/blob limits while Fulu spreads columns across custody groups; together they guarantee availability via pricing and PeerDAS sampling."
+  },
+  "security_requirements": [
+    {
+      "id": "SR-EL-001",
+      "description": "Execution clients must enforce Osaka gas caps, block size, and requests hashing before exposing payloads to consensus.",
+      "risk_category": "integrity",
+      "related_components": [
+        "Transaction Validation",
+        "State Transition"
+      ]
+    },
+    {
+      "id": "SR-CL-001",
+      "description": "Consensus clients must validate PeerDAS sidecars and meet sampling thresholds before attesting to block availability.",
+      "risk_category": "consensus",
+      "related_components": [
+        "PeerDAS Core",
+        "Validator Duties"
+      ]
+    },
+    {
+      "id": "SR-XL-001",
+      "description": "Engine API interactions must keep CL and EL fork choice aligned, rejecting payloads with mismatched blob metrics or requests_hash.",
+      "risk_category": "consistency",
+      "related_components": [
+        "Engine API / Fork Choice"
+      ]
+    },
+    {
+      "id": "SR-EL-002",
+      "description": "Blob fee computation must remain monotonic with the Osaka minimum to prevent economic attacks or underflows.",
+      "risk_category": "economic",
+      "related_components": [
+        "Fee Market"
+      ]
+    },
+    {
+      "id": "SR-CL-002",
+      "description": "Proposer lookahead must be reproducible from beacon state so peers can detect equivocation or invalid sidecars.",
+      "risk_category": "liveness",
+      "related_components": [
+        "Beacon State",
+        "Networking"
+      ]
+    },
+    {
+      "id": "SR-EL-003",
+      "description": "Enforce MAX_BLOBS_PER_TX (6) per EIP\u20117594 at pool, network receive, and block assembly.",
+      "risk_category": "integrity",
+      "related_components": [
+        "Transaction Validation"
+      ]
+    },
+    {
+      "id": "SR-CL-003",
+      "description": "Gossip validation MUST include subnet check, proposer sig, inclusion proof, and batch KZG verification before forwarding.",
+      "risk_category": "availability",
+      "related_components": [
+        "Networking",
+        "PeerDAS Core"
+      ]
+    }
+  ],
+  "threats": {
+    "attack_paths": [
+      {
+        "id": "AP-1",
+        "title": "Proposer/EL/Subnet gossips malformed or adversarial DataColumnSidecar",
+        "description": "Invalid structure, wrong subnet, bad inclusion proof, or invalid KZG proofs causing verification failure or CPU spikes.",
+        "checkpoints": [
+          "Reject on wrong subnet before heavy checks",
+          "O(1) structural checks before batch KZG",
+          "Cap batch sizes and timeouts; penalize peers on failure",
+          "Cache inclusion proof tuple per block to avoid rework"
+        ],
+        "mitigations": [
+          "Apply full gossip validation gate (structure\u2192subnet\u2192parent seen\u2192proposer sig\u2192inclusion\u2192KZG)",
+          "Bound anti\u2011equivocation cache by time/keys"
+        ],
+        "related": [
+          "FULU-SUBNET-ASSIGNMENT",
+          "FULU-PEERDAS-SAMPLING"
+        ]
+      },
+      {
+        "id": "AP-2",
+        "title": "RS reconstruction inconsistency and crash triggers",
+        "description": "Incorrect column indices or mixing cells from other columns triggers reconstruction failure, KZG mismatches, or crashes.",
+        "checkpoints": [
+          "Begin reconstruction only when columns >= ceil(NUMBER_OF_COLUMNS/2)",
+          "Re-verify KZG against the recover_matrix return value",
+          "Assert column index matches cell index as an invariant"
+        ],
+        "mitigations": [
+          "Assert invariants before and after reconstruction",
+          "Sort inputs and deduplicate"
+        ],
+        "related": [
+          "FULU-RS-RECONSTRUCTION"
+        ]
+      },
+      {
+        "id": "AP-3",
+        "title": "Custody calculation bias or divergence (misassignment causing slashing, missed rewards, or partitions)",
+        "description": "Implementation drift in get_custody_groups or unstable node_id derivation causes assignments to diverge from other clients.",
+        "checkpoints": [
+          "Stabilize node_id (derive consistently from ENR or peerId)",
+          "Assert get_custody_groups outputs are deduplicated and sorted",
+          "Validate indices 0..NUMBER_OF_CUSTODY_GROUPS-1 with cross-client vectors"
+        ],
+        "mitigations": [
+          "Log and monitor the node self-assignment hash at startup",
+          "Verify prefix-stable behavior when the custody group configuration (cgc) changes"
+        ],
+        "related": [
+          "FULU-CUSTODY-CALC"
+        ]
+      },
+      {
+        "id": "AP-4",
+        "title": "DBP abuse (seeding incorrect blobs from the EL without validation)",
+        "description": "Blindly trusting engine_getBlobsV2 responses spreads invalid columns.",
+        "checkpoints": [
+          "Apply the same validation and deduplication as gossip to DBP-generated columns",
+          "Publish only to subscribed subnets",
+          "Always check EL response versioned hash and commitment lengths and consistency"
+        ],
+        "mitigations": [
+          "Validate DataColumnSidecars before ingesting",
+          "Abort DBP and fall back to standard DAS or reconstruction when EL responses are missing"
+        ],
+        "related": [
+          "FULU-DISTRIBUTED-BLOB-PUBLISHING"
+        ]
+      },
+      {
+        "id": "AP-5",
+        "title": "Subnetwork mapping implementation drift (mod and floor discrepancies)",
+        "description": "Differences in column-to-subnet mapping can partition the network.",
+        "checkpoints": [
+          "Unit-test compute_subnet_for_data_column_sidecar with table lookups across all 128 columns",
+          "Specify identifier types and bounds explicitly (unsigned with no wraparound)"
+        ],
+        "mitigations": [
+          "Reference DATA_COLUMN_SIDECAR_SUBNET_COUNT from the shared definition",
+          "Verify end-to-end cross-client send and receive consistency"
+        ],
+        "related": [
+          "FULU-SUBNET-ASSIGNMENT"
+        ]
+      },
+      {
+        "id": "AP-6",
+        "title": "Batch KZG verification regression or DoS",
+        "description": "Huge batches or malformed inputs induce latency spikes.",
+        "checkpoints": [
+          "Perform O(1) checks that sidecar column counts match commitment and proof lengths",
+          "Enforce batch size caps and wall-clock abort conditions",
+          "Confirm domain separation for random challenges"
+        ],
+        "mitigations": [
+          "Parallelize verification and prioritize by slot deadlines",
+          "Lower scores for misbehaving peers"
+        ],
+        "related": [
+          "FULU-PEERDAS-SAMPLING"
+        ]
+      },
+      {
+        "id": "AP-7",
+        "title": "Anti-equivocation cache memory pressure",
+        "description": "Repeated transmissions for the same (slot, proposer, column) tuple inflate memory.",
+        "checkpoints": [
+          "Bound key TTL and the maximum entry count",
+          "Define clear state transitions from accept to eviction"
+        ],
+        "mitigations": [
+          "Use fixed memory pools or ring buffers",
+          "Penalize peers and ignore early"
+        ],
+        "related": [
+          "FULU-PEERDAS-SAMPLING"
+        ]
+      },
+      {
+        "id": "AP-8",
+        "title": "Req/Resp request flooding (DataColumnSidecarsByRange)",
+        "description": "Out-of-range or excessive requests consume bandwidth.",
+        "checkpoints": [
+          "Enforce MIN_EPOCHS_FOR_DATA_COLUMN_SIDECARS_REQUESTS",
+          "Apply MAX_REQUEST_DATA_COLUMN_SIDECARS",
+          "Respond with ResourceUnavailable appropriately and downgrade"
+        ],
+        "mitigations": [
+          "Rate-limit and cap concurrent processing",
+          "Abort early when fork choice changes"
+        ],
+        "related": [
+          "apis.interfaces[1] DataColumnSidecarsByRange v1"
+        ]
+      },
+      {
+        "id": "AP-9",
+        "title": "MAX_BLOBS_PER_TX violations slipping through",
+        "description": "Allows more than six blobs per transaction.",
+        "checkpoints": [
+          "Apply the same guard at pool intake, network admission, and block construction",
+          "Test error paths for exception names and return codes"
+        ],
+        "mitigations": [
+          "Reuse a unified validation function",
+          "Expose violation counts via metrics"
+        ],
+        "related": [
+          "OSK-TX-VALIDATION"
+        ]
+      },
+      {
+        "id": "AP-10",
+        "title": "Cell array ordering or endianness mix-ups",
+        "description": "Out-of-order compute_cells execution causes verification failures.",
+        "checkpoints": [
+          "Add boundary tests for BYTES_PER_CELL and CELLS_PER_EXT_BLOB",
+          "Run cross-implementation cell hash and reversibility tests"
+        ],
+        "mitigations": [
+          "Use a shared KZG library such as c-kzg-4844",
+          "Validate row and column alignment with static test vectors"
+        ],
+        "related": [
+          "FULU-RS-RECONSTRUCTION"
+        ]
+      },
+      {
+        "id": "AP-11",
+        "title": "Proposer validation flapping (false rejects)",
+        "description": "Rejecting before shuffle stabilizes causes availability loss.",
+        "checkpoints": [
+          "Follow the spec flow: QUEUE (IGNORE) then verify later",
+          "Guarantee processing order when resynchronizing lookahead and fork choice"
+        ],
+        "mitigations": [
+          "Retry fetching branch parents with deadlines",
+          "Emit state root and branch values to audit logs"
+        ],
+        "related": [
+          "FULU-PROPOSER-LOOKAHEAD"
+        ]
+      },
+      {
+        "id": "AP-12",
+        "title": "Custody subnet saturation and listener starvation",
+        "description": "Adversaries concentrate peers on specific custody subnets to absorb sampling requests or leave subnets without listeners, delaying blob availability confirmations.",
+        "checkpoints": [
+          "Enforce per-subnet inbound/outbound peer caps and rotate peers when sample success ratio drops",
+          "Emit metrics/alerts when a custody subnet peer count falls below the redundancy threshold",
+          "Reassign or rejoin custody subnets proactively when repeated timeouts occur"
+        ],
+        "mitigations": [
+          "Randomize peer replacement across custody groups each epoch",
+          "Drop or deprioritize peers that exceed request-failure limits"
+        ],
+        "related": [
+          "FULU-CUSTODY-CALC",
+          "FULU-SUBNET-ASSIGNMENT",
+          "FULU-PEERDAS-SAMPLING"
+        ]
+      },
+      {
+        "id": "AP-13",
+        "title": "PeerDAS request backpressure bypass",
+        "description": "Flooding DataColumnSidecars or cell sampling requests without adequate backpressure causes goroutine/thread exhaustion or memory spikes.",
+        "checkpoints": [
+          "Rate-limit concurrent column-sidecar requests per peer and per slot",
+          "Attach cancellable contexts and release resources on disconnect or timeout",
+          "Track outstanding work; refuse new requests when queue depth exceeds safe limits"
+        ],
+        "mitigations": [
+          "Share a bounded worker pool across DAS handlers",
+          "Record peer penalties for repeated cancellations or incomplete responses"
+        ],
+        "related": [
+          "FULU-PEERDAS-SAMPLING",
+          "apis.interfaces[1] DataColumnSidecarsByRange v1"
+        ]
+      },
+      {
+        "id": "AP-14",
+        "title": "Stale fragment replay loop",
+        "description": "Rebroadcasting expired column fragments or extended cells can keep validators busy revalidating obsolete data until TTL rules eject them.",
+        "checkpoints": [
+          "Assign per-slot TTL and drop sidecars older than the spec window before validation",
+          "Maintain deduplication keys (slot, proposer, column, chunk) with bounded TTL",
+          "Stop retrying peers that repeatedly deliver stale or duplicated fragments"
+        ],
+        "mitigations": [
+          "Emit metrics for stale fragment drops",
+          "Escalate to reconstruction requests when gossip sources stale repeatedly"
+        ],
+        "related": [
+          "FULU-PEERDAS-SAMPLING",
+          "FULU-RS-RECONSTRUCTION"
+        ]
+      },
+      {
+        "id": "AP-15",
+        "title": "cell_proofs wrapper integrity bypass",
+        "description": "Mixed or truncated cell proofs combined with valid blob commitments bypass integrity checks when wrapper length validation is incomplete.",
+        "checkpoints": [
+          "Verify cell_proofs count equals CELLS_PER_EXT_BLOB * len(blobs)",
+          "Ensure each proof index aligns with its blob commitment before batch verification",
+          "Reject unknown or unsupported wrapper_version before decoding"
+        ],
+        "mitigations": [
+          "Fuzz wrapper decoding with mismatched lengths",
+          "Keep cross-client test vectors for wrapper_version evolution"
+        ],
+        "related": [
+          "OSK-TX-VALIDATION",
+          "FULU-PEERDAS-SAMPLING"
+        ]
+      },
+      {
+        "id": "AP-16",
+        "title": "Versioned hash compression drift",
+        "description": "Differences in kzg_to_versioned_hash prefixing or G1 compression cause mismatch between commitments and versioned hashes across clients.",
+        "checkpoints": [
+          "Run canonical test vectors for kzg_to_versioned_hash across languages",
+          "Ensure prefix and truncation logic conform to 4844 spec",
+          "Validate codec output matches blob header version expectations before acceptance"
+        ],
+        "mitigations": [
+          "Centralize the conversion routine and reuse in EL/CL pipelines",
+          "Add regression tests for edge-case commitments (infinity, small-order)"
+        ],
+        "related": [
+          "OSK-TX-VALIDATION",
+          "FULU-DISTRIBUTED-BLOB-PUBLISHING"
+        ]
+      },
+      {
+        "id": "AP-17",
+        "title": "Invalid KZG point acceptance regression",
+        "description": "Relaxed deserialisation of G1/G2 points allows invalid commitments to be accepted, leading to consensus splits.",
+        "checkpoints": [
+          "Force deserialisation routines to reject points not on the curve or outside the subgroup",
+          "Fuzz decoding with known invalid point sets per release",
+          "Abort verification when library returns malformed points instead of fallback acceptance"
+        ],
+        "mitigations": [
+          "Pin kzg libraries to releases with subgroup checks",
+          "Add dynamic health checks that spot divergence after deserialisation"
+        ],
+        "related": [
+          "FULU-PEERDAS-SAMPLING",
+          "OSK-TX-VALIDATION"
+        ]
+      },
+      {
+        "id": "AP-18",
+        "title": "Sampling bias under partial availability",
+        "description": "An adversary withholds roughly half the columns and biases sampling so many validators hit only available regions, delaying reconstruction.",
+        "checkpoints": [
+          "Reroll sampling targets when repeated timeouts occur",
+          "Mix peers across operators and custody groups before finalising availability",
+          "Escalate to full reconstruction once minority of samples fail twice"
+        ],
+        "mitigations": [
+          "Track peer diversity and enforce minimum distinct operators per sampling window",
+          "Instrument sampling outcome metrics (success rate, retry counts)"
+        ],
+        "related": [
+          "FULU-PEERDAS-SAMPLING",
+          "FULU-RS-RECONSTRUCTION"
+        ]
+      },
+      {
+        "id": "AP-19",
+        "title": "Finalized epoch sidecar gaps",
+        "description": "Failure to serve or request DataColumnSidecars across finality boundaries prevents late joiners from reconstructing old blobs.",
+        "checkpoints": [
+          "Expose DataColumnSidecarsByRoot for finalized epochs as required",
+          "Test finalized/unfinalized transitions end-to-end",
+          "Cache finalised sidecars on disk with retention policies"
+        ],
+        "mitigations": [
+          "Backfill missing finalized sidecars during warm-up",
+          "Alert when finalized retrieval fails repeatedly"
+        ],
+        "related": [
+          "FULU-DISTRIBUTED-BLOB-PUBLISHING",
+          "apis.interfaces[1] DataColumnSidecarsByRoot v1"
+        ]
+      },
+      {
+        "id": "AP-20",
+        "title": "Partial-bad cell flood",
+        "description": "Sending many minimally corrupted cells forces repeated batch verification retries, exhausting CPU.",
+        "checkpoints": [
+          "Abort batch verification on first failure and penalize sender",
+          "Set per-slot limits on failed batch retries",
+          "Separate healthy and faulty cells to avoid reprocessing good data repeatedly"
+        ],
+        "mitigations": [
+          "Maintain peer failure counters tied to invalid cell rate",
+          "Prioritize verification of distinct slots before retrying failed ones"
+        ],
+        "related": [
+          "FULU-PEERDAS-SAMPLING",
+          "FULU-RS-RECONSTRUCTION"
+        ]
+      },
+      {
+        "id": "AP-21",
+        "title": "Checkpoint sync restart inconsistency",
+        "description": "Restarting after periods of non-finality can leave custody data or DAS caches inconsistent and block sampling.",
+        "checkpoints": [
+          "Clear stale DAS cache entries on checkpoint sync",
+          "Validate database migrations and version markers before serving requests",
+          "Warm up required sidecars after restart before marking availability"
+        ],
+        "mitigations": [
+          "Run integration tests covering restart from checkpoint with partial availability",
+          "Log restart audits and refuse to serve until caches are repopulated"
+        ],
+        "related": [
+          "FULU-DISTRIBUTED-BLOB-PUBLISHING",
+          "OSK-TX-VALIDATION"
+        ]
+      },
+      {
+        "id": "AP-22",
+        "title": "Devnet regression relapse",
+        "description": "Historical PeerDAS devnet bugs reappear when patches regress, reintroducing custody isolation or reconstruction failures.",
+        "checkpoints": [
+          "Add regression tests reproducing devnet-2/3/6 incidents (custody isolation, reconstructor stalls, listener holes)",
+          "Monitor metrics for early warning (peers per subnet, reconstruction lag, request failure rate)",
+          "Document remediation runbooks and verify alerts fire within one slot"
+        ],
+        "mitigations": [
+          "Keep invariant tests that replay archived devnet traces",
+          "Include devnet regression suites in CI before releases"
+        ],
+        "related": [
+          "FULU-PEERDAS-SAMPLING",
+          "FULU-CUSTODY-CALC",
+          "FULU-RS-RECONSTRUCTION"
+        ]
+      },
+      {
+        "id": "AP-23",
+        "title": "Full-wrapper mempool flood",
+        "description": "High-rate transactions with maximum blobs and cell proofs drive verification queues and memory to exhaustion before admission controls react.",
+        "checkpoints": [
+          "Enforce per-slot and global limits on total blob and cell_proof payload accepted into the pool",
+          "Throttle parallel wrapper verification workers and drop excess",
+          "Record metrics for blob/cell proof backlog and alert on sustained growth"
+        ],
+        "mitigations": [
+          "Reuse verified wrapper fingerprints across transactions",
+          "Gracefully shed load once verification backlog exceeds threshold"
+        ],
+        "related": [
+          "OSK-TX-VALIDATION",
+          "FULU-PEERDAS-SAMPLING"
+        ]
+      },
+      {
+        "id": "AP-24",
+        "title": "Duplicate sidecar flood",
+        "description": "Attackers spam identical or near-identical DataColumnSidecars on a custody subnet to exhaust receive queues and memory buffers.",
+        "checkpoints": [
+          "Maintain deduplication keys (root, column, chunk) with bounded TTL",
+          "Cap simultaneous sidecar processing per (slot, column) and per peer",
+          "Downgrade peers whose duplicate ratio exceeds policy"
+        ],
+        "mitigations": [
+          "Track duplicate statistics per subnet",
+          "Drop late-arriving sidecars once quorum achieved"
+        ],
+        "related": [
+          "FULU-SUBNET-ASSIGNMENT",
+          "FULU-PEERDAS-SAMPLING"
+        ]
+      },
+      {
+        "id": "AP-25",
+        "title": "Incomplete sampling backlog",
+        "description": "Adversaries deliver partial column responses and disconnect just before completion, causing unfinished sampling records to accumulate.",
+        "checkpoints": [
+          "Evict incomplete sampling state immediately on timeout or peer switch",
+          "Limit concurrent incomplete sampling records per peer",
+          "Penalize peers that repeatedly produce partial responses"
+        ],
+        "mitigations": [
+          "Prefer peers with recent full-success history",
+          "Persist only successful samples to long-lived caches"
+        ],
+        "related": [
+          "FULU-PEERDAS-SAMPLING"
+        ]
+      },
+      {
+        "id": "AP-26",
+        "title": "Micro-reorg re-fetch thrash",
+        "description": "Frequent small reorgs force repeated DataColumnSidecarsByRoot fetches, stressing memory and bandwidth if responses are not coalesced.",
+        "checkpoints": [
+          "Bound concurrent ByRoot re-fetches and prefer ByRange when reorg depth >= 2",
+          "Release cached sidecars for superseded roots immediately",
+          "Debounce re-fetches when fork choice oscillates within a slot"
+        ],
+        "mitigations": [
+          "Stage re-fetch work through a bounded queue",
+          "Expose metrics for ByRoot retry counts"
+        ],
+        "related": [
+          "FULU-DISTRIBUTED-BLOB-PUBLISHING",
+          "apis.interfaces[1] DataColumnSidecarsByRoot v1"
+        ]
+      },
+      {
+        "id": "AP-27",
+        "title": "Adversarial compute_cells workload",
+        "description": "Blobs crafted to trigger worst-case FFT/cache behavior keep compute_cells busy and stall downstream verification.",
+        "checkpoints": [
+          "Benchmark compute_cells against adversarial vectors and abort when runtime exceeds configured budget",
+          "Schedule compute_cells on bounded worker pools with priority to current slot",
+          "Cache results keyed by blob commitment and reuse across requests"
+        ],
+        "mitigations": [
+          "Adopt shared polynomial libraries with constant-time configuration",
+          "Collect histograms of compute_cells latency to catch regressions"
+        ],
+        "related": [
+          "FULU-RS-RECONSTRUCTION",
+          "OSK-TX-VALIDATION"
+        ]
+      },
+      {
+        "id": "AP-28",
+        "title": "Commitment fingerprint evasion",
+        "description": "Repeatedly reusing the same blob commitment across many transactions forces redundant verification when caches are weak or absent.",
+        "checkpoints": [
+          "Maintain per-slot commitment fingerprints and skip re-verification",
+          "Reject pools that exceed blob reuse limits",
+          "Expose metrics for commitment reuse to operators"
+        ],
+        "mitigations": [
+          "Share verification results across mempool, gossip, and block builder",
+          "Score peers negatively for mass duplicate commitments"
+        ],
+        "related": [
+          "OSK-TX-VALIDATION"
+        ]
+      },
+      {
+        "id": "AP-29",
+        "title": "Incomplete sidecar persistence leak",
+        "description": "Unfinished or superseded sidecars linger in memory or disk after restarts, consuming resources and confusing availability checks.",
+        "checkpoints": [
+          "Purge incomplete DAS entries at startup and on checkpoint sync",
+          "Mark superseded roots and delete associated sidecar files promptly",
+          "Bound the number of cached partial sidecars per slot"
+        ],
+        "mitigations": [
+          "Add integrity scans for DAS storage",
+          "Refuse to serve availability until caches are sane"
+        ],
+        "related": [
+          "FULU-DISTRIBUTED-BLOB-PUBLISHING",
+          "FULU-PEERDAS-SAMPLING"
+        ]
+      },
+      {
+        "id": "AP-30",
+        "title": "Logging/metrics amplification",
+        "description": "Forged error conditions or duplicate requests trigger excessive logging or metrics updates, consuming CPU and disk bandwidth.",
+        "checkpoints": [
+          "Rate-limit high cardinality logs tied to DAS failures",
+          "Batch metrics updates for repeated errors",
+          "Provide configuration to downgrade verbose logging under load"
+        ],
+        "mitigations": [
+          "Use structured sampling for repetitive messages",
+          "Monitor log volume and auto-throttle when exceeding limits"
+        ],
+        "related": [
+          "FULU-PEERDAS-SAMPLING",
+          "FULU-DISTRIBUTED-BLOB-PUBLISHING"
+        ]
+      }
+    ]
+  }
+}

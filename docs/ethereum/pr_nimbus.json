@@ -1,0 +1,132 @@
+[
+  {
+    "body": "",
+    "closedAt": "2025-08-27T10:04:39Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "closed",
+    "title": "fix fulu builder api changes",
+    "updatedAt": "2025-08-27T10:04:39Z",
+    "url": "https://github.com/status-im/nimbus-eth2/pull/7340"
+  },
+  {
+    "body": "",
+    "closedAt": "2025-09-23T11:38:14Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "column serving issue and other fixes",
+    "updatedAt": "2025-09-28T04:41:16Z",
+    "url": "https://github.com/status-im/nimbus-eth2/pull/7528"
+  },
+  {
+    "body": "",
+    "closedAt": "2025-09-18T18:06:35Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "attempt to solve columndb issue + fix cgc with non-validator issue",
+    "updatedAt": "2025-09-21T07:47:48Z",
+    "url": "https://github.com/status-im/nimbus-eth2/pull/7507"
+  },
+  {
+    "body": "",
+    "closedAt": "2025-09-01T21:24:07Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "closed",
+    "title": "Rebase fulu-ebps to unstable, add block error handling, remove incompatible tests",
+    "updatedAt": "2025-09-01T21:24:07Z",
+    "url": "https://github.com/status-im/nimbus-eth2/pull/7204"
+  },
+  {
+    "body": "#6677 assigned blob fork code `MaxForksCount + 1` to Fulu, but this is already used for Electra. Update the logic to always base blobs relative to Deneb, in a maintenance-free way.",
+    "closedAt": "2025-06-23T14:07:29Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "Fix incorrect getBlobForkCode for Fulu",
+    "updatedAt": "2025-06-23T14:07:30Z",
+    "url": "https://github.com/status-im/nimbus-eth2/pull/7258"
+  },
+  {
+    "body": "",
+    "closedAt": "2025-06-25T13:14:57Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "patch in proposer lookahead fixes from berlinterop",
+    "updatedAt": "2025-06-25T13:14:58Z",
+    "url": "https://github.com/status-im/nimbus-eth2/pull/7244"
+  },
+  {
+    "body": "I am trying to compile nimbus ```v25.5.0``` on a Fedora 42, getting this error:\n\n\n```\nBuilding: install/usr/lib/libbacktrace.a\nBuilding: install/usr/lib/libbacktracenim.a\nBuilding: build/generate_makefile\nBuild completed successfully: build/generate_makefile\nBuilding: build/nimbus_beacon_node\n@[\"Unknown constants in file: \", \"MAX_REQUEST_DATA_COLUMN_SIDECARS\", \"MAX_BLOBS_PER_BLOCK_FULU\", \"NUMBER_OF_CUSTODY_GROUPS\", \"CUSTODY_REQUIREMENT\", \"MAX_REQUEST_PAYLOADS\", \"WHISK_PROPOSER_SELECTION_GAP\", \"WHISK_EPOCHS_PER_SHUFFLING_PHASE\", \"DATA_COLUMN_SIDECAR_SUBNET_COUNT\", \"SAMPLES_PER_SLOT\", \"MIN_EPOCHS_FOR_DATA_COLUMN_SIDECARS_REQUESTS\", \"TARGET_BLOBS_PER_BLOCK_ELECTRA\", \"NUMBER_OF_COLUMNS\"]\nTerminated\nmake: *** [Makefile:441: nimbus_beacon_node] Terminated\n```\n I compiled with\n```\nmake clean\nmake update\nmake nimbus_beacon_node\n```\n\nDo you have any clue on what may be wrong, or how can I increase the log output to figure out where it is failing? ",
+    "closedAt": "2025-05-28T19:04:54Z",
+    "isPullRequest": false,
+    "labels": [],
+    "state": "closed",
+    "title": "Compilation issues",
+    "updatedAt": "2025-05-28T19:04:54Z",
+    "url": "https://github.com/status-im/nimbus-eth2/issues/7203"
+  },
+  {
+    "body": "The gindex for Electra / Fulu when requesting `.graffiti` as proven property is incorrect:\r\n\r\n- Electra: #6177 lacks reasoning and likely introduced copy paste error?\r\n- Fulu: #6677 copied the broken Electra gindex, likely assuming its good\r\n\r\n`BeaconBlockBody` has not changed. The correct gindex is still `18`.\r\n\r\n- 13 fields total --> next pow2 is 16, so indexing starts at 16\r\n- fields are 0-indexed, `graffiti` is at index 2\r\n- 16 + 2 = 18",
+    "closedAt": "2025-03-25T01:37:10Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "Fix Electra / Fulu .graffiti proven property in remote keystore",
+    "updatedAt": "2025-03-25T01:37:11Z",
+    "url": "https://github.com/status-im/nimbus-eth2/pull/7030"
+  },
+  {
+    "body": "",
+    "closedAt": "2025-02-05T11:12:47Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "fix upgrade to fulu for future beta2 tests",
+    "updatedAt": "2025-02-05T11:12:48Z",
+    "url": "https://github.com/status-im/nimbus-eth2/pull/6898"
+  },
+  {
+    "body": "Makes Electra and Fulu (and any non-mainnet fork) optional to the parser",
+    "closedAt": "2025-01-03T16:20:42Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "fix: pass `optionalForks` to consensus fork parser",
+    "updatedAt": "2025-01-03T16:20:42Z",
+    "url": "https://github.com/status-im/nimbus-eth2/pull/6811"
+  },
+  {
+    "body": "",
+    "closedAt": "2024-12-20T17:39:49Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "make `getTargetGossipState` aware of Fulu + other fixes",
+    "updatedAt": "2024-12-20T17:39:50Z",
+    "url": "https://github.com/status-im/nimbus-eth2/pull/6780"
+  },
+  {
+    "body": "",
+    "closedAt": "2025-01-07T22:49:22Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "clean up eip7594 naming, useful links, test suite naming",
+    "updatedAt": "2025-01-07T22:49:24Z",
+    "url": "https://github.com/status-im/nimbus-eth2/pull/6820"
+  },
+  {
+    "body": "implements https://github.com/ethereum/consensus-specs/blob/dev/specs/_features/eip7594/p2p-interface.md#metadata\r\n\r\nconditionally calls getMetaData v2 or v3 by checking if `FULU_FORK_EPOCH` is scheduled or not.",
+    "closedAt": "2024-11-30T15:53:02Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "`getMetaData_v3`",
+    "updatedAt": "2024-11-30T15:53:03Z",
+    "url": "https://github.com/status-im/nimbus-eth2/pull/6739"
+  }
+]

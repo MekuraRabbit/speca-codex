@@ -1,0 +1,627 @@
+[
+  {
+    "body": "## Description\n\nSeeing this warning a lot on some Holesky nodes with 200 peers:\n\n```\nOct 02 02:05:43.029 WARN  Could not publish message                     error: NoPeersSubscribedToTopic, kind: beacon_attestation_5\n```\n\n## Version\n\nv8.0.0-rc.0\n\n## Present Behaviour\n\nThe beacon node doesn't have sufficient peers on the attestation subnets its publishing to. This is likely caused by a recent change (#7915), which prioritises uniform distribution across data column subnets instead of attestation subnets from the Fulu fork.\n\n## Expected Behaviour\n\nThe beacon node should have sufficient peers on its required attestation subnets most of the time and the frequency of this warning should be low.\n",
+    "closedAt": "0001-01-01T00:00:00Z",
+    "isPullRequest": false,
+    "labels": [
+      {
+        "color": "d73a4a",
+        "description": "Something isn't working",
+        "id": "MDU6TGFiZWw5ODU2NDcyODE=",
+        "name": "bug"
+      },
+      {
+        "color": "ec511a",
+        "description": "Q4 2025 Fusaka Mainnet Release",
+        "id": "LA_kwDOCFeAzc8AAAACGuE4AA",
+        "name": "v8.0.0"
+      }
+    ],
+    "state": "open",
+    "title": "Could not publish attestation message due to `NoPeersSubscribedToTopic`",
+    "updatedAt": "2025-10-02T00:11:13Z",
+    "url": "https://github.com/sigp/lighthouse/issues/8153"
+  },
+  {
+    "body": "I think we should pause light client computations if the fork epoch is misaligned in a way that breaks our calculations.\n\nThis should be necessary only for ~1 sync committee period around the fork.\n\nIt would be nice to avoid error logs, even if they are harmless, like:\n\n> Feb 13 20:25:36.228 ERRO error computing light_client updates LightClientUpdateError(BeaconStateError(IncorrectStateVariant)), service: lc_update",
+    "closedAt": "0001-01-01T00:00:00Z",
+    "isPullRequest": false,
+    "labels": [
+      {
+        "color": "d73a4a",
+        "description": "Something isn't working",
+        "id": "MDU6TGFiZWw5ODU2NDcyODE=",
+        "name": "bug"
+      },
+      {
+        "color": "90E4C1",
+        "description": "",
+        "id": "LA_kwDOCFeAzc8AAAABZ9eVVQ",
+        "name": "light-client"
+      },
+      {
+        "color": "fbca04",
+        "description": "Required for the Electra/Prague fork",
+        "id": "LA_kwDOCFeAzc8AAAABgZ47iQ",
+        "name": "electra"
+      },
+      {
+        "color": "ec511a",
+        "description": "Q4 2025 Fusaka Mainnet Release",
+        "id": "LA_kwDOCFeAzc8AAAACGuE4AA",
+        "name": "v8.0.0"
+      }
+    ],
+    "state": "open",
+    "title": "Resolve light client errors at fork boundaries",
+    "updatedAt": "2025-10-01T09:01:09Z",
+    "url": "https://github.com/sigp/lighthouse/issues/7002"
+  },
+  {
+    "body": "## Issue Addressed\r\n\r\nFollow-up to the bug fixed in:\r\n\r\n- https://github.com/sigp/lighthouse/pull/8121\r\n\r\nThis fixes the root cause of that bug, which was introduced by me in:\r\n\r\n- https://github.com/sigp/lighthouse/pull/8101\r\n\r\nJimmy and Lion both identified the issue here:\r\n\r\n- https://github.com/sigp/lighthouse/pull/8101#discussion_r2382258842\r\n- https://github.com/sigp/lighthouse/pull/8101#discussion_r2382710356\r\n\r\n## Proposed Changes\r\n\r\nIn the methods that compute the proposer shuffling decision root, ensure we don't use lookahead for the Fulu fork epoch itself. This is accomplished by checking if Fulu is enabled at `epoch - 1`, i.e. if `epoch > fulu_fork_epoch`.\r\n\r\nI haven't updated the methods that _compute_ shufflings to use these new corrected bounds (e.g. `BeaconState::compute_proposer_indices`), although we could make this change in future. The `get_beacon_proposer_indices` method already gracefully handles the Fulu boundary case by using the `proposer_lookahead` field (if initialised).\r\n\r\n## Additional Info\r\n\r\n- [x] Unit test added for `proposer_shuffling_decision_slot` at the boundary\r\n- [x] Updated the consistency tests to check cases around the fork boundary\r\n",
+    "closedAt": "2025-09-29T01:13:33Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "5e59bf",
+        "description": "An issue/PR that touches consensus code, such as state_processing or block verification.",
+        "id": "MDU6TGFiZWwyMDM0MzU1MDkz",
+        "name": "consensus"
+      },
+      {
+        "color": "26ef1f",
+        "description": "This PR is ready to merge.",
+        "id": "MDU6TGFiZWwyMjIxNDg3ODg0",
+        "name": "ready-for-merge"
+      },
+      {
+        "color": "0E85AB",
+        "description": "Required for the upcoming Fulu hard fork",
+        "id": "LA_kwDOCFeAzc8AAAAB20IzmA",
+        "name": "fulu"
+      },
+      {
+        "color": "33cbc5",
+        "description": "Q3 2025 release for Fusaka on Holesky",
+        "id": "LA_kwDOCFeAzc8AAAACEEFcpg",
+        "name": "v8.0.0-rc.0"
+      }
+    ],
+    "state": "merged",
+    "title": "Fix proposer shuffling decision slot at boundary",
+    "updatedAt": "2025-09-29T03:00:16Z",
+    "url": "https://github.com/sigp/lighthouse/pull/8128"
+  },
+  {
+    "body": "## Issue Addressed\r\n\r\nN/A\r\n\r\n## Proposed Changes\r\n\r\nIn #8101 , when we modified the logic to get the proposer index post fulu, we seem to have missed advancing the state at the fork boundaries to get the right `Fork` for signature verification. \r\nThis led to lighthouse failing all gossip verification right after transitioning to fulu that was observed on the holesky shadow fork\r\n```\r\nSep 26 14:24:00.088 DEBUG Rejected gossip block                         error: \"InvalidSignature(ProposerSignature)\", graffiti: \"grandine-geth-super-1\", slot: 640 \r\nSep 26 14:24:00.099 WARN  Could not verify block for gossip. Rejecting the block  error: InvalidSignature(ProposerSignature)\r\n```\r\n\r\nI'm not completely sure this is the correct fix, but this fixes the issue with `InvalidProposerSignature` on the holesky shadow fork.\r\n\r\nThanks to @eserilev for helping debug this ",
+    "closedAt": "2025-09-28T04:03:25Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "26ef1f",
+        "description": "This PR is ready to merge.",
+        "id": "MDU6TGFiZWwyMjIxNDg3ODg0",
+        "name": "ready-for-merge"
+      },
+      {
+        "color": "33cbc5",
+        "description": "Q3 2025 release for Fusaka on Holesky",
+        "id": "LA_kwDOCFeAzc8AAAACEEFcpg",
+        "name": "v8.0.0-rc.0"
+      }
+    ],
+    "state": "merged",
+    "title": "Fix bug in fork calculation at fork boundaries",
+    "updatedAt": "2025-09-28T04:03:27Z",
+    "url": "https://github.com/sigp/lighthouse/pull/8121"
+  },
+  {
+    "body": "## Issue Addressed\r\n\r\nAs identified by a researcher during the Fusaka security competition, we were computing the proposer index incorrectly in some places by computing without lookahead.\r\n\r\n## Proposed Changes\r\n\r\n- [x] Add \"low level\" checks to computation functions in `consensus/types` to ensure they error cleanly\r\n- [x] Re-work the determination of proposer shuffling decision roots, which are now fork aware.\r\n- [x] Re-work and simplify the beacon proposer cache to be fork-aware.\r\n- [x] Optimise `with_proposer_cache` to use `OnceCell`.\r\n- [x] All tests passing.\r\n- [x] Resolve all remaining `FIXME(sproul)`s.\r\n- [x] Unit tests for `ProtoBlock::proposer_shuffling_root_for_child_block`.\r\n- [x] End-to-end regression test.\r\n- [x] Test on pre-Fulu network.\r\n- [x] Test on post-Fulu network.\r\n\r\n## Testing\r\n\r\n- The correctness of `ProtoBlock::proposer_shuffling_root_for_child_block` is tested by new tests added in e4713156e1c1013cf720540e8125794362588d99. They catch the bug that was fixed by 83128c40ef5d10b04906c0ad20fad23e69e57117.\r\n",
+    "closedAt": "2025-09-26T14:44:50Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "d73a4a",
+        "description": "Something isn't working",
+        "id": "MDU6TGFiZWw5ODU2NDcyODE=",
+        "name": "bug"
+      },
+      {
+        "color": "d30ca8",
+        "description": "",
+        "id": "MDU6TGFiZWwxNzgzNzQwMTU5",
+        "name": "security"
+      },
+      {
+        "color": "26ef1f",
+        "description": "This PR is ready to merge.",
+        "id": "MDU6TGFiZWwyMjIxNDg3ODg0",
+        "name": "ready-for-merge"
+      },
+      {
+        "color": "0E85AB",
+        "description": "Required for the upcoming Fulu hard fork",
+        "id": "LA_kwDOCFeAzc8AAAAB20IzmA",
+        "name": "fulu"
+      },
+      {
+        "color": "33cbc5",
+        "description": "Q3 2025 release for Fusaka on Holesky",
+        "id": "LA_kwDOCFeAzc8AAAACEEFcpg",
+        "name": "v8.0.0-rc.0"
+      }
+    ],
+    "state": "merged",
+    "title": "Fix bugs in proposer calculation post-Fulu",
+    "updatedAt": "2025-09-29T02:10:38Z",
+    "url": "https://github.com/sigp/lighthouse/pull/8101"
+  },
+  {
+    "body": "## Description\n\nOn Holesky, starting the beacon node with `--checkpoint-sync-url` on **Lighthouse v7.1.0** consistently fails to start. Representative error:\n\nFailed to start beacon node reason: \"Error loading checkpoint state from remote: InvalidSsz(OffsetSkipsVariableBytes(2737225))\"\n\nTried multiple public checkpoint providers (EthPandaOps, ChainSafe, BeaconState, SIGP). Some returned different errors (500/502/DNS). After upgrading Lighthouse to **v8.0.0-rc.0**, checkpoint sync **succeeds** immediately with the same setup.\n\n## Version\n\n- Lighthouse (failing): `v7.1.0-cfb1f73` (built from source)\n- Lighthouse (working): `v8.0.0-rc.0-e5b4983`\n- Rust/Cargo: `rustc 1.90.0`, `cargo 1.90.0` (via rustup)\n- OS: Ubuntu 22.04 (Jammy), amd64\n- Execution client: Geth `1.16.3-stable (d818a9af)`; Engine API on `127.0.0.1:8551`\n\n## Present Behaviour\n\nLaunching `lighthouse bn` with a checkpoint URL on **v7.1.0** exits with one of the following (depending on provider/time):\n\nCRIT Failed to start beacon node reason: \"Error loading checkpoint state from remote: InvalidSsz(OffsetSkipsVariableBytes(2737225))\"\nCRIT Failed to start beacon node reason: \"ServerMessage(ErrorMessage { code: 500, message: \"no finality known\" ... })\"\nCRIT Failed to start beacon node reason: \"StatusCode(502)\"\nCRIT Failed to start beacon node reason: \"HttpClient(... dns error: failed to lookup address information ...)\"\n\n\n\nMeanwhile, Geth logs show:\n\nWARN Beacon client online, but no consensus updates received ...\n\nAfter upgrading to **v8.0.0-rc.0**, Lighthouse logs:\n\nINFO Starting checkpoint sync remote_url: [https://checkpoint-sync.holesky.ethpandaops.io/](https://checkpoint-sync.holesky.ethpandaops.io/?utm_source=chatgpt.com)\n\nGeth then begins syncing (forkchoice updates received).\n\n## Expected Behaviour\n\nWith a valid `--checkpoint-sync-url`, Lighthouse should load a finalized Holesky checkpoint and begin following the chain, driving forkchoice on the execution client.\n\n## Steps to resolve\n\n- **Workaround that fixed it for me:** upgrade Lighthouse to **v8.0.0-rc.0** (built from git tag), then run checkpoint sync again.\n- Happy to:\n  - Re-run **v7.1.0** with `RUST_LOG=debug` and share full logs.\n  - Test against a known-good pinned checkpoint (state/block SSZ) if provided.\n  - Try any specific flags you recommend.\n\n---\n\n### Minimal Repro\n\n```bash\n# Execution Layer (Geth)\ngeth --holesky --datadir ~/ethereum/execution/holesky --syncmode snap \\\n  --http --http.addr 127.0.0.1 --http.port 8545 --http.api eth,net,web3,txpool\n\n# Consensus Layer (v7.1.0 fails, v8.0.0-rc.0 works)\nlighthouse bn --network holesky \\\n  --datadir ~/ethereum/consensus/holesky \\\n  --execution-endpoint http://127.0.0.1:8551 \\\n  --execution-jwt ~/ethereum/execution/holesky/geth/jwtsecret \\\n  --checkpoint-sync-url https://checkpoint-sync.holesky.ethpandaops.io/\n\n\n",
+    "closedAt": "2025-10-01T23:48:22Z",
+    "isPullRequest": false,
+    "labels": [],
+    "state": "closed",
+    "title": "Holesky: Lighthouse v7.1.0 fails to start with checkpoint sync (InvalidSsz…); upgrading to v8.0.0-rc.0 fixes",
+    "updatedAt": "2025-10-01T23:48:22Z",
+    "url": "https://github.com/sigp/lighthouse/issues/8152"
+  },
+  {
+    "body": "During backfill the only verification we do is of the block's signatures:\n\nhttps://github.com/sigp/lighthouse/blob/d96b73152e0e4bcedb8e747016ba8070029db50d/beacon_node/beacon_chain/src/historical_blocks.rs#L205-L213\n\nThis does not cover the blobs or data columns, which could be mismatched/invalid.\n\nFor blobs we should check:\n\n- [x] KZG inclusion proof (already checked by the network crate: https://github.com/sigp/lighthouse/blob/d96b73152e0e4bcedb8e747016ba8070029db50d/beacon_node/network/src/sync/network_context/requests/blobs_by_range.rs#L36).\n- [x] Blob data matches the KZG commitment: TODO (verify KZG proof).\n- [ ] Signature in the blob's block header matches the block's signature (equality check is fine).\n\nSimilarly for data columns.",
+    "closedAt": "0001-01-01T00:00:00Z",
+    "isPullRequest": false,
+    "labels": [
+      {
+        "color": "d73a4a",
+        "description": "Something isn't working",
+        "id": "MDU6TGFiZWw5ODU2NDcyODE=",
+        "name": "bug"
+      },
+      {
+        "color": "0000FF",
+        "description": "Data Availability Sampling",
+        "id": "LA_kwDOCFeAzc8AAAABd0-tWw",
+        "name": "das"
+      },
+      {
+        "color": "0E85AB",
+        "description": "Required for the upcoming Fulu hard fork",
+        "id": "LA_kwDOCFeAzc8AAAAB20IzmA",
+        "name": "fulu"
+      },
+      {
+        "color": "b009e6",
+        "description": "Post-Fulu release",
+        "id": "LA_kwDOCFeAzc8AAAACLsRLLg",
+        "name": "v8.1.0"
+      }
+    ],
+    "state": "open",
+    "title": "Verify header signature in blobs and data columns during backfill",
+    "updatedAt": "2025-10-01T05:49:41Z",
+    "url": "https://github.com/sigp/lighthouse/issues/7305"
+  },
+  {
+    "body": "still got stuff to finish, most of the commits are from #7809  ",
+    "closedAt": "2025-09-10T06:46:48Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "9ce542",
+        "description": "Improve tests",
+        "id": "MDU6TGFiZWwxMDc4ODMxNjEy",
+        "name": "test improvement"
+      },
+      {
+        "color": "26ef1f",
+        "description": "This PR is ready to merge.",
+        "id": "MDU6TGFiZWwyMjIxNDg3ODg0",
+        "name": "ready-for-merge"
+      },
+      {
+        "color": "33cbc5",
+        "description": "Q3 2025 release for Fusaka on Holesky",
+        "id": "LA_kwDOCFeAzc8AAAACEEFcpg",
+        "name": "v8.0.0-rc.0"
+      }
+    ],
+    "state": "merged",
+    "title": "Fix http api tests ci",
+    "updatedAt": "2025-09-10T06:46:48Z",
+    "url": "https://github.com/sigp/lighthouse/pull/7943"
+  },
+  {
+    "body": "## Description\n\nThis is a tracking issue for the work that is being undertaken on building out Data Availability Sampling.\n\nThis will be updated and edited as we go.\n\nInstructions for running a DAS devnet can be found in [this gist](https://gist.github.com/jimmygchen/54574443ea8a94118f0f748b69a5e610).\n\nMain PR to `unstable`: \n- #5683 \n\n## Devnet 5\n\n- [x] #6251\n- [ ] #6258\n- [x] #5990 \n- [x] #6268 \n- [x] #5894\n- [x] #6111\n- [x] #6018 \n- [ ] #6107 \n- [ ] Implement validator custody ([spec](https://github.com/ethereum/consensus-specs/pull/3779)) https://github.com/sigp/lighthouse/issues/6767\n- [x] https://github.com/sigp/lighthouse/issues/6854\n- [ ] Address all `TODO(das)` comments\n- [ ] Batch verify KZG proofs where possible https://github.com/sigp/lighthouse/pull/6851\n- [x] Don't lookup sync individual columns received from gossip. WIP  [`dapplion:dedup-columns-by-root-requests`](https://github.com/sigp/lighthouse/compare/unstable...dapplion:lighthouse:dedup-columns-by-root-requests?expand=1)\n\n## `TODO(das)`\n\n- Collection of small / easy TODOs https://github.com/sigp/lighthouse/pull/6862\n- https://github.com/sigp/lighthouse/pull/6850\n\n## Initial implementation\n\n### Data format and distribution (#5050)\n\n- [x] Add `ColumnSidecar` type \n- [x] Extend blobs horizontally with dummy data (`0x{random_uniq_bits}...{col_id}`) and distribute to column subnets\n- [x] Create 32 column subnets `NUM_COLUMN_SUBNETS`\n- [x] Compute subnets to subscribe to based on `node_id` (see att example [here](https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/p2p-interface.md#attestation-subnet-subscription))\n- [x] Node to subscribe to only `CUSTODY_REQUIREMENT` column subnets\n\n### Data Column Custody\n\n- [x] #5196\n- [x] Advertise extra custodied columns through ENR (@jacobkaufmann)\n- [x] Implement `PEERDAS_ACTIVATION_EPOCH` to transition from deneb blobs to data columns (@jimmygchen)\n- [x] #5570\n- [x] #5684\n- [x] ❌ Proposer to store all data columns to prevent data loss (See [this comment](https://github.com/sigp/lighthouse/pull/5570#discussion_r1575807617)) - increase peer count and custody requirement instead\n\n### Sampling\n\n- [x] #5196\n- [x] #5616\n- [x] #5569\n- [ ] Don't attempt downloading sample for custody columns already in DB\n- [x] #6929\n- [x] #6930\n\n### Syncing\n\n- [x] #5353\n- [x] #5747\n- [x] #5776\n\n### Misc \n\n- [x] #5210\n- [x] #5701\n- [x] ❌ #5734\n- [x]  #5772 \n- [x]  #5750\n- [x] #5781 \n- [x] #5783\n- [x] #5779\n- [x] #5805 \n- [x] #5828\n- [x] #5890\n\n### `peerdas-devnet-1`\n\n- [x] #5950 \n\n### `peerdas-devnet-2`\n\n- [x] #6233\n- [x] #6289 \n\n### `peerdas-devnet-3`\n\n- [x] #6072 \n- [x] #6026\n- [x] #6109\n\n### Post-Pectra (Sampling, 2D PeerDAS etc)\n\n- [ ] Update fork choice with sampling results ([spec](https://github.com/ethereum/consensus-specs/pull/3779))\n- [x] #6110 \n\n## Current behaviour not specified by consensus-specs\n\n- _Only supernode_ performs reconsturctions once >50% of columns received\n- LossyDAS implementation\n- Re-process `DataColumnsByRoot` requests and respond when columns are ready\n",
+    "closedAt": "2025-02-06T06:35:26Z",
+    "isPullRequest": false,
+    "labels": [
+      {
+        "color": "c18d3f",
+        "description": "A significant amount of work or conceptual task.",
+        "id": "MDU6TGFiZWwxMTU3MjUyMjE1",
+        "name": "major-task"
+      },
+      {
+        "color": "40E0D0",
+        "description": "",
+        "id": "MDU6TGFiZWwyMzM2ODAwMTI1",
+        "name": "Networking"
+      },
+      {
+        "color": "0000FF",
+        "description": "Data Availability Sampling",
+        "id": "LA_kwDOCFeAzc8AAAABd0-tWw",
+        "name": "das"
+      }
+    ],
+    "state": "closed",
+    "title": "PeerDAS - Tracking Issue",
+    "updatedAt": "2025-09-30T06:41:37Z",
+    "url": "https://github.com/sigp/lighthouse/issues/4983"
+  },
+  {
+    "body": "## Issue Addressed\r\n\r\nThe `http-api` tests job incorrectly runs the `beacon_chain` tests due to an copy paste error in the `Makefile`. ",
+    "closedAt": "2025-08-27T00:21:25Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "3219d6",
+        "description": "The reviewer has suggested changes and awaits thier implementation.",
+        "id": "MDU6TGFiZWwxNDczNTU1MDA3",
+        "name": "waiting-on-author"
+      },
+      {
+        "color": "5A63A2",
+        "description": "",
+        "id": "MDU6TGFiZWwyMzM2ODAwMzQz",
+        "name": "HTTP-API"
+      },
+      {
+        "color": "33cbc5",
+        "description": "Q3 2025 release for Fusaka on Holesky",
+        "id": "LA_kwDOCFeAzc8AAAACEEFcpg",
+        "name": "v8.0.0-rc.0"
+      }
+    ],
+    "state": "closed",
+    "title": "Fix `http-api` tests not getting run on CI",
+    "updatedAt": "2025-08-27T00:21:25Z",
+    "url": "https://github.com/sigp/lighthouse/pull/7809"
+  },
+  {
+    "body": "Now empty blob schedules from config.yaml (like BLOB_SCHEDULE: []) will be preserved and included in the /eth/v1/config/spec beacon API endpoint response instead of being omitted.\r\n\r\n## Issue Addressed\r\n\r\nWhich issue # does this PR address?\r\n\r\n## Proposed Changes\r\n\r\nPlease list or describe the changes introduced by this PR.\r\n\r\n## Additional Info\r\n\r\nPlease provide any additional information. For example, future considerations\r\nor information useful for reviewers.\r\n",
+    "closedAt": "2025-07-23T06:42:13Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "000000",
+        "description": "",
+        "id": "MDU6TGFiZWwxMTUyMjU5MTEy",
+        "name": "blocked"
+      },
+      {
+        "color": "0E85AB",
+        "description": "Required for the upcoming Fulu hard fork",
+        "id": "LA_kwDOCFeAzc8AAAAB20IzmA",
+        "name": "fulu"
+      }
+    ],
+    "state": "closed",
+    "title": "fix: allow BLOB_SCHEDULE: [] field",
+    "updatedAt": "2025-07-23T06:42:13Z",
+    "url": "https://github.com/sigp/lighthouse/pull/7758"
+  },
+  {
+    "body": "## Issue Addressed\r\n\r\n#7305: Verify blobs and data columns during backfill\r\n\r\n## Proposed Changes\r\n\r\nCompare signatures (equality check) for blob and data column sidecars\r\nThen, validate KZG commitments as described in the issue.\r\n\r\n## Additional Info\r\n\r\nThis will be further compared and leveraged with #7352 as some parts of this issue is also covered as part of the issue it is fixing. So, WIP and will let you know once it is ready under the comments.\r\n",
+    "closedAt": "2025-09-10T12:21:22Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "cfd3d7",
+        "description": "PR is a work-in-progress",
+        "id": "MDU6TGFiZWwxMTY1MjE1ODg4",
+        "name": "work-in-progress"
+      },
+      {
+        "color": "0000FF",
+        "description": "Data Availability Sampling",
+        "id": "LA_kwDOCFeAzc8AAAABd0-tWw",
+        "name": "das"
+      }
+    ],
+    "state": "closed",
+    "title": "Fix for #7305: Verify blobs and data columns during backfill",
+    "updatedAt": "2025-09-10T12:21:22Z",
+    "url": "https://github.com/sigp/lighthouse/pull/7353"
+  },
+  {
+    "body": "## Issue Addressed\r\n\r\nOutput for 7.1.0 release:\r\n\r\n```\r\n #   Commit SHA    PR Number    Has backwards-incompat Label    PR Title\r\n---  ------------  -----------  ------------------------------  --------------------------------------------\r\n1    d5a03c9d86bf  6872         False                           Add more range sync tests (#6872)\r\n2    ec2fe3812edc  -            -                               [NO PR MATCH]: Merge remote-tracking branch 'origin/release-v7.0.0-beta.0' into unstable\r\n3    3992d6ba74c9  6862         False                           Fix misc PeerDAS todos (#6862)\r\n4    d60388134d07  6928         False                           Add PeerDAS metrics to track subnets without peers (#6928)\r\n5    431dd7c39828  6917         False                           Remove un-used batch sync error condition (#6917)\r\n6    0055af56b685  6932         False                           Unsubscribe blob topics at Fulu fork (#6932)\r\n7    6ab6eae40c0e  -            -                               [NO PR MATCH]: Merge remote-tracking branch 'origin/release-v7.0.0-beta.0' into unstable\r\n8    193061ff7376  6634         False                           Use RpcSend on RPC::self_limiter::ready_requests (#6634)\r\n9    e5e43ecd8129  -            -                               [NO PR MATCH]: Merge remote-tracking branch 'origin/release-v7.0.0' into unstable\r\n10   b4be5141823f  7012         False                           Add spamoor_blob in network_params.yaml (#7012)\r\n11   01df433dfd02  7021         False                           update codeowners, to be more specific (#7021)\r\n12   60964fc7b530  6829         False                           Expose blst internals (#6829)\r\n13   3fab6a2c0ba7  6866         False                           Block availability data enum (#6866)\r\n14   6e11bddd4bd0  6947         False                           feat: adds CLI flags to delay publishing for edge case testing on PeerDAS devnets (#6947)\r\n15   454c7d05c40b  7017         False                           Remove LC server config from HTTP API (#7017)\r\n16   54b4150a6220  7030         False                           Add test flag to override `SYNC_TOLERANCE_EPOCHS` for range sync testing (#7030)\r\n17   cf4104abe5e2  -            -                               [NO PR MATCH]: Merge remote-tracking branch 'origin/release-v7.0.0' into unstable\r\n18   8a772520a50a  7034         False                           Cache validator registration only after successful publish (#7034)\r\n19   1235d4480225  7048         False                           Remove `watch` (#7048)\r\n20   3bc5f1f2a58b  7081         False                           Validator Registration ssz support (#7081)\r\n21   b4e79edf2a09  -            -                               [NO PR MATCH]: Merge remote-tracking branch 'origin/release-v7.0.0' into unstable\r\n22   8d1abce26ed5  6915         False                           Bump SSZ version for larger bitfield `SmallVec` (#6915)\r\n23   1916a2ac5ad3  7020         False                           chore: update to rust-eth-kzg to 0.5.4 (#7020)\r\n24   1a08e6f0a090  7109         False                           Remove duplicate sync_tolerance_epochs config (#7109)\r\n25   f23f984f8575  7057         False                           switch to upstream gossipsub (#7057)\r\n26   d60c24ef1cc0  6339         True                            Integrate tracing (#6339)\r\n27   a6bdc474db01  6991         False                           Log range sync download errors (#6991)\r\n28   574b204bdb39  6680         False                           decouple `eth2` from `store` and `lighthouse_network` (#6680)\r\n29   c095a0a58feb  7130         False                           update gossipsub to the latest upstream revision (#7130)\r\n30   5cda1641ea2f  7137         False                           Log `file appender` initialization errors properly (#7137)\r\n31   d96123b02882  7149         False                           Remove unnecessary `filter_layer` in logger builder (#7149)\r\n32   a1b1d7ae589f  7150         False                           Remove `discv5` logs from logfile output (#7150)\r\n33   ca237652f1da  6998         False                           Track request IDs in RangeBlockComponentsRequest (#6998)\r\n34   d323699fde01  7183         False                           Add missing `osaka-time` lcli param (#7183)\r\n35   cbf1c04a1486  -            -                               [NO PR MATCH]: resolve merge conflicts between untstable and release-v7.0.0\r\n36   2f37bf4de5e3  -            -                               [NO PR MATCH]: Fix more merge conflicts between unstable and release-v7.0.0\r\n37   3f6c11db0eb6  6995         False                           Some updates to Lighthouse book (#6995)\r\n38   9dce729cb6a0  7182         False                           Ensure sqlite and rusqlite are optional in `consensus/types` (#7182)\r\n39   6f31d4434308  7033         False                           Remove CGC from data_availability checker (#7033)\r\n40   ca8eaea11677  7169         True                            Remove `crit` as an option from the CLI entirely (#7169)\r\n41   bde0f1ef0b29  -            -                               [NO PR MATCH]: Merge remote-tracking branch 'origin/release-v7.0.0' into unstable\r\n42   fb7ec0d151d4  7112         False                           Change `genesis-state-url-timeout` (#7112)\r\n43   4839ed620fa9  7168         False                           Tracing cleanup (#7168)\r\n44   578db67755cb  -            -                               [NO PR MATCH]: Merge remote-tracking branch 'origin/release-v7.0.0' into backmerge-apr-2\r\n45   80626e58d224  7244         False                           Attempt to fix flaky network tests (#7244)\r\n46   d6cd049a453b  7238         False                           RPC RequestId Cleanup (#7238)\r\n47   0e6da0fcafe2  -            -                               [NO PR MATCH]: Merge branch 'release-v7.0.0' into v7-backmerge\r\n48   57abffcd997f  7240         False                           Disable log color when running in non-interactive mode (#7240)\r\n49   6a75f24ab13e  7188         False                           Fix the `getBlobs` metric and ensure it is recorded promptly to prevent miscounts (#7188)\r\n50   7cc64cab8352  6990         False                           Add missing error log and remove redundant id field from lookup logs (#6990)\r\n51   591fb7df141d  -            -                               [NO PR MATCH]: Merge branch 'release-v7.0.0' into backmerge-for-openssl\r\n52   e77fb01a063c  7265         False                           Remove CLI conflict for secrets-dir and datadir (#7265)\r\n53   b5d40e3db06d  7256         False                           Align logs (#7256)\r\n54   70850fe58d56  6744         True                            Drop head tracker for summaries DAG (#6744)\r\n55   47a85cd1186d  7269         False                           Bump version to v7.1.0-beta.0 (not a release) (#7269)\r\n56   e924264e17b8  7258         False                           Fullnodes to publish data columns from EL `getBlobs` (#7258)\r\n57   759b0612b37f  7117         False                           Offloading KZG Proof Computation from the beacon node (#7117)\r\n58   d96b73152e0e  7192         False                           Fix for #6296: Deterministic RNG in peer DAS publish block tests (#7192)\r\n59   39eb8145f89e  -            -                               [NO PR MATCH]: Merge branch 'release-v7.0.0' into unstable\r\n60   70f8ab9a6fc2  7309         False                           Add riscv64 build support (#7309)\r\n61   be68dd24d05f  7281         False                           Fix wrong custody column count for lookup blocks (#7281)\r\n62   08882c64cae5  6996         False                           Fix execution engine integration tests with latest geth version (#6996)\r\n63   476f3a593c20  7161         False                           Add `MAX_BLOBS_PER_BLOCK_FULU` config (#7161)\r\n64   c32569ab83bb  7225         False                           Restore HTTP API logging and add more metrics (#7225)\r\n65   410af7c5f5dc  7279         False                           feat: update mainnet bootnodes (#7279)\r\n66   80fe133d2c4c  7280         False                           Update Lighthouse Book for Electra features (#7280)\r\n67   9f4b0cdc2855  7343         False                           Fix Kurtosis doppelganger CI (#7343)\r\n68   e61e92b926d5  -            -                               [NO PR MATCH]: Merge remote-tracking branch 'origin/stable' into unstable\r\n69   5527125f5e13  7340         False                           Fix GitHub releases page looks bad in GitHub dark theme (#7340)\r\n70   c13e069c9c63  7324         False                           Revise logging when `queue is full` (#7324)\r\n71   1dd37048b9d1  7346         False                           Enable cross-compiling for riscv64 architecture (#7346)\r\n72   402a81cdd78e  7350         False                           Fix Kurtosis testnet (#7350)\r\n73   1324d3d3c4c2  5923         False                           Delayed RPC Send Using Tokens (#5923)\r\n74   6fad18644bbe  6747         False                           feat: presign for validator account (#6747)\r\n75   2e2b0d2176e0  7351         False                           Revise consolidation info in Lighthouse book (#7351)\r\n76   63a10eaaea62  6956         True                            Changing `boot_enr.yaml` to expect `bootstap_nodes.yaml` for pectra devnet  (#6956)\r\n77   34a6c3a93029  6897         True                            vc: increase default gas limit (#6897)\r\n78   94ccd7608ea8  6653         False                           Add documentation for VC API `/lighthouse/beacon/health` (#6653)\r\n79   9779b4ba2c04  7326         False                           Optimize `validate_data_columns` (#7326)\r\n80   93ec9df13760  7304         False                           Compute proposer shuffling only once in gossip verification (#7304)\r\n81   2aa5d5c25e22  7359         False                           Make sure to log SyncingChain ID (#7359)\r\n82   c8224c8d5e19  7387         False                           docs: fix broken link to voluntary exit guide (#7387)\r\n83   43c38a6fa0cc  7378         False                           Change slog to tracing in comments (#7378)\r\n84   beb0ce68bdf6  6922         False                           Make range sync peer loadbalancing PeerDAS-friendly (#6922)\r\n85   3d92e3663b74  6705         False                           Modularize validator store (#6705)\r\n86   058dae064184  7405         False                           Add requires --http when using vc subcommands --http-port (#7405)\r\n87   0f13029c7d51  7409         False                           Don't publish data columns reconstructed from RPC columns to the gossip network (#7409)\r\n88   8dc3d23af083  7400         False                           Add a default timeout to all `BeaconNodeHttpClient` requests (#7400)\r\n89   e90fcbe6577c  7416         False                           Add ARM binary for macOS in release (#7416)\r\n90   4b9c16fc7175  7199         False                           Add Electra forks to basic sim tests (#7199)\r\n91   a497ec601cae  6975         False                           Retry custody requests after peer metadata updates (#6975)\r\n92   e0c1f27e1303  7394         False                           simulator: Persist beacon logs (#7394)\r\n93   92391cdac665  7284         False                           update gossipsub to the latest upstream revision (#7284)\r\n94   593390162f47  7399         False                           `peerdas-devnet-7`: update `DataColumnSidecarsByRoot` request to use `DataColumnsByRootIdentifier` (#7399)\r\n95   5b25a48af34b  7404         False                           Siren installation improvement (#7404)\r\n96   e051c7ca89c8  7396         False                           Siren Pectra Feature Updates (#7396)\r\n97   0a917989b218  7370         False                           impl test random for some types (#7370)\r\n98   807848bc7ac4  7443         False                           Next sync committee branch bug (#7443)\r\n99   851ee2bcedfc  7454         False                           Extract get_domain for VoluntaryExit (#7454)\r\n100  c2c7fb87a862  7460         False                           Make DAG construction more permissive (#7460)\r\n101  b1138c28fb94  7451         False                           Add additional mergify rules to automate triaging (#7451)\r\n102  cc6ae9d3f09c  7463         False                           Fix mergify infinite loop. (#7463)\r\n103  1853d836b7e4  7458         False                           Added E::slots_per_epoch() to deneb time calculation (#7458)\r\n104  c4182e362b8f  7433         False                           simulator: Write dependency logs to separate files (#7433)\r\n105  e0ee148d6aca  7470         False                           Prevent mergify from updating labels while CI is still running. (#7470)\r\n106  e21198c08baa  7472         False                           One more attempt to fix mergify condition. (#7472)\r\n107  268809a53069  7471         False                           Rust clippy 1.87 lint fixes (#7471)\r\n108  b051a5d6cc7b  7469         False                           Delete `at-most` in `lighthouse vm create` (#7469)\r\n109  1d27855db7be  7369         False                           impl from hash256 for `ExecutionBlockHash` (#7369)\r\n110  23ad833747b6  7417         False                           Change default EngineState to online (#7417)\r\n111  fcfcbf9a11b3  7481         False                           Update mdlint to disable descriptive-link-text (#7481)\r\n112  7684d1f866ab  7372         False                           ContextDeserialize and Beacon API Improvements (#7372)\r\n113  5393d33af823  7411         False                           Silence `Uninitialized` warn log on start-up (#7411)\r\n114  1e6cdeb88a6a  6799         False                           feat: Add docker reproducible builds (#6799)\r\n115  50dbfdf61243  7455         False                           Some updates to Lighthouse book (#7455)\r\n116  af87135e3020  7484         False                           Move MD059 rule to configuration file (#7484)\r\n117  805c2dc831e6  5047         False                           Correct reward denominator in op pool (#5047)\r\n118  7e2df6b602a1  7474         False                           Empty list `[]` to return all validators balances (#7474)\r\n119  f06d1d034615  7495         False                           Fix blob download from checkpointz servers (#7495)\r\n120  0688932de28d  7497         False                           Pass blobs into `ValidatorStore::sign_block` (#7497)\r\n121  e29b607257d8  7427         False                           Move notifier and latency service to `validator_services` (#7427)\r\n122  7759cb8f91c0  7494         False                           Update mergify rule to not evaluate PRs that are not ready for review - to reduce noise and avoid updating stale PRs. (#7494)\r\n123  2e96e9769b99  7507         False                           Use slice.is_sorted now that it's stable (#7507)\r\n124  a8035d7395ea  7506         False                           Enable stdout logging in rpc_tests (#7506)\r\n125  817f14c3491a  7500         False                           Send execution_requests in fulu (#7500)\r\n126  537fc5bde860  7459         False                           Revive network-test logs files in CI (#7459)\r\n127  cf0f95985540  7180         False                           Improve log readability during rpc_tests (#7180)\r\n128  ce8d0814ad71  7246         False                           Ensure logfile permissions are maintained after rotation (#7246)\r\n129  6af8c187e0b7  7052         False                           Publish EL Info in Metrics (#7052)\r\n130  a2797d4bbde9  7512         False                           Fix formatting errors from cargo-sort (#7512)\r\n131  f01dc556d157  7505         False                           Update `engine_getBlobsV2` response type and add `getBlobsV2` tests (#7505)\r\n132  e6ef644db4e8  7493         False                           Verify `getBlobsV2` response and avoid reprocessing imported data columns (#7493)\r\n133  7c89b970afe2  7382         False                           Handle attestation validation errors (#7382)\r\n134  8dde5bdb4413  -            -                               [NO PR MATCH]: Update mergify rules so that I can add `waiting-on-author` on a PR that's passing CI. Remove noisy comments.\r\n135  8989ef8fb11e  7025         False                           Enable arithmetic lint in rate-limiter (#7025)\r\n136  b7fc03437bba  -            -                               [NO PR MATCH]: Fix condition\r\n137  9e9c51be6fef  -            -                               [NO PR MATCH]: Remove redundant `and`\r\n138  999b04517e35  -            -                               [NO PR MATCH]: Merge pull request #7525 from jimmygchen/mergify-again\r\n139  0ddf9a99d64a  7332         False                           Remove support for database migrations prior to schema version v22 (#7332)\r\n140  5cda6a6f9e4b  7522         False                           Mitigate flakiness in test_delayed_rpc_response (#7522)\r\n141  4d21846aba6b  7533         False                           Prevent `AvailabilityCheckError` when there's no new custody columns to import (#7533)\r\n142  39744df93f0b  7393         False                           simulator: Fix `Failed to initialize dependency logging` (#7393)\r\n143  38a5f338fad7  7529         False                           Add `console-subscriber` feature for debugging (#7529)\r\n144  886ceb7e25e0  6882         False                           Run Assertoor tests in CI (#6882)\r\n145  94a1446ac955  7541         False                           Fix unexpected blob error and duplicate import in fetch blobs (#7541)\r\n146  ae30480926b6  7521         False                           Implement EIP-7892 BPO hardforks (#7521)\r\n147  f67068e1ec53  7518         False                           Update `staking-deposit-cli` to `ethstaker-deposit-cli` (#7518)\r\n148  cd83d8d95ddd  7544         False                           Add a name to the Tokio task (#7544)\r\n149  357a8ccbb996  7549         False                           Checkpoint sync without the blobs from Fulu (#7549)\r\n150  2d9fc34d4326  7540         False                           Fulu EF tests v1.6.0-alpha.0 (#7540)\r\n151  dcee76c0dc88  7548         False                           Update key generation in validator manager (#7548)\r\n152  9a4972053eb5  7530         False                           Add e2e sync tests to CI (#7530)\r\n153  d457ceeaafae  7118         False                           Don't create child lookup if parent is faulty (#7118)\r\n154  2f807e21bede  7538         False                           Add support for nightly tests (#7538)\r\n155  e098f667380c  7570         False                           Update kurtosis config and EL images (#7570)\r\n156  b2e8b67e3446  7566         False                           Reduce number of basic sim test nodes from 7 to 4 (#7566)\r\n157  170cd0f5875d  7579         False                           Store the libp2p/discv5 logs when stopping local-testnet (#7579)\r\n158  b08d49c4cb34  7559         False                           Changes for `fusaka-devnet-1` (#7559)\r\n159  8c6abc0b69b7  7574         False                           Optimise parallelism in compute cells operations by zipping first (#7574)\r\n160  7416d06dce8e  7561         False                           Add genesis sync test to CI (#7561)\r\n161  076a1c3faead  7587         False                           Data column sidecar event (#7587)\r\n162  5f208bb85829  7578         True                            Implement basic validator custody framework (no backfill) (#7578)\r\n163  9803d69d8045  7590         False                           Implement status v2 version (#7590)\r\n164  5472cb85008b  7582         False                           Batch verify KZG proofs for getBlobsV2 (#7582)\r\n165  a65f78222d69  7594         False                           Drop stale registrations without reducing CGC (#7594)\r\n166  ccd99c138c27  7588         False                           Wait before column reconstruction (#7588)\r\n167  dc5f5af3eb53  7595         False                           Fix flaky test_rpc_block_reprocessing (#7595)\r\n168  4fc0665ccdd6  7592         False                           Add more context to Late Block Re-orgs (#7592)\r\n169  6135f417a2f4  7591         False                           Add data columns sidecars debug beacon API (#7591)\r\n170  3d2d65bf8d24  7593         False                           Advertise `--advertise-false-custody-group-count` for testing PeerDAS (#7593)\r\n171  6786b9d12a6d  7444         True                            Single attestation \"Full\" implementation (#7444)\r\n172  dd985341581f  6750         True                            Hierarchical state diffs in hot DB (#6750)\r\n173  f67084a571d1  7437         False                           Remove reprocess channel (#7437)\r\n174  d50924677a34  7620         False                           Remove instrumenting log level (#7620)\r\n175  11bcccb353c0  7133         True                            Remove all prod eth1 related code (#7133)\r\n176  e34a9a0c65d5  6551         False                           Allow the `--beacon-nodes` list to be updated at runtime (#6551)\r\n177  3fefda68e5c1  7611         False                           Send byrange responses in the correct requested range (#7611)\r\n178  cef04ee2ee48  7462         False                           Implement `validator_identities` Beacon API endpoint (#7462)\r\n179  fd643c310c4e  7632         False                           Un-ignore EF test for v1.6.0-alpha.1 (#7632)\r\n180  56b2d4b5253b  7636         False                           Remove instrumenting log level  (#7636)\r\n181  8e3c5d152413  7644         False                           Rust 1.89 compiler lint fix (#7644)\r\n182  a0a6b9300f11  7551         False                           Do not compute sync selection proofs for the sync duty at the current slot (#7551)\r\n183  9b1f3ed9d1a4  7652         False                           Add gossip check (#7652)\r\n184  83cad25d9880  7657         False                           Fix Rust 1.88 clippy errors & execution engine tests (#7657)\r\n185  522e00f48df7  7656         False                           Fix incorrect `waker` update condition (#7656)\r\n186  6ea5f14b3988  7597         False                           feat: better error message for light_client/bootstrap endpoint (#7597)\r\n187  2d759f78be6c  6576         False                           Fix beacon_chain metrics descriptions (#6576)\r\n188  6be646ca1153  7666         True                            Bump DB schema to v25 (#7666)\r\n189  e45ba846aef5  7673         False                           Increase http client default timeout to 2s in `http-api` tests. (#7673)\r\n190  25ea8a83b77b  7667         False                           Add Michael as codeowner for store crate (#7667)\r\n191  c1f94d9b7bf8  7669         False                           Test database schema stability (#7669)\r\n192  257d2707182c  6612         False                           Add voluntary exit via validator manager (#6612)\r\n193  e305cb1b921f  7661         True                            Custody persist fix (#7661)\r\n194  41742ce2bde9  7683         False                           Update `SAMPLES_PER_SLOT` to be number of custody groups instead of data columns (#7683)\r\n195  69c9c7038af7  7681         False                           Use prepare_beacon_proposer endpoint for validator custody registration (#7681)\r\n196  fcc602a7872a  7646         False                           Update fulu network configs and add `MIN_EPOCHS_FOR_DATA_COLUMN_SIDECARS_REQUESTS` (#7646)\r\n197  a459a9af98c9  7689         False                           Fix and test checkpoint sync from genesis (#7689)\r\n198  b35854b71f04  7692         False                           Record v2 beacon blocks http api metrics separately (#7692)\r\n199  c7bb3b00e409  7693         False                           Fix lookups of the block at `oldest_block_slot` (#7693)\r\n200  0f895f3066a3  7695         False                           Bump default gas limit (#7695)\r\n201  56485cc9865a  7707         False                           Remove unneeded spans that caused debug logs to appear when level is set to `info` (#7707)\r\n202  bd8a2a8ffbaa  7023         False                           Gossip recently computed light client data (#7023)\r\n203  7b2f138ca7e7  -            -                               [NO PR MATCH]: Merge remote-tracking branch 'origin/stable' into release-v7.1.0\r\n204  8e55684b066f  7723         False                           Reintroduce `--logfile` with deprecation warning (#7723)\r\n205  8b5ccacac9c0  7663         False                           Error from RPC `send_response` when request doesn't exist on the active inbound requests (#7663)\r\n206  cfb1f7331064  7609         False                           Release v7.1.0 (#7609)\r\n```",
+    "closedAt": "2025-09-18T06:13:27Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "26ef1f",
+        "description": "This PR is ready to merge.",
+        "id": "MDU6TGFiZWwyMjIxNDg3ODg0",
+        "name": "ready-for-merge"
+      },
+      {
+        "color": "7365BC",
+        "description": "",
+        "id": "MDU6TGFiZWwyMzM2ODAzMDY0",
+        "name": "infra-ci"
+      },
+      {
+        "color": "95E7C8",
+        "description": "Don't run the `test-suite`",
+        "id": "LA_kwDOCFeAzc8AAAABnmnWIw",
+        "name": "skip-ci"
+      }
+    ],
+    "state": "merged",
+    "title": "Add release helper script to list PRs and breaking changes",
+    "updatedAt": "2025-09-18T06:41:24Z",
+    "url": "https://github.com/sigp/lighthouse/pull/7737"
+  },
+  {
+    "body": "## Issue Addressed\r\n\r\n- [ ] Remove penalties on failed block sidecar coupling as this is problematic in forky situations. Add them to fail peer only and deprioritise them instead.\r\n  - May no longer be required with the new range sync approach, as we now query columns by root.\r\n- [x] Add logic to maintain custody column peers and prevent pruning\r\n  - #7915\r\n- [x] Prioritise status v2\r\n  - #7912\r\n- [ ] Penalise peers for sending blocks containing invalid execution payload.\r\n- [x] Only send lookup request to synced / advanced peers\r\n  - #7913\r\n\r\n",
+    "closedAt": "2025-09-05T05:45:27Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "3219d6",
+        "description": "The reviewer has suggested changes and awaits thier implementation.",
+        "id": "MDU6TGFiZWwxNDczNTU1MDA3",
+        "name": "waiting-on-author"
+      },
+      {
+        "color": "b60205",
+        "description": "",
+        "id": "MDU6TGFiZWwxODQ2MzYzMzY0",
+        "name": "do-not-merge"
+      }
+    ],
+    "state": "closed",
+    "title": "Sync fixes for `fusaka-devnet-4`",
+    "updatedAt": "2025-09-05T05:45:27Z",
+    "url": "https://github.com/sigp/lighthouse/pull/7876"
+  },
+  {
+    "body": "## Issue Addressed\r\n\r\n#7122 Avoid attempting to serve BlobsByRange RPC requests on Fulu slots\r\n\r\n## Proposed Changes\r\n\r\nAdded a check if Fulu slot is requested to BlobsByRange RPC handler.\r\n\r\n## Additional Info\r\n\r\nPlease see comments below",
+    "closedAt": "2025-07-22T08:08:01Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "3219d6",
+        "description": "The reviewer has suggested changes and awaits thier implementation.",
+        "id": "MDU6TGFiZWwxNDczNTU1MDA3",
+        "name": "waiting-on-author"
+      },
+      {
+        "color": "0000FF",
+        "description": "Data Availability Sampling",
+        "id": "LA_kwDOCFeAzc8AAAABd0-tWw",
+        "name": "das"
+      },
+      {
+        "color": "0E85AB",
+        "description": "Required for the upcoming Fulu hard fork",
+        "id": "LA_kwDOCFeAzc8AAAAB20IzmA",
+        "name": "fulu"
+      },
+      {
+        "color": "59A9BF",
+        "description": "Stale PRs that have been inactive and is now outdated",
+        "id": "LA_kwDOCFeAzc8AAAACAe3Big",
+        "name": "stale"
+      }
+    ],
+    "state": "closed",
+    "title": "Fix for #7122 Avoid attempting to serve BlobsByRange RPC requests on Fulu slots",
+    "updatedAt": "2025-07-22T08:08:02Z",
+    "url": "https://github.com/sigp/lighthouse/pull/7328"
+  },
+  {
+    "body": "## Issue Addressed\r\n\r\nN/A\r\n\r\n## Proposed Changes\r\n\r\nPersist the epoch -> cgc values. This is to ensure that `ValidatorRegistrations::latest_validator_custody_requirement` always returns a `Some` value post restart assuming the `epoch_validator_custody_requirements` map has been updated in the previous runs.\r\n\r\n",
+    "closedAt": "2025-07-01T06:06:38Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "26ef1f",
+        "description": "This PR is ready to merge.",
+        "id": "MDU6TGFiZWwyMjIxNDg3ODg0",
+        "name": "ready-for-merge"
+      },
+      {
+        "color": "C01C9D",
+        "description": "",
+        "id": "MDU6TGFiZWwyMzM2Nzk4Njgy",
+        "name": "database"
+      },
+      {
+        "color": "FEF2C0",
+        "description": "Backwards-incompatible API change",
+        "id": "MDU6TGFiZWwyODk0MDI4ODY3",
+        "name": "backwards-incompat"
+      },
+      {
+        "color": "0000FF",
+        "description": "Data Availability Sampling",
+        "id": "LA_kwDOCFeAzc8AAAABd0-tWw",
+        "name": "das"
+      },
+      {
+        "color": "5319e7",
+        "description": "Post-Electra release",
+        "id": "LA_kwDOCFeAzc8AAAAB4zohHg",
+        "name": "v7.1.0"
+      }
+    ],
+    "state": "merged",
+    "title": "Custody persist fix",
+    "updatedAt": "2025-07-01T06:06:38Z",
+    "url": "https://github.com/sigp/lighthouse/pull/7661"
+  },
+  {
+    "body": "## Issue Addressed\r\n\r\nCloses:\r\n\r\n- https://github.com/sigp/lighthouse/issues/7489\r\n\r\n## Proposed Changes\r\n\r\nUse `ForkName::latest_stable`, i.e. Electra when decoding blobs from a server that does not provide `version`. This is only a temporary workaround that should be reverted once `checkpointz` is fixed. Having a default fork is potentially incorrect, and glossing over bugs in servers in general is not ideal.\r\n\r\nHowever, even in the case where we update `ForkName::latest_stable` to `Fulu`, this should continue to work, as the blob limit is likely to increase and the `RuntimeVariableList` will just have a slightly higher limit than necessary (which is OK so long as the server isn't buggy enough to violate the correct lower bound: e.g. if the block is an Electra one and the server sends 10 blobs, which exceeds the Electra max (9) but not the Fulu max).\r\n\r\n## Additional Info\r\n\r\nI've opened an issue to revert this PR before we proceed with Fulu on mainnet, but _after_ v7.1.0:\r\n\r\n- https://github.com/sigp/lighthouse/issues/7496\r\n",
+    "closedAt": "2025-05-20T14:14:02Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "26ef1f",
+        "description": "This PR is ready to merge.",
+        "id": "MDU6TGFiZWwyMjIxNDg3ODg0",
+        "name": "ready-for-merge"
+      },
+      {
+        "color": "5319e7",
+        "description": "Post-Electra release",
+        "id": "LA_kwDOCFeAzc8AAAAB4zohHg",
+        "name": "v7.1.0"
+      }
+    ],
+    "state": "merged",
+    "title": "Fix blob download from checkpointz servers",
+    "updatedAt": "2025-05-20T14:14:02Z",
+    "url": "https://github.com/sigp/lighthouse/pull/7495"
+  },
+  {
+    "body": "## Issue Addressed\r\n\r\nPartially addresses \r\n- https://github.com/sigp/lighthouse/issues/6258\r\n\r\n## Proposed Changes\r\n\r\nTBD\r\n\r\n1000 lines are for new unit tests :)\r\n\r\n## Questions / TODO\r\n\r\n- Should custody_by_range requests try all possible peers before giving up? i.e. should they ignore the failures counter for custody failures? Add a test for this behaviour.\r\n\r\n**Tests to add**\r\n\r\n- Peer does not send columns at all on specific index\r\n- We find no-one serving columns on a specific index, how to recover\r\n- Random tests where most peer are faulty and we have to keep cycling them. Use randomness and run the tests with different levels of fault % :=> build a simulator\r\n- Permanently fail a single column many times, but then resolve the rest such that we can reconstruct.\r\n- Send non-matching data columns\r\n- Test downscoring of custody failures\r\n- Test the fallback mechanism of peer selection\r\n- Test a syncing chain reaching 0 peers, both for forward sync and backwards sync\r\n- Test forwards sync on Fulu with blocks without data\r\n\r\n### Future TODOs\r\n\r\n- Ensure uniform use of `subscribe_all_data_column_subnets` to determine `is_supernode`\r\n- Ensure consistent naming in sync network context handlers `on_xxx_response`, suggestion -> https://github.com/sigp/lighthouse/pull/7510#discussion_r2107334518\r\n- Cleanup `add_peer_*` functions in sync tests. Best to do in another PR as it touches a lot of lookup sync tests (unrelated) \r\n- Track `requests_per_peer` to ensure that eventually we fetch data from all peers in the chain\r\n",
+    "closedAt": "2025-07-12T17:42:42Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "a4b0f4",
+        "description": "A reviewer has only partially completed a review.",
+        "id": "MDU6TGFiZWwxNDczNTUzOTUy",
+        "name": "under-review"
+      },
+      {
+        "color": "3219d6",
+        "description": "The reviewer has suggested changes and awaits thier implementation.",
+        "id": "MDU6TGFiZWwxNDczNTU1MDA3",
+        "name": "waiting-on-author"
+      },
+      {
+        "color": "ff5b2d",
+        "description": "",
+        "id": "MDU6TGFiZWwxODAyMDA1MzQ3",
+        "name": "syncing"
+      },
+      {
+        "color": "0000FF",
+        "description": "Data Availability Sampling",
+        "id": "LA_kwDOCFeAzc8AAAABd0-tWw",
+        "name": "das"
+      },
+      {
+        "color": "59A9BF",
+        "description": "Stale PRs that have been inactive and is now outdated",
+        "id": "LA_kwDOCFeAzc8AAAACAe3Big",
+        "name": "stale"
+      }
+    ],
+    "state": "closed",
+    "title": "Downscore and retry custody failures",
+    "updatedAt": "2025-07-13T10:51:07Z",
+    "url": "https://github.com/sigp/lighthouse/pull/7510"
+  },
+  {
+    "body": "We need to fix this before [`peerdas-devnet-6`](https://notes.ethereum.org/@ethpandaops/peerdas-devnet-6#Test-Releases):\n```\nrunning 72 tests\ntest derived_typenum_values ... ok\ntest bls_aggregate ... ok\ntest bls_eth_aggregate_pubkeys ... ok\ntest bls_sign ... ok\ntest bls_aggregate_verify ... ok\ntest bls_batch_verify ... ok\ntest bls_verify ... ok\ntest bls_fast_aggregate_verify ... ok\ntest bls_eth_fast_aggregate_verify ... ok\ntest compute_columns_for_custody_group ... ok\ntest epoch_processing_sync_committee_updates ... ok\ntest epoch_processing_participation_record_updates ... ok\ntest epoch_processing_historical_roots_update ... ok\ntest epoch_processing_slashings_reset ... ok\ntest epoch_processing_randao_mixes_reset ... ok\ntest epoch_processing_effective_balance_updates ... ok\ntest epoch_processing_eth1_data_reset ... ok\ntest fork_choice_deposit_with_reorg ... FAILED\ntest epoch_processing_historical_summaries_update ... ok\ntest epoch_processing_pending_consolidations ... ok\ntest fork_choice_get_proposer_head ... FAILED\ntest genesis_initialization ... ok\ntest fork_choice_should_override_forkchoice_update ... FAILED\ntest genesis_validity ... ok\ntest epoch_processing_slashings ... ok\ntest epoch_processing_pending_balance_deposits ... ok\ntest epoch_processing_participation_flag_updates ... ok\ntest epoch_processing_registry_updates ... ok\ntest kzg_compute_cells_and_proofs ... ok\ntest kzg_compute_kzg_proof ... ok\ntest kzg_blob_to_kzg_commitment ... ok\ntest kzg_verify_blob_kzg_proof ... ok\ntest kzg_compute_blob_kzg_proof ... ok\ntest kzg_verify_kzg_proof ... ok\ntest get_custody_groups ... ok\ntest light_client_merkle_proof_validity ... FAILED\ntest light_client_update ... FAILED\ntest epoch_processing_justification_and_finalization ... ok\ntest kzg_verify_cell_proof_batch ... ok\ntest kzg_recover_cells_and_proofs ... ok\n...\ntest operations_execution_payload_blinded ... FAILED\ntest optimistic_sync ... FAILED\ntest transition ... FAILED\n```",
+    "closedAt": "2025-06-10T05:20:42Z",
+    "isPullRequest": false,
+    "labels": [
+      {
+        "color": "816329",
+        "description": "",
+        "id": "LA_kwDOCFeAzc8AAAAB9bf6Yg",
+        "name": "peerdas-devnet-6"
+      }
+    ],
+    "state": "closed",
+    "title": "Consensus spec tests `v1.5.0-beta.4` fail on `unstable` when `Fulu` is enabled",
+    "updatedAt": "2025-06-10T05:20:42Z",
+    "url": "https://github.com/sigp/lighthouse/issues/7297"
+  },
+  {
+    "body": "WIP branch to debug test OOMs\r\n",
+    "closedAt": "2025-04-03T02:54:32Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "cfd3d7",
+        "description": "PR is a work-in-progress",
+        "id": "MDU6TGFiZWwxMTY1MjE1ODg4",
+        "name": "work-in-progress"
+      },
+      {
+        "color": "91FCA5",
+        "description": "Ongoing state and database overhaul",
+        "id": "LA_kwDOCFeAzc8AAAABT-88LQ",
+        "name": "tree-states"
+      }
+    ],
+    "state": "merged",
+    "title": "Fix test OOM issues on tree-states-hot",
+    "updatedAt": "2025-05-01T03:04:28Z",
+    "url": "https://github.com/sigp/lighthouse/pull/7176"
+  },
+  {
+    "body": "## Description\r\n\r\nThe initial Fulu spec was merged in https://github.com/ethereum/consensus-specs/pull/3994, and `EIP7594_FORK_EPOCH` and `EIP7594_FORK_VERSION` no longer exists in the configuration; The spec now specifies PeerDAS to be activated at `FULU_FORK_EPOCH`.\r\n\r\nWe'll need to change PeerDAS activation to happen at the Fulu fork in Lighthouse, and remove the `eip7594` related configurations. There is a WIP PR for the Fulu fork boiler plate, and is required for this task.",
+    "closedAt": "2025-01-30T07:01:49Z",
+    "isPullRequest": false,
+    "labels": [
+      {
+        "color": "0000FF",
+        "description": "Data Availability Sampling",
+        "id": "LA_kwDOCFeAzc8AAAABd0-tWw",
+        "name": "das"
+      },
+      {
+        "color": "0052cc",
+        "description": "",
+        "id": "LA_kwDOCFeAzc8AAAAB3JIImQ",
+        "name": "peerdas-devnet-4"
+      }
+    ],
+    "state": "closed",
+    "title": "Activate PeerDAS at Fulu Fork and remove `EIP7594_FORK_EPOCH`",
+    "updatedAt": "2025-01-30T07:01:49Z",
+    "url": "https://github.com/sigp/lighthouse/issues/6706"
+  },
+  {
+    "body": "## Issue Addressed\r\n\r\nFrom PeerDAS local testing I noticed some errors with failing to send computed columns to receiver:\r\n\r\nhttps://github.com/sigp/lighthouse/blob/dd7591f7123dfe072631c0deb0abc1b78cc82733/beacon_node/beacon_chain/src/fetch_blobs.rs#L252\r\n\r\nI believe there is a race condition, the sequence:\r\n1. Fetch EL blobs triggered, received 4 blobs from the EL, triggered column computation\r\n1. All 8 custody columns received via gossip\r\n1. Columns written to db, block imported. (Column receiver dropped)\r\n1. Computed columns but fail to send as receiver was dropped.\r\n\r\nWe should not even try to compute the columns if we've already imported the block from gossip. This consumes extra resources and bandwidth and is unnecessary.\r\n",
+    "closedAt": "2025-01-22T04:05:32Z",
+    "isPullRequest": true,
+    "labels": [
+      {
+        "color": "d73a4a",
+        "description": "Something isn't working",
+        "id": "MDU6TGFiZWw5ODU2NDcyODE=",
+        "name": "bug"
+      },
+      {
+        "color": "5cbc18",
+        "description": "Easy to resolve, get it before someone else does!",
+        "id": "MDU6TGFiZWwxOTMwNjcxMjAw",
+        "name": "low-hanging-fruit"
+      },
+      {
+        "color": "26ef1f",
+        "description": "This PR is ready to merge.",
+        "id": "MDU6TGFiZWwyMjIxNDg3ODg0",
+        "name": "ready-for-merge"
+      },
+      {
+        "color": "0000FF",
+        "description": "Data Availability Sampling",
+        "id": "LA_kwDOCFeAzc8AAAABd0-tWw",
+        "name": "das"
+      }
+    ],
+    "state": "merged",
+    "title": "Avoid computing columns from EL blobs if block has already been imported",
+    "updatedAt": "2025-01-22T04:05:34Z",
+    "url": "https://github.com/sigp/lighthouse/pull/6816"
+  }
+]

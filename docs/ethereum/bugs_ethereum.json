@@ -1,0 +1,657 @@
+[
+  {
+    "attack_title": "Potential consensus bug in ALTBN128 precompiles (CVE-2025-30147)",
+    "affected_client": "Hyperledger Besu",
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-30147",
+    "attack_steps": [
+      "Forge an EC point P for the ALTBN128_ADD/MUL/PAIRING precompiles that sits in the right subgroup but not on the curve.",
+      "Craft a transaction with the forged point and include it in a block when a Besu node is the proposer.",
+      "Besu 24.7.1–25.2.2 accepts the block because it lacks a curve check, while other clients reject it as invalid.",
+      "The network can split between Besu nodes and other implementations, leaving Besu-only deployments on an invalid chain."
+    ],
+    "checkpoint": "Ensure `point.IsOnCurve()` is invoked in the besu-native bn254 (`libbn254_*`) code instead of relying solely on subgroup checks, and add CL/EL integration tests that feed off-curve-but-in-subgroup points to verify hash agreement."
+  },
+  {
+    "attack_title": "Gas allocation error in CALL / DELEGATECALL (CVE-2022-36025)",
+    "affected_client": "Hyperledger Besu",
+    "url": "https://www.miggo.io/vulnerability-database/cve/CVE-2022-36025",
+    "attack_steps": [
+      "Deploy a contract whose CALL/DELEGATECALL operations consume gas near the 2^31 threshold.",
+      "Trigger an internal CALL with a crafted transaction so that a 32-bit to 64-bit conversion bug treats a negative gas value as positive.",
+      "Besu continues execution with the inflated gas and updates the state root, while other clients revert or abort with out-of-gas.",
+      "Blocks proposed by Besu are rejected elsewhere, creating a consensus divergence."
+    ],
+    "checkpoint": "Review `EVM#calculateAvailableGas()` and CALL opcode handlers to ensure 64-bit safe math is applied, unit-test the `remainingGas < 0` guard, and confirm exceptions are raised on negative or overflowed gas."
+  },
+  {
+    "attack_title": "Slow transaction verification DoS (EL-2022-11)",
+    "affected_client": "Hyperledger Besu",
+    "url": "https://notes.ethereum.org/zSE44ueJS9-_G7lOzPalEQ",
+    "attack_steps": [
+      "Generate transactions full of high-cost opcodes such as EXP or large SHA3 and send them with very high gas prices.",
+      "After signature and intrinsic gas checks, Besu performs quadratic-time EVM prechecks that spike CPU usage.",
+      "The transaction pool saturates and block verification stalls, prompting peers to disconnect the victim node.",
+      "The wider network advances, but the targeted Besu node desynchronises and is effectively DoSed."
+    ],
+    "checkpoint": "Audit loops in `TransactionValidator` and `TransactionPool` to keep them linear in input size, and fuzz-test guards like `maxInitCodeSize` to ensure size limits stay effective."
+  },
+  {
+    "attack_title": "Exception during block import leads to chain split (EL-2022-14)",
+    "affected_client": "Hyperledger Besu",
+    "url": "https://notes.ethereum.org/d6BISTgxSV-_xIeBuGrV9A",
+    "attack_steps": [
+      "Prepare a block that contains abnormally encoded RLP transactions and wait until a Besu node proposes it.",
+      "Besu throws an uncaught `IllegalArgumentException` inside `BlockImporter`, drops the block, and the proposer keeps rebroadcasting it.",
+      "Other implementations accept the block, so only Besu nodes stall at the tip and the chain bifurcates.",
+      "Besu continues to prefer its local fork, destabilising the network over time."
+    ],
+    "checkpoint": "Ensure `BlockImporter.processBlock()` and `AbstractBlockProcessor` catch unchecked exceptions and translate them into error codes, and add unit tests so RLP helpers (e.g. `BytesValues.toShort()`) enforce bounds."
+  },
+  {
+    "attack_title": "Slow input (16 s) DoS via crafted calldata (EL-2022-15)",
+    "affected_client": "Hyperledger Besu",
+    "url": "https://notes.ethereum.org/N9akOoR-Rn2Ad4P6S032Bg",
+    "attack_steps": [
+      "Submit compressed, obfuscated calldata larger than 32 KB that expands into expensive loops inside the EVM.",
+      "Although gas accounting remains correct, missing JVM JIT optimisations stretch execution beyond 16 seconds.",
+      "Filling a 30M gas block with these transactions prevents validation from finishing within a 12-second slot, so proposers miss attestations.",
+      "Sustained spam causes peers to mark the node as slow and disconnect, achieving a DoS."
+    ],
+    "checkpoint": "Profile `EVM#execute()` to keep memory copy/expansion close to O(n), and micro-benchmark multi-threaded `--engine-threads` to ensure worker starvation does not occur."
+  },
+  {
+    "attack_title": "Very slow block execution (EL-2022-17)",
+    "affected_client": "Hyperledger Besu",
+    "url": "https://gist.github.com/holiman/213cc1a59971279bc984e2957c089af2",
+    "attack_steps": [
+      "Deploy a 200 KB contract combining SELFDESTRUCT loops with huge memory allocations.",
+      "Pack many CALLs into a single block to consume the full 30M gas limit.",
+      "Besu's Bonsai trie updates create heavy GC pressure and massive write sets, pushing execution past 30 seconds and missing the slot deadline.",
+      "The consensus layer receives `ENGINE_UNAVAILABLE`, so Besu proposes empty blocks and loses MEV opportunities."
+    ],
+    "checkpoint": "Review `WorldStateUpdater.commit()` so Bonsai diff flushes scale with the number of updates, and add CI benchmarks to guarantee large write sets finish within four seconds."
+  },
+  {
+    "attack_title": "Consensus flaw during block processing (EL-2022-09)",
+    "affected_client": "Erigon",
+    "url": "https://github.com/advisories/GHSA-xw37-57qp-9mm4",
+    "attack_steps": [
+      "Wait until the attacker controls block proposal or operate on a private chain.",
+      "Insert two crafted transactions (SELF-DESTRUCT followed by CREATE and balance manipulation) into the block.",
+      "Erigon up to v2.37.0 copies the stale balance for a deleted account, producing a divergent state root.",
+      "Other clients compute the correct state root and reject the block, while Erigon continues on a forked chain."
+    ],
+    "checkpoint": "Verify that `CreateAccount()` in core/state/statedb.go checks `prev.deleted` before copying balances, and add the Hive EVM test `SELFDESTRUCT_Create_ThenCall` to CI to detect state-root drift."
+  },
+  {
+    "attack_title": "Node stall from endless bad_block_hash retries (Gnosischain incident, 2023-02-28)",
+    "affected_client": "Erigon",
+    "url": "https://github.com/ledgerwatch/erigon/issues/6982",
+    "attack_steps": [
+      "Produce an invalid block (for example with a malformed transaction) and deliver it to Erigon nodes, as happened on Gnosis Chain.",
+      "Erigon 2.39.x detects `bad_block_hash=0x00…00` during staged sync but keeps retrying the same stage instead of unwinding.",
+      "Header synchronisation halts and Execution↔Consensus pings fail, causing the beacon node to disconnect the client.",
+      "Restarting replays the loop, so the DoS persists until the bad block is cleared."
+    ],
+    "checkpoint": "Ensure staged sync returns `StageResult{Unwind: true}` once a bad block is found (cf. PR #7025) and cover it with `integration/sync_bad_block.yaml`."
+  },
+  {
+    "attack_title": "DoS via malicious p2p message (invalid EC key)",
+    "affected_client": "Geth",
+    "url": "https://github.com/ethereum/go-ethereum/security/advisories/GHSA-q26p-9cq4-7fc2",
+    "attack_steps": [
+      "Connect to a victim Geth node and initiate the ETH p2p handshake.",
+      "Send an Auth Hello packet whose EC public key is the all-zero point.",
+      "Geth attempts to derive a shared secret without validating that the key lies on secp256k1, triggering a panic.",
+      "The node crashes and disconnects from the network."
+    ],
+    "checkpoint": "Confirm `elliptic.IsOnCurve(pub.X, pub.Y)` (or equivalent) is executed during the p2p handshake so zero or off-curve points are rejected."
+  },
+  {
+    "attack_title": "DoS via malicious GetBlockHeaders(count=0) integer underflow",
+    "affected_client": "Geth",
+    "url": "https://github.com/ethereum/go-ethereum/security/advisories/GHSA-4xc9-8hmq-j652",
+    "attack_steps": [
+      "Establish an ETH protocol peer connection and send `GetBlockHeaders` with `count` set to 0.",
+      "The calculation `count-1` underflows to UINT64_MAX and is passed to `GetHeadersFrom()`.",
+      "Geth attempts to stream essentially all headers despite `maxHeadersServe`, exhausting memory.",
+      "The victim node hits OOM and becomes unresponsive or crashes."
+    ],
+    "checkpoint": "Reject `count==0` in `eth/protocol/handler.go` and guard the `count-1` arithmetic against underflow before calling header retrieval routines."
+  },
+  {
+    "attack_title": "Ping flood goroutine exhaustion DoS",
+    "affected_client": "Geth",
+    "url": "https://github.com/ethereum/go-ethereum/security/advisories/GHSA-ppjg-v974-84cm",
+    "attack_steps": [
+      "Flood a victim with high-rate `Ping` messages over the p2p protocol.",
+      "Legacy Geth spawned a new goroutine for each ping.",
+      "Tens of thousands of goroutines accumulated, exhausting heap and scheduler resources.",
+      "The node eventually OOMs or stalls, realising a DoS."
+    ],
+    "checkpoint": "Ensure the Ping/Pong handler reuses workers or rate-limits requests so that receiving pings no longer spawns unbounded goroutines."
+  },
+  {
+    "attack_title": "GraphQL endpoint massive query memory exhaustion DoS (CVE-2023-42319)",
+    "affected_client": "Geth",
+    "url": "https://nvd.nist.gov/vuln/detail/CVE-2023-42319",
+    "attack_steps": [
+      "Target a node with `--http --graphql` enabled using HTTP.",
+      "Send a single query containing hundreds of heavy sub-queries combined with aliases.",
+      "Parsing and executing the query consumes gigabytes of heap until GC fails to keep up.",
+      "The node swaps or OOMs, leading to a crash and service interruption."
+    ],
+    "checkpoint": "Add limits on per-request query size, AST nodes, and response payload in `graphql/http_handler.go`, and enable query cost rules such as `DepthLimit`."
+  },
+  {
+    "attack_title": "Gethlighting — partitioning attack via partial eclipse",
+    "affected_client": "Geth",
+    "url": "https://www.ndss-symposium.org/ndss-paper/partitioning-ethereum-without-eclipsing-it/",
+    "attack_steps": [
+      "Stand up dozens of VPS nodes and occupy roughly half of the victim's peer slots.",
+      "Delay block propagation by the malicious peers by 2–3 seconds (a low-rate DoS).",
+      "Honest blocks arrive too late via the remaining peers, so the victim's local chain stops advancing.",
+      "The victim remains stuck on an outdated tip for hours, effectively partitioned from the network."
+    ],
+    "checkpoint": "Enforce /16 IP or AS-level peer limits in `p2p/peer.go`, randomise outbound peers, and drop connections whose propagation delay exceeds the configured threshold."
+  },
+  {
+    "attack_title": "DETER-X — future transaction abuse to exhaust the txpool",
+    "affected_client": "Geth",
+    "url": "https://tristartom.github.io/docs/ccs21.pdf",
+    "attack_steps": [
+      "Create fresh accounts with zero ETH balance.",
+      "Send large numbers of high-gas-price transactions starting at nonce 1000 or higher (future nonces).",
+      "The txpool prioritises high gas price entries and evicts normal transactions, filling its capacity with unusable future txs.",
+      "Legitimate users cannot insert transactions and miners may mine empty blocks, cutting throughput."
+    ],
+    "checkpoint": "Ensure `MaxFutureNonceGap` and per-sender limits (`txsPerSender`) are enforced in `txpool/tx_pool.go`, and add eviction logic so stale future transactions are purged after several blocks."
+  },
+  {
+    "attack_title": "BlocksByRange \"count\" overflow DoS (CL-2023-01)",
+    "affected_client": "Lighthouse",
+    "url": "https://raw.githubusercontent.com/ethereum/public-disclosures/master/disclosures/CL-2023-05-03.md",
+    "attack_steps": [
+      "Connect over the beacon p2p network to the victim.",
+      "Send a BlocksByRange request with an arbitrary start slot and an enormous count such as 4,294,967,295.",
+      "Lighthouse v4.4.0 and earlier cast count to `usize`, attempt to allocate a massive vector, and panic.",
+      "Simultaneously targeting many nodes halts network sync."
+    ],
+    "checkpoint": "Ensure `handle_blocks_by_range()` in network/rpc/requests.rs enforces `count <= MAX_BLOCKS_BY_RANGE` and add fuzz tests covering values above 2^32."
+  },
+  {
+    "attack_title": "Electra Max-EB double application skews total_active_balance (#7209)",
+    "affected_client": "Lighthouse",
+    "url": "https://github.com/sigp/lighthouse/pull/7209",
+    "attack_steps": [
+      "Prepare validator A with 2048 ETH eligible for consolidation and submit two stake transfer transactions across consecutive epochs.",
+      "Prior to v7.0.0-beta.4, Lighthouse called `update_effective_balance()` twice per consolidation because of a logic bug.",
+      "Validator A's effective balance doubles, inflating fork-choice total_active_balance.",
+      "Reward accounting diverges from other clients, risking a consensus split."
+    ],
+    "checkpoint": "Add a unit test ensuring `update_effective_balance()` only runs once per validator per epoch and cover the consolidation flow with regression tests."
+  },
+  {
+    "attack_title": "Accepting stale fork attestations skews fork choice (#7084)",
+    "affected_client": "Lighthouse",
+    "url": "https://github.com/sigp/lighthouse/pull/7084",
+    "attack_steps": [
+      "Broadcast a flood of attestations targeting blocks on an old fork after a chain split.",
+      "Lighthouse v7.0.0-beta.3 lacked the split_slot check and accepted the attestations.",
+      "Fork choice favours the stale branch, delaying new block proposals and halting finality.",
+      "Sustained abuse can trap Lighthouse nodes on the wrong fork."
+    ],
+    "checkpoint": "Update `check_target_fork()` in attestation_verification.rs to mark `target.slot < split_slot` as invalid and cover it with tests."
+  },
+  {
+    "attack_title": "Holesky accepts an invalid justified block (#7041)",
+    "affected_client": "Lighthouse",
+    "url": "https://github.com/sigp/lighthouse/issues/7041",
+    "attack_steps": [
+      "Submit a block on Holesky carrying an invalid execution payload and tampered justified checkpoint.",
+      "Lighthouse v7.0.0-beta.0 through beta.2 failed to blacklist the invalid block root and treated it as justified.",
+      "Lighthouse validators stop finalising, while other clients ignore the block.",
+      "Attackers can weaponise the stall for MEV capture or censorship."
+    ],
+    "checkpoint": "Ensure `fork_choice::on_block()` rejects known-invalid block roots and immediately bans the peer broadcasting them."
+  },
+  {
+    "attack_title": "Light-client Merkle proof misgeneration stalls sync (#7007)",
+    "affected_client": "Lighthouse",
+    "url": "https://github.com/sigp/lighthouse/pull/7007",
+    "attack_steps": [
+      "Issue high-frequency `/light_client/updates` requests from many light clients.",
+      "Versions v6.1.x to v7.0.0-beta.0 returned inconsistent proofs due to a hot-state cache mismatch.",
+      "Light clients fail verification and halt synchronisation, while server CPU usage climbs.",
+      "Large request volumes can also tax the beacon node."
+    ],
+    "checkpoint": "Add SSZ-fuzz coverage to `light_client::builder::build_merkle_proof()` ensuring state variants align with proof paths, including EIP-4788 block-root fixtures."
+  },
+  {
+    "attack_title": "Attestation subscription regression raises repeated InsufficientPeers (#6869)",
+    "affected_client": "Lighthouse",
+    "url": "https://github.com/sigp/lighthouse/releases/tag/v7.0.1",
+    "attack_steps": [
+      "Rapidly toggle gossipsub subnet subscriptions in the network.",
+      "In v7.0.0, a bug miscounted attestation subscriptions and validators logged `InsufficientPeers` repeatedly.",
+      "Block proposal preparation is skipped, causing missed proposals and attestations.",
+      "Log spam and CPU churn produce a mild DoS."
+    ],
+    "checkpoint": "Ensure `subscribe_all_subnets()` in network::attestation_service clamps peer counts correctly and add regression tests for the subscription accounting."
+  },
+  {
+    "attack_title": "Unfinalized BlocksByRange root recalculation DoS (#7098)",
+    "affected_client": "Lighthouse",
+    "url": "https://github.com/sigp/lighthouse/pull/7098",
+    "attack_steps": [
+      "Send repeated BlocksByRange requests covering large spans of unfinalized slots.",
+      "Before v7.0.0-beta.5, Lighthouse reran fork choice for each request to compute roots, saturating CPU.",
+      "Response latency spikes and sync delays build up.",
+      "Parallel requests can exhaust resources and crash the node."
+    ],
+    "checkpoint": "Cache fork-choice results or reject ranges outside finalised scope in `rpc::block_by_range()`, and cover the behaviour with regression tests."
+  },
+  {
+    "attack_title": "SMOD opcode signed remainder edge-case bug (EL-2022-10)",
+    "affected_client": "Nethermind",
+    "url": "https://github.com/ethereum/public-disclosures/blob/master/disclosures/EL-2023-05-03.md#L1",
+    "attack_steps": [
+      "Deploy a contract that executes `SMOD` with `int256.min` (−2^255) as the operand.",
+      "Nethermind 1.17.x–1.18.x double-negates the value, producing a result with the wrong sign compared to other clients.",
+      "Including that transaction in a block yields a different state root on Nethermind, creating consensus divergence.",
+      "Syncing nodes extend a net-invalid chain, risking a full chain split."
+    ],
+    "checkpoint": "Add unit tests around `int256.min` in the EVM implementation (`Smod.cs`), and use static analysis to confirm `BigInteger.Abs()` is not followed by an extra sign flip."
+  },
+  {
+    "attack_title": "ModExp precompile out-of-memory consensus failure (EL-2022-13)",
+    "affected_client": "Nethermind",
+    "url": "https://iosiro.com/blog/nethermind-modexp-out-of-memory-consensus-issue",
+    "attack_steps": [
+      "Generate a payload with `expLength = 0xffffffff` while keeping `baseLength = modulusLength = 0`.",
+      "Other clients return success early when modulus == 0, but Nethermind allocates memory first, hits `OutOfMemory`, and returns `success=false`.",
+      "The block results differ only on Nethermind, so its block hash diverges.",
+      "If a Nethermind validator proposes the block, the network forks; otherwise Nethermind nodes follow a minority chain and incur penalties."
+    ],
+    "checkpoint": "Ensure `ModExpPrecompile.Run()` evaluates early-return conditions before allocating memory, and add tests verifying allocations beyond `Array.MaxLength` are caught."
+  },
+  {
+    "attack_title": "Slow-input (6 s) DoS via massive calldata expansion (EL-2022-16)",
+    "affected_client": "Nethermind",
+    "url": "https://github.com/ethereum/public-disclosures/blob/master/disclosures/EL-2023-05-03.md#L1",
+    "attack_steps": [
+      "Deploy a contract whose obfuscated calldata of just over 32 KB expands linearly in an EVM loop.",
+      "Pack several such transactions into a 30M gas block so `InitCodeParser` spends more than six seconds, eating half the 12 s slot.",
+      "Execution→Consensus responses time out, so the beacon node rejects the proposals or produces empty blocks.",
+      "Sustained spam gets the victim disconnected and forces resynchronisation."
+    ],
+    "checkpoint": "Profile `TransactionValidator.Validate()` and `Evm.BytecodeAnalyzer` to ensure loops stay O(n), and verify calldata length and iteration caps are enforced (`EvmLimits`)."
+  },
+  {
+    "attack_title": "Revert message length overflow yields invalid blocks (Jan 2024 hotfix)",
+    "affected_client": "Nethermind",
+    "url": "https://hackmd.io/@nethermindclient/ByW9sX_R6",
+    "attack_steps": [
+      "Send a transaction whose `revert()` returns a very large data payload.",
+      "Nethermind 1.23–1.25 throws `OverflowException` in the revert decoder and marks the transaction as failed while other clients succeed.",
+      "Gas accounting diverges within the proposed block, so Nethermind's block hash differs and it drops off the chain.",
+      "Validators lose attestations and accumulate penalties while the attacker isolates Nethermind nodes without affecting the rest of the network."
+    ],
+    "checkpoint": "Upgrade `RevertDecoder.Decode()` to use `uint64` lengths with bounds checks, and fuzz the decoder to prove overflow paths are eliminated without relying on `try/catch`."
+  },
+  {
+    "attack_title": "BLS precompile optimisation bug triggered Devnet 5 fork (2025-01-30)",
+    "affected_client": "Nethermind",
+    "url": "https://etherworld.co/2025/01/30/highlights-of-ethereums-all-core-devs-meeting-acde-204/",
+    "attack_steps": [
+      "Pectra Devnet 5 enabled a performance patch for the BLS12-381 VERIFY precompile.",
+      "Submitting an invalid signature edge case leads Nethermind to treat the verification as successful.",
+      "Other clients reject the block, so only Nethermind nodes follow the faulty chain and finality stalls.",
+      "The issue was rolled back within hours on the devnet but would cause a mainnet split."
+    ],
+    "checkpoint": "Ensure `BlsPrecompile.Verify()` fast paths run the same pairing checks as the fallback, and add Hive/EOF tests so forged signatures never pass."
+  },
+  {
+    "attack_title": "Electra epoch processing updates effective balance incorrectly (v6.0.4)",
+    "affected_client": "Prysm",
+    "url": "https://github.com/prysmaticlabs/prysm/blob/develop/CHANGELOG.md#L134",
+    "attack_steps": [
+      "On a post-Electra chain, an attacker operates several large validators (>32 ETH) under normal conditions.",
+      "They issue heavy deposits and withdrawals around epoch boundaries to swing the actual balance sharply.",
+      "Prysm ≤6.0.3 copied validator structs with unsafe pointer semantics, so `effective_balance` kept the stale value.",
+      "Total active balance diverges from other clients, rewards and fork choice misalign, finality stalls, and Prysm nodes leak for extended periods."
+    ],
+    "checkpoint": "Ensure `updateEffectiveBalance()` in core/state/epoch_processing.go copies structs by value and applies the Electra hysteresis correctly for balances above 32 ETH; cover the path with targeted unit tests."
+  },
+  {
+    "attack_title": "Nested slashing DB path breaks history export (v6.0.4)",
+    "affected_client": "Prysm",
+    "url": "https://github.com/prysmaticlabs/prysm/blob/develop/CHANGELOG.md#L1",
+    "attack_steps": [
+      "Convince the operator to place `validator.db` inside a nested directory (e.g., `data/direct/`).",
+      "When the operator runs `prysmctl slashing-protection-history export`, a path resolution bug emits an empty file.",
+      "Importing the empty DB on another node removes protection, making double proposals or attestations likely and leading to slashing.",
+      "The attacker profits from penalties incurred by the victim validators."
+    ],
+    "checkpoint": "Normalise export paths to absolute locations with `filepath.Abs()`/`os.MkdirAll()` in validator/db/export.go and add tests covering nested directory layouts to ensure non-empty exports."
+  },
+  {
+    "attack_title": "Beacon API committees endpoint mishandles invalid slots (v6.0.4)",
+    "affected_client": "Prysm",
+    "url": "https://github.com/prysmaticlabs/prysm/blob/develop/CHANGELOG.md#L7",
+    "attack_steps": [
+      "Send waves of malformed slot values to `/eth/v1/beacon/states/{state_id}/committees` via UI or bots.",
+      "Prysm ≤6.0.3 logged a panic and produced HTTP 500 responses instead of 400 errors.",
+      "Sustained traffic forces the Beacon API into restart loops, achieving a DoS."
+    ],
+    "checkpoint": "Have the committees handler in beacon/api/server.go validate `slot / spec.SLOTS_PER_EPOCH` and return HTTP 400 immediately; fuzz boundary values to verify graceful handling."
+  },
+  {
+    "attack_title": "Pending consolidations endpoint handler panic (v6.0.3)",
+    "affected_client": "Prysm",
+    "url": "https://github.com/prysmaticlabs/prysm/pull/15290",
+    "attack_steps": [
+      "Continuously poll `/eth/v1/beacon/pool/pending_consolidations`.",
+      "Prysm ≤6.0.2 returned `nil`, causing JSON marshaling to panic and resetting HTTP connections.",
+      "Many concurrent connections push the container into a crash loop and blind monitoring."
+    ],
+    "checkpoint": "Ensure beacon/api/consolidations.go returns an empty array when the slice is empty and add unit tests covering the nil case."
+  },
+  {
+    "attack_title": "Attester slashing pool API returns nil (v6.0.3)",
+    "affected_client": "Prysm",
+    "url": "https://github.com/prysmaticlabs/prysm/pull/15291",
+    "attack_steps": [
+      "Send repeated REST queries from monitoring tools that expect array responses.",
+      "Prysm ≤6.0.2 emitted `nil`, causing JSON deserialisers to throw errors and crash watchdogs.",
+      "With monitoring offline, an attacker can submit malicious attestations without timely detection."
+    ],
+    "checkpoint": "Have beacon/api/slashings.go always return an array type, update the OpenAPI schema to disallow `null`, and add regression tests for empty responses."
+  },
+  {
+    "attack_title": "Validator participation API ignores state_id (v6.0.3)",
+    "affected_client": "Prysm",
+    "url": "https://github.com/prysmaticlabs/prysm/pull/15245",
+    "attack_steps": [
+      "Query `state_id` using historical block roots to feed misleading statistics to dashboards.",
+      "Prysm ≤6.0.2 ignored the parameter and always returned HEAD data, masking forks.",
+      "Attackers can lure validators into forked chains by presenting healthy metrics."
+    ],
+    "checkpoint": "Verify router/validators.go validates `state_id` inputs and that `ResolveStateID()` returns 404 when the identifier is unknown; add regression tests."
+  },
+  {
+    "attack_title": "Pending partial withdrawals JSON tag typo (v6.0.2)",
+    "affected_client": "Prysm",
+    "url": "https://github.com/prysmaticlabs/prysm/pull/15254",
+    "attack_steps": [
+      "Rely on explorer dashboards that parse pending withdrawal fields.",
+      "Name mismatches lead to incorrect balances being displayed, prompting users to miscalculate fees or payouts.",
+      "While the chain data stays correct, UX degradation can cause financial mistakes."
+    ],
+    "checkpoint": "Align JSON tags in beacon/api/types/withdrawals.go with the spec (`pending_partial_withdrawals`) and cover schema validation in tests."
+  },
+  {
+    "attack_title": "gocognit propose-block REST path misrouting (v6.0.2)",
+    "affected_client": "Prysm",
+    "url": "https://github.com/prysmaticlabs/prysm/pull/15147",
+    "attack_steps": [
+      "Send REST requests to an incorrect builder path such as `/eth/v2/beacon/blocks/proper/`.",
+      "Prysm ≤6.0.1 returned HTTP 500 instead of 404 and dropped Keep-Alive connections, delaying block proposals.",
+      "Targeted spam near slot deadlines causes proposal misses."
+    ],
+    "checkpoint": "Normalise the `/eth/v2/beacon/blocks/{block_id}` routes in the mux configuration and add tests to ensure invalid paths return `http.StatusNotFound`."
+  },
+  {
+    "attack_title": "`payload_attributes` SSE stream underflow (v6.0.1)",
+    "affected_client": "Prysm",
+    "url": "https://github.com/prysmaticlabs/prysm/blob/develop/CHANGELOG.md#L16",
+    "attack_steps": [
+      "Have an MEV-Boost relay flood the `payload_attributes` SSE stream with events.",
+      "Prysm ≤6.0.0 hit a ring-buffer underflow and silently dropped subsequent events, ignoring builder bids.",
+      "Victim validators lose MEV revenue while attackers prioritise their own blocks."
+    ],
+    "checkpoint": "Add back-pressure in eventstream/payload_attributes.go so publishing beyond the channel capacity is detected, and fuzz with >1k events/s to ensure no panic occurs."
+  },
+  {
+    "attack_title": "Leaking edge case causes balance underflow and negative rewards (v6.0.1)",
+    "affected_client": "Prysm",
+    "url": "https://github.com/prysmaticlabs/prysm/pull/15191",
+    "attack_steps": [
+      "Maintain a prolonged non-finalising (leak) condition to drive some validators' balances down.",
+      "Prysm ≤6.0.0 experienced `uint64` underflow, adding 2^64−X during reward processing before normalisation.",
+      "Prysm nodes compute divergent block hashes and form an isolated chain, incurring penalties."
+    ],
+    "checkpoint": "Use `safeMath.SubClamp()` (or equivalent) in processRewards.go, and add CI tests covering leak scenarios to prevent underflow."
+  },
+  {
+    "attack_title": "Critical chain-reorg logic bug (v1.4.8)",
+    "affected_client": "Reth",
+    "url": "https://github.com/paradigmxyz/reth/releases/tag/v1.4.8",
+    "attack_steps": [
+      "Identify validators or RPC nodes running Reth ≤1.4.7.",
+      "Create competing short reorgs near the tip, staying within the persistence threshold.",
+      "A fork-choice bug fails to recompute trie updates correctly, canonising the wrong state root.",
+      "Affected nodes diverge from the network and incur penalties or downtime."
+    ],
+    "checkpoint": "Test `engine::reorg::recompute_trie_updates()` to ensure every forked block recalculates trie paths, and cover the `ParallelSparseTrie` prefix updates fixed in #16568."
+  },
+  {
+    "attack_title": "OP Mainnet gas refund mismatch causes chain split (v1.4.7)",
+    "affected_client": "Reth",
+    "url": "https://github.com/paradigmxyz/reth/releases/tag/v1.4.7",
+    "attack_steps": [
+      "Propose blocks on Optimism Mainnet packed with maximum `SSTORE` gas refunds.",
+      "Reth ≤1.4.6 underestimates refunded gas and miscomputes `gasUsed`.",
+      "Reth nodes mark the block invalid and fork away from op-geth implementations.",
+      "Sequencers or RPC nodes lose sync and halt service."
+    ],
+    "checkpoint": "Unit-test `optimism::gas_refund::apply_refund()` across EIP-3529/EIP-3855 cases and add high-refund transactions to ensure `gasUsed` matches other clients."
+  },
+  {
+    "attack_title": "Stack overflow DoS via malformed block (#6452)",
+    "affected_client": "Reth",
+    "url": "https://github.com/paradigmxyz/reth/issues/6452",
+    "attack_steps": [
+      "As a validator, craft a block containing invalid transactions and broadcast it.",
+      "Reth ≤0.1.0-alpha.20 recurses in `BlockchainTree::insert_block()` until the stack overflows.",
+      "The node panics and crashes; upon restart it reprocesses the same block and loops."
+    ],
+    "checkpoint": "Ensure bad-block handling breaks recursion and returns errors early, and fuzz block validation to prove infinite recursion cannot occur."
+  },
+  {
+    "attack_title": "Invalid state-root retry loop crashes node (#16113)",
+    "affected_client": "Reth",
+    "url": "https://github.com/paradigmxyz/reth/issues/16113",
+    "attack_steps": [
+      "Craft a block with tampered receipts so the state root differs from the actual value.",
+      "Reth ~1.3.12 re-attempted the same block without unwinding after `ExecutionStage::apply_block()` failed.",
+      "The sync pipeline loops until a fatal mismatched state-root error stops the process.",
+      "Lengthy resync is required, taking validators or RPC services offline."
+    ],
+    "checkpoint": "Make sure `apply_block()` propagates `StageError::BadBlock` upward so the unwind stage always runs; cover the logic in unit tests."
+  },
+  {
+    "attack_title": "Massive RPC reads sever beacon connection DoS (#17323)",
+    "affected_client": "Reth",
+    "url": "https://github.com/paradigmxyz/reth/issues/17323",
+    "attack_steps": [
+      "Hammer an archive Reth 1.5.x node with highly parallel `eth_call` requests over IPC/HTTP.",
+      "`Database::reader()` holds locks for minutes and throws `Long-lived read transaction timed out`.",
+      "Engine API responses to the beacon client time out, severing the EL↔CL link.",
+      "The node misses proposals, loses rewards, and becomes unavailable."
+    ],
+    "checkpoint": "Tighten `db::TX_READ_TIMEOUT` or add cooperative cancellation for reader transactions, and load-test (e.g., tokio + alloy) at 10k rps to ensure beacon pings stay healthy."
+  },
+  {
+    "attack_title": "KZG library accepts invalid elliptic-curve points",
+    "affected_client": "Fusaka Devnet: clients using go-kzg-4844 (e.g., Geth, Nethermind)",
+    "url": "https://notes.ethereum.org/@ethpandaops/fusaka-syncing-bugs?utm_source=preview-mode&utm_medium=rec",
+    "attack_steps": [
+      "A malicious proposer crafts a block containing blob commitments with invalid G1/G2 points.",
+      "Implementations missing strict decoding accept the block while others reject it, potentially splitting the chain."
+    ],
+    "technical_details": "KZG commitment verification failed to reject malformed BLS12-381 points, opening the door to consensus splits if clients disagreed on commitment validity.",
+    "discovery_date": "June 2023 (reported November 2023)",
+    "cve_or_bug_report": "Sigma Prime audit finding; no CVE assigned",
+    "fix": "Point deserialisation checks were hardened in gnark-crypto v0.11.2 and downstream clients updated to the patched library.",
+    "checkpoint": "Add Sigma Prime's reproduction vectors to CI and ensure gnark-crypto v0.11.2+ errors on invalid G1/G2 points."
+  },
+  {
+    "attack_title": "ForkID mismatch rejects peers",
+    "affected_client": "Fusaka Devnet: Besu",
+    "url": "https://notes.ethereum.org/@ethpandaops/fusaka-syncing-bugs?utm_source=preview-mode&utm_medium=rec",
+    "attack_steps": [
+      "No attacker required: Besu computed an incorrect ForkID and voluntarily disconnected healthy peers.",
+      "An attacker could exploit the bug to isolate Besu nodes."
+    ],
+    "technical_details": "During Fusaka Devnet 2, Besu derived ForkIDs that deviated from the spec, marking valid peers as invalid and lowering finality participation.",
+    "discovery_date": "June 2025 (Devnet-2)",
+    "cve_or_bug_report": "None",
+    "fix": "ForkID computation was realigned with EIP-2124 and rolled out before Devnet-3 alongside a shared `eth_config` to prevent regressions.",
+    "checkpoint": "Load the Fusaka `eth_config` and verify ForkHash/ForkNext alignment with EIP-2124 through devp2p handshake and multi-client interoperability tests."
+  },
+  {
+    "attack_title": "Four-byte chain ID parsing disconnects peers",
+    "affected_client": "Fusaka Devnet: Nethermind",
+    "url": "https://notes.ethereum.org/@ethpandaops/fusaka-syncing-bugs?utm_source=preview-mode&utm_medium=rec",
+    "attack_steps": [
+      "Guide Nethermind onto a network whose chain ID length differs from expectations (e.g., 4-byte IDs).",
+      "The node immediately drops peers, degrading synchronisation; attackers could weaponise misconfigured IDs to cause desync."
+    ],
+    "technical_details": "Nethermind misparsed 4-byte chain IDs during the devp2p handshake, causing repeated disconnects right after connection establishment.",
+    "discovery_date": "June 2025 (Devnet-2)",
+    "cve_or_bug_report": "None",
+    "fix": "Chain ID handling now supports IDs of four bytes or longer, shipped ahead of Devnet-3 in a Nethermind update.",
+    "checkpoint": "Handshake with a chain ID such as `0x0000fusa` and ensure Nethermind maintains the connection and syncs in integration tests."
+  },
+  {
+    "attack_title": "Beacon root validation failure blocks sync",
+    "affected_client": "Fusaka Devnet: Nimbus (CL)",
+    "url": "https://notes.ethereum.org/@ethpandaops/fusaka-syncing-bugs?utm_source=preview-mode&utm_medium=rec",
+    "attack_steps": [
+      "Although no concrete exploit is known, a hostile peer could feed malformed roots to keep Nimbus dropping connections."
+    ],
+    "technical_details": "Nimbus EL/CL combined clients dropped peers due to beacon-root validation errors, leaving Devnet-2 participants effectively offline.",
+    "discovery_date": "June 2025 (Devnet-2)",
+    "cve_or_bug_report": "None",
+    "fix": "Nimbus revised the validation path so subsequent devnets synchronised normally after applying the update.",
+    "checkpoint": "Extend beacon block import tests with Fusaka fixtures to assert invalid roots are rejected while valid ones keep syncing."
+  },
+  {
+    "attack_title": "Checkpoint sync DB inconsistency",
+    "affected_client": "Fusaka Devnet: Prysm",
+    "url": "https://notes.ethereum.org/@ethpandaops/fusaka-syncing-bugs?utm_source=preview-mode&utm_medium=rec",
+    "attack_steps": [
+      "After prolonged non-finality, repeatedly restart Prysm with an existing database to trigger checkpoint sync failure."
+    ],
+    "technical_details": "Restarting in a non-finalised state with checkpoint sync enabled produced database mismatches when the justified and finalised checkpoints were far apart.",
+    "discovery_date": "August 2025 (Devnet-3)",
+    "cve_or_bug_report": "None",
+    "fix": "Prysm adjusted database initialisation and checkpoint application logic so restart-from-checkpoint succeeds with existing data.",
+    "checkpoint": "Add an end-to-end test that restarts Prysm with a populated DB after non-finality and confirms checkpoint sync completes."
+  },
+  {
+    "attack_title": "Large data requests cause Teku OOM",
+    "affected_client": "Fusaka Devnet: Teku",
+    "url": "https://notes.ethereum.org/@ethpandaops/fusaka-syncing-bugs?utm_source=preview-mode&utm_medium=rec",
+    "attack_steps": [
+      "Spam BlobSidecars-by-root requests (e.g., batches of 512) over gossip to exhaust Teku's memory."
+    ],
+    "technical_details": "Teku lacked rate controls for excessive PeerDAS column requests; malicious peers drove memory usage high enough to crash nodes during Devnet-3.",
+    "discovery_date": "August 2025 (Devnet-3)",
+    "cve_or_bug_report": "Internal testing finding; no CVE",
+    "fix": "Teku introduced rate limits that ignore or deprioritise abusive requests, tracked under Teku issue #9824 and shipped in the latest release.",
+    "checkpoint": "Run PeerDAS tests that issue 512 BlobSidecars requests and confirm rate limiting stabilises memory usage."
+  },
+  {
+    "attack_title": "Data-availability subnet loses peers",
+    "affected_client": "Fusaka Devnet: Lighthouse",
+    "url": "https://notes.ethereum.org/@ethpandaops/fusaka-syncing-bugs?utm_source=preview-mode&utm_medium=rec",
+    "attack_steps": [
+      "Overload Lighthouse with custody subnet management so it falls behind on required data pieces, risking delayed chain following."
+    ],
+    "technical_details": "Lighthouse struggled to maintain peers across custody subnets and stalled when encountering forks, cutting participation to ~50% during Devnet-3.",
+    "discovery_date": "August 2025 (Devnet-3)",
+    "cve_or_bug_report": "None",
+    "fix": "Peer scoring and connection maintenance improvements are in progress; patches are planned for the next release cycle to stabilise custody management.",
+    "checkpoint": "Add integration tests that monitor custody subnet peer counts and assert they remain above the target threshold over time."
+  },
+  {
+    "attack_title": "Data column index bug returns wrong blobs",
+    "affected_client": "Fusaka Devnet: Lodestar",
+    "url": "https://notes.ethereum.org/@ethpandaops/fusaka-syncing-bugs?utm_source=preview-mode&utm_medium=rec",
+    "attack_steps": [
+      "Coerce Lodestar into requesting specific columns so it serves incorrect data, provoking sync delays or validation errors."
+    ],
+    "technical_details": "Lodestar's data-availability column index was mis-implemented, occasionally returning the wrong column and lacking support for finalised-epoch lookups by root.",
+    "discovery_date": "August 2025 (Devnet-3)",
+    "cve_or_bug_report": "None",
+    "fix": "PeerDAS improvements—larger peer counts, faster getBlobsV2 deserialisation, and a pending fix for the column index—are rolling out in upcoming releases.",
+    "checkpoint": "Exercise the PeerDAS API with known column requests and verify the returned data roots match expected hashes in unit and scenario tests."
+  },
+  {
+    "attack_title": "Blob fee comparison bug",
+    "affected_client": "Fusaka Devnet: Reth",
+    "url": "https://notes.ethereum.org/@ethpandaops/fusaka-syncing-bugs?utm_source=preview-mode&utm_medium=rec",
+    "attack_steps": [
+      "Feed Reth crafted blob transactions so only Reth fails to build blocks while other clients succeed."
+    ],
+    "technical_details": "Reth's EIP-4844 blob gas fee comparison logic was incorrect, causing discrepancies with other clients and failed block construction during testing.",
+    "discovery_date": "September 2025",
+    "cve_or_bug_report": "None",
+    "fix": "PR #18216 corrected the conditionals, landing in the latest Reth release and aligning blob fee calculations.",
+    "checkpoint": "Add engine tests that compare blob fee results across clients and assert zero difference in max blob fee."
+  },
+  {
+    "attack_title": "Trie root mismatch during deep reorg",
+    "affected_client": "Fusaka Devnet: Erigon",
+    "url": "https://notes.ethereum.org/@ethpandaops/fusaka-syncing-bugs?utm_source=preview-mode&utm_medium=rec",
+    "attack_steps": [
+      "Trigger repeated deep reorgs so Erigon rejects new payloads with trie root mismatches, halting block processing."
+    ],
+    "technical_details": "Erigon reported `invalid block…wrong trie root` during deep reorgs; payloads fetched via the engine API were rejected until the database was wiped, indicating inconsistent internal state.",
+    "discovery_date": "August 2025",
+    "cve_or_bug_report": "None",
+    "fix": "Erigon is refining reorg handling; fixes for known cases are implemented and undergoing internal testing before release.",
+    "checkpoint": "Simulate reorgs deeper than five blocks in Hive tests to confirm Erigon accepts payloads with the correct trie root."
+  },
+  {
+    "attack_title": "History truncation corrupts database",
+    "affected_client": "Fusaka Devnet: Geth",
+    "url": "https://notes.ethereum.org/@ethpandaops/fusaka-syncing-bugs?utm_source=preview-mode&utm_medium=rec",
+    "attack_steps": [
+      "Encourage frequent restarts of history-expiry-enabled nodes to repeatedly trigger the failure and crash them."
+    ],
+    "technical_details": "When trimming historical state during restart, Geth reported `history head truncation out of range…` and halted block processing, especially on nodes synced from genesis.",
+    "discovery_date": "September 2025",
+    "cve_or_bug_report": "None",
+    "fix": "Boundary checks in the history trimming logic were corrected in Geth v1.13.x, resolving the inconsistency.",
+    "checkpoint": "Add a regression test that restarts a history-expiry-enabled node and asserts no `history head truncation` errors appear in the logs."
+  },
+  {
+    "attack_title": "Snap sync stalls",
+    "affected_client": "Fusaka Devnet: Geth",
+    "url": "https://notes.ethereum.org/@ethpandaops/fusaka-syncing-bugs?utm_source=preview-mode&utm_medium=rec",
+    "attack_steps": [
+      "Although no deliberate exploit was documented, a malicious engine could return empty payload lists to hang snap-synchronising nodes."
+    ],
+    "technical_details": "Devnet testing showed snap sync halting at specific heights when payloads were interpreted as empty, while full sync continued normally.",
+    "discovery_date": "September 2025",
+    "cve_or_bug_report": "None",
+    "fix": "Geth adjusted snap sync logic to match full-sync reliability; current development builds no longer stall.",
+    "checkpoint": "Mock empty payload responses at height N in snap-sync E2E tests and verify sync continues after the fix."
+  },
+  {
+    "attack_title": "Deep reorg fork-choice check missing",
+    "affected_client": "Fusaka Devnet: Nethermind",
+    "url": "https://notes.ethereum.org/@ethpandaops/fusaka-syncing-bugs?utm_source=preview-mode&utm_medium=rec",
+    "attack_steps": [
+      "Force extreme consecutive reorgs so Nethermind selects the wrong parent, halting chain updates."
+    ],
+    "technical_details": "Nethermind selected incorrect parents during deep reorgs, failed internal validation, and paused chain progression; the stack was reproducible in internal tests.",
+    "discovery_date": "September 2025",
+    "cve_or_bug_report": "None",
+    "fix": "Parent selection logic is being reworked; patches are under test and will ship once stabilised.",
+    "checkpoint": "Add deep reorg scenarios to fork-choice tests and confirm Nethermind rolls back to the correct parent with diagnostic logs."
+  }
+]

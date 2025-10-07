@@ -1,0 +1,170 @@
+[
+  {
+    "body": "",
+    "closedAt": "0001-01-01T00:00:00Z",
+    "isPullRequest": false,
+    "labels": [],
+    "state": "open",
+    "title": "[EIP-7917] Evaluate epoch-transition overhead",
+    "updatedAt": "2025-07-01T05:05:16Z",
+    "url": "https://github.com/Consensys/teku/issues/9498"
+  },
+  {
+    "body": "<!-- Thanks for sending a pull request! Please check out our contribution guidelines: -->\r\n<!-- https://github.com/Consensys/teku/blob/master/CONTRIBUTING.md -->\r\n\r\n## PR Description\r\nFor `deneb.SignedBeaconBlockSupplier` it makes sense to limit it to Fulu, since this class is used specifically in `MiscHelpersDenebPropertyTest` which tests Deneb stuff and requires `blob_kzg_commitments` to be present. Also moved the class to be an inner class of `MiscHelpersDenebPropertyTest`. `SignedBlockContentsSupplier` shouldn't cause any breakage so removed the limitation for `Gloas`. `BeaconBlockSupplier` wasn't used anywhere, so removed it.\r\n\r\n## Fixed Issue(s)\r\nrelated to #9833 \r\n\r\n## Documentation\r\n\r\n- [X] I thought about documentation and added the `doc-change-required` label to this PR if updates are required.\r\n\r\n## Changelog\r\n\r\n- [X] I thought about adding a changelog entry, and added one if I deemed necessary.\r\n",
+    "closedAt": "2025-09-08T23:53:35Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "Fix property tests for Gloas",
+    "updatedAt": "2025-09-09T07:31:59Z",
+    "url": "https://github.com/Consensys/teku/pull/9864"
+  },
+  {
+    "body": "<!-- Thanks for sending a pull request! Please check out our contribution guidelines: -->\r\n<!-- https://github.com/Consensys/teku/blob/master/CONTRIBUTING.md -->\r\n\r\n## PR Description\r\nIncludes all changes for a barebone `Gloas` fork as supplement to https://github.com/Consensys/teku/pull/9800, `GloasStateUpgrade` and other barebone additions. Doesn't include any changes to data structures apart from unchanged `BeaconStateGloas`. These can be added later for easier reviews. Fixed ignored integration tests from previous PR.\r\n\r\nAlso includes **BUG** in `FuluStateUpgrade` that we are doing `.setPendingDeposits` twice and skipping `.setPendingConsolidations`\r\n\r\nAlso ignoring Gloas in `DataColumnSidecarsByRangeIntegrationTest` since the updated `KZG_COMMITMENTS_INCLUSION_PROOF_DEPTH_GLOAS` is not correct until we change the beacon block.\r\n\r\nSuccessful Gloas fork on interop (ignore the P2P errors, this is single node with p2p enabled):\r\n<img width=\"1432\" height=\"827\" alt=\"image\" src=\"https://github.com/user-attachments/assets/151f55f6-b73a-4bc5-9cbd-89bd4cff66ae\" />\r\n\r\n## Fixed Issue(s)\r\nfixes #9778 \r\n\r\n## Documentation\r\n\r\n- [X] I thought about documentation and added the `doc-change-required` label to this PR if updates are required.\r\n\r\n## Changelog\r\n\r\n- [X] I thought about adding a changelog entry, and added one if I deemed necessary.\r\n",
+    "closedAt": "2025-08-25T13:39:59Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "Bare-bones `Gloas` fork + fix `Fulu` fork upgrade bug",
+    "updatedAt": "2025-08-25T13:40:07Z",
+    "url": "https://github.com/Consensys/teku/pull/9801"
+  },
+  {
+    "body": "Check TODO-fulu on `BeaconChainController` // TODO-fulu fix this hack to resolve the initialization loop Network <--> DAS Custody",
+    "closedAt": "2025-08-26T16:20:38Z",
+    "isPullRequest": false,
+    "labels": [
+      {
+        "color": "61E03B",
+        "description": "",
+        "id": "LA_kwDOCM9I9M8AAAAB8d0zlg",
+        "name": "Epic Fulu"
+      }
+    ],
+    "state": "closed",
+    "title": "Fix BeaconChainController initialization loop Network <-> DAS Custody",
+    "updatedAt": "2025-08-26T16:20:38Z",
+    "url": "https://github.com/Consensys/teku/issues/9463"
+  },
+  {
+    "body": "## PR Description\r\n\r\n* In strings, change several instances of \"FULU\" to \"Fulu\"\r\n  * This is more consistent with other forks.\r\n* Rename `throttling-dataColumn` to `throttling-columns`\r\n  * It should have been plural to match other keys.\r\n  * Can rename to `dataColumns` if desired.\r\n* Add missing length check for `blobsCellBundle.getProofs()` in builder flow.\r\n  * We checked this in Deneb, should probably check here too.\r\n* Rename `blobSidecarsAvailabilityDeprecationSlot` to `blobSidecarsDeprecationSlot`.\r\n  * I found this function name to be misleading. I thought you were going to drop blobs at this slot.\r\n* Remove an unused parameter in `computeDataColumnSidecarBackboneSubnets`.\r\n  * Did you intend to use this?\r\n\r\n## Documentation\r\n\r\n- [x] I thought about documentation and added the `doc-change-required` label to this PR if updates are required.\r\n\r\n## Changelog\r\n\r\n- [x] I thought about adding a changelog entry, and added one if I deemed necessary.\r\n",
+    "closedAt": "2025-07-15T20:06:03Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "Make various small fixes for Fulu code",
+    "updatedAt": "2025-07-15T20:06:03Z",
+    "url": "https://github.com/Consensys/teku/pull/9662"
+  },
+  {
+    "body": "<!-- Thanks for sending a pull request! Please check out our contribution guidelines: -->\r\n<!-- https://github.com/Consensys/teku/blob/master/CONTRIBUTING.md -->\r\n\r\n## PR Description\r\nFix FOCIL rebase issues\r\n\r\n## Fixed Issue(s)\r\n<!-- Please link to fixed issue(s) here using format: fixes #<issue number> -->\r\n<!-- Example: \"fixes #2\" -->\r\n\r\n## Documentation\r\n\r\n- [x] I thought about documentation and added the `doc-change-required` label to this PR if updates are required.\r\n\r\n## Changelog\r\n\r\n- [x] I thought about adding a changelog entry, and added one if I deemed necessary.\r\n",
+    "closedAt": "2025-08-25T21:04:26Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "fix focil rebase issues",
+    "updatedAt": "2025-08-25T21:04:37Z",
+    "url": "https://github.com/Consensys/teku/pull/9789"
+  },
+  {
+    "body": "## PR Description\r\n\r\nThis PR fixes various small nits I had while reviewing new fulu code.\r\n\r\n## Documentation\r\n\r\n- [x] I thought about documentation and added the `doc-change-required` label to this PR if updates are required.\r\n\r\n## Changelog\r\n\r\n- [x] I thought about adding a changelog entry, and added one if I deemed necessary.\r\n",
+    "closedAt": "2025-06-02T21:56:49Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "Fix nits in fulu code",
+    "updatedAt": "2025-06-02T22:33:50Z",
+    "url": "https://github.com/Consensys/teku/pull/9508"
+  },
+  {
+    "body": "<!-- Thanks for sending a pull request! Please check out our contribution guidelines: -->\r\n<!-- https://github.com/Consensys/teku/blob/master/CONTRIBUTING.md -->\r\n\r\n## PR Description\r\n\r\n## Fixed Issue(s)\r\n<!-- Please link to fixed issue(s) here using format: fixes #<issue number> -->\r\n<!-- Example: \"fixes #2\" -->\r\nBlob lists should be maxBlobCommitments everywhere, proofs blobs * max field elements, see https://github.com/ethereum/consensus-specs/blob/dev/specs/fulu/validator.md#blobsbundle for example.\r\nAlso added useful logging\r\n\r\n## Documentation\r\n\r\n- [x] I thought about documentation and added the `doc-change-required` label to this PR if updates are required.\r\n\r\n## Changelog\r\n\r\n- [x] I thought about adding a changelog entry, and added one if I deemed necessary.\r\n",
+    "closedAt": "2025-05-23T00:38:29Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "Fix Fulu block production",
+    "updatedAt": "2025-05-23T00:38:32Z",
+    "url": "https://github.com/Consensys/teku/pull/9481"
+  },
+  {
+    "body": "",
+    "closedAt": "2025-06-24T05:09:56Z",
+    "isPullRequest": false,
+    "labels": [
+      {
+        "color": "61E03B",
+        "description": "",
+        "id": "LA_kwDOCM9I9M8AAAAB8d0zlg",
+        "name": "Epic Fulu"
+      }
+    ],
+    "state": "closed",
+    "title": "fix genesis generator to allow genesis at fulu",
+    "updatedAt": "2025-06-24T05:09:56Z",
+    "url": "https://github.com/Consensys/teku/issues/9457"
+  },
+  {
+    "body": "<!-- Thanks for sending a pull request! Please check out our contribution guidelines: -->\r\n<!-- https://github.com/Consensys/teku/blob/master/CONTRIBUTING.md -->\r\n\r\n## PR Description\r\nImplementation of https://github.com/ethereum/consensus-specs/pull/4190\r\n\r\n## Fixed Issue(s)\r\nfixes #9378 \r\n\r\n## Documentation\r\n\r\n- [ ] I thought about documentation and added the `doc-change-required` label to this PR if updates are required.\r\n\r\n## Changelog\r\n\r\n- [ ] I thought about adding a changelog entry, and added one if I deemed necessary.\r\n",
+    "closedAt": "2025-06-06T10:09:15Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "[EIP-7917] Add deterministic proposer lookahead changes to Fulu",
+    "updatedAt": "2025-06-09T12:29:04Z",
+    "url": "https://github.com/Consensys/teku/pull/9501"
+  },
+  {
+    "body": "## PR Description\r\n\r\nThis should use the \"extended\" field elements per blob count.\r\n\r\nhttps://github.com/ethereum/beacon-APIs/blob/7d3a0475759fdbd2ad950c2652a8dce83b5ad984/types/fulu/block_contents.yaml#L7\r\n\r\n## Documentation\r\n\r\n- [x] I thought about documentation and added the `doc-change-required` label to this PR if updates are required.\r\n\r\n## Changelog\r\n\r\n- [x] I thought about adding a changelog entry, and added one if I deemed necessary.\r\n",
+    "closedAt": "2025-06-02T21:24:13Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "Fix block contents kzg proofs max length for fulu",
+    "updatedAt": "2025-06-02T22:34:01Z",
+    "url": "https://github.com/Consensys/teku/pull/9506"
+  },
+  {
+    "body": "### Proof of Concept (PoC)\n**Specs**: https://github.com/ethereum/consensus-specs/tree/dev/specs/fulu\n\nThe Fulu fork started on a separate branch as a Proof of Concept (PoC) and was later improved to be closer to a production version, but it is still not good enough to be merged as is.\n**Branch**: https://github.com/Nashatyrev/teku/tree/das\n**Issues**: https://github.com/Nashatyrev/teku/issues\n\nWe will omit most of the finished implementation and leave only the **TODO** items as of today:\n- [x] ~~Implement devnet-5 spec Teku PeerDAS~~\n- [x] ~~Add Validator Custody https://github.com/Nashatyrev/teku/pull/199~~\n- [x] Implement GetBlobsV2 method https://github.com/ethereum/execution-apis/pull/630\n- [x] Shifting cell proof computation to transaction sender (use `kzg_commitments` when it's available from V2 and don't calculate yourself)\n- [x] Compliance with distributed blob building spec (non super-node participation added) https://github.com/ethereum/consensus-specs/pull/4183\n- [x] getBlobsV2 and getPayloadV5 tests\n- [x] https://github.com/ethereum/consensus-specs/pull/4284\n- [x] Full devnet-6 spec compliant https://notes.ethereum.org/@ethpandaops/peerdas-devnet-6\n- [x] pass 1.5.0 reference tests\n- [x] Full devnet-7 spec compliant https://notes.ethereum.org/@ethpandaops/peerdas-devnet-7\n\n---\n### Master implementation\n\nThe [current Fulu branch](https://github.com/Nashatyrev/teku/tree/das) will be transferred to the Teku `master` branch incrementally, feature by feature. This is the preliminary list of features it contains. Each feature should be implemented in a separate PR. If a feature is large, it should be split into smaller PRs or sub-features. The list will be updated in the future to reflect all required changes to be transferred and the status of the transfer.\n\n\nCore:\n- [x] SpecConfigFulu + config + presets + config modification cli flags\n- [x] Fulu types\n- [x] SchemaDefinitionsFulu\n- [x] DataColumnSidecars KZG methods API + tests\n- [ ] MiscHelpersFulu\n- [ ] SpecLogicFulu\n- [ ] FuluStateUpgrade\n\nDatabase:\n- [ ] Database store/get/prune Fulu types with key separated like for BlobSidecars\n\nProposer:\n- [ ] Block + DataColumnSidecars production in Fulu\n- [ ] Block + DataColumnSidecars publisher Fulu\n\nNetworking:\n- [ ] Metadata V3 + usage\n- [ ] Fulu fork subnet subscriptions update\n- [ ] DataColumnPeerSearcher\n\nPeerDAS gossip + RPC:\n- [ ] DataColumnSidecar gossip validator\n- [ ] RPC DataColumnSidecar by Range message handler\n- [ ] RPC DataColumnSidecar by Root message handler\n- [ ] RPC DataColumnSidecar by Range API + validator\n- [ ] RPC DataColumnSidecar by Root API + validator\n\nPeerDAS main:\n- [ ] Implement GetBlobsV2 method https://github.com/ethereum/execution-apis/pull/630\n- [ ] Custody Group Count Manager\n- [ ] NodeId + ENR cgc subnet translation manager\n- [ ] DataColumnSidecar reconstruction through EL `engine_getBlobsV2`\n- [ ] DataColumnSidecar reconstruction on gossip from 50%\n- [ ] DataColumnSidecars Custody\n- [ ] DataColumnSidecars Sampler (should sample 8 not 4!)\n- [ ] Availability checker extension: BlobSidecarsAvailabilityChecker -> BlobSidecar/DataColumnSidecar\n- [ ] Forkchoice integration of DataColumnSidecar sampling \n\nPeerDAS sync:\n- [ ] Forward sync in Fulu\n- [ ] Backfilling DataColumnSidecars sync in Fulu\n- [ ] DataColumnSidecar reconstruction on sync from 50%\n\nTests:\n- [ ] Add more than 9,000 Fulu tests\n- [ ] Fulu acceptance tests\n\nOther:\n- [ ] BlobSidecar reconstruction for JSON-RPC (see https://github.com/Nashatyrev/teku/pull/102), spec is not finalized, if we keep `getBlobSidecars` we should fill proof with `0x00` or we either introduce `getBlobs`\n- [ ] Fulu Metrics\n- [ ] Revisit `stream().parallel()` usage, verify whether it leads to any speed gain\n- [x] BlobSidecars RPC deprecation https://github.com/ethereum/consensus-specs/pull/4286\n- [ ] Use byRange RPC requests in syncing as we don't need random sampling any more (we use byRoot historically only)\n- [x] BPO forks\n- [ ] Maybe address changes in validator custody (stop backfilling but advertise changes after 4096 epochs). It's not MUST but is different from current implementation https://github.com/ethereum/consensus-specs/pull/4320\n- [x] ~~If spec changes are merged, update RPC by Root in similar manner to byRange, see https://github.com/ethereum/consensus-specs/pull/4323~~ (spec changes were not merged, dropping)\n",
+    "closedAt": "2025-05-30T02:27:16Z",
+    "isPullRequest": false,
+    "labels": [
+      {
+        "color": "61E03B",
+        "description": "",
+        "id": "LA_kwDOCM9I9M8AAAAB8d0zlg",
+        "name": "Epic Fulu"
+      }
+    ],
+    "state": "closed",
+    "title": "Implement PeerDAS (EIP-7594) POC",
+    "updatedAt": "2025-05-30T02:28:33Z",
+    "url": "https://github.com/Consensys/teku/issues/9274"
+  },
+  {
+    "body": "<!-- Thanks for sending a pull request! Please check out our contribution guidelines: -->\r\n<!-- https://github.com/Consensys/teku/blob/master/CONTRIBUTING.md -->\r\n\r\n## PR Description\r\nWe've got such exception in FULU:\r\n```\r\n2025-05-23 14:44:10.212 ERROR - PLEASE FIX OR REPORT | Unexpected exception thrown for beaconchain-async-2\r\njava.util.concurrent.CompletionException: java.util.NoSuchElementException: No value present\r\nat java.base/java.util.concurrent.CompletableFuture.encodeThrowable(Unknown Source) ~[?:?]\r\nat java.base/java.util.concurrent.CompletableFuture.completeThrowable(Unknown Source) ~[?:?]\r\nat java.base/java.util.concurrent.CompletableFuture$UniAccept.tryFire(Unknown Source) ~[?:?]\r\nat java.base/java.util.concurrent.CompletableFuture.postComplete(Unknown Source) ~[?:?]\r\nat java.base/java.util.concurrent.CompletableFuture.completeExceptionally(Unknown Source) ~[?:?]\r\nat tech.pegasys.teku.infrastructure.async.stream.AsyncIteratorCollector.onError(AsyncIteratorCollector.java:44) ~[teku-infrastructure-async-develop.jar:25.4.0+267-g092d6a2170]\r\nat tech.pegasys.teku.infrastructure.async.stream.MapStreamHandler.onNext(MapStreamHandler.java:33) ~[teku-infrastructure-async-develop.jar:25.4.0+267-g092d6a2170]\r\nat tech.pegasys.teku.infrastructure.async.stream.FlattenStreamHandler$1.onNext(FlattenStreamHandler.java:32) ~[teku-infrastructure-async-develop.jar:25.4.0+267-g092d6a2170]\r\nat tech.pegasys.teku.infrastructure.async.stream.FutureAsyncIteratorImpl.lambda$iterate$1(FutureAsyncIteratorImpl.java:30) ~[teku-infrastructure-async-develop.jar:25.4.0+267-g092d6a2170]\r\nat tech.pegasys.teku.infrastructure.async.SafeFuture.lambda$finish$33(SafeFuture.java:396) ~[teku-infrastructure-async-develop.jar:25.4.0+267-g092d6a2170]\r\nat java.base/java.util.concurrent.CompletableFuture.uniHandle(Unknown Source) ~[?:?]\r\nat java.base/java.util.concurrent.CompletableFuture$UniHandle.tryFire(Unknown Source) ~[?:?]\r\nat java.base/java.util.concurrent.CompletableFuture.postComplete(Unknown Source) ~[?:?]\r\nat java.base/java.util.concurrent.CompletableFuture.complete(Unknown Source) ~[?:?]\r\nat tech.pegasys.teku.infrastructure.async.SafeFuture.lambda$propagateResult$3(SafeFuture.java:152) ~[teku-infrastructure-async-develop.jar:25.4.0+267-g092d6a2170]\r\nat java.base/java.util.concurrent.CompletableFuture.uniWhenComplete(Unknown Source) ~[?:?]\r\nat java.base/java.util.concurrent.CompletableFuture$UniWhenComplete.tryFire(Unknown Source) ~[?:?]\r\nat java.base/java.util.concurrent.CompletableFuture.postComplete(Unknown Source) ~[?:?]\r\nat java.base/java.util.concurrent.CompletableFuture.complete(Unknown Source) ~[?:?]\r\nat tech.pegasys.teku.infrastructure.async.SafeFuture.lambda$propagateToAsync$24(SafeFuture.java:357) ~[teku-infrastructure-async-develop.jar:25.4.0+267-g092d6a2170]\r\nat tech.pegasys.teku.infrastructure.async.SafeFuture.of(SafeFuture.java:84) ~[teku-infrastructure-async-develop.jar:25.4.0+267-g092d6a2170]\r\nat tech.pegasys.teku.infrastructure.async.AsyncRunner.lambda$runAsync$2(AsyncRunner.java:47) ~[teku-infrastructure-async-develop.jar:25.4.0+267-g092d6a2170]\r\nat tech.pegasys.teku.infrastructure.async.SafeFuture.of(SafeFuture.java:76) ~[teku-infrastructure-async-develop.jar:25.4.0+267-g092d6a2170]\r\nat tech.pegasys.teku.infrastructure.async.ScheduledExecutorAsyncRunner.lambda$createRunnableForAction$1(ScheduledExecutorAsyncRunner.java:124) ~[teku-infrastructure-async-develop.jar:25.4.0+267-g092d6a2170]\r\nat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source) ~[?:?]\r\nat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source) ~[?:?]\r\nat java.base/java.lang.Thread.run(Unknown Source) [?:?]\r\nCaused by: java.util.NoSuchElementException: No value present\r\nat java.base/java.util.Optional.get(Unknown Source) ~[?:?]\r\nat tech.pegasys.teku.infrastructure.async.stream.MapStreamHandler.onNext(MapStreamHandler.java:31) ~[teku-infrastructure-async-develop.jar:25.4.0+267-g092d6a2170]\r\n... 20 more\r\n```\r\n\r\nI've no ideas how it happens, but I've added more logging in the place where I think it occurs. When it happens again it should be a bit easier to track it.\r\n\r\n## Fixed Issue(s)\r\n<!-- Please link to fixed issue(s) here using format: fixes #<issue number> -->\r\n<!-- Example: \"fixes #2\" -->\r\n\r\n## Documentation\r\n\r\n- [x] I thought about documentation and added the `doc-change-required` label to this PR if updates are required.\r\n\r\n## Changelog\r\n\r\n- [x] I thought about adding a changelog entry, and added one if I deemed necessary.\r\n",
+    "closedAt": "2025-05-27T14:07:13Z",
+    "isPullRequest": true,
+    "labels": [],
+    "state": "merged",
+    "title": "Add logging on DataColumnSidecars recovery failure",
+    "updatedAt": "2025-05-27T22:36:12Z",
+    "url": "https://github.com/Consensys/teku/pull/9486"
+  },
+  {
+    "body": "https://github.com/ethereum/consensus-specs/pull/4190\n\nhttps://eips.ethereum.org/EIPS/eip-7917\n\nwe should spike this and evaluate complexity and epoch-transition overhead",
+    "closedAt": "2025-06-06T10:09:16Z",
+    "isPullRequest": false,
+    "labels": [
+      {
+        "color": "61E03B",
+        "description": "",
+        "id": "LA_kwDOCM9I9M8AAAAB8d0zlg",
+        "name": "Epic Fulu"
+      }
+    ],
+    "state": "closed",
+    "title": "[SPIKE][EIP-7917] deterministic proposer lookahead",
+    "updatedAt": "2025-06-06T10:09:16Z",
+    "url": "https://github.com/Consensys/teku/issues/9378"
+  }
+]
