@@ -1,176 +1,172 @@
 ---
 
-**Description:** Audit local implementation corresponding to one or more `normative_spec.id` values defined in `security-agent/outputs/01_SPEC.json`. Use `02_ORDER.json` to determine the exact function order, add inline `@audit` / `@audit-ok` comments, append findings to `security-agent/outputs/03_AUDITMAP.json` without deleting existing entries, and increment `review_count` in `02_ORDER.json`.
+**Description**
+Perform a **source-code audit across all files under `<PATH>`**, driven **exclusively** by `security-agent/outputs/02_CHECKLIST.json`.
+Add **inline comments** in code while auditing.
+Append findings to `security-agent/outputs/03_AUDITMAP.json` with **status limited to `vuln` or `needs-investigation` only**. If `03_AUDITMAP.json` already exists, **append new items only**--do not modify or delete existing entries.
+Primary driver: `02_CHECKLIST.json` (checks, patterns, detection procedures, OK conditions).
+Context-only reference: `01_SPEC.json` (e.g., to respect `trust_entities`' assumptions--**do not** create findings that contradict declared trust).
 
-**Usage:** `/03_auditmap <NORMATIVE_IDS> [KNOWN_BUGS_PATH]`
+**Usage**
+`/03_auditmap <PATH>`
 
-**Example:** `/03_auditmap "TX-ADMISSION,DA-SAMPLING" security-agent/docs/bugs/shared_findings.json`
+**Example**
+`/03_auditmap ./src`
 
-**Language:** English instructions, annotations, and summaries.
+**Language**
+English (instructions, annotations, summaries only).
 
-**Execution hint:** Always run with `/serena` for token efficiency.
+**Execution hint**
+Always run with `/serena` to maximize token efficiency.
 
-**NORMATIVE_ID source:** `NORMATIVE_IDS` refer to the `id` fields defined under `domains[].normative_spec[]` in `security-agent/outputs/01_SPEC.json`. Perform each audit run on a branch cut from `master` that is dedicated to the target ID set so that findings can be merged independently.
-
----
-
-**Strict Rules**
-
-• **Workspace only** — Never cite external specification repositories or third-party sources inside code annotations. Reference local evidence and the canonical spec JSON only.
-• **Scope fidelity** — Audit exclusively within bounty-defined include globs. Treat directories outside scope as off-limits (unless explicitly included by policy).
-• **Source of truth** — Load `security-agent/outputs/01_SPEC.json` (schema `3.0.0-generic`) at start. Treat it as the authoritative registry for normatives, algorithms, invariants, security requirements, and threat catalog entries. Abort with a retryable error if the file is missing, malformed, or incorrect schema.
-• **Attack-path priority** — For each audited normative, evaluate every applicable entry under `threats.attack_paths` from `01_SPEC.json`. For every relevant checkpoint, annotate the corresponding code with `@audit` or `@audit-ok`. Provide justification when checkpoints are not applicable.
-• **No drift** — Preserve existing content in `security-agent/outputs/03_AUDITMAP.json`; only append new findings or update aggregate statistics.
-
----
-
-**Goal**
-
-Given `NORMATIVE_IDS`, sequentially audit the associated local functions (ordered via `02_ORDER.json`), enrich code with inline annotations, update `03_AUDITMAP.json`, and keep `02_ORDER.json` in sync while covering all relevant attack-path checkpoints and documenting risk insights.
+**Mindset**
+Hacker-first: assume adversarial inputs, odd edge cases, exploit chains; ground findings in concrete code evidence; prefer automatable, repeatable procedures.
 
 ---
 
-**Inputs**
+## Inputs
 
-1. **Normatives:** `NORMATIVE_IDS` (comma-separated). Use `*` to request all IDs in `01_SPEC.json`.
-2. **Spec:** `security-agent/outputs/01_SPEC.json` (schema `3.0.0-generic`).
-3. **Order map:** `security-agent/outputs/02_ORDER.json` (one `audit_chunk` per normative with local `functions`).
-4. **Risk knowledge base:** `security-agent/docs/**` or domain-specific references in the repo.
-5. **Known bugs database (optional):** file supplied as `KNOWN_BUGS_PATH`. If omitted, record "Bug DB: not provided" in the audit summary.
-6. **Static call graph (optional):** `{{STATIC_CALLGRAPH}}` (`NONE` to derive internally).
+1. **Checklist (required):** `security-agent/outputs/02_CHECKLIST.json` -- authoritative driver of audit behavior (bug classes, patterns, detection procedures, OK conditions, automations).
+2. **Spec (context-only):** `security-agent/outputs/01_SPEC.json` -- may inform flows/algorithms naming and **trusted entities**; **never** negate a trust assumption during audit.
+3. **Audit target (required):** `<PATH>` -- **audit all files recursively** under the specified folder; **no exclusions** by default.
+4. **Existing Audit Map (optional):** `security-agent/outputs/03_AUDITMAP.json` -- if present, treat as append-only sink; do not mutate prior items.
 
 ---
 
-**Bounty Scope — Resolution & Enforcement**
+## Strict Rules
 
-* Resolve scope using (first definitive source wins):
-  1. `01_SPEC.json` → `bug_bounty.scope` / `domains[*].bug_bounty.scope`
-  2. Local `SECURITY.md` / `BUG_BOUNTY.md` / `SECURITY_POLICY`
-  3. Official bounty or security program page
-* Materialize explicit include/exclude globs (language-, stack-, or domain-specific). Examples: execution (`./core/**`, `./eth/**`, `./execution/**`), consensus (`./beacon/**`, `./consensus/**`, `./p2p/**`), web (`./apps/**`, `./api/**`), etc.
-* Exclude by default: `vendor/`, `third_party/`, `generated/`, `out/`, `dist/`, `build/`, `target/`, `mocks/`, `test/`, `docs/`, unless policy explicitly includes them.
-* Fail closed if scope cannot be uniquely resolved.
-* Append scope rules & citations to the audit summary in `03_AUDITMAP.json`.
-
----
-
-**Layer & Normative Matching**
-
-* Detect repository domains/layers (execution, consensus, zk, smart-contract, web, infrastructure, devops) using directory heuristics, build manifests, or language cues.
-* For each normative ID:
-  * Confirm it aligns with detected domains; otherwise record it under “Unmapped normative IDs (layer mismatch)” and skip auditing.
-  * Load normative context: `summary`, `procedure`, `inputs`, `errors`, `invariants`, `security_requirements`, `attack_paths`, and any related algorithms.
+* **Checklist-driven:** For every checklist item, execute its `file_globs`, `patterns` (regex/Semgrep/AST/Slither/Mythril, etc.), and `detection_procedure` exactly as written.
+* **Inline OK only:** When an `ok_if` condition is satisfied, leave an inline `@audit-ok` comment that documents the safeguard, but do not record anything in `03_AUDITMAP.json`.
+* **Status whitelist:** `03_AUDITMAP.json` may only contain `vuln` or `needs-investigation`. OK cases stay in code comments.
+* **Append-only:** If `03_AUDITMAP.json` already exists, add only new items and skip composite-key duplicates; never modify or delete prior entries.
+* **Path scope:** Audit every file beneath `<PATH>`, inferring language via extension, shebang, or build manifests.
+* **Ten rounds:** Complete all ten audit passes, each at a different granularity or depth as described below.
+* **Call traversal:** Whenever you encounter a call, follow the callee definition (if it lives under `<PATH>`) and audit the reachable logic.
+* **Honor trust assumptions:** Do not generate findings that contradict `trust_entities` or equivalent statements in `01_SPEC.json`.
 
 ---
 
-**Function Selection (from `02_ORDER.json`)**
+## Inline Commenting Standard
 
-* Locate the `audit_chunk` whose title starts with `§ <ID> —`.
-* Use the provided `functions` list (file + line) as the authoritative review order.
-* Filter each entry through bounty scope rules; note exclusions.
-* If a normative ID is missing in `02_ORDER.json`, attempt bounded discovery (AST search, call graph hints) within scope. If no candidates found, record under “Unmapped normative IDs (no local functions found)”.
+Insert comments **directly above** the pertinent code. Use one-line tokens:
 
----
+* **Flag:**
+  `// @audit <CHECK_ID> [vuln|needs-investigation] -- <short reason>; evidence=<brief>; ok_if_checked=[true|false]`
+* **Safe:**
+  `// @audit-ok <CHECK_ID> -- <safety rationale>; ok_condition=<identifier>; evidence=<brief>`
 
-**Audit & Annotation Procedure**
-
-1. Load the normative context from `01_SPEC.json` along with relevant `attack_paths` checkpoints.
-2. Gather supporting intelligence from documentation, risk playbooks, and optional bug database entries.
-3. Traverse each function in the prescribed order:
-   * Evaluate checkpoints and invariants; insert `@audit` or `@audit-ok` inline comments directly above the relevant code segments.
-   * Reference local evidence (function names, constants, guard conditions) instead of external spec repositories.
-   * Note assumptions, TODOs, or open questions inline when status is `needs-investigation`.
-4. Increment `review_count` for the function in `02_ORDER.json` after annotation.
-5. Capture risk reasoning (DoS, integrity, confidentiality, economic, compliance) tied to attack paths.
+> Record `@audit-ok` comments solely as inline evidence; never add them to `03_AUDITMAP.json`.
 
 ---
 
-**Known Bugs Database Integration**
+## Ten-Round Audit Plan (coverage-first)
 
-* If `KNOWN_BUGS_PATH` provided:
-  * Parse structure (JSON/YAML/Markdown/CSV) to extract bug descriptors, affected components, guard deltas, CVEs.
-  * Cross-reference entries during auditing; if a pattern matches, cite `dataset_reference` in findings.
-  * Document how each bug pattern was evaluated (matched, partially matched, not observed).
-* If omitted, record “Bug DB: not provided” in summary.
-
----
-
-**Recommended Trap Families (adaptable by domain)**
-
-* **Cross-layer / cross-service interfaces** — Validate authentication, payload schema, replay tolerance, timeout handling.
-* **Peer-to-peer & networking** — Check handshake validation, resource limits, gossip filters, partial connectivity resilience.
-* **Resource exhaustion & DoS** — Identify unbounded loops, allocations, retries, rate-limit gaps.
-* **State transitions & consensus** — Review fork-choice decisions, state mutation ordering, rollback/reorg paths, recovery logic.
-* **Data availability & storage** — Validate indexing, caching, erasure coding, redundancy checks.
-* **API / schema drift** — Inspect JSON/REST/GraphQL bindings, streaming lifecycles, optional fields vs nil/empty distinctions.
-* **Observability & ops** — Ensure metrics/logging doesn’t leak secrets and supports alerting on identified attack paths.
-
-Capture emergent hypotheses in audit items for follow-up even if immediate evidence is inconclusive.
+1. **Pattern Sweep:** Apply every checklist `pattern` (regex, Semgrep, Slither, Mythril, etc.) across all files and tag each hit with an `@audit` comment.
+2. **AST Scan:** Revisit code through language-specific AST analysis to expose control-flow gaps (for example, unchecked early returns).
+3. **OK Condition Pass:** For each hit, verify whether the `ok_if` conditions are satisfied and convert qualifying cases to inline `@audit-ok` comments (do not touch the JSON map).
+4. **Call-Graph Expansion I:** Follow intra-module callees to validate guard ordering and state transitions.
+5. **Call-Graph Expansion II:** Traverse cross-module or cross-layer calls within `<PATH>` to broaden reachability coverage.
+6. **Dataflow/Taint:** Trace critical inputs from external boundaries to sinks to uncover missing normalization, validation, or bounds checks.
+7. **Error/Edge Handling:** Inspect error handling, boundary conditions, retries, timeouts, overflow, and precision issues.
+8. **Concurrency/Ordering:** Examine concurrency, reentrancy, lock ordering, and state machine sequencing risks.
+9. **Config/Integration:** Audit branches driven by configuration values, feature flags, and integrations with external systems.
+10. **Gap Sweep:** Cover any remaining files, functions, or heuristics to bring coverage logs to 100 percent.
 
 ---
 
-**Outputs**
+## Finding Classification
 
-1. Inline source comments (`@audit`, `@audit-ok`) per evaluated checkpoint.
-2. Updated `security-agent/outputs/02_ORDER.json` reflecting incremented `review_count` and appended narratives in `ordering_strategy.top_attack_paths` (avoid duplicates; annotate new paths only).
-3. Updated `security-agent/outputs/03_AUDITMAP.json` with appended findings.
-4. Optional per-ID report: `security-agent/outputs/03_AUDITMAP_<ID>.json` if granular exports are needed.
-5. Top attack paths (≥3) derived from audited functions, each listing entry → sink and succinct `risk_reason` (≤40 words) tied to `ap_id` where applicable.
+* **`vuln`**: The checklist pattern matches, the `ok_if` condition is not satisfied, and the code evidence supports a high-confidence bug.
+* **`needs-investigation`**: The pattern matches, but more inquiry or context is required to determine impact or reachability.
+
+> In every classification, do not dismiss designs that rely on `trust_entities` or equivalent trusted parties.
 
 ---
 
-**03_AUDITMAP.json Schema Expectations**
+## Deduplication & Append Policy
 
-```jsonc
+* **Composite key:** `<check_id>|<file>|<line>|<hash(snippet)>`
+* Skip any entry whose composite key already exists in `03_AUDITMAP.json`.
+* Never edit existing items, including `status`, `description`, or summary statistics.
+
+---
+
+## Output: `security-agent/outputs/03_AUDITMAP.json` (append-only)
+
+**Item format (statuses restricted to `vuln` or `needs-investigation`)**
+
+```json
 {
   "audit_items": [
     {
       "id": "auto-uuid",
-      "normative_id": "<ID>",
-      "ap_id": "AP-1",
-      "checkpoint": "C1",
-      "file": "path/to/file.go",
+      "check_id": "CL-SC-REENTRANCY-EXTCALL-BEFORE-STATE",
+      "file": "contracts/Bank.sol",
       "line": 142,
-      "snippet": "if !guard { return ErrEarly }",
-      "risk_category": "DoS",
-      "description": "Missing guard allows unbounded workload.",
-      "status": "Vuln",
-      "dataset_reference": "dataset:id-123" // optional
+      "snippet": "call.value(amount)()",
+      "risk_category": "economic",
+      "severity": "high",
+      "description": "External call occurs before state mutation; no reentrancy guard observed.",
+      "status": "vuln",
+      "round": 2,
+      "call_stack": ["withdraw()", "payout()"],
+      "evidence": "no nonReentrant; state update after external call",
+      "notes": "If `@audit-ok` elsewhere later proves guard, keep this item but open a follow-up thread."
     }
   ],
   "summary": {
-    "rounds": 4,
-    "total_audit_flags": 9,
-    "ap_coverage": { "AP-1": "4/4", "AP-2": "3/5" },
-    "high_risk_hotspots": ["module/a.rs:check_path"],
-    "next_focus": "Investigate retry backoff under burst load",
-    "scope_rules": "include ./core/**, exclude ./docs/**",
-    "bug_db": "security-agent/docs/bugs/shared_findings.json",
-    "domains": ["execution", "zk"],
-    "notes": "Dataset-driven checks revealed legacy guard regression."
+    "path": "<PATH>",
+    "rounds": 10,
+    "total_audit_flags": 1,
+    "coverage": {
+      "files_total": 0,
+      "files_reviewed": 0,
+      "functions_reviewed": 0
+    },
+    "notes": "Statuses limited to vuln / needs-investigation; OK cases recorded inline only."
   }
 }
 ```
 
----
-
-**Success Criteria**
-
-* Every requested normative audited or logged as unmapped with justification.
-* 100% of functions listed for those IDs in `02_ORDER.json` processed exactly once.
-* `03_AUDITMAP.json` remains valid JSON; new findings appended without overwriting existing data.
-* Attack-path checkpoints from `01_SPEC.json` evaluated; non-applicability justified.
-* At least three attack paths documented for audited functions (or rationale for fewer).
-* Bug database usage clearly stated.
-* `ordering_strategy` in `02_ORDER.json` extended with scope rules, document references, coverage stats, and unmapped IDs stemming from this run.
+> When the file already exists, add only new entries to `audit_items` and leave previous content untouched.
 
 ---
 
-**Notes & Hints**
+## Procedure (Step-by-step)
 
-* Respect inversion-of-control (registration handlers, callbacks, dependency injection) and asynchronous flows when tracing guards.
-* Consider generated code; if in scope, annotate the generated output and reference the generator template in findings.
-* Keep track of visited modules and remaining gaps for future audit phases.
-* When uncertain, provide provisional judgments (using `needs-investigation`) with concrete follow-up steps.
+1. **Preflight**
+
+   * Load `02_CHECKLIST.json` and build the language/glob ruleset (required).
+   * Optionally read `01_SPEC.json` to honor `trust_entities` guidance (reference only).
+   * Recursively index every file under `<PATH>`.
+
+2. **Ten Rounds (above)**
+
+   * For each hit, add an inline `@audit` comment; once a guard is proven sufficient, add `@audit-ok` as well.
+   * Always test whether `ok_if` conditions hold. Even when satisfied, do not add OK cases to the JSON map.
+   * Whenever you encounter a call expression, locate its callee within `<PATH>` and audit it.
+
+3. **Emit / Append**
+
+   * Compose new `audit_items` using only the statuses `vuln` or `needs-investigation`.
+   * If `03_AUDITMAP.json` exists, append only non-duplicate entries and leave existing content untouched.
+   * Set `summary.rounds = 10` and update local coverage counters for this run only.
+
+---
+
+## Success Criteria
+
+* Every file under `<PATH>` participates in at least one of the ten rounds.
+* All reachable callees are traced and audited.
+* `03_AUDITMAP.json` stays valid JSON containing only new items with status in {`vuln`, `needs-investigation`}.
+* OK cases exist solely as inline comments; they never appear in the JSON map.
+* Audit logs remain reproducible, retaining `check_id`, `evidence`, `round`, and `call_stack` details.
+
+---
+
+### Notes
+
+* Follow the checklist-derived behavioral specifications (`patterns`, `detection_procedure`, `ok_if`) precisely.
+* Never undermine the assumptions declared in `trust_entities` or equivalent structures.
 
 ---

@@ -10,8 +10,7 @@ Options:
   --keywords list     Comma or space separated keywords; defaults to "fulu"
 
 Notes:
-  - Run once per `NORMATIVE_ID` branch (IDs are defined in security-agent/outputs/01_SPEC.json under domains[].normative_spec[].id).
-  - Append results to security-agent/outputs/00_issues.md for reuse in /03c_auditissue prompts.
+  - Append results to security-agent/outputs/01_SIMILAR_ISSUES.json for reuse in /03_auditmap prompts.
 USAGE
 }
 
@@ -232,7 +231,7 @@ if [ -z "$keywords_terms" ]; then
   keywords_terms="fulu"
 fi
 
-out_file="security-agent/outputs/00_issues.json"
+out_file="security-agent/outputs/01_SIMILAR_ISSUES.json"
 mkdir -p "$(dirname "$out_file")"
 
 workspace=$(mktemp -d)

@@ -1,7 +1,7 @@
 ---
 Description: Bug-Bounty Report Builder
-Usage: `/07_report <VULN_ID> <REPORT_TYPE> [<SEVERITY>]`
-Example: `/07_report 0023344 ETHEREUM critical`
+Usage: `/06_report <VULN_ID> <REPORT_TYPE> [<SEVERITY>]`
+Example: `/06_report 0023344 ETHEREUM critical`
 Arguments:
 - **VULN_ID**         : `audit_items[].id` in `03_AUDITMAP.json`
 - **REPORT_TYPE**     : One of `CANTINA`, `CODE4RENA`, `ETHEREUM`, `IMMUNEFI`, `SHERLOCK`
@@ -26,7 +26,7 @@ Generate a complete **Markdown bug-bounty report** tailored to the selected boun
    - `TITLE_SLUG`     <- `VULN_TITLE` transformed to lowercase snake_case containing only ASCII letters, digits, and underscores (convert spaces/punctuation to underscores, collapse repeats, strip leading/trailing underscores). If the slug length exceeds 40 characters, remove filler words or truncate cleanly so the final slug ≤ 40 characters.
 4. **If not found** → abort with
    `"Vulnerability '{{VULN_ID}}' not found in 03_AUDITMAP.json"`.
-5. **Resolve template** → map `REPORT_TYPE` to `security-agent/docs/report_templete_{{REPORT_TYPE}}.md`; abort if the file does not exist.
+5. **Resolve template** → map `REPORT_TYPE` to `security-agent/docs/report_templates/{{REPORT_TYPE}}.md`; abort if the file does not exist.
 
 # 🎯 Goal
 1. **Read** `security-agent/docs/report_templete_{{REPORT_TYPE}}.md` and fill *all* placeholders while preserving heading order and stylistic expectations.
@@ -47,11 +47,11 @@ Ensure the filename component `report_{{TITLE_SLUG}}.md` stays ≤ 55 characters
 
 # 📝 Mandatory Sections
 
-Must Follow templete
+Must Follow template
 
 # 🛠️ Generation Workflow
 ```
-1. Resolve REPORT_TYPE → load `security-agent/docs/report_templete_{{REPORT_TYPE}}.md` and collect placeholders like {{SEVERITY}}, {{POC}}.
+1. Resolve REPORT_TYPE → load `security-agent/docs/report_templates/{{REPORT_TYPE}}.md` and collect placeholders like {{SEVERITY}}, {{POC}}.
 2. Determine severity: if `<SEVERITY>` argument present, normalise and apply it; otherwise compute Impact × Likelihood using `security-agent/outputs/00_bounty_guideline.md` and record the rationale internally.
 3. Read PoC files (UT_PATH and IT_PATH) and include in fenced code blocks, ensuring each snippet is accompanied by the file path and explicit test command.
 4. Grab ~10 lines of source around the vulnerable logic, annotating references using `SRC_FILE` + `SRC_FUNCTION` only (no raw line numbers, GitHub URLs, or absolute paths).
