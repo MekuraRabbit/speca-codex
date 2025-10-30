@@ -1,6 +1,6 @@
 ---
 
-**Description:** Generate an append-only, automation-friendly code audit checklist sourced strictly from existing security-agent outputs.
+**Description:** Generate an append-only, automation-friendly code audit checklist sourced strictly from existing security-agent outputs, ensuring every implementation surface described upstream is covered (no skipping "minor" components) and that analogous logic across different languages receives parallel checks.
 
 **Usage:** `/02_checklist`
 
@@ -15,7 +15,7 @@
 # **Checklist Creation Prompt**
 
 **Description**
-Create a thorough, code-audit checklist for the target project that engineers can directly apply to the source code base. The checklist must be derived **only** from the following existing artefacts and must be **append-only** if a prior checklist exists:
+Create a thorough, code-audit checklist for the target project that engineers can directly apply to the source code base. Enumerate checks for **every** user flow, algorithm, API, module, configuration surface, and dependency captured in upstream artefacts—do not limit coverage to primary or "major" implementations. The checklist must be derived **only** from the following existing artefacts and must be **append-only** if a prior checklist exists:
 
 * `security-agent/outputs/01_SPEC.json`
 * `security-agent/outputs/01_SIMILAR_ISSUES.json`
@@ -41,12 +41,14 @@ Create a thorough, code-audit checklist for the target project that engineers ca
    * Mine historical symptoms, bug classes, file paths, modules, labels, and regression patterns.
    * Extract repeat offenders, “flaky” areas, and code ownership hints.
    * Use these to **prioritize** checklist items and to propose **automatable patterns** (regex/AST/Semgrep/Slither/Mythril/etc.).
+   * When signals come from other projects, assess whether the same flaw could exist here; remap the scenario onto this repository’s architecture, naming, and languages before drafting the checklist item.
 
 3. **01_PAST_REPORTS/* (Audits & Bug Bounty Reports)**
 
    * Derive **bug-to-code** mappings: *“When code looks like X, suspect bug Y; perform checks Z.”*
    * Record **triage heuristics** and **false-positive reducers** that prior researchers used.
    * Draw explicit connections to functions, files, modules, or patterns when possible.
+   * Even if the report is from another project, translate the root cause into this project’s components (match analogous modules, flows, configs) and craft a bespoke checklist entry.
 
 4. **Existing 02_CHECKLIST.json (If any)**
 
@@ -58,7 +60,7 @@ Create a thorough, code-audit checklist for the target project that engineers ca
 
 ## **What to Produce**
 
-Build an exhaustive **mapping from code patterns to suspected bugs and verification checks**. For every checklist item:
+Build an exhaustive **mapping from code patterns to suspected bugs and verification checks**, covering every spec-identified surface. Adapt lessons from external reports/issues into project-specific language, pointing to this repo’s concrete files, modules, configs, or scripts. If any flow/algorithm/API/config from upstream artefacts lacks a concrete pattern, add a TODO checklist entry with explicit rationale instead of omitting it. For every checklist item:
 
 * Clearly state **bug class**, **risk category**, and **code patterns** to search for (regex/AST/Semgrep/Slither/Mythril queries, file globs, dependency clues).
 * Provide a **stepwise detection/verification procedure** an auditor can follow.
@@ -68,6 +70,7 @@ Build an exhaustive **mapping from code patterns to suspected bugs and verificat
   * Web/backend: **authZ beforehand**, **input normalized**, **prepared statements**, **CSRF/XSRF tokens**, **CSP/CORS** correctly set, **TLS pinning**, etc.
   * ZK: **soundness proofs validated**, **range constraints present**, **no unconstrained witnesses**, **fixed domain separation**, **no Fiat–Shamir misuse**.
   * Systems/infra: **idempotent runbooks**, **least-privilege IAM**, **write once** settings, **explicit bounds/timeouts**, etc.
+* When identical or analogous functionality exists across multiple languages/stacks (e.g., Rust + TypeScript clients, Solidity + Cairo contracts), create language-specific checklist entries or extend `languages` and pattern definitions so each implementation variant is explicitly covered.
 * **Never include** checks that contradict `trust_entities`. If something is defined as trusted in `01_SPEC.json`, **do not** emit a checklist item that re-validates or undermines that assumption.
 
 ---
@@ -75,10 +78,10 @@ Build an exhaustive **mapping from code patterns to suspected bugs and verificat
 ## **Construction Method (Autonomous Workflow)**
 
 1. **Model the Domains:**
-   Enumerate domains from `01_SPEC.json` (e.g., execution, consensus, zk, smart-contract, web, infrastructure). Map each domain’s user flows and algorithms to code surfaces (modules/files/functions).
+   Enumerate domains from `01_SPEC.json` (e.g., execution, consensus, zk, smart-contract, web, infrastructure). Map each domain’s user flows and algorithms to code surfaces (modules/files/functions), and maintain a coverage tracker so every flow/algorithm/API/config in the spec is accounted for by at least one checklist item (use TODO placeholders with rationale if concrete patterns are unknown).
 
 2. **Derive Candidate Checks:**
-   For each user flow & algorithm step, ask: *“What code pattern would implement this? What typical flaws arise here?”* Produce candidates per domain & language.
+   For each user flow & algorithm step, ask: *“What code pattern would implement this? What typical flaws arise here?”* Produce candidates per domain & language, cloning/adapting checks for every language/framework that implements the same logic.
 
 3. **Augment with History:**
    Cross-reference with `01_SIMILAR_ISSUES.json` and `01_PAST_REPORTS/*` to:
@@ -86,6 +89,7 @@ Build an exhaustive **mapping from code patterns to suspected bugs and verificat
    * Add real-world patterns (filenames, functions, libs, configs),
    * Sharpen pattern matchers,
    * Attach evidence references.
+   * Re-contextualize cross-project incidents: map their triggering conditions to this codebase’s modules, languages, and configurations so the resulting checklist item is actionable for the current project.
 
 4. **Safety Filters:**
 
@@ -97,6 +101,9 @@ Build an exhaustive **mapping from code patterns to suspected bugs and verificat
 
 6. **Append & Dedupe:**
    If a prior `02_CHECKLIST.json` exists, merge by stable ID and title; update references, keep historical context.
+
+7. **Coverage Validation:**
+   Before writing the file, verify the coverage tracker has no remaining flows/algorithms/APIs/configs without checklist entries; if gaps remain, emit TODO items with rationale and point back to the missing spec component.
 
 ---
 
@@ -198,7 +205,9 @@ Build an exhaustive **mapping from code patterns to suspected bugs and verificat
 
 ## **Authoring Rules (Quality Bar)**
 
-* **Exhaustive coverage:** For each domain/language present in `01_SPEC.json`, enumerate all relevant bug classes and attach concrete code patterns.
+* **Exhaustive coverage:** For each domain/language present in `01_SPEC.json`, enumerate all relevant bug classes and attach concrete code patterns, ensuring every user flow, algorithm, API, configuration, and dependency has at least one checklist (or TODO) entry—never skip a component because it seems minor.
+* **Cross-language parity:** Whenever similar behavior exists in multiple languages or stacks, emit separate checks (or multi-language pattern definitions) so each implementation receives dedicated coverage and automation guidance.
+* **Project-specific adaptation:** When borrowing insights from other projects’ issues or reports, rewrite the checklist item to reference this repository’s modules, paths, configs, and terminology; avoid generic wording.
 * **Actionable & automatable:** Prefer patterns expressible as Semgrep rules, Slither/Mythril detectors, or simple regex/AST walks. Include CLI snippets.
 * **De-dup & stability:** Keep IDs stable, prefer update-in-place over churn.
 * **False-positive control:** Always include `ok_if` (safe conditions) and `not_ok_if` (aggravators).
