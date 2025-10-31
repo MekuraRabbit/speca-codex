@@ -1,7 +1,7 @@
 ---
 Description: Bug-Bounty Report Builder
 Usage: `/06_report VULN_ID=... REPORT_TYPE=... [SEVERITY=...]`
-Example: `/06_report VULN_ID=0023344 REPORT_TYPE=ETHEREUM SEVERITY=critical`
+Example: `/06_report VULN_ID="0023344" REPORT_TYPE="ETHEREUM" SEVERITY="critical"`
 Arguments:
 - **$VULN_ID**         : `audit_items[].id` in `03_AUDITMAP.json`
 - **$REPORT_TYPE**     : One of `CANTINA`, `CODE4RENA`, `ETHEREUM`, `IMMUNEFI`, `SHERLOCK`

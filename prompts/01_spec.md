@@ -8,9 +8,8 @@
 
 **Language:** English only.
 
-**Execution hint:** Always run with `/serena` to maximize token efficiency.
-
 ---
+**Always use /serena for these development tasks to maximize token efficiency:**
 
 **Goal**
 

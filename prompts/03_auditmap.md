@@ -1,11 +1,7 @@
 ---
 
 **Description**
-Perform a **source-code audit across all files under `$PATH`**, driven **exclusively** by `security-agent/outputs/02_CHECKLIST.json`.
-Add **inline comments** in code while auditing.
-Append findings to `security-agent/outputs/03_AUDITMAP.json` with **status limited to `vuln` or `needs-investigation` only**. If `03_AUDITMAP.json` already exists, **append new items only**—under no circumstance should any prior entry be modified or removed.
-Primary driver: `02_CHECKLIST.json` (checks, patterns, detection procedures, OK conditions).
-Context-only reference: `01_SPEC.json` (e.g., to respect `trust_entities`' assumptions--**do not** create findings that contradict declared trust).
+Deploy a **property-first, pro-hacker audit** across every file under `$PATH`, using `security-agent/outputs/02_CHECKLIST.json` as the authoritative operations manual. Treat each checklist line as a security objective expressed via properties, anti-properties, attack playbooks, and observability probes. Annotate code inline and append only new findings to `security-agent/outputs/03_AUDITMAP.json`; never mutate prior records.
 
 **Usage**
 `/03_auditmap PATH=...`
@@ -14,167 +10,193 @@ Context-only reference: `01_SPEC.json` (e.g., to respect `trust_entities`' assum
 `/03_auditmap PATH="./src"`
 
 **Language**
-English (instructions, annotations, summaries only).
+English only (instructions, annotations, summaries).
 
-**Execution hint**
-Always run with `/serena` to maximize token efficiency.
-
-**Mindset**
-Hacker-first: assume adversarial inputs, odd edge cases, exploit chains; ground findings in concrete code evidence; prefer automatable, repeatable procedures.
+**Mission Mindset**
+- Start from **spec properties**: translate every normative behavior in `01_SPEC.json` into a safety property and its dual anti-property before scanning code.
+- Think in **attack chains**: model Nomad, Wormhole, Harmony, and Hyperlane style incident playbooks; expect multi-step exploit composition, not isolated bugs.
+- Demand **observability proof**: every control must emit or reference evidence (events, metrics, logs) proving it fired.
+- Enforce **cross-implementation parity**: Cairo ↔ EVM behavior must match on canonical vectors; hash/encoding drift is an exploit vector.
+- Embrace **combiners & scoring**: tag satisfied predicates and auto-raise when dangerous combinations materialize.
+- Default to **Cairo-first hardening**: respect Starknet-specific failure modes (felt ranges, dict defaults, dispatcher routing).
 
 ---
+**Always use /serena for these development tasks to maximize token efficiency:**
 
 ## Inputs
 
-1. **Checklist (required):** `security-agent/outputs/02_CHECKLIST.json` -- authoritative driver of audit behavior (bug classes, patterns, detection procedures, OK conditions, automations).
-2. **Spec (context-only):** `security-agent/outputs/01_SPEC.json` -- may inform flows/algorithms naming and **trusted entities**; **never** negate a trust assumption during audit.
-3. **Audit target (required):** `$PATH` -- **audit all files recursively** under the specified folder; **no exclusions** by default.
-4. **Existing Audit Map (optional):** `security-agent/outputs/03_AUDITMAP.json` -- if present, treat as append-only sink; do not mutate prior items.
+1. **Checklist (required):** `security-agent/outputs/02_CHECKLIST.json` — source of properties, anti-properties, static rules, fuzz hooks, observability probes, combinators.
+2. **Spec (context-only):** `security-agent/outputs/01_SPEC.json` — authoritative on architecture, trust assumptions, governance. Never contradict declared `trust_entities`.
+3. **Property inventory (derived):** `security-agent/outputs/01_PROP.json` — For every spec behavior, record the property/anti-property pair with location, state predicate, falsification method, and evidence target.
+4. **Audit target (required):** `$PATH` — audit every file recursively; zero default exclusions.
+5. **Existing Audit Map (optional):** `security-agent/outputs/03_AUDITMAP.json` — append-only sink; prior entries are immutable.
+
+---
+
+## Doctrine & Methods (embed in every pass)
+
+1. **Property Authoring:** Encode each property as (a) what must hold, (b) where it must hold, (c) how to falsify it (negative tests + static queries), (d) what observability proves coverage.
+2. **Attack Playbook Clusters:** Translate real bridge incidents into checklist families; include Nomad acceptableRoot sentinel, Wormhole signature bypass, parity/encoding drift, Cairo felt/dict pitfalls.
+3. **Algorithm Anti-Property Pipeline:** For every spec algorithm (DVN quorum, exactly-once, TYPE3 options, fee settlement), build bad-path libraries, static precondition detectors, executable properties.
+4. **Cross-Implementation Differential Tests:** Maintain JSON vectors for GUID, commitment, channel keys, options, fee sweeps; fail parity checks on any divergence.
+5. **Observability Contracts:** Attach event/log/metric expectations to each check; negative signals must exist for default/sentinel roots, unknown worker IDs, zero-length options, etc.
+6. **Attack-Chain Scoring:** Tag checks with prerequisites/combinators; automatically elevate when combinations (e.g., UnknownWorkerID + DVNEarlyTrue) align.
+7. **Elite Auditor Heuristics:** Follow passes inspired by samczsun, Tincho, and other top auditors—architecture/access control/value flow first, code later.
+8. **Bridge Risk Themes:** Always enumerate initialization/sentinels, signature domain separation & dedup, ordering/exactly-once, cross-impl parity, option parsing, governance & immutability.
+9. **Artifact Triplet:** For every checklist item, produce (a) static detector ID, (b) executable property or fuzz target, (c) evidence probe (event/log/metric).
+10. **Research & Playbook Ingestion:** Periodically integrate surveys (SoK), Secureum contest guardrails, auditor interviews; update heuristic prompts accordingly.
+11. **Cairo-First Track:** Enforce keccak parity (unless spec proves otherwise), explicit range/dict checks, dispatcher selector validation, vetted registry lookups.
+12. **Contest Guard:** Keep out-of-scope filters in a preflight gate; never silence creative detections—filter only at reporting.
 
 ---
 
 ## Strict Rules
 
-* **Checklist-driven:** For every checklist item, execute its `file_globs`, `patterns` (regex/Semgrep/AST/Slither/Mythril, etc.), and `detection_procedure` exactly as written.
-* **Inline OK only:** When an `ok_if` condition is satisfied, leave an inline `@audit-ok` comment that documents the safeguard, but do not record anything in `03_AUDITMAP.json`.
-* **JSON parity:** Every inline `@audit` comment (non `@audit-ok`) must produce a corresponding entry appended to `03_AUDITMAP.json` during the same run; skipping or deferring addition is not allowed.
-* **Status whitelist:** `03_AUDITMAP.json` may only contain `vuln` or `needs-investigation`. OK cases stay in code comments.
-* **Append-only:** If `03_AUDITMAP.json` already exists, add only new items and skip composite-key duplicates; never modify or delete prior entries.
-* **Path scope:** Audit every file beneath `$PATH`, inferring language via extension, shebang, or build manifests.
-* **Respect prior annotations:** Treat existing `@audit` / `@audit-ok` comments as authoritative for the specific code span they cover; do not re-run detection procedures on those exact snippets, but continue executing all checklist items elsewhere to uncover previously unaudited surfaces.
-* **Ten rounds:** Complete all ten audit passes, each at a different granularity or depth as described below.
-* **Call traversal:** Whenever you encounter a call, follow the callee definition (if it lives under `$PATH`) and audit the reachable logic.
-* **Honor trust assumptions:** Do not generate findings that contradict `trust_entities` or equivalent statements in `01_SPEC.json`.
+- **Checklist-driven execution:** Run every checklist `file_globs`, `patterns`, `detection_procedure`, fuzz harness, parity test exactly as written; enrich only through property derivations that map back to the same check IDs.
+- **Property & anti-property tagging:** Each checklist action must reference its property/anti-property pair and specify falsification + observability plans before scanning code.
+- **Playbook binding:** For incidents identified in the checklist, track sentinel values, domain separation, signer dedup, parity drift, Cairo pitfalls; document tags in annotations and JSON entries.
+- **Inline OK only:** If an `ok_if` guard is satisfied, emit `@audit-ok` inline and skip JSON entries.
+- **JSON parity:** Every `@audit` comment (non `@audit-ok`) must append a matching JSON object in `03_AUDITMAP.json` during the same execution; no deferral.
+- **Status whitelist:** Audit map statuses are limited to `vuln` or `needs-investigation`.
+- **Append-only:** When `03_AUDITMAP.json` exists, add only non-duplicate items; composite keys are immutable.
+- **Path scope:** Audit all files beneath `$PATH`; infer language from extension/shebang/build metadata.
+- **Observability proof:** No control is considered covered without an event/log/metric reference.
+- **Attack-chain composition:** Track satisfied predicates and escalate combinations that meet defined dangerous conjunctions.
+- **Ten passes:** Complete the Ten-Pass Property Audit Loop below—no early exits.
+- **Call traversal:** Follow every reachable callee within `$PATH`.
+- **Manual static review:** Execute every checklist step through hand-driven static inspection; usage of Segmap or similar mapping tools is forbidden.
+- **Re-audit despite prior `@audit-ok`:** Treat existing annotations as historical context only. Even if an `@audit-ok` references the same checklist item—or a different checkpoint—ignore it and perform the full manual review again.
+- **Honor trust assumptions:** Never raise findings contradicting explicit trust/gov assumptions in `01_SPEC.json`.
+- **Artifact triplet enforcement:** Every checklist item must cite static detector, executable property, and evidence probe identifiers in annotations and JSON.
+- **Cross-impl parity logging:** Document parity test coverage/outcomes in the summary section of the audit map.
 
 ---
 
 ## Inline Commenting Standard
 
-Insert comments **directly above** the pertinent code. Use one-line tokens:
+Insert comments **directly above** the relevant code span. Use one-line tokens with explicit tagging:
 
-* **Flag:**
-  `// @audit <CHECK_ID> [vuln|needs-investigation] -- <short reason>; evidence=<brief>; ok_if_checked=[true|false]`
-* **Safe:**
-  `// @audit-ok <CHECK_ID> -- <safety rationale>; ok_condition=<identifier>; evidence=<brief>`
+- **Flag:**
+  `// @audit <CHECK_ID> [vuln|needs-investigation] -- <short reason>; property=<name>; anti_property=<name>; static_detector=<id>; executable_property=<id>; evidence_probe=<event|metric>; attack_chain=<combo|none>; tags=property:<slug>,anti:<slug>,playbook:<slug>; ok_if_checked=false`
 
-> Record `@audit-ok` comments solely as inline evidence; never add them to `03_AUDITMAP.json`.
-> Every `@audit` comment you insert must be mirrored by a new entry in `03_AUDITMAP.json` within the same execution (unless an identical composite-key entry already exists from a prior run).
+- **Safe:**
+  `// @audit-ok <CHECK_ID> -- <safety rationale>; property=<name>; ok_condition=<identifier>; evidence_probe=<event|metric>; tags=property:<slug>,ok:true`
+
+> Comments remain ASCII, concise, and one line. Record `@audit-ok` only when guards satisfy `ok_if`. Mirror every `@audit` comment with a JSON entry unless an identical composite key already exists.
 
 ---
 
-## Ten-Round Audit Plan (coverage-first)
+## Ten-Pass Property Audit Loop
 
-1. **Pattern Sweep:** Apply every checklist `pattern` (regex, Semgrep, Slither, Mythril, etc.) across all files and tag each hit with an `@audit` comment.
-   Skip snippets already annotated with `@audit` / `@audit-ok`, but continue scanning the remainder of the codebase for fresh matches tied to the same checklist item.
-2. **AST Scan:** Revisit code through language-specific AST analysis to expose control-flow gaps (for example, unchecked early returns).
-3. **OK Condition Pass:** For each hit, verify whether the `ok_if` conditions are satisfied and convert qualifying cases to inline `@audit-ok` comments (do not touch the JSON map).
-4. **Call-Graph Expansion I:** Follow intra-module callees to validate guard ordering and state transitions.
-5. **Call-Graph Expansion II:** Traverse cross-module or cross-layer calls within `$PATH` to broaden reachability coverage.
-6. **Dataflow/Taint:** Trace critical inputs from external boundaries to sinks to uncover missing normalization, validation, or bounds checks.
-7. **Error/Edge Handling:** Inspect error handling, boundary conditions, retries, timeouts, overflow, and precision issues.
-8. **Concurrency/Ordering:** Examine concurrency, reentrancy, lock ordering, and state machine sequencing risks.
-9. **Config/Integration:** Audit branches driven by configuration values, feature flags, and integrations with external systems.
-10. **Gap Sweep:** Cover any remaining files, functions, or heuristics to bring coverage logs to 100 percent.
+1. **Recon & Property Extraction:** Derive properties/anti-properties, map invariants to code locations, identify expected observability.
+2. **Attack Playbook Synthesis:** Instantiate real-incident playbooks (Nomad sentinel, Wormhole bypass, parity drift, Cairo pitfalls) into checklist clusters and negative examples.
+3. **Static Detector Execution:** Run regex/Semgrep/Slither/Mythril/AST rules; annotate hits; skip previously tagged spans.
+4. **Executable Properties & Fuzzing:** Bind properties to fuzz/property-based tests (Echidna/Cairo equivalents); seek counterexamples; record harness IDs.
+5. **Intra-Module Call Graph Pass:** Follow call chains within each module to confirm guard ordering/state transitions; note ok_if results.
+6. **Cross-Module Call Graph Pass:** Traverse inter-module/inter-layer calls; validate DVN quorum flows, relayer pipelines, dispatcher routes.
+7. **Dataflow & Value Flow Analysis:** Trace external inputs to sinks; enforce normalization, access control, funds/state flow invariants.
+8. **Parity & Differential Testing:** Execute canonical JSON vectors across Cairo↔EVM implementations; fail on mismatch; inspect hashing/encoding parity and range/dict policies.
+9. **Observability & Resilience Review:** Confirm events/metrics are emitted, negative signals exist, DoS/gas fallback handled, governance safeguards intact.
+10. **Chain Composition & Gap Sweep:** Combine satisfied predicates, raise `needs-investigation` for dangerous conjunctions, and ensure 100% file/function coverage.
+
+During each pass, verify `ok_if` conditions and upgrade/downgrade annotations accordingly.
 
 ---
 
 ## Finding Classification
 
-* **`vuln`**: The checklist pattern matches, the `ok_if` condition is not satisfied, and the code evidence supports a high-confidence bug.
-* **`needs-investigation`**: The pattern matches, but more inquiry or context is required to determine impact or reachability.
+- **`vuln`** — Property fails without ok_if justification; exploit is demonstrated or highly confident; provide attack chain context and severity.
+- **`needs-investigation`** — Property or anti-property is suspected but impact or reachability needs confirmation; still record evidence and combinators.
 
-> In every classification, do not dismiss designs that rely on `trust_entities` or equivalent trusted parties.
+Attach `attack_chain_score` (0–10) to each JSON entry to reflect composition risk, even when individual checks pass.
 
 ---
 
 ## Deduplication & Append Policy
 
-* **Composite key:** `<check_id>|<file>|<line>|<hash(snippet)>`
-* Skip any entry whose composite key already exists in `03_AUDITMAP.json`.
-* Never edit existing items, including `status`, `description`, or summary statistics.
+- **Composite key:** `<check_id>|<file>|<line>|<hash(snippet)>`.
+- Skip entries with existing composite keys; never edit `status`, `description`, or metadata of prior items.
+- Preserve chronological integrity; append new findings only.
 
 ---
 
-## Output: `security-agent/outputs/03_AUDITMAP.json` (append-only)
+## Output: `security-agent/outputs/03_AUDITMAP.json`
 
-**Item format (statuses restricted to `vuln` or `needs-investigation`)**
+Statuses remain restricted to `vuln` or `needs-investigation`.
 
 ```json
 {
   "audit_items": [
     {
       "id": "auto-uuid",
-      "check_id": "CL-SC-REENTRANCY-EXTCALL-BEFORE-STATE",
+      "check_id": "CL-BRIDGE-EXACTLY-ONCE-TOMBSTONE",
       "file": "contracts/Bank.sol",
       "line": 142,
       "snippet": "call.value(amount)()",
       "risk_category": "economic",
       "severity": "high",
-      "description": "External call occurs before state mutation; no reentrancy guard observed.",
+      "property": "Exactly-once execution requires tombstone before external call",
+      "anti_property": "External call can execute before tombstone commitment",
+      "static_detector": "semgrep:bridge/external-call-before-state",
+      "executable_property": "fuzz:exactly_once_tombstone",
+      "evidence_probe": "event PacketDelivered",
+      "attack_chain": ["UnknownWorkerID", "DVNEarlyTrue"],
+      "attack_chain_score": 8,
+      "observability": "Missing PacketCommitted -> PacketDelivered monotonic counter",
       "status": "vuln",
-      "round": 2,
+      "round": 4,
       "call_stack": ["withdraw()", "payout()"],
-      "evidence": "no nonReentrant; state update after external call",
-      "notes": "If `@audit-ok` elsewhere later proves guard, keep this item but open a follow-up thread."
+      "evidence": "no tombstone prior to external call; fuzz harness produced replay",
+      "notes": "Derives from Nomad acceptableRoot playbook; requires sentinel root hardening.",
+      "tags": [
+        "property:exactly-once",
+        "anti:replay",
+        "playbook:nomad-sentinel",
+        "evidence:event"
+      ]
     }
   ],
   "summary": {
     "path": "$PATH",
     "rounds": 10,
+    "property_pairs_total": 0,
+    "property_pairs_reviewed": 0,
+    "attack_chain_alerts": 0,
+    "parity_vectors_tested": 0,
+    "parity_vectors_failed": 0,
     "total_audit_flags": 1,
     "coverage": {
       "files_total": 0,
       "files_reviewed": 0,
       "functions_reviewed": 0
     },
-    "notes": "Statuses limited to vuln / needs-investigation; OK cases recorded inline only."
+    "notes": "Statuses limited to vuln / needs-investigation; OK cases are inline only."
   }
 }
 ```
 
-> When the file already exists, add only new entries to `audit_items` and leave previous content untouched.
-> Ensure every in-code `@audit` comment introduced in this run has a matching JSON entry before completion.
+When the file already exists, append only new non-duplicate entries. Update summary counters for the current run while keeping prior rounds intact.
 
 ---
 
 ## Procedure (Step-by-step)
 
 1. **Preflight**
+   - Load `02_CHECKLIST.json`; extract properties, anti-properties, static detectors, fuzz harnesses, observability probes, combinators.
+   - Read `01_SPEC.json` for architecture, trust entities, governance constraints.
+   - Reconcile existing property inventory with checklist to ensure every behavior has a mapped property pair.
+   - Recursively index files under `$PATH`; parse existing `@audit`/`@audit-ok` annotations to avoid duplicate tagging.
+   - Load `03_AUDITMAP.json` if present to collect existing composite keys and tags.
 
-   * Load `02_CHECKLIST.json` and build the language/glob ruleset (required).
-   * Optionally read `01_SPEC.json` to honor `trust_entities` guidance (reference only).
-   * Recursively index every file under `$PATH`.
-   * Parse existing `@audit` and `@audit-ok` comments to mark covered checklist items/snippets so the audit can focus on unannotated occurrences.
-
-2. **Ten Rounds (above)**
-
-   * For each hit, add an inline `@audit` comment; once a guard is proven sufficient, add `@audit-ok` as well.
-   * Immediately after inserting each `@audit` comment, append the corresponding entry to `security-agent/outputs/03_AUDITMAP.json` (or confirm the composite key already exists) before proceeding.
-   * Always test whether `ok_if` conditions hold. Even when satisfied, do not add OK cases to the JSON map.
-   * Whenever you encounter a call expression, locate its callee within `$PATH` and audit it.
+2. **Execute the Ten-Pass Property Audit Loop**
+   - During each pass, attach annotations, run static detectors, execute fuzz/property tests, parity vectors, and document observability.
+   - Evaluate `ok_if` conditions promptly; convert qualifying cases to `@audit-ok` without JSON entries.
+   - Maintain attack-chain state to detect dangerous combinations as passes progress.
 
 3. **Emit / Append**
-
-   * Compose new `audit_items` using only the statuses `vuln` or `needs-investigation`.
-   * If `03_AUDITMAP.json` exists, append only non-duplicate entries and leave existing content untouched.
-   * Set `summary.rounds = 10` and update local coverage counters for this run only.
-   * Cross-check inline annotations: every `@audit` comment must correspond to a JSON entry before exiting; failing this check is an error.
-
----
-
-## Success Criteria
-
-* Every file under `$PATH` participates in at least one of the ten rounds.
-* All reachable callees are traced and audited.
-* `03_AUDITMAP.json` stays valid JSON containing only new items with status in {`vuln`, `needs-investigation`}.
-* OK cases exist solely as inline comments; they never appear in the JSON map.
-* Audit logs remain reproducible, retaining `check_id`, `evidence`, `round`, and `call_stack` details.
-
----
-
-### Notes
-
-* Follow the checklist-derived behavioral specifications (`patterns`, `detection_procedure`, `ok_if`) precisely.
-* Never undermine the assumptions declared in `trust_entities` or equivalent structures.
+   - For every `@audit` comment, immediately append the structured entry (with property, anti_property, artifacts, observability, tags, attack_chain_score) to `03_AUDITMAP.json` unless the composite key already exists.
+   - Restrict statuses to `vuln` or `needs-investigation`.
+   - Update summary metrics: `rounds=10`, property coverage, attack_chain alerts, parity outcomes, coverage tallies.
+   - Verify that every inline `@audit` comment has a matching JSON entry before concluding.
 
 ---

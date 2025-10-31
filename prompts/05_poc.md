@@ -1,7 +1,7 @@
 ---
 Description: PoC Generator & Self-Verifying Tests
 Usage: `/05_poc TYPE=... VULN_ID=... OUTPUT_PATH=...`
-Example: `/05_poc TYPE=unit VULN_ID=03523523 OUTPUT_PATH=crates/net/network/src/transactions/poc_reentrancy.rs`
+Example: `/05_poc TYPE="unit" VULN_ID="03523523" OUTPUT_PATH="crates/net/network/src/transactions/poc_reentrancy.rs"`
 Arguments:
 - **$TYPE**: `unit`, `it`, or `e2e`. Selects the granularity of the PoC.
 - **$VULN_ID**: value of `audit_items[].id` in `03_AUDITMAP.json`.
@@ -31,15 +31,15 @@ Create & validate a minimal PoC that reproduces **$VULN_ID** at the chosen scope
 4. Keep the artifact focused, ≤ 120 LOC, and free from external binaries or network dependencies unless already standard in the project.
 
 # 🧭 TYPE-specific Guidelines
-- **TYPE = `unit`**
+- **$TYPE = `unit`**
   - Work within the smallest available test target (module-level, crate-level, package-level, etc.).
   - Prefer in-memory mocks or harnesses already used in unit tests.
   - Output must be a single test file containing at least one `poc_{TITLE_SLUG}` test.
-- **TYPE = `it`** (integration)
-  - Place the file alongside existing integration tests (use `OUTPUT_PATH`).
+- **$TYPE = `it`** (integration)
+  - Place the file alongside existing integration tests (use $OUTPUT_PATH).
   - Attempt to reuse helpers from `EXISTING_POC_FILES` (e.g., a prior unit PoC) and other integration fixtures.
   - Cover the full module/system interaction needed to surface the bug.
-- **TYPE = `e2e`**
+- **$TYPE = `e2e`**
   - Target the highest level available (CLI, API, contract deployment, workflow script, etc.).
   - Compose the scenario using production-like flows, leveraging existing end-to-end harnesses or scripts.
   - If the repository lacks e2e scaffolding, fall back to the closest black-box executable or smoke test framework already present.
@@ -55,8 +55,8 @@ Create & validate a minimal PoC that reproduces **$VULN_ID** at the chosen scope
 * Use the project's primary language and frameworks exactly as configured; do not introduce alternative stacks unless already present.
 * Derive the execution command dynamically, e.g.:
   - Rust → `cargo test --test poc_{{TITLE_SLUG}} -- --nocapture`
-  - Node → `npm test -- --runTestsByPath {{OUTPUT_PATH}}`
-  - Python → `pytest {{OUTPUT_PATH}} -k poc_{{TITLE_SLUG}} -vv`
+  - Node → `npm test -- --runTestsByPath $OUTPUT_PATH`
+  - Python → `pytest $OUTPUT_PATH -k poc_{{TITLE_SLUG}} -vv`
   - Solidity/Foundry → `forge test --match-test poc_{{TITLE_SLUG}} -vv`
 * If the project uses custom test scripts, mirror their invocation (check Makefiles, package scripts, etc.).
 

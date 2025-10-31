@@ -4,7 +4,8 @@
 
 ```mermaid
 flowchart LR
-    A[Collect spec via 01_spec] --> B[Build checklist via 02_checklist]
+    A[Collect spec via 01_spec] --> AB[Derive properties via 01b_prop]
+    AB --> B[Build checklist via 02_checklist]
     B --> C[Static audit with 03_auditmap]
     C --> D[Review @audit via 04_review]
     D --> E{Need PoC?}
@@ -15,14 +16,35 @@ flowchart LR
 
 ## ハッキング・エージェントの全体像
 
-| コマンド | 目的 | 主な前提 | Usage例 | 主な成果物 |
-| --- | --- | --- | --- | --- |
-| [01_spec](prompts/01_spec.md) | 仕様・スコープ・バウンティ条件を網羅した基礎資料を生成する | なし | `/01_spec TARGET_DIRECTORY="./docs" CATEGORY="ethereum-el" PROJECT_NAME="Atlas L2" REFERENCE_URLS="https://example.com/spec,https://example.com/audit"` | `security-agent/outputs/01_SPEC.json` |
-| [02_checklist](prompts/02_checklist.md) | 既存アウトプットを基に自動化しやすい監査チェックリストを作る | `security-agent/outputs/01_SPEC.json` など既存成果物 | `/02_checklist` | `security-agent/outputs/02_CHECKLIST.json` |
-| [03_auditmap](prompts/03_auditmap.md) | チェックリストに従ってソースを走査し、@audit/@audit-okを付与して監査結果を集約する | `security-agent/outputs/02_CHECKLIST.json` | `/03_auditmap PATH="./src"` | `security-agent/outputs/03_AUDITMAP.json` とソース内の注釈 |
-| [04_review](prompts/04_review.md) | 既存@auditコメントの妥当性を再検証し、`03_AUDITMAP.json`を同期させる | `security-agent/outputs/03_AUDITMAP.json` | `/04_review` | 更新済みの `security-agent/outputs/03_AUDITMAP.json` |
-| [05_poc](prompts/05_poc.md) | 指定した脆弱性ID向けに最小限のPoCテストを生成し自己検証する | `security-agent/outputs/03_AUDITMAP.json` で脆弱性IDが確定していること | `/05_poc TYPE=unit VULN_ID=03523523 OUTPUT_PATH=crates/net/network/src/transactions/poc_reentrancy.rs` | OUTPUT_PATHで指定したPoCテストファイル |
-| [06_report](prompts/06_report.md) | PoCと監査結果をまとめ、バウンティ向け最終レポートを作成する | `security-agent/outputs/03_AUDITMAP.json` と PoC成果物 | `/06_report VULN_ID=0023344 REPORT_TYPE=ETHEREUM SEVERITY=critical` | `security-agent/outputs/report_<slug>.md` |
+### 方針（Whitehat Mental Model）
+- プロパティファースト: 仕様の各ドメイン/フロー/アルゴリズムから安全性プロパティと対となるアンチプロパティを定義し、全ての検証をこのギャップ探索に紐付ける。
+- 攻撃チェーン思考: NomadやWormholeなどの実例に基づいたプレイブックをチェックリスト化し、単発バグではなく連鎖イベントを前提に照合する。
+- アルゴリズム反証駆動: 仕様アルゴリズムごとに異常経路（early true、delete-before-call など）を明文化し、静的解析と動的テストの両輪で潰す。
+- クロス実装パリティ: EVM↔Cairoの入力/出力/ハッシュをベクトル化し、乖離をCIで検知できるようにする。
+- 観測性の担保: すべてのプロパティにイベント・ログ・メトリクスなどの証跡を割り当て、異常時に即座に気付けるテレメトリ設計を要求する。
+
+### プロンプトと狙い
+
+| コマンド | 狙い | 主要入力 | 主な成果物 |
+| --- | --- | --- | --- |
+| [01_spec](prompts/01_spec.md) | 信頼境界・ドメイン・ユーザーフローを整理し、価値移動と依存関係を明文化した原典仕様を得る。 | なし | `security-agent/outputs/01_SPEC.json` |
+| [01b_prop](prompts/01b_prop.md) | 仕様からプロパティ/アンチプロパティを抽出し、反証条件・観測指標・パリティベクトルまで紐付いた検証カタログを作る。 | `security-agent/outputs/01_SPEC.json` | `security-agent/outputs/01_PROP.json` |
+| [02_checklist](prompts/02_checklist.md) | プロパティを攻撃プレイブックと静的/動的テクニックに落とし込み、再現性のある検証タスクへ編成する。 | `security-agent/outputs/01_SPEC.json`, `security-agent/outputs/01_PROP.json` | `security-agent/outputs/02_CHECKLIST.json` |
+| [03_auditmap](prompts/03_auditmap.md) | チェックリストをソースに適用し、各プロパティが満たされているか/破られうるかを@audit注釈と証跡でマッピングする。 | `security-agent/outputs/02_CHECKLIST.json` | `security-agent/outputs/03_AUDITMAP.json` とソース内@audit注釈 |
+| [04_review](prompts/04_review.md) | 監査メモと@auditの整合を見直し、検証の根拠・観測性・パリティが保持されているかを再度精査する。 | `security-agent/outputs/03_AUDITMAP.json` | 更新済みの `security-agent/outputs/03_AUDITMAP.json` |
+| [05_poc](prompts/05_poc.md) | 発見したアンチプロパティが現実に成立することをPoCで立証し、再現手順と失敗シグナルを明確化する。 | `security-agent/outputs/03_AUDITMAP.json` | 指定パスのPoCテスト/スクリプト |
+| [06_report](prompts/06_report.md) | プロパティ観点で攻撃シナリオを物語化し、再現性・影響・観測計画をまとめた最終レポートへ昇華する。 | `security-agent/outputs/03_AUDITMAP.json`, PoC成果物 | `security-agent/outputs/report_<slug>.md` |
+
+### 参考文献
+
+[1]: https://diligence.consensys.io/blog/2020/01/interview-with-samczsun/?utm_source=chatgpt.com "Interview with samczsun"
+[2]: https://arxiv.org/html/2410.02029v3?utm_source=chatgpt.com "Identifying Anomalies in Cross-Chain Bridges"
+[3]: https://www.gate.com/blog/1410/Nomad-Cross-Chain-Bridge-Suffers--190-Million-Exploit-in-a-Copy-Paste-Attack?utm_source=chatgpt.com "Nomad Cross-Chain Bridge Suffers $190 Million Exploit in a ..."
+[4]: https://hyprelane.com/?utm_source=chatgpt.com "Hyperlane: Modular Bridge Security Prevents $3.5B+ Exploits"
+[5]: https://www.sciencedirect.com/science/article/pii/S2096720925000429?utm_source=chatgpt.com "SoK: Cross-Chain Bridging Architectural Design Flaws and ..."
+[6]: https://github.com/hyperlane-xyz/hyperlane-monorepo/issues?utm_source=chatgpt.com "Issues · hyperlane-xyz/hyperlane-monorepo"
+[7]: https://mirror.xyz/pornstache.eth/QroKMN4feelgndtXPUbU2lBR8NkSoNOUjog808dO2zY?utm_source=chatgpt.com "Interviews with Contract Audit Specialists — pornstache.eth"
+[8]: https://secureum.substack.com/p/audit-techniques-and-tools-101?utm_source=chatgpt.com "Audit Techniques & Tools 101 - by Rajeev - Secureum"
 
 ---
 
@@ -62,8 +84,8 @@ git checkout -b audit-<監査者名>
 
 監査リーダーは以下を実行(監査者はスキップ):
 1. `security-agent/outputs/01_PAST_REPORTS/`に過去のハッカーレポートファイルを収納
-2. `security-agent/get_github_issues  --repos list --keywords list`を実行
-3. 01 / 02 のプロンプトを実行
+2. `./security-agent/get_github_issues.sh  --repos list --keywords list`を実行
+3. 01 → 01b → 02 のプロンプトを順に実行
 4. ChatGPTに02のアウトプットファイルを洗練させる
 
 ---
