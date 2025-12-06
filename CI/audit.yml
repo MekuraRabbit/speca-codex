@@ -1,0 +1,97 @@
+name: Security Audit - Execution
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_directories:
+        description: 'Target directories (JSON array, e.g. ["src/core", "src/utils"])'
+        required: true
+        default: '["."]'
+
+permissions:
+  contents: write
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        run: echo "matrix=${{ github.event.inputs.target_directories }}" >> $GITHUB_OUTPUT
+
+  audit_parallel:
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        directory: ${{ fromJson(needs.setup.outputs.matrix) }}
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run 03_auditmap
+        run: claude -p "$(cat prompts/03_auditmap.md)" "PATH=${{ matrix.directory }}"
+
+      - name: Commit outputs
+        run: |
+          git config --global user.name "Security Agent Bot"
+          git config --global user.email "bot@nyxfoundation.org"
+          git add outputs/ .
+          # Attempt to commit and push with rebase loop to handle race conditions
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: update audit findings for ${{ matrix.directory }} [skip ci]"
+            for i in {1..5}; do
+              git pull --rebase && git push && break
+              echo "Push failed, retrying ($i/5)..."
+              sleep $(( RANDOM % 10 + 5 ))
+            done
+          else
+             echo "No changes to commit"
+          fi
+
+  review:
+    needs: audit_parallel
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Pull latest changes
+        run: git pull origin ${{ github.ref_name }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run 04_review
+        run: claude -p "$(cat prompts/04_review.md)"
+
+      - name: Commit review outputs
+        run: |
+          git config --global user.name "Security Agent Bot"
+          git config --global user.email "bot@nyxfoundation.org"
+          git add outputs/ .
+          git commit -m "chore: update security audit review [skip ci]" || echo "No changes to commit"
+          git push

@@ -1,0 +1,67 @@
+name: Security Audit - Preparation
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_directory:
+        description: 'Target directory to audit'
+        required: true
+        default: '.'
+      category:
+        description: 'Category (comma-separated, e.g. ethereum-el)'
+        required: true
+        default: 'ethereum-el'
+      project_name:
+        description: 'Project Name'
+        required: true
+        default: 'TargetProject'
+      reference_urls:
+        description: 'Reference URLs (comma-separated)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  preparation:
+    runs-on: ubuntu-latest
+    env:
+      TARGET_DIRECTORY: ${{ github.event.inputs.target_directory }}
+      CATEGORY: ${{ github.event.inputs.category }}
+      PROJECT_NAME: ${{ github.event.inputs.project_name }}
+      REFERENCE_URLS: ${{ github.event.inputs.reference_urls }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run 01_spec
+        # Using input redirection to feed the prompt file content to the CLI
+        run: claude -p "$(cat prompts/01_spec.md)" "TARGET_DIRECTORY=${{ env.TARGET_DIRECTORY }} CATEGORY=${{ env.CATEGORY }} PROJECT_NAME=${{ env.PROJECT_NAME }} REFERENCE_URLS=${{ env.REFERENCE_URLS }}"
+
+      - name: Run 01b_trustmodel
+        run: claude -p "$(cat prompts/01b_trustmodel.md)"
+
+      - name: Run 01c_prop
+        run: claude -p "$(cat prompts/01c_prop.md)"
+
+      - name: Run 02_checklist
+        run: claude -p "$(cat prompts/02_checklist.md)"
+
+      - name: Commit outputs
+        run: |
+          git config --global user.name "Security Agent Bot"
+          git config --global user.email "bot@nyxfoundation.org"
+          git add outputs/
+          git commit -m "chore: update security audit preparation artifacts [skip ci]" || echo "No changes to commit"
+          git push
