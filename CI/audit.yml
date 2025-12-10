@@ -42,8 +42,11 @@ jobs:
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
 
+      - name: Clone Security Agent Prompts
+        run: git clone https://github.com/NyxFoundation/security-agent.git security-agent
+
       - name: Run 03_auditmap
-        run: claude -p "$(cat prompts/03_auditmap.md)" "PATH=${{ matrix.directory }}"
+        run: claude -p "$(cat security-agent/prompts/03_auditmap.md)" "PATH=${{ matrix.directory }}"
 
       - name: Commit outputs
         run: |
@@ -85,8 +88,11 @@ jobs:
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
 
+      - name: Clone Security Agent Prompts
+        run: git clone https://github.com/NyxFoundation/security-agent.git security-agent
+
       - name: Run 04_review
-        run: claude -p "$(cat prompts/04_review.md)"
+        run: claude -p "$(cat security-agent/prompts/04_review.md)"
 
       - name: Commit review outputs
         run: |

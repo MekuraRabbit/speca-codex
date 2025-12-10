@@ -45,18 +45,21 @@ jobs:
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
 
+      - name: Clone Security Agent Prompts
+        run: git clone https://github.com/NyxFoundation/security-agent.git security-agent
+
       - name: Run 01_spec
         # Using input redirection to feed the prompt file content to the CLI
-        run: claude -p "$(cat prompts/01_spec.md)" "TARGET_DIRECTORY=${{ env.TARGET_DIRECTORY }} CATEGORY=${{ env.CATEGORY }} PROJECT_NAME=${{ env.PROJECT_NAME }} REFERENCE_URLS=${{ env.REFERENCE_URLS }}"
+        run: claude -p "$(cat security-agent/prompts/01_spec.md)" "TARGET_DIRECTORY=${{ env.TARGET_DIRECTORY }} CATEGORY=${{ env.CATEGORY }} PROJECT_NAME=${{ env.PROJECT_NAME }} REFERENCE_URLS=${{ env.REFERENCE_URLS }}"
 
       - name: Run 01b_trustmodel
-        run: claude -p "$(cat prompts/01b_trustmodel.md)"
+        run: claude -p "$(cat security-agent/prompts/01b_trustmodel.md)"
 
       - name: Run 01c_prop
-        run: claude -p "$(cat prompts/01c_prop.md)"
+        run: claude -p "$(cat security-agent/prompts/01c_prop.md)"
 
       - name: Run 02_checklist
-        run: claude -p "$(cat prompts/02_checklist.md)"
+        run: claude -p "$(cat security-agent/prompts/02_checklist.md)"
 
       - name: Commit outputs
         run: |
