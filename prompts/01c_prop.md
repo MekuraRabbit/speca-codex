@@ -27,27 +27,32 @@ From the Program Graph (`01_SPEC.json`) and Trust Model (`01b_TRUSTMODEL.json`),
 
 For each major behavior represented by a path in the program graph, generate one or more security properties.
 
+**CRITICAL: Sub-Graph Analysis:** Your analysis must be recursive. After analyzing the main `program_graph`, you MUST iterate through each graph defined in the `sub_graphs` array and apply the exact same property generation and reachability analysis logic to the nodes and edges within each sub-graph.
+
 ### **Task 2.1: Define the Property in Terms of the Graph**
 
 *   `property`: A formal statement about the graph. This can be an **invariance** (a property of a `node`/`state`) or a **transition property** (a property of an `edge`).
     *   *Invariant Example:* "The node `STATE-EL-REQUEST-VALIDATED` can only be reached if the path to it includes the edge `EDGE-VALIDATION-SUCCESS`."
     *   *Transition Example:* "The data `DATA-JWT-REQUEST` transferred across the edge `EDGE-CL-SENDS-REQUEST` must be cryptographically signed."
+*   **CRITICAL:** You MUST define at least one property for EVERY boundary edge identified in `01b_TRUSTMODEL.json`. Do not leave any trust boundary unverified.
 *   `anti_property`: The formal negation of the property.
     *   *Invariant Example:* "A path exists to `STATE-EL-REQUEST-VALIDATED` that does not include the edge `EDGE-VALIDATION-SUCCESS`."
     *   *Transition Example:* "An attacker can cause unsigned data to be transferred across the edge `EDGE-CL-SENDS-REQUEST`."
 
 ### **Task 2.2: Perform Formal Reachability Analysis**
 
+### **Task 2.2: Perform Formal Reachability Analysis**
+
 This is the core formal analysis task.
 
-1.  **Identify the Target State/Edge:** This is the state/edge the `anti_property` is trying to achieve/violate.
-2.  **Identify the Attacker:** An `UNTRUSTED` or `SEMI_TRUSTED` actor.
-3.  **Analyze Paths:** Can the attacker, starting from a node they control, construct a path through the graph to the target state/edge that violates the property?
-4.  **Consult Boundary Edges:** Use the `boundary_edges` from `01b_TRUSTMODEL.json`. An attacker's most likely path will involve manipulating the data (`data_flows_across`) on one of these edges.
-5.  **Determine `reachability`:**
-    *   `REACHABLE`: A path exists that an untrusted actor can force, leading to the `anti_property` state.
-    *   `UNREACHABLE`: All paths to the desired state are provably blocked by a trusted `Action` node (e.g., a validation action) that has no outgoing edges leading to a success state for invalid inputs.
-6.  **Justify the Analysis (`reachability_rationale`):** Provide a formal argument based on the graph structure. "The anti-property is unreachable because all paths from the untrusted node `STATE-CL-PREPARE-REQUEST` to the target `STATE-EL-REQUEST-VALIDATED` must pass through the `ACTION-EL-VALIDATE-JWT` node. The definition of this action node specifies it has two outgoing edges: `EDGE-VALIDATION-SUCCESS` and `EDGE-VALIDATION-FAILURE`. An invalid input provably leads to the `STATE-EL-REQUEST-REJECTED` node, making the target state unreachable for an attacker."
+**Reachability Analysis Algorithm:**
+1.  **Identify Attacker Starting Nodes:** Create a set of all nodes where the `actor_id` corresponds to an `UNTRUSTED` or `SEMI_TRUSTED` actor.
+2.  **Perform Graph Traversal:** Starting from these nodes, perform a graph traversal (e.g., Breadth-First Search) to find all reachable nodes. Store the path taken to reach each node.
+3.  **Check Anti-Property:** For a given `anti_property` (e.g., reaching `STATE-X` without passing through `ACTION-VALIDATE`), check if `STATE-X` is in the set of reachable nodes.
+4.  **Verify Path Conditions:** If `STATE-X` is reachable, examine the path. If the path does *not* contain the required validation node/edge (e.g., `ACTION-VALIDATE`), then the anti-property is `REACHABLE`.
+5.  **Conclude Unreachability:** If all possible paths from attacker nodes to `STATE-X` are proven to pass through the required validation node, then the anti-property is `UNREACHABLE`.
+
+**Justify the Analysis (`reachability_rationale`):** Provide a formal argument based on the graph structure. "The anti-property is unreachable because all paths from the untrusted node `STATE-CL-PREPARE-REQUEST` to the target `STATE-EL-REQUEST-VALIDATED` must pass through the `ACTION-EL-VALIDATE-JWT` node. The definition of this action node specifies it has two outgoing edges: `EDGE-VALIDATION-SUCCESS` and `EDGE-VALIDATION-FAILURE`. An invalid input provably leads to the `STATE-EL-REQUEST-REJECTED` node, making the target state unreachable for an attacker."
 
 ### **Task 2.3: Link to Graph Elements**
 

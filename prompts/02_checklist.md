@@ -28,6 +28,8 @@ Translate the formal properties from `01c_PROP.json` into a concrete audit check
 
 For each **in-scope** property from `01c_PROP.json`, generate checklist items that focus on auditing the implementation of the referenced `graph_elements`.
 
+**CRITICAL: Sub-Graph Analysis:** Your checklist generation must be recursive. You MUST generate checks for the `graph_elements` of properties related to the main graph, and ALSO for properties related to each `sub_graph`.
+
 ### **Core Logic: From Formal Model to Implementation Audit**
 
 The previous step (`01c_prop`) established the *logical* security of the system based on the graph model. This step verifies that the *code* actually matches the model.
@@ -46,8 +48,12 @@ The previous step (`01c_prop`) established the *logical* security of the system 
 *   **`detection_procedure`**: Guide the auditor to the specific code that implements the node or edge.
     *   "1. Locate the source code corresponding to the `ACTION-EL-VALIDATE-JWT` node. 2. Review the function to ensure it rejects tokens with the 'none' algorithm. 3. Confirm all possible failure cases result in a transition to the `STATE-EL-REQUEST-REJECTED` state."
 
-*   **`executable_checks`**: Describe a unit or integration test that validates the implementation of this single piece of the graph.
-    *   `notes`: "This test provides evidence that the `ACTION-EL-VALIDATE-JWT` node is implemented correctly, thus upholding the security assumption of the formal model."
+*   **`executable_checks`**: An array of structured steps that a human or machine can execute to verify the property.
+    *   `step`: Sequence number (1, 2, ...).
+    *   `description`: What to do in this step.
+    *   `tool`: The tool to use (e.g., "manual", "curl", "grep", "go test").
+    *   `command`: The exact command to run (if applicable).
+    *   `assertion`: The expected result (e.g., "response.status == 401").
 
 *   **`notes`**: **MUST** link back to the formal model.
     *   **Format:** `"This check verifies the implementation of the node/edge [ID], which is the critical element ensuring the reachability conclusion for property [Property ID] holds true in the actual code."`
@@ -78,9 +84,18 @@ The previous step (`01c_prop`) established the *logical* security of the system 
       ],
       "executable_checks": [
         {
-          "tool": "Go Test",
+          "step": 1,
+          "description": "Run the JWT handler unit tests with coverage for 'none' algorithm and expiration.",
+          "tool": "go test",
           "command": "go test -v ./node -run TestJWTHandler",
-          "notes": "This unit test suite must include vectors for algorithm confusion, expired tokens, and invalid signatures to confirm the action node's logic."
+          "assertion": "Tests pass and output indicates rejection of invalid tokens."
+        },
+        {
+          "step": 2,
+          "description": "Attempt to decode a token with 'none' alg manually to verify rejection.",
+          "tool": "manual",
+          "command": "N/A",
+          "assertion": "Function returns error 'invalid algorithm'"
         }
       ],
       "notes": "This check verifies the implementation of the ACTION-EL-VALIDATE-JWT node. The formal model's conclusion that the anti-property is unreachable depends entirely on this action being implemented correctly."

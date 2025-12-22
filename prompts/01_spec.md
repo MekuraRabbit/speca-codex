@@ -39,6 +39,7 @@ Your primary task is to translate the system's user flows and processes into a f
     *   `label`: A concise, human-readable description of the state or action.
     *   `actor_id`: The ID of the actor responsible for this state or for performing this action (must match an ID from `trusted_entities`).
     *   `type`: Must be either `"State"` or `"Action"`.
+    *   `sub_graph_id`: (Optional) If this action represents a complex process (like EVM execution), provide the ID of a sub-graph that models it in detail (e.g., `"GRAPH-EVM-EXECUTION"`).
 
 ### **Task 1.2: Define Graph Edges (`program_graph.edges`)**
 
@@ -54,6 +55,17 @@ Your primary task is to translate the system's user flows and processes into a f
 
 *   **`trusted_entities`**: Identify all actors in the system.
 *   **`data_structures`**: Identify all core data objects passed between states.
+
+---
+
+### **Task 1.4: Define Sub-Graphs (`sub_graphs`)**
+
+*   **Goal:** Model complex logic that is abstracted away in the main graph (e.g., EVM execution details, specific EIP logic).
+*   **Action:** If `sub_graph_id` was used in any node, define the corresponding sub-graph here.
+    *   **Scope:** Specifically focus on logic relevant to the provided `KEYWORDS` or EIPs (e.g., `PUSH0`, `SELFDESTRUCT`).
+    *   **Prioritization Note:** When deciding which EIPs to model as sub-graphs, prioritize those with the highest security impact. Good candidates are EIPs that: a) introduce new opcodes, b) significantly alter state transition logic, c) affect consensus rules, or d) have known security advisories associated with them.
+    *   **Structure:** Same as the main `program_graph` (nodes and edges).
+    *   **Nodes:** Should represent low-level operations (e.g., `ACTION-EVM-DECODE-OPCODE`, `STATE-EVM-STACK-OVERFLOW`).
 
 ---
 
@@ -150,6 +162,29 @@ Generate a valid JSON object with the following graph-based structure.
         "data_involved": []
       }
     ]
-  }
+  },
+  "sub_graphs": [
+    {
+      "id": "GRAPH-EVM-EXECUTION",
+      "title": "EVM Execution Sub-Graph",
+      "nodes": [
+        {
+          "id": "ACTION-EVM-DECODE-OPCODE",
+          "label": "Decode Opcode",
+          "actor_id": "ACTOR-EL-EXECUTION-CLIENT",
+          "type": "Action"
+        }
+      ],
+      "edges": [
+         {
+          "id": "EDGE-EVM-NEXT-OP",
+          "source": "ACTION-EVM-DECODE-OPCODE",
+          "target": "ACTION-EVM-EXECUTE-PUSH0",
+          "label": "Next opcode is PUSH0",
+          "data_involved": []
+         }
+      ]
+    }
+  ]
 }
 ```

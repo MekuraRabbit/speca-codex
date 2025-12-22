@@ -28,21 +28,21 @@ Using the Program Graph from `01_SPEC.json`, create a formal trust model. This m
 
 ### **Task 2.1: Classify Actor Trust Levels (`actors`)**
 
-*   For each entity from `01_SPEC.json`'s `trusted_entities`, assign a `trust_level` (`TRUSTED`, `UNTRUSTED`, `SEMI_TRUSTED`) and provide a `rationale`.
+*   For each entity from `01_SPEC.json`'s `trusted_entities`, create a corresponding actor object. Use the `id` from the spec as the actor's `id`. Then, assign a `trust_level` (`TRUSTED`, `UNTRUSTED`, `SEMI_TRUSTED`) and provide a `rationale`.
 
 ### **Task 2.2: Identify Trust Boundary Edges (`boundary_edges`)**
 
 *   **CRITICAL:** A trust boundary is crossed on an **edge**, not a node.
 *   **Logic:**
     1.  Iterate through every `edge` in `program_graph.edges`.
-    2.  For each `edge`, look up the `actor_id` of its `source` node and its `target` node.
+    2.  For each `edge`, look up the `id` of its source actor and its target actor.
     3.  Look up the `trust_level` of the source actor and the target actor.
     4.  If `trust_level(source_actor) != trust_level(target_actor)`, then this edge is a **trust boundary crossing**.
 *   **Action:** For each such edge, create an object in the `boundary_edges` array.
     *   `edge_id`: The `id` of the edge from the program graph.
     *   `description`: A clear description of the boundary crossing event.
-    *   `source_actor_id`, `source_trust_level`
-    *   `target_actor_id`, `target_trust_level`
+    *   `source_id`, `source_trust_level`
+    *   `target_id`, `target_trust_level`
     *   `data_flows_across`: The `data_involved` from the edge, representing the data that is being passed from a less-trusted to a more-trusted domain (or vice-versa).
     *   `security_assumption`: State the core assumption that must hold true for this specific transition to be secure.
 
@@ -57,13 +57,13 @@ Using the Program Graph from `01_SPEC.json`, create a formal trust model. This m
   "metadata": { /* ... */ },
   "actors": [
     {
-      "actor_id": "ACTOR-CL-CONSENSUS-CLIENT",
+      "id": "ACTOR-CL-CONSENSUS-CLIENT",
       "name": "Consensus Client (CL)",
       "trust_level": "SEMI_TRUSTED",
       "rationale": "Trusted to follow protocol, but is a separate software component."
     },
     {
-      "actor_id": "ACTOR-EL-EXECUTION-CLIENT",
+      "id": "ACTOR-EL-EXECUTION-CLIENT",
       "name": "Execution Client (EL)",
       "trust_level": "TRUSTED",
       "rationale": "The system under audit."
@@ -73,9 +73,9 @@ Using the Program Graph from `01_SPEC.json`, create a formal trust model. This m
     {
       "edge_id": "EDGE-CL-SENDS-REQUEST",
       "description": "The Engine API interface where the CL sends a request to the EL.",
-      "source_actor_id": "ACTOR-CL-CONSENSUS-CLIENT",
+      "source_id": "ACTOR-CL-CONSENSUS-CLIENT",
       "source_trust_level": "SEMI_TRUSTED",
-      "target_actor_id": "ACTOR-EL-EXECUTION-CLIENT",
+      "target_id": "ACTOR-EL-EXECUTION-CLIENT",
       "target_trust_level": "TRUSTED",
       "data_flows_across": ["DATA-JWT-REQUEST"],
       "security_assumption": "The EL must not trust the content or validity of DATA-JWT-REQUEST until it has been fully authenticated and validated by the ACTION-EL-VALIDATE-JWT node. The integrity of this edge relies solely on the strength of the validation action that follows."
