@@ -25,6 +25,7 @@ jobs:
       # -----------------------------------------------------
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CLAUDE_CODE_MAX_OUTPUT_TOKENS: 100000
 
 
     steps:

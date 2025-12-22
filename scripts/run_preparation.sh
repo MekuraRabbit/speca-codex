@@ -9,6 +9,7 @@ export SPEC_URLS="https://ethereum.github.io/execution-specs/src/,https://geth.e
 
 # Permissions to allow non-interactive file writes
 export CLAUDE_CODE_PERMISSIONS="bypassPermissions"
+export CLAUDE_CODE_MAX_OUTPUT_TOKENS=100000
 
 # Working directory
 WORKDIR="target_workspace"
