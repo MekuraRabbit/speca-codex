@@ -25,28 +25,80 @@ git checkout -b audit/geth
 
 Simply edit the configuration variables in the start scripts and run them.
 
-1. clone the target repository in `target_workspace` folder: `git clone git:github.com/ethereum/go-ethereum.git target_workspace`.
-2.  **Preparation**: Edit `scripts/run_preparation.sh`, then run `./scripts/run_preparation.sh`.
-3.  **Audit**: Edit `scripts/run_audit.sh`, then run `./scripts/run_audit.sh`.
+#### Step 1: Clone Target Repository
+Clone the target repository into the `target_workspace` folder.
+```bash
+git clone https://github.com/ethereum/go-ethereum.git target_workspace
+```
+
+#### Step 2: Grant Permissions
+Make sure the scripts are executable.
+```bash
+chmod +x scripts/*.sh
+```
+
+#### Step 3: Preparation Phase
+Edit `scripts/run_preparation.sh` to configure variables, then run it.
+```bash
+./scripts/run_preparation.sh
+```
+
+#### Step 4: Audit Phase
+Edit `scripts/run_audit.sh` if needed, then run it.
+```bash
+./scripts/run_audit.sh
+```
 
 Then you can find the results in `/outputs`.
 
-### Option 2: Run on GitHub
+---
+
+### Option 2: Run on GitHub Actions
 
 You can automate the audit using GitHub Actions.
 
-1.  Edit `.github/workflows/audit.yml` (and `preparation.yml` if needed) to configure your target repository.
-2.  Push your changes to your `audit/*` branch:
-    ```bash
-    git push origin audit/geth
-    ```
-3.  The CI pipeline will start automatically.
-4.  Once completed, a **Pull Request** will be created with the generated JSON results.
-5.  Merge the PR to save the snapshot of the audit.
+#### Step 1: Configure Workflows
+Edit `.github/workflows/audit.yml` (and `preparation.yml` if needed) to configure your target repository.
 
-**Phase 1: Preparation**
+```yaml
+name: Security Audit - Execution (GitOps)
 
-Runs the spec generation and property extraction.
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
+  push:
+    branches: 
+      - 'audit/*'
+
+jobs:
+  audit_gitops:
+    runs-on: ubuntu-latest
+    if: "!startsWith(github.event.head_commit.message, 'Merge')"
+    env:
+      # --- CONFIGURATION (Override these in your branch) ---
+      TARGET_REPO: "ethereum/go-ethereum" # Default (to be overridden)
+      TARGET_REF: "master"                          # Default (HEAD of default branch)
+      # -----------------------------------------------------
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CLAUDE_CODE_PERMISSIONS: "bypassPermissions"
+
+...
+```
+
+#### Step 2: Push Changes
+Push your changes to your `audit/*` branch to trigger the pipeline.
+```bash
+git push origin audit/geth
+```
+
+#### Step 3: CI Execution
+The CI pipeline will start automatically.
 
 ![CI Preparation](assets/ci_preparation.png)
 (example: https://github.com/NyxFoundation/security-agent/actions/runs/20120334544)
@@ -54,15 +106,17 @@ Runs the spec generation and property extraction.
 ![PR Preparation](assets/pr_preparation.png)
 (example: https://github.com/NyxFoundation/security-agent/pull/10)
 
-**Phase 2: Audit**
-
-Runs the static analysis, fuzzing, and reporting.
+#### Step 4: Review Results
+Once completed, a **Pull Request** will be created with the generated JSON results.
 
 ![CI Audit](assets/ci_audit.png)
 (example: https://github.com/NyxFoundation/security-agent/actions/runs/20127092838)
 
 ![PR Audit](assets/pr_audit.png)
 (example: https://github.com/NyxFoundation/security-agent/pull/11)
+
+#### Step 5: Save Snapshot
+Merge the PR to save the snapshot of the audit to your repository.
 
 ## Agent Specification
 
