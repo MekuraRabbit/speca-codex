@@ -1,71 +1,178 @@
 
-
-
 ---
-Description: Deploy a **property-first, pro-hacker audit** across every file under `$PATH`, using `outputs/02_CHECKLIST.json` as the authoritative operations manual. Treat each checklist line as a security objective expressed via properties, anti-properties, attack playbooks, and observability probes. Annotate code inline and append only new findings to `outputs/03_AUDITMAP.json`; never mutate prior records.
-Usage: `/03_auditmap PATH=...`
-Example: `/03_auditmap PATH="./src"`
-Language: English only (instructions, annotations, summaries).
+Description: Fully autonomous, iterative, **static-only** audit based on formal methods. This prompt **automatically discovers and merges** all `02a` and `02b` outputs, **automatically determines which source files to audit**, and processes the checklist in batches to generate a complete audit map. Dynamic analysis and fuzzing are explicitly excluded.
+Usage: `/03_auditmap`
+Language: English only.
 ---
 
-**Mission Mindset**
+**Core Doctrine: Formal Static Verification as Audit**
 
-- Start from **spec properties**: translate every normative behavior in `01_SPEC.json` into a safety property and its dual anti-property before scanning code.
-- Think in **attack chains**: model Nomad, Wormhole, Harmony, and Hyperlane style incident playbooks; expect multi-step exploit composition, not isolated bugs.
-- Demand **observability proof**: every control must emit or reference evidence (events, metrics, logs) proving it fired.
-- Enforce **cross-implementation parity**: Cairo ↔ EVM behavior must match on canonical vectors; hash/encoding drift is an exploit vector.
-- Embrace **combiners & scoring**: tag satisfied predicates and auto-raise when dangerous combinations materialize.
-- Default to **Cairo-first hardening**: respect Starknet-specific failure modes (felt ranges, dict defaults, dispatcher routing).
+Your mission is to perform a comprehensive **static audit** by applying principles from formal methods. You will not execute code or run dynamic tests. Your entire analysis will be based on the static structure of the codebase. You will **prove or disprove formal properties** through static analysis alone.
+
+**The Predicate:**
+
+Each checklist item you process must be interpreted as a formal Predicate with this structure:
+
+```typescript
+interface Predicate {
+  id: string; // Checklist ID
+  property: string; // The property that must hold true
+  anti_property: string; // The property that must be proven false
+  scope: { files: string[]; functions: string[]; }; // The code under verification
+  invariant: string; // An invariant condition that must always be true within the scope
+  evidence: { type: "event" | "log" | "metric"; value: string; }; // Observable proof
+}
+```
 
 ---
-**Always use /serena for these development tasks to maximize token efficiency:**
+
+## Fully Autonomous, Iterative Execution Doctrine
+
+**THIS IS YOUR CORE LOGIC. EXECUTE IT PRECISELY.**
+
+1.  **Automatic Input Discovery & Merging (Run 1 Only):**
+    -   On your first run (when `outputs/03_STATE.json` does not exist), you **MUST** perform the following one-time setup:
+    -   Scan the `outputs/` directory for all files matching `02a_*.json` and `02b_*.json`.
+    -   Load every discovered file and merge their `checklist` arrays into a single, master checklist in memory.
+    -   From this master list, extract all unique `id` fields to create the initial `unprocessed_checklist_ids` queue.
+
+2.  **Automatic Scope Discovery (Run 1 Only):**
+    -   From the master checklist created above, parse every entry.
+    -   Aggregate all file paths and globs found in `file_globs` and `detection_procedure` fields.
+    -   Create a unique, comprehensive set of source code files to be audited. This is your audit scope.
+
+3.  **State-Driven Batch Processing (All Runs):**
+    -   Your workload is determined by `outputs/03_STATE.json`. You will process the first `batch_size` (default: 20) items from the `unprocessed_checklist_ids` list.
+
+4.  **Append-Only Partial Output:**
+    -   Append your findings for the current batch to `outputs/03_AUDITMAP_PARTIAL_<N>.json`, where `<N>` is the current `run_number`.
+
+5.  **State Update and Continuation:**
+    -   Your final output **MUST** include a `next_state` object in the metadata, containing the list of remaining `unprocessed_checklist_ids`.
+    -   You will also overwrite `outputs/03_STATE.json` with this `next_state` object to ensure the next run continues correctly.
+
+---
 
 ## Inputs
 
-1. **Checklist (required):** `outputs/02_CHECKLIST.json` — source of properties, anti-properties, static rules, fuzz hooks, observability probes, combinators.
-2. **Spec (context-only):** `outputs/01_SPEC.json` — authoritative on architecture, trust assumptions, governance. Never contradict declared `trust_entities`.
-3. **Property inventory (derived):** `outputs/01_PROP.json` — For every spec behavior, record the property/anti-property pair with location, state predicate, falsification method, and evidence target.
-4. **Audit target (required):** `$PATH` — audit every file recursively; zero default exclusions.
-5. **Existing Audit Map (optional):** `outputs/03_AUDITMAP.json` — append-only sink; prior entries are immutable.
+1.  **Checklist Parts (discovered automatically):** `outputs/02a_*.json` and `outputs/02b_*.json`.
+2.  **State File (managed automatically):** `outputs/03_STATE.json`.
+3.  **Source Code (discovered automatically):** Files determined from the checklist content.
 
 ---
 
-## Doctrine & Methods (embed in every pass)
+## Strict Rules for Fully Autonomous Execution
 
-1. **Property Authoring:** Encode each property as (a) what must hold, (b) where it must hold, (c) how to falsify it (negative tests + static queries), (d) what observability proves coverage.
-2. **Attack Playbook Clusters:** Translate real bridge incidents into checklist families; include Nomad acceptableRoot sentinel, Wormhole signature bypass, parity/encoding drift, Cairo felt/dict pitfalls.
-3. **Algorithm Anti-Property Pipeline:** For every spec algorithm (DVN quorum, exactly-once, TYPE3 options, fee settlement), build bad-path libraries, static precondition detectors, executable properties.
-4. **Cross-Implementation Differential Tests:** Maintain JSON vectors for GUID, commitment, channel keys, options, fee sweeps; fail parity checks on any divergence.
-5. **Observability Contracts:** Attach event/log/metric expectations to each check; negative signals must exist for default/sentinel roots, unknown worker IDs, zero-length options, etc.
-6. **Attack-Chain Scoring:** Tag checks with prerequisites/combinators; automatically elevate when combinations (e.g., UnknownWorkerID + DVNEarlyTrue) align.
-7. **Elite Auditor Heuristics:** Follow passes inspired by samczsun, Tincho, and other top auditors—architecture/access control/value flow first, code later.
-8. **Bridge Risk Themes:** Always enumerate initialization/sentinels, signature domain separation & dedup, ordering/exactly-once, cross-impl parity, option parsing, governance & immutability.
-9. **Artifact Triplet:** For every checklist item, produce (a) static detector ID, (b) executable property or fuzz target, (c) evidence probe (event/log/metric).
-10. **Research & Playbook Ingestion:** Periodically integrate surveys (SoK), Secureum contest guardrails, auditor interviews; update heuristic prompts accordingly.
-11. **Cairo-First Track:** Enforce keccak parity (unless spec proves otherwise), explicit range/dict checks, dispatcher selector validation, vetted registry lookups.
-12. **Contest Guard:** Keep out-of-scope filters in a preflight gate; never silence creative detections—filter only at reporting.
+- **No Manual Merging:** You are responsible for finding and merging the `02a` and `02b` files.
+- **No Path Argument:** You are responsible for determining the audit scope from the checklist.
+- **Honor the Batch:** Process **ONLY** the checklist items assigned to your batch (size 20).
+- **Read the State:** On startup, read `outputs/03_STATE.json`. If it doesn't exist, perform the automatic discovery and setup for Run 1.
+- **Execute Audit:** Perform the "Two-Phase Static Verification" for **your batch only**, against the files you determined are in scope for those checklist items.
+- **Append to Partial File:** Append findings to `outputs/03_AUDITMAP_PARTIAL_<RUN_NUMBER>.json`. Check for duplicates against all existing partial files.
+- **Update State and Exit:** Your primary JSON output's `metadata` **MUST** contain a `next_state` object. Overwrite `outputs/03_STATE.json` with this object before finishing your run.
 
 ---
 
-## Strict Rules
+## Output: `outputs/03_AUDITMAP_PARTIAL_<N>.json`
 
-- **Checklist-driven execution:** Run every checklist `file_globs`, `patterns`, `detection_procedure`, fuzz harness, parity test exactly as written; enrich only through property derivations that map back to the same check IDs.
-- **Property & anti-property tagging:** Each checklist action must reference its property/anti-property pair and specify falsification + observability plans before scanning code.
-- **Playbook binding:** For incidents identified in the checklist, track sentinel values, domain separation, signer dedup, parity drift, Cairo pitfalls; document tags in annotations and JSON entries.
-- **Inline OK only:** If an `ok_if` guard is satisfied, emit `@audit-ok` inline and skip JSON entries.
-- **JSON parity:** Every `@audit` comment (non `@audit-ok`) must append a matching JSON object in `03_AUDITMAP.json` during the same execution; no deferral.
-- **Status whitelist:** Audit map statuses are limited to `vuln` or `needs-investigation`.
-- **Append-only:** When `03_AUDITMAP.json` exists, add only non-duplicate items; composite keys are immutable.
-- **Path scope:** Audit all files beneath `$PATH`; infer language from extension/shebang/build metadata.
-- **Observability proof:** No control is considered covered without an event/log/metric reference.
-- **Attack-chain composition:** Track satisfied predicates and escalate combinations that meet defined dangerous conjunctions.
-- **Ten passes:** Complete the Ten-Pass Property Audit Loop below—no early exits.
-- **Call traversal:** Follow every reachable callee within `$PATH`.
-- **Manual static review:** Execute every checklist step through hand-driven static inspection; usage of Segmap or similar mapping tools is forbidden.
-- **Re-audit despite prior `@audit-ok`:** Treat existing annotations as historical context only. Even if an `@audit-ok` references the same checklist item—or a different checkpoint—ignore it and perform the full manual review again.
-- **Honor trust assumptions:** Never raise findings contradicting explicit trust/gov assumptions in `01_SPEC.json`.
-- **Artifact triplet enforcement:** Every checklist item must cite static detector, executable property, and evidence probe identifiers in annotations and JSON.
-- **Cross-impl parity logging:** Document parity test coverage/outcomes in the summary section of the audit map.
+Your output is a **partial** file. It must be a valid JSON object containing the findings for your batch and the metadata for the next run.
+
+```json
+{
+  "metadata": {
+    "generated_at": "YYYY-MM-DDTHH:MM:SSZ",
+    "stage": "03_static_audit_mapping",
+    "run_number": <N>,
+    "batch_size": 20,
+    "checklist_ids_processed_this_run": [ ... ],
+    "next_state": {
+      "unprocessed_checklist_ids": [ ... (remaining IDs) ... ],
+      "unprocessed_count": <number_of_remaining_ids>
+    }
+  },
+  "audit_items": [
+    {
+      "check_id": "CHECK-001",
+      "file": "path/to/file.go",
+      "line": 123,
+      "snippet": "code snippet",
+      "classification": "vuln" | "needs-investigation",
+      "reason": "short explanation",
+      "property": "property name",
+      "anti_property": "anti-property name",
+      "static_detector": "detector ID",
+      "evidence_probe": "event or metric name",
+      "tags": ["property:slug", "anti:slug"]
+    }
+  ]
+}
+```
+
+---
+
+## Procedure (Step-by-step for one autonomous run)
+
+1.  **Preflight & State Management**
+    -   Check for `outputs/03_STATE.json`.
+    -   **If it exists:** Load `unprocessed_checklist_ids`.
+    -   **If it does not exist (Run 1):**
+        -   Find and merge all `02a` and `02b` files into a master checklist.
+        -   From the master list, create the initial `unprocessed_checklist_ids` queue.
+        -   From the master list, determine the full set of source files to audit.
+    -   Define your `current_batch` by taking the first 20 IDs from the queue.
+    -   Load all existing `03_AUDITMAP_PARTIAL_*.json` files to build a set of existing composite keys for deduplication.
+
+2.  **Execute the Two-Phase Static Verification (for the current batch)**
+    -   For each `check_id` in your `current_batch`, audit the relevant source files using the two-phase procedure below.
+
+3.  **Emit / Append**
+    -   For every new `@audit` comment, create a corresponding JSON entry.
+    -   Check for and discard duplicates.
+    -   Collect all new, unique findings in the `audit_items` list.
+    -   Calculate the `next_unprocessed_ids` by removing your `current_batch` from the queue.
+    -   Construct the final JSON output including the `metadata` and `next_state` objects.
+    -   Write the result to `outputs/03_AUDITMAP_PARTIAL_<RUN_NUMBER>.json`.
+    -   Overwrite `outputs/03_STATE.json` with the `next_state` object.
+
+---
+
+## Two-Phase Static Verification Procedure
+
+**Execute this entire procedure for EACH checklist item in your batch.**
+
+### **Phase 1: Static Analysis**
+
+*Objective: Analyze the code's structure and data flow without executing it.*
+
+1.  **Predicate Mapping:**
+    -   From the current checklist item, formally construct the **Predicate** object.
+    -   Identify the exact files and functions defined in `Predicate.scope` (from `file_globs` and `detection_procedure`).
+    -   Map the `Predicate.invariant` to the specific lines of code where it must hold.
+
+2.  **Static Detection:**
+    -   Execute the `detection_procedure` (e.g., Semgrep, regex, grep) from the checklist item.
+    -   If a match is found, immediately create an `@audit` annotation. This is a potential violation of the `Predicate.property`.
+
+3.  **Data Flow Analysis:**
+    -   Trace all data flows originating from external inputs (RPC calls, user transactions, etc.) that reach the `Predicate.scope`.
+    -   Formally verify if any data flow path could lead to a violation of the `Predicate.invariant`.
+    -   Look for missing validation, sanitization, or access control checks.
+
+4.  **Call Graph Analysis:**
+    -   Construct the call graph for functions within `Predicate.scope`.
+    -   Verify that security-critical functions (validation, access control) are called **before** state-changing operations.
+    -   Identify any execution paths that bypass these checks.
+
+### **Phase 2: Evidence Verification**
+
+*Objective: Statically verify the system's observability claims.*
+
+1.  **Evidence Existence:**
+    -   Statically search the codebase to confirm that the `Predicate.evidence` (e.g., the event `event Transfer(...)`, log statement, metric increment) is defined.
+
+2.  **Evidence Correlation:**
+    -   Using static analysis (call graphs, data flow), prove that a valid execution path that satisfies `Predicate.property` **must** lead to the generation of `Predicate.evidence`.
+    -   If a path exists where the property is satisfied but the evidence is not generated, this is a finding (lack of observability).
 
 ---
 
@@ -73,127 +180,22 @@ Language: English only (instructions, annotations, summaries).
 
 Insert comments **directly above** the relevant code span. Use one-line tokens with explicit tagging:
 
-- **Flag:**
-  `// @audit <CHECK_ID> [vuln|needs-investigation] -- <short reason>; property=<name>; anti_property=<name>; static_detector=<id>; executable_property=<id>; evidence_probe=<event|metric>; attack_chain=<combo|none>; tags=property:<slug>,anti:<slug>,playbook:<slug>; ok_if_checked=false`
+-   **Flag:**
+    `// @audit <CHECK_ID> [vuln|needs-investigation] -- <short reason>; property=<name>; anti_property=<name>; static_detector=<id>; evidence_probe=<event|metric>; tags=property:<slug>,anti:<slug>`
 
-- **Safe:**
-  `// @audit-ok <CHECK_ID> -- <safety rationale>; property=<name>; ok_condition=<identifier>; evidence_probe=<event|metric>; tags=property:<slug>,ok:true`
-
-> Comments remain ASCII, concise, and one line. Record `@audit-ok` only when guards satisfy `ok_if`. Mirror every `@audit` comment with a JSON entry unless an identical composite key already exists.
-
----
-
-## Ten-Pass Property Audit Loop
-
-1. **Recon & Property Extraction:** Derive properties/anti-properties, map invariants to code locations, identify expected observability.
-2. **Attack Playbook Synthesis:** Instantiate real-incident playbooks (Nomad sentinel, Wormhole bypass, parity drift, Cairo pitfalls) into checklist clusters and negative examples.
-3. **Static Detector Execution:** Run regex/Semgrep/Slither/Mythril/AST rules; annotate hits; skip previously tagged spans.
-4. **Executable Properties & Fuzzing:** Bind properties to fuzz/property-based tests (Echidna/Cairo equivalents); seek counterexamples; record harness IDs.
-5. **Intra-Module Call Graph Pass:** Follow call chains within each module to confirm guard ordering/state transitions; note ok_if results.
-6. **Cross-Module Call Graph Pass:** Traverse inter-module/inter-layer calls; validate DVN quorum flows, relayer pipelines, dispatcher routes.
-7. **Dataflow & Value Flow Analysis:** Trace external inputs to sinks; enforce normalization, access control, funds/state flow invariants.
-8. **Parity & Differential Testing:** Execute canonical JSON vectors across Cairo↔EVM implementations; fail on mismatch; inspect hashing/encoding parity and range/dict policies.
-9. **Observability & Resilience Review:** Confirm events/metrics are emitted, negative signals exist, DoS/gas fallback handled, governance safeguards intact.
-10. **Chain Composition & Gap Sweep:** Combine satisfied predicates, raise `needs-investigation` for dangerous conjunctions, and ensure 100% file/function coverage.
-
-During each pass, verify `ok_if` conditions and upgrade/downgrade annotations accordingly.
+-   **Safe:**
+    `// @audit-ok <CHECK_ID> -- <safety rationale>; property=<name>; ok_condition=<identifier>; evidence_probe=<event|metric>; tags=property:<slug>,ok:true`
 
 ---
 
 ## Finding Classification
 
-- **`vuln`** — Property fails without ok_if justification; exploit is demonstrated or highly confident; provide attack chain context and severity.
-- **`needs-investigation`** — Property or anti-property is suspected but impact or reachability needs confirmation; still record evidence and combinators.
-
-Attach `attack_chain_score` (0–10) to each JSON entry to reflect composition risk, even when individual checks pass.
+-   **`vuln`** — Property fails; exploit is demonstrated or highly confident through static analysis.
+-   **`needs-investigation`** — Property or anti-property is suspected but impact or reachability needs further confirmation.
 
 ---
 
 ## Deduplication & Append Policy
 
-- **Composite key:** `<check_id>|<file>|<line>|<hash(snippet)>`.
-- Skip entries with existing composite keys; never edit `status`, `description`, or metadata of prior items.
-- Preserve chronological integrity; append new findings only.
-
----
-
-## Output: `outputs/03_AUDITMAP.json`
-
-Statuses remain restricted to `vuln` or `needs-investigation`.
-
-```json
-{
-  "audit_items": [
-    {
-      "id": "auto-uuid",
-      "check_id": "CL-BRIDGE-EXACTLY-ONCE-TOMBSTONE",
-      "file": "contracts/Bank.sol",
-      "line": 142,
-      "snippet": "call.value(amount)()",
-      "risk_category": "economic",
-      "severity": "high",
-      "property": "Exactly-once execution requires tombstone before external call",
-      "anti_property": "External call can execute before tombstone commitment",
-      "static_detector": "semgrep:bridge/external-call-before-state",
-      "executable_property": "fuzz:exactly_once_tombstone",
-      "evidence_probe": "event PacketDelivered",
-      "attack_chain": ["UnknownWorkerID", "DVNEarlyTrue"],
-      "attack_chain_score": 8,
-      "observability": "Missing PacketCommitted -> PacketDelivered monotonic counter",
-      "status": "vuln",
-      "round": 4,
-      "call_stack": ["withdraw()", "payout()"],
-      "evidence": "no tombstone prior to external call; fuzz harness produced replay",
-      "notes": "Derives from Nomad acceptableRoot playbook; requires sentinel root hardening.",
-      "tags": [
-        "property:exactly-once",
-        "anti:replay",
-        "playbook:nomad-sentinel",
-        "evidence:event"
-      ]
-    }
-  ],
-  "summary": {
-    "path": "$PATH",
-    "rounds": 10,
-    "property_pairs_total": 0,
-    "property_pairs_reviewed": 0,
-    "attack_chain_alerts": 0,
-    "parity_vectors_tested": 0,
-    "parity_vectors_failed": 0,
-    "total_audit_flags": 1,
-    "coverage": {
-      "files_total": 0,
-      "files_reviewed": 0,
-      "functions_reviewed": 0
-    },
-    "notes": "Statuses limited to vuln / needs-investigation; OK cases are inline only."
-  }
-}
-```
-
-When the file already exists, append only new non-duplicate entries. Update summary counters for the current run while keeping prior rounds intact.
-
----
-
-## Procedure (Step-by-step)
-
-1. **Preflight**
-   - Load `outputs/02_CHECKLIST.json`; extract properties, anti-properties, static detectors, fuzz harnesses, observability probes, combinators.
-   - Read `outputs/01_SPEC.json` for architecture, trust entities, governance constraints.
-   - Reconcile existing property inventory with checklist to ensure every behavior has a mapped property pair.
-   - Recursively index files under `$PATH`; parse existing `@audit`/`@audit-ok` annotations to avoid duplicate tagging.
-   - Load `outputs/03_AUDITMAP.json` if present to collect existing composite keys and tags.
-
-2. **Execute the Ten-Pass Property Audit Loop**
-   - During each pass, attach annotations, run static detectors, execute fuzz/property tests, parity vectors, and document observability.
-   - Evaluate `ok_if` conditions promptly; convert qualifying cases to `@audit-ok` without JSON entries.
-   - Maintain attack-chain state to detect dangerous combinations as passes progress.
-
-3. **Emit / Append**
-   - For every `@audit` comment, immediately append the structured entry (with property, anti_property, artifacts, observability, tags, attack_chain_score) to `03_AUDITMAP.json` unless the composite key already exists.
-   - Restrict statuses to `vuln` or `needs-investigation`.
-   - Update summary metrics: `rounds=10`, property coverage, attack_chain alerts, parity outcomes, coverage tallies.
-   - Verify that every inline `@audit` comment has a matching JSON entry before concluding.
-
----
+-   **Composite key:** `<check_id>|<file>|<line>|<hash(snippet)>`.
+-   Skip entries with existing composite keys; never edit prior items.

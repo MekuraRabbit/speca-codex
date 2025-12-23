@@ -6,7 +6,6 @@ SPEC_URLS ?= "https://ethereum.github.io/execution-specs/src/,https://geth.ether
 WORKDIR ?= target_workspace
 OUTPUT_DIR ?= outputs
 LOG_DIR ?= outputs/logs
-AUDIT_TARGET ?= $(WORKDIR)
 
 # Claude environment
 export CLAUDE_CODE_PERMISSIONS := bypassPermissions
@@ -21,7 +20,7 @@ CLAUDE_FLAGS ?= --dangerously-skip-permissions --agent serena --output-format js
 all: preparation audit
 
 # Phase targets (matching scripts)
-preparation: 02c
+preparation: 02a
 	@echo "🎉 Preparation phase completed! Check $(OUTPUT_DIR)/"
 
 audit: 04
@@ -36,7 +35,7 @@ help:
 	@echo ""
 	@echo "Phase Targets:"
 	@echo "  all         - Run full pipeline (preparation + audit)"
-	@echo "  preparation - Run preparation phase (01 → 01a → 01b → 01c → 02a → 02b → 02c)"
+	@echo "  preparation - Run preparation phase (01 → 01a → 01b → 01c → 02a)"
 	@echo "  audit       - Run audit phase (03 → 04)"
 	@echo ""
 	@echo "Preparation Steps:"
@@ -47,7 +46,7 @@ help:
 	@echo "  01c   - Property Extraction (01c_prop.md → 01c_PROP.json)"
 	@echo "  02a   - Checklist Boundaries (02a_checklist.md → 02a_CHECKLIST_BOUNDARIES.json)"
 	@echo "  02b   - Checklist Remaining (02b_checklistrem.md) - Run iteratively, generates _<N>.json"
-	@echo "  02c   - Checklist Merge (02c_checklistmerge.md → 02_CHECKLIST.json)"
+	@echo "  02c   - Checklist Merge (02c_checklistmerge.md → 02_CHECKLIST.json) [SKIPPED]"
 	@echo ""
 	@echo "Audit Steps:"
 	@echo "  03    - Static Audit Map (03_auditmap.md → 03_AUDITMAP.json)"
@@ -191,7 +190,7 @@ $(OUTPUT_DIR)/02a_CHECKLIST_BOUNDARIES.json: prompts/02a_checklist.md | 01c
 		if [ "$$REMAINING" -gt 0 ] 2>/dev/null; then \
 			echo "📋 $$REMAINING items remaining. Run 'make 02b' again."; \
 		else \
-			echo "🎉 All items processed! Ready for 'make 02c'."; \
+			echo "🎉 All items processed! Ready for 'make 03'."; \
 		fi; \
 	fi
 
@@ -219,10 +218,10 @@ $(OUTPUT_DIR)/02_CHECKLIST.json: prompts/02c_checklistmerge.md | 02a
 
 # Step 03: Audit Map
 03: $(OUTPUT_DIR)/03_AUDITMAP.json
-$(OUTPUT_DIR)/03_AUDITMAP.json: prompts/03_auditmap.md $(OUTPUT_DIR)/02_CHECKLIST.json
+$(OUTPUT_DIR)/03_AUDITMAP.json: prompts/03_auditmap.md $(OUTPUT_DIR)/02a_CHECKLIST_BOUNDARIES.json
 	@echo "⭐ Running 03_auditmap.md..."; \
 	START_TIME=$$(date +%s); \
-	claude $(CLAUDE_FLAGS) -p "$$(cat prompts/03_auditmap.md) PATH=$(AUDIT_TARGET)" > $(LOG_DIR)/03_auditmap.json; \
+	claude $(CLAUDE_FLAGS) -p "$$(cat prompts/03_auditmap.md)" > $(LOG_DIR)/03_auditmap.json; \
 	END_TIME=$$(date +%s); \
 	DURATION=$$((END_TIME - START_TIME)); \
 	if [ -f "outputs/03_AUDITMAP.json" ]; then \

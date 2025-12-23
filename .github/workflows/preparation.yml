@@ -86,11 +86,61 @@ jobs:
           test -f outputs/01c_PROP.json || exit 1
 
 
-      - name: Run 02_checklist
+      - name: Run 02a_checklist
         working-directory: ./target_workspace
         run: |
-          claude --dangerously-skip-permissions --agent serena -p "$(cat ../prompts/02_checklist.md)"
-          test -f outputs/02_CHECKLIST.json || exit 1
+          claude --dangerously-skip-permissions --agent serena -p "$(cat ../prompts/02a_checklist.md)"
+          test -f outputs/02a_CHECKLIST.json || exit 1
+
+      - name: Run 02b_checklistrem (1/10)
+        working-directory: ./target_workspace
+        run: |
+          claude --dangerously-skip-permissions --agent serena -p "$(cat ../prompts/02b_checklistrem.md)"
+
+      - name: Run 02b_checklistrem (2/10)
+        working-directory: ./target_workspace
+        run: |
+          claude --dangerously-skip-permissions --agent serena -p "$(cat ../prompts/02b_checklistrem.md)"
+
+      - name: Run 02b_checklistrem (3/10)
+        working-directory: ./target_workspace
+        run: |
+          claude --dangerously-skip-permissions --agent serena -p "$(cat ../prompts/02b_checklistrem.md)"
+
+      - name: Run 02b_checklistrem (4/10)
+        working-directory: ./target_workspace
+        run: |
+          claude --dangerously-skip-permissions --agent serena -p "$(cat ../prompts/02b_checklistrem.md)"
+
+      - name: Run 02b_checklistrem (5/10)
+        working-directory: ./target_workspace
+        run: |
+          claude --dangerously-skip-permissions --agent serena -p "$(cat ../prompts/02b_checklistrem.md)"
+
+      - name: Run 02b_checklistrem (6/10)
+        working-directory: ./target_workspace
+        run: |
+          claude --dangerously-skip-permissions --agent serena -p "$(cat ../prompts/02b_checklistrem.md)"
+
+      - name: Run 02b_checklistrem (7/10)
+        working-directory: ./target_workspace
+        run: |
+          claude --dangerously-skip-permissions --agent serena -p "$(cat ../prompts/02b_checklistrem.md)"
+
+      - name: Run 02b_checklistrem (8/10)
+        working-directory: ./target_workspace
+        run: |
+          claude --dangerously-skip-permissions --agent serena -p "$(cat ../prompts/02b_checklistrem.md)"
+
+      - name: Run 02b_checklistrem (9/10)
+        working-directory: ./target_workspace
+        run: |
+          claude --dangerously-skip-permissions --agent serena -p "$(cat ../prompts/02b_checklistrem.md)"
+
+      - name: Run 02b_checklistrem (10/10)
+        working-directory: ./target_workspace
+        run: |
+          claude --dangerously-skip-permissions --agent serena -p "$(cat ../prompts/02b_checklistrem.md)"
 
       - name: Prepare Snapshot Branch
         id: snapshot
