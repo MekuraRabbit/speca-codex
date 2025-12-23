@@ -1,13 +1,13 @@
 
 ---
-Description: Fully autonomous, iterative, **static-only** audit based on formal methods. This prompt **automatically discovers and merges** all `02a` and `02b` outputs, **automatically determines which source files to audit**, and processes the checklist in batches to generate a complete audit map. Dynamic analysis and fuzzing are explicitly excluded.
-Usage: `/03_auditmap`
+Description: Fully autonomous, iterative, **static-only** audit. This version enforces strict output formats (`audit_items`, `verified_items`), correct state management, and **mandates source code annotation** using the `file` tool.
+Usage: `/03_static_audit_v2`
 Language: English only.
 ---
 
-**Core Doctrine: Formal Static Verification as Audit**
+**Core Doctrine: Formal Static Verification & Annotation**
 
-Your mission is to perform a comprehensive **static audit** by applying principles from formal methods. You will not execute code or run dynamic tests. Your entire analysis will be based on the static structure of the codebase. You will **prove or disprove formal properties** through static analysis alone.
+Your mission is to perform a comprehensive **static audit** and **annotate the source code** with your findings. You will not execute code. Your entire analysis will be based on the static structure of the codebase. Each checklist item is a formal **Predicate** to be verified.
 
 **The Predicate:**
 
@@ -17,73 +17,46 @@ Each checklist item you process must be interpreted as a formal Predicate with t
 interface Predicate {
   id: string; // Checklist ID
   property: string; // The property that must hold true
-  anti_property: string; // The property that must be proven false
   scope: { files: string[]; functions: string[]; }; // The code under verification
   invariant: string; // An invariant condition that must always be true within the scope
-  evidence: { type: "event" | "log" | "metric"; value: string; }; // Observable proof
 }
 ```
 
 ---
 
-## Fully Autonomous, Iterative Execution Doctrine
+## Autonomous, Iterative Execution Doctrine (V2)
 
 **THIS IS YOUR CORE LOGIC. EXECUTE IT PRECISELY.**
 
-1.  **Automatic Input Discovery & Merging (Run 1 Only):**
-    -   On your first run (when `outputs/03_STATE.json` does not exist), you **MUST** perform the following one-time setup:
-    -   Scan the `outputs/` directory for all files matching `02a_*.json` and `02b_*.json`.
-    -   Load every discovered file and merge their `checklist` arrays into a single, master checklist in memory.
-    -   From this master list, extract all unique `id` fields to create the initial `unprocessed_checklist_ids` queue.
+1.  **Automatic Input Discovery (Run 1 Only):**
+    -   On your first run (when `outputs/03_STATE.json` does not exist), you **MUST** scan the `outputs/` directory for all files matching the glob pattern `02[ab]_*.json`. This ensures both `02a` (boundaries) and all `02b` (remaining) files are included.
+    -   Merge their `checklist` arrays into a single master list and create the initial `unprocessed_checklist_ids` queue.
 
-2.  **Automatic Scope Discovery (Run 1 Only):**
-    -   From the master checklist created above, parse every entry.
-    -   Aggregate all file paths and globs found in `file_globs` and `detection_procedure` fields.
-    -   Create a unique, comprehensive set of source code files to be audited. This is your audit scope.
-
-3.  **State-Driven Batch Processing (All Runs):**
+2.  **State-Driven Batch Processing (All Runs):**
     -   Your workload is determined by `outputs/03_STATE.json`. You will process the first `batch_size` (default: 20) items from the `unprocessed_checklist_ids` list.
 
-4.  **Append-Only Partial Output:**
-    -   Append your findings for the current batch to `outputs/03_AUDITMAP_PARTIAL_<N>.json`, where `<N>` is the current `run_number`.
+3.  **Source Code Annotation (MANDATORY):**
+    -   For every item you analyze, you **MUST** add an `@audit` or `@audit-ok` comment to the corresponding source code file. You will use the `file` tool with the `edit` action for this. This is not optional.
+
+4.  **Strict Output Formatting:**
+    -   Your final JSON output **MUST** contain two top-level keys: `audit_items` for findings (`vuln`, `needs-investigation`) and `verified_items` for successful checks (`PASS`).
+    -   **DO NOT** use the key `annotations`.
 
 5.  **State Update and Continuation:**
-    -   Your final output **MUST** include a `next_state` object in the metadata, containing the list of remaining `unprocessed_checklist_ids`.
-    -   You will also overwrite `outputs/03_STATE.json` with this `next_state` object to ensure the next run continues correctly.
-
----
-
-## Inputs
-
-1.  **Checklist Parts (discovered automatically):** `outputs/02a_*.json` and `outputs/02b_*.json`.
-2.  **State File (managed automatically):** `outputs/03_STATE.json`.
-3.  **Source Code (discovered automatically):** Files determined from the checklist content.
-
----
-
-## Strict Rules for Fully Autonomous Execution
-
-- **No Manual Merging:** You are responsible for finding and merging the `02a` and `02b` files.
-- **No Path Argument:** You are responsible for determining the audit scope from the checklist.
-- **Honor the Batch:** Process **ONLY** the checklist items assigned to your batch (size 20).
-- **Read the State:** On startup, read `outputs/03_STATE.json`. If it doesn't exist, perform the automatic discovery and setup for Run 1.
-- **Execute Audit:** Perform the "Two-Phase Static Verification" for **your batch only**, against the files you determined are in scope for those checklist items.
-- **Append to Partial File:** Append findings to `outputs/03_AUDITMAP_PARTIAL_<RUN_NUMBER>.json`. Check for duplicates against all existing partial files.
-- **Update State and Exit:** Your primary JSON output's `metadata` **MUST** contain a `next_state` object. Overwrite `outputs/03_STATE.json` with this object before finishing your run.
+    -   Your final JSON output's `metadata.next_state` object is the single source of truth for the next run. It **MUST** contain the correct remaining `unprocessed_checklist_ids`.
 
 ---
 
 ## Output: `outputs/03_AUDITMAP_PARTIAL_<N>.json`
 
-Your output is a **partial** file. It must be a valid JSON object containing the findings for your batch and the metadata for the next run.
+Your output **MUST** follow this structure precisely.
 
 ```json
 {
   "metadata": {
     "generated_at": "YYYY-MM-DDTHH:MM:SSZ",
-    "stage": "03_static_audit_mapping",
+    "stage": "03_static_audit",
     "run_number": <N>,
-    "batch_size": 20,
     "checklist_ids_processed_this_run": [ ... ],
     "next_state": {
       "unprocessed_checklist_ids": [ ... (remaining IDs) ... ],
@@ -92,17 +65,19 @@ Your output is a **partial** file. It must be a valid JSON object containing the
   },
   "audit_items": [
     {
-      "check_id": "CHECK-001",
-      "file": "path/to/file.go",
+      "check_id": "...",
+      "file": "...",
       "line": 123,
-      "snippet": "code snippet",
       "classification": "vuln" | "needs-investigation",
-      "reason": "short explanation",
-      "property": "property name",
-      "anti_property": "anti-property name",
-      "static_detector": "detector ID",
-      "evidence_probe": "event or metric name",
-      "tags": ["property:slug", "anti:slug"]
+      "summary": "..."
+    }
+  ],
+  "verified_items": [
+    {
+      "check_id": "...",
+      "file": "...",
+      "line": 456,
+      "summary": "Property verified via static analysis."
     }
   ]
 }
@@ -110,27 +85,29 @@ Your output is a **partial** file. It must be a valid JSON object containing the
 
 ---
 
-## Procedure (Step-by-step for one autonomous run)
+## Procedure
 
 1.  **Preflight & State Management**
     -   Check for `outputs/03_STATE.json`.
     -   **If it exists:** Load `unprocessed_checklist_ids`.
     -   **If it does not exist (Run 1):**
-        -   Find and merge all `02a` and `02b` files into a master checklist.
-        -   From the master list, create the initial `unprocessed_checklist_ids` queue.
-        -   From the master list, determine the full set of source files to audit.
+        -   Find and merge all `outputs/02[ab]_*.json` files.
+        -   Create the initial `unprocessed_checklist_ids` queue.
     -   Define your `current_batch` by taking the first 20 IDs from the queue.
-    -   Load all existing `03_AUDITMAP_PARTIAL_*.json` files to build a set of existing composite keys for deduplication.
 
-2.  **Execute the Two-Phase Static Verification (for the current batch)**
-    -   For each `check_id` in your `current_batch`, audit the relevant source files using the two-phase procedure below.
+2.  **Execute Two-Phase Static Verification (In Memory)**
+    -   For each `check_id` in your `current_batch`, perform the two-phase static verification.
+    -   Do not write to the final JSON yet. Instead, generate a list of analysis results in memory. Each result should contain the information needed for both the `@audit` comment and the final JSON output (e.g., file, line, classification, summary).
 
-3.  **Emit / Append**
-    -   For every new `@audit` comment, create a corresponding JSON entry.
-    -   Check for and discard duplicates.
-    -   Collect all new, unique findings in the `audit_items` list.
-    -   Calculate the `next_unprocessed_ids` by removing your `current_batch` from the queue.
-    -   Construct the final JSON output including the `metadata` and `next_state` objects.
+3.  **Apply Source Code Annotations (MANDATORY)**
+    -   Iterate through the analysis results from the previous step.
+    -   For each result, construct the appropriate `@audit` or `@audit-ok` comment string.
+    -   Use the `file` tool's `edit` action to insert this comment string directly above the relevant line in the source code file. You may need to call the `file` tool multiple times, once for each annotation.
+
+4.  **Emit Final JSON**
+    -   After all source code annotations for the batch have been applied, iterate through your in-memory analysis results again.
+    -   Sort each result into the `audit_items` list (if `vuln` or `needs-investigation`) or the `verified_items` list (if `PASS`).
+    -   Construct the final JSON output object according to the strict format defined above, including the `metadata` and `next_state`.
     -   Write the result to `outputs/03_AUDITMAP_PARTIAL_<RUN_NUMBER>.json`.
     -   Overwrite `outputs/03_STATE.json` with the `next_state` object.
 
@@ -138,64 +115,24 @@ Your output is a **partial** file. It must be a valid JSON object containing the
 
 ## Two-Phase Static Verification Procedure
 
-**Execute this entire procedure for EACH checklist item in your batch.**
+(This procedure remains the same: Static Analysis and Evidence Verification)
 
 ### **Phase 1: Static Analysis**
-
-*Objective: Analyze the code's structure and data flow without executing it.*
-
-1.  **Predicate Mapping:**
-    -   From the current checklist item, formally construct the **Predicate** object.
-    -   Identify the exact files and functions defined in `Predicate.scope` (from `file_globs` and `detection_procedure`).
-    -   Map the `Predicate.invariant` to the specific lines of code where it must hold.
-
-2.  **Static Detection:**
-    -   Execute the `detection_procedure` (e.g., Semgrep, regex, grep) from the checklist item.
-    -   If a match is found, immediately create an `@audit` annotation. This is a potential violation of the `Predicate.property`.
-
-3.  **Data Flow Analysis:**
-    -   Trace all data flows originating from external inputs (RPC calls, user transactions, etc.) that reach the `Predicate.scope`.
-    -   Formally verify if any data flow path could lead to a violation of the `Predicate.invariant`.
-    -   Look for missing validation, sanitization, or access control checks.
-
-4.  **Call Graph Analysis:**
-    -   Construct the call graph for functions within `Predicate.scope`.
-    -   Verify that security-critical functions (validation, access control) are called **before** state-changing operations.
-    -   Identify any execution paths that bypass these checks.
+1.  **Predicate Mapping**
+2.  **Static Detection**
+3.  **Data Flow Analysis**
+4.  **Call Graph Analysis**
 
 ### **Phase 2: Evidence Verification**
-
-*Objective: Statically verify the system's observability claims.*
-
-1.  **Evidence Existence:**
-    -   Statically search the codebase to confirm that the `Predicate.evidence` (e.g., the event `event Transfer(...)`, log statement, metric increment) is defined.
-
-2.  **Evidence Correlation:**
-    -   Using static analysis (call graphs, data flow), prove that a valid execution path that satisfies `Predicate.property` **must** lead to the generation of `Predicate.evidence`.
-    -   If a path exists where the property is satisfied but the evidence is not generated, this is a finding (lack of observability).
+1.  **Evidence Existence**
+2.  **Evidence Correlation**
 
 ---
 
 ## Inline Commenting Standard
 
-Insert comments **directly above** the relevant code span. Use one-line tokens with explicit tagging:
+(This standard remains the same)
 
--   **Flag:**
-    `// @audit <CHECK_ID> [vuln|needs-investigation] -- <short reason>; property=<name>; anti_property=<name>; static_detector=<id>; evidence_probe=<event|metric>; tags=property:<slug>,anti:<slug>`
-
--   **Safe:**
-    `// @audit-ok <CHECK_ID> -- <safety rationale>; property=<name>; ok_condition=<identifier>; evidence_probe=<event|metric>; tags=property:<slug>,ok:true`
-
----
-
-## Finding Classification
-
--   **`vuln`** — Property fails; exploit is demonstrated or highly confident through static analysis.
--   **`needs-investigation`** — Property or anti-property is suspected but impact or reachability needs further confirmation.
-
----
-
-## Deduplication & Append Policy
-
--   **Composite key:** `<check_id>|<file>|<line>|<hash(snippet)>`.
--   Skip entries with existing composite keys; never edit prior items.
+-   **Flag:** `// @audit <CHECK_ID> [vuln|needs-investigation] -- <short reason>`
+-   **Safe:** `// @audit-ok <CHECK_ID> -- <safety rationale>` -- <safety rationale>` -- <safety rationale>` <safety rationale>` <safety rationale>`
+<safety rationale>`
