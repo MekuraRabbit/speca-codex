@@ -19,6 +19,19 @@ npm install -g @anthropic-ai/claude-code
 claude # and login with your Anthropic account
 ```
 
+Install `make` if not already available:
+
+```bash
+# Ubuntu/Debian
+sudo apt-get install make
+
+# macOS (via Homebrew)
+brew install make
+
+# Windows (via Chocolatey)
+choco install make
+```
+
 First, clone the repository and checkout the target branch.
 
 ```bash
@@ -30,7 +43,9 @@ git checkout -b audit/geth
 
 ### Option 1: Run Locally
 
-Simply edit the configuration variables in the start scripts and run them.
+Use the provided Makefile to run the audit pipeline.
+
+![Local](assets/local.png)
 
 #### Step 1: Clone Target Repository
 Clone the target repository into the `target_workspace` folder.
@@ -38,27 +53,47 @@ Clone the target repository into the `target_workspace` folder.
 git clone https://github.com/ethereum/go-ethereum.git target_workspace
 ```
 
-#### Step 2: Grant Permissions
-Make sure the scripts are executable.
+#### Step 2: Configure Variables
+Edit the configuration variables at the top of the `Makefile`:
+```makefile
+TARGET_REPO ?= ethereum/go-ethereum
+TARGET_REF ?= master
+KEYWORDS ?= "geth,ethereum client,execution specs,EIP"
+SPEC_URLS ?= "https://ethereum.github.io/execution-specs/src/,https://geth.ethereum.org/docs"
+```
+
+Or override them via command line:
 ```bash
-chmod +x scripts/*.sh
+make preparation TARGET_REPO=myorg/myrepo KEYWORDS="my,keywords"
 ```
 
 #### Step 3: Preparation Phase
-Edit `scripts/run_preparation.sh` to configure variables, then run it.
+Run the preparation phase (Spec → Trust Model → Properties → Checklist):
 ```bash
-./scripts/run_preparation.sh
+make preparation
 ```
-
-![Local Preparation](assets/local_preparation.png)
 
 #### Step 4: Audit Phase
-Edit `scripts/run_audit.sh` if needed, then run it.
+Run the audit phase (Static Audit → Review):
 ```bash
-./scripts/run_audit.sh
+make audit
 ```
 
-Then you can find the results in `/outputs`.
+You can also run individual steps:
+```bash
+make 01     # Specification Extraction
+make 01b    # Trust Model Generation
+make 01c    # Property Extraction
+make 02a    # Checklist Boundaries
+make 02b    # Checklist Remaining (run iteratively)
+make 02c    # Checklist Merge
+make 03     # Static Audit Map
+make 04     # Audit Review
+```
+
+Run `make help` for a full list of available targets.
+
+Results will be saved to the `outputs/` directory.
 
 ---
 
