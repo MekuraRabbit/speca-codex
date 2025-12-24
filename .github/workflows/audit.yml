@@ -62,22 +62,29 @@ jobs:
           cp -r ../outputs/* outputs/ 2>/dev/null || echo "No inputs found in root outputs/"
           ls -F outputs/
 
-      - name: Run 03_auditmap
+      - name: Run 03_auditmap (10 iterations)
         working-directory: ./target_workspace
         run: |
-          # Run audit scan on "." (target_workspace root)
-          # Uses relative path to prompts (../prompts/...)
-          claude --dangerously-skip-permissions --agent serena -p "$(cat ../prompts/03_auditmap.md) PATH=."
-          test -f outputs/03_AUDITMAP.json || exit 1
+          # Run audit scan iteratively (10 times)
+          for i in $(seq 1 10); do
+            echo "⭐ Running 03_auditmap.md (iteration $i/10)..."
+            claude --dangerously-skip-permissions --agent serena -p "$(cat ../prompts/03_auditmap.md)"
+            echo "✅ Finished 03_auditmap.md iteration $i"
+          done
+          # Verify at least one partial output was generated
+          ls outputs/03_AUDITMAP_PARTIAL_*.json >/dev/null 2>&1 || exit 1
 
-      - name: Run 04_review
+      - name: Run 04_review (3 iterations)
         working-directory: ./target_workspace
         run: |
-          # Review the findings and update the audit map in-place
-          claude --dangerously-skip-permissions --agent serena -p "$(cat ../prompts/04_review.md)"
-          
-          # Verify integrity (optional check, prompt ensures in-place update)
-          test -f outputs/03_AUDITMAP.json || exit 1
+          # Review the findings iteratively (3 times)
+          for i in $(seq 1 3); do
+            echo "⭐ Running 04_review.md (iteration $i/3)..."
+            claude --dangerously-skip-permissions --agent serena -p "$(cat ../prompts/04_review.md)"
+            echo "✅ Finished 04_review.md iteration $i"
+          done
+          # Verify at least one review output was generated
+          ls outputs/04_REVIEW_PARTIAL_*.json >/dev/null 2>&1 || exit 1
 
       - name: Prepare Snapshot Branch
         id: snapshot
