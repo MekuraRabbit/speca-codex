@@ -2,6 +2,16 @@
 
 An automated security analysis system using LLMs for comprehensive Bug Bounty research and vulnerability assessment.
 
+## Demo
+
+- Run Security Agent for Geth Locally
+  - Summary and Output Files: https://github.com/NyxFoundation/security-agent/pull/12
+- Run Security Agent for Geth on Github Actions
+  - Preparation Phase CI: https://github.com/NyxFoundation/security-agent/actions/runs/20120334544
+  - Preparation Phase Outputs: https://github.com/NyxFoundation/security-agent/pull/10 
+  - Audit Phase CI: https://github.com/NyxFoundation/security-agent/actions/runs/20127092838
+  - Audit Phase Outputs: https://github.com/NyxFoundation/security-agent/pull/11
+
 ## Requirement
 
 Before using this agent locally, please verify you have the following tools installed/configured:
@@ -236,6 +246,9 @@ flowchart TB
 1. Performs keyword research and specification retrieval (recursively follows links).
 2. Defines graph nodes (states and actions) and edges (transitions).
 3. Models complex logic as sub-graphs; lists pending items in `pending_sub_graphs` if length limits are reached.
+
+![Spec](assets/program_graph.png)
+(example: https://github.com/NyxFoundation/security-agent/pull/12)
 
 ##### 1-a2. Spec Retry (`/01a_specretry`)
 **Goal:** Process pending sub-graphs from the initial specification output.
