@@ -24,7 +24,7 @@ preparation: 02a
 	@echo "🎉 Preparation phase completed! Check $(OUTPUT_DIR)/"
 
 audit: 04
-	@echo "🎉 Audit phase completed! Check $(OUTPUT_DIR)/03_AUDITMAP_PARTIAL_*.json"
+	@echo "🎉 Audit phase completed! Check $(OUTPUT_DIR)/04_REVIEW_PARTIAL_*.json"
 
 # ------------------------------------------------------
 # Utilities
@@ -50,7 +50,7 @@ help:
 	@echo ""
 	@echo "Audit Steps:"
 	@echo "  03    - Static Audit Map (03_auditmap.md) - Run iteratively, generates _PARTIAL_<N>.json"
-	@echo "  04    - Audit Review (04_review.md → updates 03_AUDITMAP_PARTIAL_*.json)"
+	@echo "  04    - Audit Review (04_review.md) - Run iteratively, generates 04_REVIEW_PARTIAL_<N>.json"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  clean - Remove generated outputs"
@@ -245,19 +245,34 @@ $(OUTPUT_DIR)/02_CHECKLIST.json: prompts/02c_checklistmerge.md | 02a
 		fi; \
 	fi
 
-# Step 04: Review
-04: | $(OUTPUT_DIR)/03_STATE.json
-	@echo "⭐ Running 04_review.md..."; \
+# Step 04: Review (Iterative)
+# Each run generates 04_REVIEW_PARTIAL_<N>.json and logs to 04_review_<N>.json
+04: | init
+	@if ! ls $(OUTPUT_DIR)/03_AUDITMAP_PARTIAL_*.json >/dev/null 2>&1; then \
+		echo "❌ Error: No 03_AUDITMAP_PARTIAL_*.json files found. Run 'make 03' first."; exit 1; \
+	fi; \
+	N=$$(ls $(OUTPUT_DIR)/04_REVIEW_PARTIAL_*.json 2>/dev/null | wc -l); \
+	N=$$((N + 1)); \
+	echo "⭐ Running 04_review.md (iteration $$N)..."; \
 	START_TIME=$$(date +%s); \
-	cd $(WORKDIR) && claude $(CLAUDE_FLAGS) -p "$$(cat ../prompts/04_review.md)" > ../$(LOG_DIR)/04_review.json; \
+	cd $(WORKDIR) && claude $(CLAUDE_FLAGS) -p "$$(cat ../prompts/04_review.md)" > ../$(LOG_DIR)/04_review_$$N.json; \
 	END_TIME=$$(date +%s); \
 	DURATION=$$((END_TIME - START_TIME)); \
-	if [ -f "outputs/03_AUDITMAP.json" ]; then \
-		cp outputs/03_AUDITMAP.json ../$(OUTPUT_DIR)/; \
-		INPUT_TOKENS=$$(grep -o '"input_tokens":[0-9]*' ../$(LOG_DIR)/04_review.json | head -1 | cut -d: -f2); \
-		OUTPUT_TOKENS=$$(grep -o '"output_tokens":[0-9]*' ../$(LOG_DIR)/04_review.json | head -1 | cut -d: -f2); \
-		COST=$$(grep -o '"total_cost_usd":[0-9.]*' ../$(LOG_DIR)/04_review.json | head -1 | cut -d: -f2); \
-		echo "✅ Finished 04_review.md (Time: $${DURATION}s | Tokens: In=$$INPUT_TOKENS, Out=$$OUTPUT_TOKENS | Cost: \$$$$COST)"; \
+	INPUT_TOKENS=$$(grep -o '"input_tokens":[0-9]*' ../$(LOG_DIR)/04_review_$$N.json | head -1 | cut -d: -f2); \
+	OUTPUT_TOKENS=$$(grep -o '"output_tokens":[0-9]*' ../$(LOG_DIR)/04_review_$$N.json | head -1 | cut -d: -f2); \
+	COST=$$(grep -o '"total_cost_usd":[0-9.]*' ../$(LOG_DIR)/04_review_$$N.json | head -1 | cut -d: -f2); \
+	if [ -f "outputs/04_REVIEW_PARTIAL_$$N.json" ]; then \
+		cp outputs/04_REVIEW_PARTIAL_$$N.json ../$(OUTPUT_DIR)/; \
+		echo "✅ Finished 04_review.md iter $$N (Time: $${DURATION}s | Tokens: In=$$INPUT_TOKENS, Out=$$OUTPUT_TOKENS | Cost: \$$$$COST)"; \
 	else \
-		echo "❌ Error: 03_AUDITMAP.json missing after review"; exit 1; \
+		echo "⚠️  No new partial review generated in iteration $$N (Time: $${DURATION}s | Tokens: In=$$INPUT_TOKENS, Out=$$OUTPUT_TOKENS | Cost: \$$$$COST)"; \
+	fi; \
+	cp outputs/04_STATE.json ../$(OUTPUT_DIR)/ 2>/dev/null || true; \
+	if [ -f "../$(OUTPUT_DIR)/04_STATE.json" ]; then \
+		REMAINING=$$(grep -o '"remaining":[0-9]*' ../$(OUTPUT_DIR)/04_STATE.json | cut -d: -f2); \
+		if [ "$$REMAINING" -gt 0 ] 2>/dev/null; then \
+			echo "📋 $$REMAINING items remaining. Run 'make 04' again."; \
+		else \
+			echo "🎉 All items reviewed! Audit complete."; \
+		fi; \
 	fi
