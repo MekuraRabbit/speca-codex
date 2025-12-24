@@ -246,7 +246,7 @@ $(OUTPUT_DIR)/02_CHECKLIST.json: prompts/02c_checklistmerge.md | 02a
 	fi
 
 # Step 04: Review
-04: | 03
+04: | $(OUTPUT_DIR)/03_STATE.json
 	@echo "⭐ Running 04_review.md..."; \
 	START_TIME=$$(date +%s); \
 	cd $(WORKDIR) && claude $(CLAUDE_FLAGS) -p "$$(cat ../prompts/04_review.md)" > ../$(LOG_DIR)/04_review.json; \
