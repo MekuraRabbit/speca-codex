@@ -38,7 +38,7 @@ jobs:
   # Run audit map for each target in parallel
   auditmap:
     needs: setup
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: "!startsWith(github.event.head_commit.message, 'Merge')"
 
     strategy:
@@ -49,8 +49,8 @@ jobs:
     env:
       TARGET_REPO: ${{ matrix.target.repo }}
       TARGET_REF: ${{ matrix.target.ref }}
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Claude Code configuration (uses browser login session on self-hosted runner)
       CLAUDE_CODE_PERMISSIONS: bypassPermissions
       CLAUDE_CODE_MAX_OUTPUT_TOKENS: 100000
 
