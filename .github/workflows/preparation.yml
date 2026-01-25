@@ -13,8 +13,8 @@ on:
         required: true
         type: string
         default: 'https://ethereum.github.io/execution-specs/src/,https://geth.ethereum.org/docs'
-      spec_retry_iterations:
-        description: 'Number of specification retry iterations (01a)'
+      extract_iterations:
+        description: 'Number of extraction iterations (01b)'
         required: false
         type: number
         default: 10
@@ -71,7 +71,7 @@ jobs:
           make preparation \
             KEYWORDS="${{ env.KEYWORDS }}" \
             SPEC_URLS="${{ env.SPEC_URLS }}" \
-            SPEC_RETRY_ITERATIONS=${{ inputs.spec_retry_iterations }} \
+            EXTRACT_ITERATIONS=${{ inputs.extract_iterations }} \
             CHECKLIST_ITERATIONS=${{ inputs.checklist_iterations }}
 
       - name: Prepare Git Configuration
@@ -98,7 +98,7 @@ jobs:
 
           Keywords: ${{ env.KEYWORDS }}
           Spec URLs: ${{ env.SPEC_URLS }}
-          Spec Retry Iterations: ${{ inputs.spec_retry_iterations }}
+          Extract Iterations: ${{ inputs.extract_iterations }}
           Checklist Iterations: ${{ inputs.checklist_iterations }}
           Run ID: ${{ github.run_id }}
           EOF
@@ -150,7 +150,7 @@ jobs:
 
           Keywords: ${{ env.KEYWORDS }}
           Spec URLs: ${{ env.SPEC_URLS }}
-          Spec Retry Iterations: ${{ inputs.spec_retry_iterations }}
+          Extract Iterations: ${{ inputs.extract_iterations }}
           Checklist Iterations: ${{ inputs.checklist_iterations }}
           Run ID: ${{ github.run_id }}
           EOF
