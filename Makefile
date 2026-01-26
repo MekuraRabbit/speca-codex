@@ -17,10 +17,14 @@ CLAUDE_FLAGS ?= --dangerously-skip-permissions --agent serena --output-format js
 # Max iteration counts (safety limit)
 MAX_ITERATIONS ?= 100
 
+# Parallel execution configuration
+WORKERS ?= 4
+
 .PHONY: all preparation audit init init-prep \
-        01a 01b 01b-loop 01c 01d 01e \
-        02a 02b 02b-loop 02c 02s \
-        03 03-loop 04 04-loop clean help
+        01a 01b 01b-loop 01b-parallel 01c 01d 01e \
+        02a 02b 02b-loop 02b-parallel 02c 02s \
+        03 03-loop 03-parallel 04 04-loop 04-parallel \
+        clean help
 
 # Default target: run full pipeline
 all: preparation audit
@@ -41,40 +45,51 @@ help:
 	@echo "Usage: make [target]"
 	@echo ""
 	@echo "Phase Targets:"
-	@echo "  all         - Run full pipeline (preparation + audit)"
-	@echo "  preparation - Run preparation phase (01a → 01b xN → 01c → 01d → 01e → 02s → 02a → 02b xN)"
-	@echo "  audit       - Run audit phase (03 → 04)"
+	@echo "  all                  - Run full pipeline (preparation + audit)"
+	@echo "  all-parallel         - Run full pipeline with parallel workers"
+	@echo "  preparation          - Run preparation phase (sequential)"
+	@echo "  preparation-parallel - Run preparation phase with parallel workers"
+	@echo "  audit                - Run audit phase (sequential)"
+	@echo "  audit-parallel       - Run audit phase with parallel workers"
 	@echo ""
 	@echo "Specification Steps (01a-01e):"
-	@echo "  init-prep  - Setup output directories (no git repo required)"
-	@echo "  01a        - Discovery & Queuing (01a_crawl.md → 01a_STATE.json)"
-	@echo "  01b        - Extraction (01b_extract.md) - Single run, processes one URL"
-	@echo "  01b-loop   - Extraction (01b_extract.md) - Run until work_queue is empty"
-	@echo "  01c        - Integration (01c_integrate.md → 01_SPEC.json)"
-	@echo "  01d        - Trust Model (01d_trustmodel.md → 01d_TRUSTMODEL.json)"
-	@echo "  01e        - Properties (01e_prop.md → 01e_PROP.json)"
+	@echo "  init-prep    - Setup output directories (no git repo required)"
+	@echo "  01a          - Discovery & Queuing (01a_crawl.md → 01a_STATE.json)"
+	@echo "  01b          - Extraction (01b_extract.md) - Single run"
+	@echo "  01b-loop     - Extraction (01b_extract.md) - Sequential loop"
+	@echo "  01b-parallel - Extraction with parallel workers"
+	@echo "  01c          - Integration (01c_integrate.md → 01_SPEC.json)"
+	@echo "  01d          - Trust Model (01d_trustmodel.md → 01d_TRUSTMODEL.json)"
+	@echo "  01e          - Properties (01e_prop.md → 01e_PROP.json)"
 	@echo ""
 	@echo "Checklist Steps (02a-02s):"
-	@echo "  02a        - Checklist Boundaries (02a_checklist.md → 02a_CHECKLIST_BOUNDARIES.json)"
-	@echo "  02b        - Checklist Remaining (02b_checklistrem.md) - Single run"
-	@echo "  02b-loop   - Checklist Remaining (02b_checklistrem.md) - Run until all properties processed"
-	@echo "  02c        - Checklist Merge (02c_checklistmerge.md → 02_CHECKLIST.json) [OPTIONAL]"
-	@echo "  02s        - Review & Validate (02s_review.md → 02s_REVIEW_REPORT.json)"
+	@echo "  02a          - Checklist Boundaries (02a_checklist.md)"
+	@echo "  02b          - Checklist Remaining (02b_checklistrem.md) - Single run"
+	@echo "  02b-loop     - Checklist Remaining - Sequential loop"
+	@echo "  02b-parallel - Checklist Remaining with parallel workers"
+	@echo "  02c          - Checklist Merge (02c_checklistmerge.md) [OPTIONAL]"
+	@echo "  02s          - Review & Validate (02s_review.md)"
 	@echo ""
 	@echo "Audit Steps:"
-	@echo "  init     - Setup directories and check target workspace (git repo required)"
-	@echo "  03       - Static Audit Map (03_auditmap.md) - Single run"
-	@echo "  03-loop  - Static Audit Map (03_auditmap.md) - Run until all items processed"
-	@echo "  04       - Audit Review (04_review.md) - Single run"
-	@echo "  04-loop  - Audit Review (04_review.md) - Run until all items reviewed"
+	@echo "  init         - Setup directories and check target workspace"
+	@echo "  03           - Static Audit Map (03_auditmap.md) - Single run"
+	@echo "  03-loop      - Static Audit Map - Sequential loop"
+	@echo "  03-parallel  - Static Audit Map with parallel workers"
+	@echo "  04           - Audit Review (04_review.md) - Single run"
+	@echo "  04-loop      - Audit Review - Sequential loop"
+	@echo "  04-parallel  - Audit Review with parallel workers"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  clean  - Remove generated outputs"
 	@echo ""
 	@echo "Configuration Variables:"
 	@echo "  MAX_ITERATIONS - Safety limit for loop iterations (default: 100)"
+	@echo "  WORKERS        - Number of parallel workers (default: 4)"
 	@echo ""
-	@echo "Example: make preparation MAX_ITERATIONS=50"
+	@echo "Examples:"
+	@echo "  make preparation MAX_ITERATIONS=50"
+	@echo "  make 01b-parallel WORKERS=8"
+	@echo "  make all-parallel WORKERS=4 MAX_ITERATIONS=100"
 
 # Init for audit phase (requires git repo)
 init:
@@ -165,6 +180,13 @@ $(OUTPUT_DIR)/01a_STATE.json: prompts/01a_crawl.md | init-prep
 	done
 	@SUBGRAPH_COUNT=$$(ls $(OUTPUT_DIR)/01b_SUBGRAPHS/*.json 2>/dev/null | wc -l); \
 	echo "✅ Extraction complete. Total subgraphs: $$SUBGRAPH_COUNT"
+
+# Step 01b-parallel: Parallel extraction using multiple workers
+01b-parallel: | 01a
+	@echo "🚀 Running 01b_extract.md in parallel with $(WORKERS) workers..."
+	@python3 scripts/run_parallel.py --phase 01b --workers $(WORKERS) --max-iterations $(MAX_ITERATIONS)
+	@SUBGRAPH_COUNT=$$(ls $(OUTPUT_DIR)/01b_SUBGRAPHS/*.json 2>/dev/null | wc -l); \
+	echo "✅ Parallel extraction complete. Total subgraphs: $$SUBGRAPH_COUNT"
 
 # Step 01c: Integration
 01c: $(OUTPUT_DIR)/01_SPEC.json
@@ -314,6 +336,12 @@ $(OUTPUT_DIR)/02a_CHECKLIST_BOUNDARIES.json: prompts/02a_checklist.md | 02s
 	done
 	@echo "✅ Checklist generation complete"
 
+# Step 02b-parallel: Parallel checklist generation using multiple workers
+02b-parallel: | 02a
+	@echo "🚀 Running 02b_checklistrem.md in parallel with $(WORKERS) workers..."
+	@python3 scripts/run_parallel.py --phase 02b --workers $(WORKERS) --max-iterations $(MAX_ITERATIONS)
+	@echo "✅ Parallel checklist generation complete"
+
 # Step 02c: Checklist Merge (Optional)
 02c: $(OUTPUT_DIR)/02_CHECKLIST.json
 $(OUTPUT_DIR)/02_CHECKLIST.json: prompts/02c_checklistmerge.md | 02a
@@ -393,6 +421,12 @@ $(OUTPUT_DIR)/02_CHECKLIST.json: prompts/02c_checklistmerge.md | 02a
 	done
 	@echo "✅ Audit map generation complete"
 
+# Step 03-parallel: Parallel audit map using multiple workers
+03-parallel: | $(OUTPUT_DIR)/02a_CHECKLIST_BOUNDARIES.json init
+	@echo "🚀 Running 03_auditmap.md in parallel with $(WORKERS) workers..."
+	@python3 scripts/run_parallel.py --phase 03 --workers $(WORKERS) --max-iterations $(MAX_ITERATIONS)
+	@echo "✅ Parallel audit map generation complete"
+
 # Step 04: Review (Single run)
 04: | init
 	@if ! ls $(OUTPUT_DIR)/03_AUDITMAP_PARTIAL_*.json >/dev/null 2>&1; then \
@@ -453,3 +487,25 @@ $(OUTPUT_DIR)/02_CHECKLIST.json: prompts/02c_checklistmerge.md | 02a
 		cp outputs/04_STATE.json ../$(OUTPUT_DIR)/ 2>/dev/null || true; \
 	done
 	@echo "✅ Audit review complete"
+
+# Step 04-parallel: Parallel audit review using multiple workers
+04-parallel: | 03-loop
+	@echo "🚀 Running 04_review.md in parallel with $(WORKERS) workers..."
+	@python3 scripts/run_parallel.py --phase 04 --workers $(WORKERS) --max-iterations $(MAX_ITERATIONS)
+	@echo "✅ Parallel audit review complete"
+
+# ------------------------------------------------------
+# Full Parallel Pipeline
+# ------------------------------------------------------
+
+# Parallel preparation phase
+preparation-parallel: 02b-parallel
+	@echo "🎉 Parallel preparation phase completed! Check $(OUTPUT_DIR)/"
+
+# Parallel audit phase
+audit-parallel: 04-parallel
+	@echo "🎉 Parallel audit phase completed! Check $(OUTPUT_DIR)/"
+
+# Full parallel pipeline
+all-parallel: preparation-parallel audit-parallel
+	@echo "🎉 Full parallel pipeline completed!"

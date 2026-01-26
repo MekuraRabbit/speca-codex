@@ -1,0 +1,118 @@
+name: "Prep 02: Checklist Generation"
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch with outputs from Prep 01 (required)'
+        required: true
+        type: string
+      max_iterations:
+        description: 'Safety limit for loop iterations'
+        required: false
+        type: number
+        default: 100
+      workers:
+        description: 'Number of parallel workers'
+        required: false
+        type: number
+        default: 4
+
+permissions:
+  contents: write
+
+jobs:
+  checklist-generation:
+    runs-on: self-hosted
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CLAUDE_CODE_PERMISSIONS: bypassPermissions
+      CLAUDE_CODE_MAX_OUTPUT_TOKENS: 100000
+
+    steps:
+      - name: Checkout Branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+          fetch-depth: 0
+
+      - name: Verify Prerequisites
+        run: |
+          echo "Checking for required outputs from Prep 01..."
+
+          MISSING=""
+          for f in 01_SPEC.json 01d_TRUSTMODEL.json 01e_PROP.json; do
+            if [ ! -f "outputs/$f" ]; then
+              MISSING="${MISSING} $f"
+            fi
+          done
+
+          if [ -n "$MISSING" ]; then
+            echo "❌ Missing required files:${MISSING}"
+            echo "Please run 'Prep 01: Specification Extraction' first."
+            exit 1
+          fi
+
+          echo "✅ All required outputs found"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Prepare Git
+        run: |
+          git config --global user.name "Security Agent Bot"
+          git config --global user.email "bot@nyxfoundation.org"
+
+      - name: "Step 02s: Review & Validate"
+        run: make 02s
+
+      - name: "Step 02a: Checklist Boundaries"
+        run: make 02a
+
+      - name: "Step 02b: Checklist Remaining (Parallel)"
+        run: |
+          make 02b-parallel \
+            WORKERS=${{ inputs.workers }} \
+            MAX_ITERATIONS=${{ inputs.max_iterations }}
+
+      - name: Push Results
+        run: |
+          git add outputs/
+
+          if ! git diff --staged --quiet; then
+            git commit -m "$(cat <<'EOF'
+          prep(02): checklist generation complete
+
+          Workers: ${{ inputs.workers }}
+          EOF
+          )"
+
+            git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+            git push origin "${{ inputs.branch }}" --force-with-lease
+            echo "Pushed to branch: ${{ inputs.branch }}"
+          else
+            echo "No changes to commit"
+          fi
+
+      - name: Output Next Steps
+        run: |
+          echo "## Preparation Complete" >> $GITHUB_STEP_SUMMARY
+          echo "Branch: \`${{ inputs.branch }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Next steps:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Run **Audit 03: Audit Map** with this branch" >> $GITHUB_STEP_SUMMARY
+          echo "2. Or run **Create PR** to create a pull request" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prep-02-logs-${{ github.run_id }}
+          path: outputs/logs/
+          retention-days: 7

@@ -1,0 +1,147 @@
+name: "Audit 04: Review"
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch with outputs from Audit 03 (required)'
+        required: true
+        type: string
+      target_repo:
+        description: 'Target repository (e.g., ethereum/go-ethereum)'
+        required: true
+        type: string
+        default: 'ethereum/go-ethereum'
+      target_ref:
+        description: 'Target ref (branch, tag, or commit)'
+        required: true
+        type: string
+        default: 'master'
+      max_iterations:
+        description: 'Safety limit for loop iterations'
+        required: false
+        type: number
+        default: 100
+      workers:
+        description: 'Number of parallel workers'
+        required: false
+        type: number
+        default: 4
+
+permissions:
+  contents: write
+
+jobs:
+  audit-review:
+    runs-on: self-hosted
+
+    env:
+      TARGET_REPO: ${{ inputs.target_repo }}
+      TARGET_REF: ${{ inputs.target_ref }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CLAUDE_CODE_PERMISSIONS: bypassPermissions
+      CLAUDE_CODE_MAX_OUTPUT_TOKENS: 100000
+
+    steps:
+      - name: Checkout Branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+          fetch-depth: 0
+
+      - name: Verify Prerequisites
+        run: |
+          echo "Checking for required outputs from Audit 03..."
+
+          if ! ls outputs/03_AUDITMAP_PARTIAL_*.json >/dev/null 2>&1; then
+            echo "❌ Missing: outputs/03_AUDITMAP_PARTIAL_*.json"
+            echo "Please run 'Audit 03: Audit Map' first."
+            exit 1
+          fi
+
+          echo "✅ Required outputs found"
+          ls outputs/03_*.json
+
+      - name: Checkout Target Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.target_repo }}
+          ref: ${{ inputs.target_ref }}
+          path: target_workspace
+
+      - name: Get Target Info
+        id: target_info
+        working-directory: ./target_workspace
+        run: |
+          echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "full_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Prepare Git
+        run: |
+          git config --global user.name "Security Agent Bot"
+          git config --global user.email "bot@nyxfoundation.org"
+
+      - name: Prepare Inputs for Target
+        working-directory: ./target_workspace
+        run: |
+          mkdir -p outputs
+          cp -r ../outputs/* outputs/ 2>/dev/null || echo "Copying outputs..."
+          ls -la outputs/
+
+      - name: "Step 04: Audit Review (Parallel)"
+        run: |
+          make 04-parallel \
+            TARGET_REPO="${{ inputs.target_repo }}" \
+            TARGET_REF="${{ inputs.target_ref }}" \
+            WORKERS=${{ inputs.workers }} \
+            MAX_ITERATIONS=${{ inputs.max_iterations }}
+
+      - name: Copy Outputs Back
+        run: |
+          cp -r target_workspace/outputs/04_*.json outputs/ 2>/dev/null || true
+          mkdir -p outputs/logs
+          cp -r target_workspace/outputs/logs/04_*.json outputs/logs/ 2>/dev/null || true
+
+      - name: Push Results
+        run: |
+          git add outputs/
+
+          if ! git diff --staged --quiet; then
+            git commit -m "$(cat <<'EOF'
+          audit(04): review for ${{ inputs.target_repo }}
+
+          Target: ${{ inputs.target_repo }} @ ${{ steps.target_info.outputs.short_sha }}
+          Workers: ${{ inputs.workers }}
+          EOF
+          )"
+
+            git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+            git push origin "${{ inputs.branch }}" --force-with-lease
+            echo "Pushed to branch: ${{ inputs.branch }}"
+          else
+            echo "No changes to commit"
+          fi
+
+      - name: Output Next Steps
+        run: |
+          echo "## Audit Review Complete" >> $GITHUB_STEP_SUMMARY
+          echo "Branch: \`${{ inputs.branch }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "Target: \`${{ inputs.target_repo }} @ ${{ steps.target_info.outputs.short_sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Next: Run **Create PR** to create a pull request." >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: audit-04-logs-${{ github.run_id }}
+          path: outputs/logs/
+          retention-days: 7

@@ -1,6 +1,6 @@
 
 ---
-Description: Process one specification URL from the work queue in each run. Extract a sub-graph representing the RUNTIME BEHAVIOR of the system described in the specification, identify ambiguities, and list implicit assumptions.
+Description: Process up to 5 specification URLs from the work queue in each run. Extract sub-graphs representing the RUNTIME BEHAVIOR of the systems described in the specifications, identify ambiguities, and list implicit assumptions.
 Usage: `/01b_extract`
 Language: English only.
 Execution hint: Run after `/01a_crawl`. Run this multiple times until the work queue is empty.
@@ -10,7 +10,7 @@ Execution hint: Run after `/01a_crawl`. Run this multiple times until the work q
 # **System Specification - Stage 2: Extraction (Iterative)**
 
 **Goal**
-Process one specification URL from the `work_queue` in each run. For the given URL, extract a self-contained `sub_graph` that models the **runtime behavior of the system described in the specification**, identify any `ambiguities` in the text, and list any `implicit_assumptions`.
+Process **up to 5 specification URLs** from the `work_queue` in each run. For each URL, extract a self-contained `sub_graph` that models the **runtime behavior of the system described in the specification**, identify any `ambiguities` in the text, and list any `implicit_assumptions`.
 
 ## ⚠️ CRITICAL: Model Runtime Behavior, NOT Document Structure
 
@@ -61,15 +61,15 @@ Before extracting nodes and edges, answer these questions:
 
 ## 2) Iterative Extraction Logic
 
-### **Task 2.1: Select URL and Read State**
+### **Task 2.1: Select URLs and Read State**
 
 1.  Read the `outputs/01a_STATE.json` file.
 2.  If `work_queue` is empty, terminate successfully. The extraction stage is complete.
-3.  Take the **first URL** from the `work_queue`. This is your target for this run.
+3.  Take the **first 5 URLs** from the `work_queue` (or fewer if less than 5 remain). These are your targets for this run.
 
-### **Task 2.2: Analyze and Extract from Target URL**
+### **Task 2.2: Analyze and Extract from Each Target URL**
 
-For the selected URL, perform a deep analysis of the specification document **to understand the runtime system it describes**.
+**For EACH of the selected URLs**, perform a deep analysis of the specification document **to understand the runtime system it describes**.
 
 #### **2.2.1: Extract Sub-Graph (Runtime Behavior Model)**
 
@@ -114,14 +114,21 @@ For the selected URL, perform a deep analysis of the specification document **to
 
 ### **Task 2.3: Write Outputs**
 
+**For EACH of the processed URLs:**
+
 1.  **Create Sub-Graph File:**
     *   Generate a unique hash for the URL (e.g., SHA1 of the URL string).
     *   Create a file `outputs/01b_SUBGRAPHS/spec_<hash>.json`.
     *   This file contains the `source_url`, the extracted `sub_graph`, `ambiguities`, and `implicit_assumptions`.
+
+**After processing ALL URLs in the batch:**
+
 2.  **Update State File:**
-    *   Remove the processed URL from `work_queue`.
-    *   Add the processed URL to `processed_urls`.
+    *   Remove ALL processed URLs from `work_queue`.
+    *   Add ALL processed URLs to `processed_urls`.
     *   Overwrite `outputs/01a_STATE.json` with the updated state.
+
+**⚠️ BATCH SIZE:** Process up to 5 URLs per iteration (or remaining URLs if fewer than 5 left).
 
 ---
 
