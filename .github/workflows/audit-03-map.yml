@@ -113,9 +113,11 @@ jobs:
       - name: Push Results
         if: always()
         run: |
-          git add outputs/
+          git add outputs/ ':!outputs/logs/'
 
           if ! git diff --staged --quiet; then
+            # JSON changes exist, include logs too
+            git add outputs/logs/
             git commit -m "$(cat <<'EOF'
           audit(03): audit map for ${{ inputs.target_repo }}
 

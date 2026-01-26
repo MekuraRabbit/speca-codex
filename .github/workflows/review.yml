@@ -92,9 +92,11 @@ jobs:
         if: ${{ inputs.create_pr == true }}
         run: |
           git checkout -b "${{ steps.git_config.outputs.snapshot_branch }}"
-          git add outputs/
+          git add outputs/ ':!outputs/logs/'
 
           if ! git diff --staged --quiet; then
+            # JSON changes exist, include logs too
+            git add outputs/logs/
             git commit -m "$(cat <<'EOF'
           review: preparation output review
 
@@ -142,9 +144,11 @@ jobs:
       - name: Push Directly (non-PR mode)
         if: ${{ inputs.create_pr == false }}
         run: |
-          git add outputs/
+          git add outputs/ ':!outputs/logs/'
 
           if ! git diff --staged --quiet; then
+            # JSON changes exist, include logs too
+            git add outputs/logs/
             git commit -m "$(cat <<'EOF'
           review: preparation output review
 
