@@ -21,20 +21,20 @@ MAX_ITERATIONS ?= 100
 WORKERS ?= 4
 
 .PHONY: all preparation audit init init-prep \
-        01a 01b 01b-loop 01b-parallel 01c 01d 01e \
-        02a 02b 02b-loop 02b-parallel 02c 02s \
-        03 03-loop 03-parallel 04 04-loop 04-parallel \
+        01a 01b-parallel 01c 01d 01e \
+        02a 02b-parallel 02c 02s \
+        03-parallel 04-parallel \
         clean help
 
 # Default target: run full pipeline
 all: preparation audit
 
 # Phase targets
-# preparation: 01a → 01b (Nx) → 01c → 01d → 01e → 02s → 02a → 02b (Nx)
-preparation: 02b-loop
+# preparation: 01a → 01b-parallel → 01c → 01d → 01e → 02s → 02a → 02b-parallel
+preparation: 02b-parallel
 	@echo "🎉 Preparation phase completed! Check $(OUTPUT_DIR)/"
 
-audit: 04-loop
+audit: 04-parallel
 	@echo "🎉 Audit phase completed! Check $(OUTPUT_DIR)/04_REVIEW_PARTIAL_*.json"
 
 # ------------------------------------------------------
@@ -45,38 +45,27 @@ help:
 	@echo "Usage: make [target]"
 	@echo ""
 	@echo "Phase Targets:"
-	@echo "  all                  - Run full pipeline (preparation + audit)"
-	@echo "  all-parallel         - Run full pipeline with parallel workers"
-	@echo "  preparation          - Run preparation phase (sequential)"
-	@echo "  preparation-parallel - Run preparation phase with parallel workers"
-	@echo "  audit                - Run audit phase (sequential)"
-	@echo "  audit-parallel       - Run audit phase with parallel workers"
+	@echo "  all          - Run full pipeline (preparation + audit)"
+	@echo "  preparation  - Run preparation phase (parallel workers)"
+	@echo "  audit        - Run audit phase (parallel workers)"
 	@echo ""
 	@echo "Specification Steps (01a-01e):"
 	@echo "  init-prep    - Setup output directories (no git repo required)"
 	@echo "  01a          - Discovery & Queuing (01a_crawl.md → 01a_STATE.json)"
-	@echo "  01b          - Extraction (01b_extract.md) - Single run"
-	@echo "  01b-loop     - Extraction (01b_extract.md) - Sequential loop"
 	@echo "  01b-parallel - Extraction with parallel workers"
 	@echo "  01c          - Integration (01c_integrate.md → 01_SPEC.json)"
 	@echo "  01d          - Trust Model (01d_trustmodel.md → 01d_TRUSTMODEL.json)"
 	@echo "  01e          - Properties (01e_prop.md → 01e_PROP.json)"
 	@echo ""
 	@echo "Checklist Steps (02a-02s):"
+	@echo "  02s          - Review & Validate (02s_review.md)"
 	@echo "  02a          - Checklist Boundaries (02a_checklist.md)"
-	@echo "  02b          - Checklist Remaining (02b_checklistrem.md) - Single run"
-	@echo "  02b-loop     - Checklist Remaining - Sequential loop"
 	@echo "  02b-parallel - Checklist Remaining with parallel workers"
 	@echo "  02c          - Checklist Merge (02c_checklistmerge.md) [OPTIONAL]"
-	@echo "  02s          - Review & Validate (02s_review.md)"
 	@echo ""
 	@echo "Audit Steps:"
 	@echo "  init         - Setup directories and check target workspace"
-	@echo "  03           - Static Audit Map (03_auditmap.md) - Single run"
-	@echo "  03-loop      - Static Audit Map - Sequential loop"
 	@echo "  03-parallel  - Static Audit Map with parallel workers"
-	@echo "  04           - Audit Review (04_review.md) - Single run"
-	@echo "  04-loop      - Audit Review - Sequential loop"
 	@echo "  04-parallel  - Audit Review with parallel workers"
 	@echo ""
 	@echo "Utilities:"
@@ -87,9 +76,8 @@ help:
 	@echo "  WORKERS        - Number of parallel workers (default: 4)"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make preparation MAX_ITERATIONS=50"
-	@echo "  make 01b-parallel WORKERS=8"
-	@echo "  make all-parallel WORKERS=4 MAX_ITERATIONS=100"
+	@echo "  make preparation WORKERS=8"
+	@echo "  make audit WORKERS=4 MAX_ITERATIONS=100"
 
 # Init for audit phase (requires git repo)
 init:
@@ -144,53 +132,6 @@ clean:
 		fi; \
 	fi
 
-# Step 01b: Extraction (Single run)
-01b:
-	@if [ ! -f "$(OUTPUT_DIR)/01a_STATE.json" ]; then \
-		echo "❌ Error: $(OUTPUT_DIR)/01a_STATE.json not found. Run 01a first."; exit 1; \
-	fi
-	@echo "⭐ Running 01b_extract.md (Extraction)..."; \
-	START_TIME=$$(date +%s); \
-	claude $(CLAUDE_FLAGS) -p "$$(cat prompts/01b_extract.md)" > $(LOG_DIR)/01b_extract_$$(date +%s).json; \
-	END_TIME=$$(date +%s); \
-	DURATION=$$((END_TIME - START_TIME)); \
-	LOG_FILE=$$(ls -t $(LOG_DIR)/01b_extract_*.json | head -1); \
-	INPUT_TOKENS=$$(grep -o '"input_tokens":[0-9]*' $$LOG_FILE | head -1 | cut -d: -f2); \
-	OUTPUT_TOKENS=$$(grep -o '"output_tokens":[0-9]*' $$LOG_FILE | head -1 | cut -d: -f2); \
-	COST=$$(grep -o '"total_cost_usd":[0-9.]*' $$LOG_FILE | head -1 | cut -d: -f2); \
-	SUBGRAPH_COUNT=$$(ls $(OUTPUT_DIR)/01b_SUBGRAPHS/*.json 2>/dev/null | wc -l); \
-	echo "✅ Finished 01b_extract.md (Time: $${DURATION}s | Subgraphs: $$SUBGRAPH_COUNT | Cost: \$$$$COST)"
-
-# Step 01b-loop: Extraction (run until work_queue is empty)
-# Skip if: 01_SPEC.json exists
-01b-loop:
-	@if [ ! -f "$(OUTPUT_DIR)/01a_STATE.json" ]; then \
-		echo "❌ Error: $(OUTPUT_DIR)/01a_STATE.json not found. Run 01a first."; exit 1; \
-	fi
-	@if [ -f "$(OUTPUT_DIR)/01_SPEC.json" ]; then \
-		echo "⏭️  Skipping 01b-loop: 01_SPEC.json exists"; exit 0; \
-	fi
-	@echo "🔄 Running 01b_extract.md until work_queue is empty..."
-	@i=0; \
-	while [ $$i -lt $(MAX_ITERATIONS) ]; do \
-		REMAINING=$$(python3 -c "import json; d=json.load(open('$(OUTPUT_DIR)/01a_STATE.json')); print(len(d.get('work_queue', [])))" 2>/dev/null || echo "0"); \
-		if [ "$$REMAINING" -eq 0 ] 2>/dev/null; then \
-			echo "🎉 Work queue empty. Extraction complete."; \
-			break; \
-		fi; \
-		echo "📋 $$REMAINING URLs remaining in work_queue"; \
-		i=$$((i + 1)); \
-		echo "⭐ Running 01b_extract.md (iteration $$i)..."; \
-		START_TIME=$$(date +%s); \
-		claude $(CLAUDE_FLAGS) -p "$$(cat prompts/01b_extract.md)" > $(LOG_DIR)/01b_extract_$$i.json; \
-		END_TIME=$$(date +%s); \
-		DURATION=$$((END_TIME - START_TIME)); \
-		COST=$$(grep -o '"total_cost_usd":[0-9.]*' $(LOG_DIR)/01b_extract_$$i.json | head -1 | cut -d: -f2); \
-		echo "✅ Finished 01b_extract.md iter $$i (Time: $${DURATION}s | Cost: \$$$$COST)"; \
-	done
-	@SUBGRAPH_COUNT=$$(ls $(OUTPUT_DIR)/01b_SUBGRAPHS/*.json 2>/dev/null | wc -l); \
-	echo "✅ Extraction complete. Total subgraphs: $$SUBGRAPH_COUNT"
-
 # Step 01b-parallel: Parallel extraction using multiple workers
 # Skip if: 01_SPEC.json exists
 01b-parallel:
@@ -212,7 +153,7 @@ clean:
 		echo "⏭️  Skipping 01c: $(OUTPUT_DIR)/01_SPEC.json already exists"; \
 	else \
 		if [ ! -d "$(OUTPUT_DIR)/01b_SUBGRAPHS" ] || [ -z "$$(ls $(OUTPUT_DIR)/01b_SUBGRAPHS/*.json 2>/dev/null)" ]; then \
-			echo "❌ Error: No subgraphs found in $(OUTPUT_DIR)/01b_SUBGRAPHS/. Run 01b-loop or 01b-parallel first."; exit 1; \
+			echo "❌ Error: No subgraphs found in $(OUTPUT_DIR)/01b_SUBGRAPHS/. Run 01b-parallel first."; exit 1; \
 		fi; \
 		echo "⭐ Running 01c_integrate.md (Integration)..."; \
 		START_TIME=$$(date +%s); \
@@ -318,72 +259,6 @@ clean:
 		fi; \
 	fi
 
-# Step 02b: Checklist Remaining (Single run)
-02b:
-	@if [ ! -f "$(OUTPUT_DIR)/02a_CHECKLIST_BOUNDARIES.json" ]; then \
-		echo "❌ Error: $(OUTPUT_DIR)/02a_CHECKLIST_BOUNDARIES.json not found. Run 02a first."; exit 1; \
-	fi
-	@N=$$(ls $(OUTPUT_DIR)/02b_CHECKLIST_PARTIAL_*.json 2>/dev/null | wc -l); \
-	N=$$((N + 1)); \
-	echo "⭐ Running 02b_checklistrem.md (iteration $$N)..."; \
-	START_TIME=$$(date +%s); \
-	claude $(CLAUDE_FLAGS) -p "$$(cat prompts/02b_checklistrem.md)" > $(LOG_DIR)/02b_checklistrem_$$N.json; \
-	END_TIME=$$(date +%s); \
-	DURATION=$$((END_TIME - START_TIME)); \
-	INPUT_TOKENS=$$(grep -o '"input_tokens":[0-9]*' $(LOG_DIR)/02b_checklistrem_$$N.json | head -1 | cut -d: -f2); \
-	OUTPUT_TOKENS=$$(grep -o '"output_tokens":[0-9]*' $(LOG_DIR)/02b_checklistrem_$$N.json | head -1 | cut -d: -f2); \
-	COST=$$(grep -o '"total_cost_usd":[0-9.]*' $(LOG_DIR)/02b_checklistrem_$$N.json | head -1 | cut -d: -f2); \
-	if [ -f "$(OUTPUT_DIR)/02b_CHECKLIST_PARTIAL_$$N.json" ]; then \
-		echo "✅ Finished 02b_checklistrem.md iter $$N (Time: $${DURATION}s | Cost: \$$$$COST)"; \
-	else \
-		echo "⚠️  No new partial checklist generated in iteration $$N (Time: $${DURATION}s | Cost: \$$$$COST)"; \
-	fi; \
-	if [ -f "$(OUTPUT_DIR)/02b_STATE.json" ]; then \
-		REMAINING=$$(grep -o '"unprocessed_property_ids":\[[^]]*\]' $(OUTPUT_DIR)/02b_STATE.json | tr ',' '\n' | grep -c '"PROP' || echo "0"); \
-		if [ "$$REMAINING" -gt 0 ] 2>/dev/null; then \
-			echo "📋 $$REMAINING properties remaining. Run 'make 02b' again."; \
-		else \
-			echo "🎉 All properties processed!"; \
-		fi; \
-	fi
-
-# Step 02b-loop: Checklist Remaining (run until unprocessed_property_ids is empty)
-# Skip if: 03_AUDITMAP_PARTIAL_*.json exists
-02b-loop:
-	@if [ ! -f "$(OUTPUT_DIR)/02a_CHECKLIST_BOUNDARIES.json" ]; then \
-		echo "❌ Error: $(OUTPUT_DIR)/02a_CHECKLIST_BOUNDARIES.json not found. Run 02a first."; exit 1; \
-	fi
-	@if ls $(OUTPUT_DIR)/03_AUDITMAP_PARTIAL_*.json >/dev/null 2>&1; then \
-		echo "⏭️  Skipping 02b-loop: 03_AUDITMAP_PARTIAL_*.json exists"; exit 0; \
-	fi
-	@echo "🔄 Running 02b_checklistrem.md until all properties are processed..."
-	@i=0; \
-	while [ $$i -lt $(MAX_ITERATIONS) ]; do \
-		if [ -f "$(OUTPUT_DIR)/02b_STATE.json" ]; then \
-			REMAINING=$$(python3 -c "import json; d=json.load(open('$(OUTPUT_DIR)/02b_STATE.json')); print(len(d.get('unprocessed_property_ids', [])))" 2>/dev/null || echo "0"); \
-			if [ "$$REMAINING" -eq 0 ] 2>/dev/null; then \
-				echo "🎉 All properties processed!"; \
-				break; \
-			fi; \
-			echo "📋 $$REMAINING properties remaining"; \
-		fi; \
-		i=$$((i + 1)); \
-		N=$$(ls $(OUTPUT_DIR)/02b_CHECKLIST_PARTIAL_*.json 2>/dev/null | wc -l); \
-		N=$$((N + 1)); \
-		echo "⭐ Running 02b_checklistrem.md (iteration $$i, partial $$N)..."; \
-		START_TIME=$$(date +%s); \
-		claude $(CLAUDE_FLAGS) -p "$$(cat prompts/02b_checklistrem.md)" > $(LOG_DIR)/02b_checklistrem_$$N.json; \
-		END_TIME=$$(date +%s); \
-		DURATION=$$((END_TIME - START_TIME)); \
-		COST=$$(grep -o '"total_cost_usd":[0-9.]*' $(LOG_DIR)/02b_checklistrem_$$N.json | head -1 | cut -d: -f2); \
-		if [ -f "$(OUTPUT_DIR)/02b_CHECKLIST_PARTIAL_$$N.json" ]; then \
-			echo "✅ Finished 02b_checklistrem.md iter $$i (Time: $${DURATION}s | Cost: \$$$$COST)"; \
-		else \
-			echo "⚠️  No new partial checklist generated in iteration $$i (Time: $${DURATION}s | Cost: \$$$$COST)"; \
-		fi; \
-	done
-	@echo "✅ Checklist generation complete"
-
 # Step 02b-parallel: Parallel checklist generation using multiple workers
 # Skip if: 03_AUDITMAP_PARTIAL_*.json exists
 02b-parallel:
@@ -423,77 +298,6 @@ clean:
 # Audit Steps
 # ------------------------------------------------------
 
-# Step 03: Audit Map (Single run)
-03:
-	@if [ ! -f "$(OUTPUT_DIR)/02a_CHECKLIST_BOUNDARIES.json" ]; then \
-		echo "❌ Error: $(OUTPUT_DIR)/02a_CHECKLIST_BOUNDARIES.json not found. Run 02a first."; exit 1; \
-	fi
-	@N=$$(ls $(OUTPUT_DIR)/03_AUDITMAP_PARTIAL_*.json 2>/dev/null | wc -l); \
-	N=$$((N + 1)); \
-	echo "⭐ Running 03_auditmap.md (iteration $$N)..."; \
-	START_TIME=$$(date +%s); \
-	cd $(WORKDIR) && claude $(CLAUDE_FLAGS) -p "$$(cat ../prompts/03_auditmap.md)" > ../$(LOG_DIR)/03_auditmap_$$N.json; \
-	END_TIME=$$(date +%s); \
-	DURATION=$$((END_TIME - START_TIME)); \
-	COST=$$(grep -o '"total_cost_usd":[0-9.]*' ../$(LOG_DIR)/03_auditmap_$$N.json | head -1 | cut -d: -f2); \
-	if [ -f "outputs/03_AUDITMAP_PARTIAL_$$N.json" ]; then \
-		cp outputs/03_AUDITMAP_PARTIAL_$$N.json ../$(OUTPUT_DIR)/; \
-		echo "✅ Finished 03_auditmap.md iter $$N (Time: $${DURATION}s | Cost: \$$$$COST)"; \
-	else \
-		echo "⚠️  No new partial auditmap generated in iteration $$N (Time: $${DURATION}s | Cost: \$$$$COST)"; \
-	fi; \
-	cp outputs/03_STATE.json ../$(OUTPUT_DIR)/ 2>/dev/null || true; \
-	if [ -f "../$(OUTPUT_DIR)/03_STATE.json" ]; then \
-		REMAINING=$$(python3 -c "import json; d=json.load(open('../$(OUTPUT_DIR)/03_STATE.json')); print(len(d.get('unprocessed_checklist_ids', [])))" 2>/dev/null || echo "0"); \
-		if [ "$$REMAINING" -gt 0 ] 2>/dev/null; then \
-			echo "📋 $$REMAINING items remaining. Run 'make 03' again or use 'make 03-loop'."; \
-		else \
-			echo "🎉 All items processed! Ready for 'make 04'."; \
-		fi; \
-	fi
-
-# Step 03-loop: Audit Map (run until unprocessed_checklist_ids is empty)
-# Skip if: 04_REVIEW_PARTIAL_*.json exists
-03-loop:
-	@if [ ! -f "$(OUTPUT_DIR)/02a_CHECKLIST_BOUNDARIES.json" ]; then \
-		echo "❌ Error: $(OUTPUT_DIR)/02a_CHECKLIST_BOUNDARIES.json not found. Run 02a first."; exit 1; \
-	fi
-	@if [ ! -d "$(WORKDIR)/.git" ]; then \
-		echo "❌ Error: $(WORKDIR) is not a git repo. Please clone target repo first."; exit 1; \
-	fi
-	@if ls $(OUTPUT_DIR)/04_REVIEW_PARTIAL_*.json >/dev/null 2>&1; then \
-		echo "⏭️  Skipping 03-loop: 04_REVIEW_PARTIAL_*.json exists"; exit 0; \
-	fi
-	@echo "🔄 Running 03_auditmap.md until all checklist items are processed..."
-	@i=0; \
-	while [ $$i -lt $(MAX_ITERATIONS) ]; do \
-		if [ -f "$(OUTPUT_DIR)/03_STATE.json" ]; then \
-			REMAINING=$$(python3 -c "import json; d=json.load(open('$(OUTPUT_DIR)/03_STATE.json')); print(len(d.get('unprocessed_checklist_ids', [])))" 2>/dev/null || echo "0"); \
-			if [ "$$REMAINING" -eq 0 ] 2>/dev/null; then \
-				echo "🎉 All checklist items processed!"; \
-				break; \
-			fi; \
-			echo "📋 $$REMAINING checklist items remaining"; \
-		fi; \
-		i=$$((i + 1)); \
-		N=$$(ls $(OUTPUT_DIR)/03_AUDITMAP_PARTIAL_*.json 2>/dev/null | wc -l); \
-		N=$$((N + 1)); \
-		echo "⭐ Running 03_auditmap.md (iteration $$i, partial $$N)..."; \
-		START_TIME=$$(date +%s); \
-		cd $(WORKDIR) && claude $(CLAUDE_FLAGS) -p "$$(cat ../prompts/03_auditmap.md)" > ../$(LOG_DIR)/03_auditmap_$$N.json; \
-		END_TIME=$$(date +%s); \
-		DURATION=$$((END_TIME - START_TIME)); \
-		COST=$$(grep -o '"total_cost_usd":[0-9.]*' ../$(LOG_DIR)/03_auditmap_$$N.json | head -1 | cut -d: -f2); \
-		if [ -f "outputs/03_AUDITMAP_PARTIAL_$$N.json" ]; then \
-			cp outputs/03_AUDITMAP_PARTIAL_$$N.json ../$(OUTPUT_DIR)/; \
-			echo "✅ Finished 03_auditmap.md iter $$i (Time: $${DURATION}s | Cost: \$$$$COST)"; \
-		else \
-			echo "⚠️  No new partial auditmap generated in iteration $$i (Time: $${DURATION}s | Cost: \$$$$COST)"; \
-		fi; \
-		cp outputs/03_STATE.json ../$(OUTPUT_DIR)/ 2>/dev/null || true; \
-	done
-	@echo "✅ Audit map generation complete"
-
 # Step 03-parallel: Parallel audit map using multiple workers
 # Skip if: 04_REVIEW_PARTIAL_*.json exists
 03-parallel:
@@ -511,91 +315,13 @@ clean:
 		echo "✅ Parallel audit map generation complete"; \
 	fi
 
-# Step 04: Review (Single run)
-04:
-	@if [ ! -d "$(WORKDIR)/.git" ]; then \
-		echo "❌ Error: $(WORKDIR) is not a git repo. Please clone target repo first."; exit 1; \
-	fi
-	@if ! ls $(OUTPUT_DIR)/03_AUDITMAP_PARTIAL_*.json >/dev/null 2>&1; then \
-		echo "❌ Error: No 03_AUDITMAP_PARTIAL_*.json files found. Run 'make 03' first."; exit 1; \
-	fi; \
-	N=$$(ls $(OUTPUT_DIR)/04_REVIEW_PARTIAL_*.json 2>/dev/null | wc -l); \
-	N=$$((N + 1)); \
-	echo "⭐ Running 04_review.md (iteration $$N)..."; \
-	START_TIME=$$(date +%s); \
-	cd $(WORKDIR) && claude $(CLAUDE_FLAGS) -p "$$(cat ../prompts/04_review.md)" > ../$(LOG_DIR)/04_review_$$N.json; \
-	END_TIME=$$(date +%s); \
-	DURATION=$$((END_TIME - START_TIME)); \
-	COST=$$(grep -o '"total_cost_usd":[0-9.]*' ../$(LOG_DIR)/04_review_$$N.json | head -1 | cut -d: -f2); \
-	if [ -f "outputs/04_REVIEW_PARTIAL_$$N.json" ]; then \
-		cp outputs/04_REVIEW_PARTIAL_$$N.json ../$(OUTPUT_DIR)/; \
-		echo "✅ Finished 04_review.md iter $$N (Time: $${DURATION}s | Cost: \$$$$COST)"; \
-	else \
-		echo "⚠️  No new partial review generated in iteration $$N (Time: $${DURATION}s | Cost: \$$$$COST)"; \
-	fi; \
-	cp outputs/04_STATE.json ../$(OUTPUT_DIR)/ 2>/dev/null || true; \
-	if [ -f "../$(OUTPUT_DIR)/04_STATE.json" ]; then \
-		REMAINING=$$(python3 -c "import json; d=json.load(open('../$(OUTPUT_DIR)/04_STATE.json')); print(len(d.get('unprocessed_audit_items', [])))" 2>/dev/null || echo "0"); \
-		if [ "$$REMAINING" -gt 0 ] 2>/dev/null; then \
-			echo "📋 $$REMAINING items remaining. Run 'make 04' again or use 'make 04-loop'."; \
-		else \
-			echo "🎉 All items reviewed! Audit complete."; \
-		fi; \
-	fi
-
-# Step 04-loop: Review (run until unprocessed_audit_items is empty)
-04-loop:
-	@if [ ! -d "$(WORKDIR)/.git" ]; then \
-		echo "❌ Error: $(WORKDIR) is not a git repo. Please clone target repo first."; exit 1; \
-	fi
-	@if ! ls $(OUTPUT_DIR)/03_AUDITMAP_PARTIAL_*.json >/dev/null 2>&1; then \
-		echo "❌ Error: No 03_AUDITMAP_PARTIAL_*.json files found. Run 03-loop or 03-parallel first."; exit 1; \
-	fi
-	@if [ -f "$(OUTPUT_DIR)/04_STATE.json" ]; then \
-		REMAINING=$$(python3 -c "import json; d=json.load(open('$(OUTPUT_DIR)/04_STATE.json')); print(len(d.get('unprocessed_audit_items', [])))" 2>/dev/null || echo "0"); \
-		if [ "$$REMAINING" -eq 0 ] 2>/dev/null; then \
-			PARTIAL_COUNT=$$(ls $(OUTPUT_DIR)/04_REVIEW_PARTIAL_*.json 2>/dev/null | wc -l); \
-			echo "⏭️  Skipping 04-loop: all audit items reviewed ($$PARTIAL_COUNT partial files exist)"; \
-			exit 0; \
-		fi; \
-	fi
-	@echo "🔄 Running 04_review.md until all audit items are reviewed..."
-	@i=0; \
-	while [ $$i -lt $(MAX_ITERATIONS) ]; do \
-		if [ -f "$(OUTPUT_DIR)/04_STATE.json" ]; then \
-			REMAINING=$$(python3 -c "import json; d=json.load(open('$(OUTPUT_DIR)/04_STATE.json')); print(len(d.get('unprocessed_audit_items', [])))" 2>/dev/null || echo "0"); \
-			if [ "$$REMAINING" -eq 0 ] 2>/dev/null; then \
-				echo "🎉 All audit items reviewed!"; \
-				break; \
-			fi; \
-			echo "📋 $$REMAINING audit items remaining"; \
-		fi; \
-		i=$$((i + 1)); \
-		N=$$(ls $(OUTPUT_DIR)/04_REVIEW_PARTIAL_*.json 2>/dev/null | wc -l); \
-		N=$$((N + 1)); \
-		echo "⭐ Running 04_review.md (iteration $$i, partial $$N)..."; \
-		START_TIME=$$(date +%s); \
-		cd $(WORKDIR) && claude $(CLAUDE_FLAGS) -p "$$(cat ../prompts/04_review.md)" > ../$(LOG_DIR)/04_review_$$N.json; \
-		END_TIME=$$(date +%s); \
-		DURATION=$$((END_TIME - START_TIME)); \
-		COST=$$(grep -o '"total_cost_usd":[0-9.]*' ../$(LOG_DIR)/04_review_$$N.json | head -1 | cut -d: -f2); \
-		if [ -f "outputs/04_REVIEW_PARTIAL_$$N.json" ]; then \
-			cp outputs/04_REVIEW_PARTIAL_$$N.json ../$(OUTPUT_DIR)/; \
-			echo "✅ Finished 04_review.md iter $$i (Time: $${DURATION}s | Cost: \$$$$COST)"; \
-		else \
-			echo "⚠️  No new partial review generated in iteration $$i (Time: $${DURATION}s | Cost: \$$$$COST)"; \
-		fi; \
-		cp outputs/04_STATE.json ../$(OUTPUT_DIR)/ 2>/dev/null || true; \
-	done
-	@echo "✅ Audit review complete"
-
 # Step 04-parallel: Parallel audit review using multiple workers
 04-parallel:
 	@if [ ! -d "$(WORKDIR)/.git" ]; then \
 		echo "❌ Error: $(WORKDIR) is not a git repo. Please clone target repo first."; exit 1; \
 	fi; \
 	if ! ls $(OUTPUT_DIR)/03_AUDITMAP_PARTIAL_*.json >/dev/null 2>&1; then \
-		echo "❌ Error: No 03_AUDITMAP_PARTIAL_*.json files found. Run 03-loop or 03-parallel first."; exit 1; \
+		echo "❌ Error: No 03_AUDITMAP_PARTIAL_*.json files found. Run 03-parallel first."; exit 1; \
 	fi; \
 	SHOULD_SKIP=false; \
 	if [ -f "$(OUTPUT_DIR)/04_STATE.json" ]; then \
@@ -612,18 +338,3 @@ clean:
 		echo "✅ Parallel audit review complete"; \
 	fi
 
-# ------------------------------------------------------
-# Full Parallel Pipeline
-# ------------------------------------------------------
-
-# Parallel preparation phase
-preparation-parallel: 02b-parallel
-	@echo "🎉 Parallel preparation phase completed! Check $(OUTPUT_DIR)/"
-
-# Parallel audit phase
-audit-parallel: 04-parallel
-	@echo "🎉 Parallel audit phase completed! Check $(OUTPUT_DIR)/"
-
-# Full parallel pipeline
-all-parallel: preparation-parallel audit-parallel
-	@echo "🎉 Full parallel pipeline completed!"
