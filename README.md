@@ -111,16 +111,17 @@ Results will be saved to the `outputs/` directory.
 You can automate the audit using GitHub Actions.
 
 Preparation workflow sequence (split Trust Model + Properties):
-1. `1-discovery.yml`
-2. `2-extraction.yml`
-3. `3a-trustmodel-01d.yml`
-4. `3b-properties-01e.yml`
-5. `4-checklist-generation.yml`
-6. `6-prep-review.yml`
+1. `01a-discovery.yml`
+2. `01b-subgraph.yml`
+3. `01c-verify.yml`
+4. `01d-trustmodel.yml`
+5. `01e-properties.yml`
+6. `02-checklist.yml`
+7. `02s-prep-review.yml`
 
 #### Step 1: Configure Workflows
 Use the workflow files under `.github/workflows/` and configure inputs via **workflow_dispatch**.  
-Defaults live in the YAML files (e.g., `1-discovery.yml` for `KEYWORDS` and `SPEC_URLS`).
+Defaults live in the YAML files (e.g., `01a-discovery.yml` for `KEYWORDS` and `SPEC_URLS`).
 
 #### Step 2: Push Changes
 Trigger workflows manually via GitHub Actions (workflow_dispatch). If you use an `audit/*` branch, you can still run workflows from that branch, but pushes are no longer required to start the pipeline.

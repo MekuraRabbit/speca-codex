@@ -33,8 +33,8 @@ FORCE_EXECUTE ?=
 all: preparation audit
 
 # Phase targets
-# preparation: 01a → 01b-parallel → 01c → 01d → 01e → 02s → 02-parallel
-preparation: 02-parallel
+# preparation: 01a → 01b-parallel → 01c → 01d → 01e → 02-parallel → 02s
+preparation: 02s
 	@echo "🎉 Preparation phase completed! Check $(OUTPUT_DIR)/"
 
 audit: 04-parallel
@@ -205,8 +205,22 @@ clean:
 # Checklist Steps (02 - 02s)
 # ------------------------------------------------------
 
+# Step 02-parallel: Unified checklist generation
+02-parallel:
+	@if ! ls $(OUTPUT_DIR)/01e_PROP_PARTIAL_*.json >/dev/null 2>&1; then \
+		echo "❌ Error: No property partials found. Run 01e-parallel first."; exit 1; \
+	fi; \
+	if [ -z "$(FORCE_EXECUTE)" ] && ls $(OUTPUT_DIR)/03_AUDITMAP_PARTIAL_*.json >/dev/null 2>&1; then \
+		echo "⏭️  Skipping 02-parallel: 03_AUDITMAP_PARTIAL_*.json exists (use FORCE_EXECUTE=1 to override)"; \
+	else \
+		echo "🚀 Running unified checklist generation in parallel with $(WORKERS) workers..."; \
+		python3 scripts/run_parallel.py --phase 02 --workers $(WORKERS) --max-iterations $(MAX_ITERATIONS) $(if $(BATCH_SIZE),--batch-size $(BATCH_SIZE),) $(if $(SKIP_SPLIT),--skip-split,); \
+		PARTIAL_COUNT=$$(ls $(OUTPUT_DIR)/02_CHECKLIST_PARTIAL_*.json 2>/dev/null | wc -l); \
+		echo "✅ Parallel checklist generation complete. Partials: $$PARTIAL_COUNT"; \
+	fi
+
 # Step 02s: Review & Validate Preparation Outputs
-02s:
+02s: 02-parallel
 	@if [ -f "$(OUTPUT_DIR)/02s_REVIEW_REPORT.json" ]; then \
 		echo "⏭️  Skipping 02s: $(OUTPUT_DIR)/02s_REVIEW_REPORT.json already exists"; \
 	else \
@@ -227,20 +241,6 @@ clean:
 		else \
 			echo "⚠️  Review report not generated (Time: $${DURATION}s | Cost: \$$$$COST)"; \
 		fi; \
-	fi
-
-# Step 02-parallel: Unified checklist generation
-02-parallel:
-	@if ! ls $(OUTPUT_DIR)/01e_PROP_PARTIAL_*.json >/dev/null 2>&1; then \
-		echo "❌ Error: No property partials found. Run 01e-parallel first."; exit 1; \
-	fi; \
-	if [ -z "$(FORCE_EXECUTE)" ] && ls $(OUTPUT_DIR)/03_AUDITMAP_PARTIAL_*.json >/dev/null 2>&1; then \
-		echo "⏭️  Skipping 02-parallel: 03_AUDITMAP_PARTIAL_*.json exists (use FORCE_EXECUTE=1 to override)"; \
-	else \
-		echo "🚀 Running unified checklist generation in parallel with $(WORKERS) workers..."; \
-		python3 scripts/run_parallel.py --phase 02 --workers $(WORKERS) --max-iterations $(MAX_ITERATIONS) $(if $(BATCH_SIZE),--batch-size $(BATCH_SIZE),) $(if $(SKIP_SPLIT),--skip-split,); \
-		PARTIAL_COUNT=$$(ls $(OUTPUT_DIR)/02_CHECKLIST_PARTIAL_*.json 2>/dev/null | wc -l); \
-		echo "✅ Parallel checklist generation complete. Partials: $$PARTIAL_COUNT"; \
 	fi
 
 

@@ -1,10 +1,10 @@
-name: "3b. Properties (01e)"
+name: "02. Checklist Generation"
 
 on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Branch from Step 3a'
+        description: 'Branch from 01e'
         required: true
         type: string
       workers:
@@ -32,7 +32,7 @@ permissions:
   contents: write
 
 jobs:
-  properties:
+  checklist-generation:
     runs-on: self-hosted
 
     env:
@@ -49,8 +49,8 @@ jobs:
 
       - name: Verify Prerequisites
         run: |
-          if [ -z "$(ls outputs/01d_TRUSTMODEL_PARTIAL_*.json 2>/dev/null)" ]; then
-            echo "Missing: outputs/01d_TRUSTMODEL_PARTIAL_*.json - Run Step 3a first"
+          if [ -z "$(ls outputs/01e_PROP_PARTIAL_*.json 2>/dev/null)" ]; then
+            echo "Missing: outputs/01e_PROP_PARTIAL_*.json - Run 01e first"
             exit 1
           fi
 
@@ -67,8 +67,8 @@ jobs:
           git config --global user.name "Security Agent Bot"
           git config --global user.email "bot@nyxfoundation.org"
 
-      - name: "Step 01e: Properties (Parallel)"
-        run: make 01e-parallel WORKERS=${{ inputs.workers }} MAX_ITERATIONS=${{ inputs.max_iterations }} ${{ inputs.skip_split && 'SKIP_SPLIT=1' || '' }} ${{ inputs.force_execute && 'FORCE_EXECUTE=1' || '' }}
+      - name: "Step 02: Unified Checklist Generation (Parallel)"
+        run: make 02-parallel WORKERS=${{ inputs.workers }} MAX_ITERATIONS=${{ inputs.max_iterations }} ${{ inputs.skip_split && 'SKIP_SPLIT=1' || '' }} ${{ inputs.force_execute && 'FORCE_EXECUTE=1' || '' }}
 
       - name: Push Results
         if: always()
@@ -76,20 +76,20 @@ jobs:
           git add outputs/ ':!outputs/logs/'
           if ! git diff --staged --quiet; then
             git add outputs/logs/
-            git commit -m "01e: properties"
+            git commit -m "02: unified checklist generation"
             git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
             git push origin "${{ inputs.branch }}" --force-with-lease
           fi
 
       - name: Summary
         run: |
-          echo "## Next: Run **4. Checklist Generation**" >> $GITHUB_STEP_SUMMARY
+          echo "## Next: Run **02s. Preparation Review**" >> $GITHUB_STEP_SUMMARY
           echo "Branch: \`${{ inputs.branch }}\`" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Logs
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: step-3b-logs-${{ github.run_id }}
+          name: step-4-logs-${{ github.run_id }}
           path: outputs/logs/
           retention-days: 7

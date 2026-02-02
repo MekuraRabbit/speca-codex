@@ -1,38 +1,18 @@
-name: "4. Checklist Generation (02)"
+name: "02s. Preparation Review"
 
 on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Branch from Step 3'
+        description: 'Branch from 02'
         required: true
         type: string
-      workers:
-        description: 'Number of parallel workers'
-        required: false
-        type: number
-        default: 4
-      max_iterations:
-        description: 'Max iterations'
-        required: false
-        type: number
-        default: 100
-      skip_split:
-        description: 'Skip queue split (resume from existing queue)'
-        required: false
-        type: boolean
-        default: false
-      force_execute:
-        description: 'Force execute (ignore skip conditions)'
-        required: false
-        type: boolean
-        default: false
 
 permissions:
   contents: write
 
 jobs:
-  checklist-generation:
+  prep-review:
     runs-on: self-hosted
 
     env:
@@ -49,8 +29,8 @@ jobs:
 
       - name: Verify Prerequisites
         run: |
-          if [ -z "$(ls outputs/01e_PROP_PARTIAL_*.json 2>/dev/null)" ]; then
-            echo "Missing: outputs/01e_PROP_PARTIAL_*.json - Run Step 3 first"
+          if ! ls outputs/02_CHECKLIST_PARTIAL_*.json >/dev/null 2>&1; then
+            echo "Missing: outputs/02_CHECKLIST_PARTIAL_*.json - Run 02 first"
             exit 1
           fi
 
@@ -67,8 +47,8 @@ jobs:
           git config --global user.name "Security Agent Bot"
           git config --global user.email "bot@nyxfoundation.org"
 
-      - name: "Step 02: Unified Checklist Generation (Parallel)"
-        run: make 02-parallel WORKERS=${{ inputs.workers }} MAX_ITERATIONS=${{ inputs.max_iterations }} ${{ inputs.skip_split && 'SKIP_SPLIT=1' || '' }} ${{ inputs.force_execute && 'FORCE_EXECUTE=1' || '' }}
+      - name: "Step 02s: Review & Validate"
+        run: make 02s
 
       - name: Push Results
         if: always()
@@ -76,20 +56,20 @@ jobs:
           git add outputs/ ':!outputs/logs/'
           if ! git diff --staged --quiet; then
             git add outputs/logs/
-            git commit -m "02: unified checklist generation"
+            git commit -m "02s: preparation review"
             git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
             git push origin "${{ inputs.branch }}" --force-with-lease
           fi
 
       - name: Summary
         run: |
-          echo "## Next: Run **6. Preparation Review**" >> $GITHUB_STEP_SUMMARY
+          echo "## Next: Run **03. Audit Map**" >> $GITHUB_STEP_SUMMARY
           echo "Branch: \`${{ inputs.branch }}\`" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Logs
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: step-4-logs-${{ github.run_id }}
+          name: step-6-logs-${{ github.run_id }}
           path: outputs/logs/
           retention-days: 7
