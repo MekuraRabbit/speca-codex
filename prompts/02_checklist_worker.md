@@ -40,7 +40,11 @@ Generate audit checklist items for properties assigned to this worker's queue. P
 1.  Read the worker queue file `QUEUE_FILE`.
 2.  Identify unprocessed items (property IDs in `items` but not in `processed`).
 3.  If no items remain, terminate successfully.
-4.  **Create a dynamic batch**: Take unprocessed items **until the cumulative size of their unique `source_file`s reaches the token budget (e.g., 120KB)**. This batch will contain a variable number of properties.
+4.  **Create a dynamic batch**: Take unprocessed items **until the cumulative size of their unique `source_file`s reaches ~120KB** (approximately **30,000 tokens**). This batch will contain a variable number of properties.
+    -   Estimate each property file's token count as: `file_size_bytes / 4`
+    -   Keep a running total as you add unique `source_file`s
+    -   Stop adding files when: `cumulative_tokens + next_file_tokens > 30,000`
+    -   If the batch is empty (first file > 120KB), process that single file alone
 
 ### **Task 2.2: Process Batch**
 
