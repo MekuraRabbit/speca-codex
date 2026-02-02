@@ -52,6 +52,7 @@ PHASE_CONFIG = {
             "pattern": "outputs/01e_PROP_PARTIAL_*.json",
             "item_key": "properties",
             "id_key": "id",
+            "id_field": "property_id",
         },
     },
     "03": {
@@ -59,10 +60,11 @@ PHASE_CONFIG = {
         "queue_key": "unprocessed_checklist_ids",
         "output_prefix": "outputs/03_QUEUE",
         # For 03, we need to initialize from 02 checklist partials
-        "init_from_glob": {
-            "pattern": "outputs/02*_CHECKLIST_PARTIAL_*.json",
-            "item_key": "checklist",
+        "init_from_glob_items": {
+            "pattern": "outputs/02_CHECKLIST_PARTIAL_*.json",
+            "item_key": "checklist_items",
             "id_key": "id",
+            "id_field": "check_id",
         },
     },
     "04": {
@@ -140,20 +142,24 @@ def init_from_glob_files(init_config: dict[str, Any]) -> list[str]:
 
 
 def init_from_glob_items(init_config: dict[str, Any]) -> list[dict[str, str]]:
-    """Initialize queue from glob pattern returning property descriptors (for 02)."""
+    """Initialize queue from glob pattern returning item descriptors (for 02, 03)."""
     import glob
 
     pattern = init_config["pattern"]
     item_key = init_config["item_key"]
     id_key = init_config["id_key"]
+    id_field = init_config.get("id_field", "property_id")
 
     items: list[dict[str, str]] = []
     for filepath in sorted(glob.glob(pattern)):
         data = load_json(filepath)
-        for prop in data.get(item_key, []):
-            prop_id = prop.get(id_key)
-            if prop_id:
-                items.append({"property_id": prop_id, "source_file": filepath})
+        for entry in data.get(item_key, []):
+            entry_id = entry.get(id_key) if isinstance(entry, dict) else None
+            if entry_id:
+                item: dict[str, str] = {id_field: entry_id}
+                if isinstance(entry, dict) and "source_file" in entry:
+                    item["source_file"] = entry["source_file"]
+                items.append(item)
 
     return items
 

@@ -59,6 +59,7 @@ PHASE_CONFIG = {
         "prompt_file": "prompts/03_auditmap_worker.md",
         "log_prefix": "outputs/logs/03_auditmap_w{worker_id}",
         "workdir": "target_workspace",
+        "max_batch_bytes": 120 * 1024,
     },
     "04": {
         "queue_file": "outputs/04_QUEUE_{worker_id}.json",
@@ -90,6 +91,9 @@ def get_remaining_count(queue_file: str) -> int:
         if items and isinstance(items[0], dict) and "property_id" in items[0]:
             remaining = [item for item in items if item.get("property_id") not in processed]
             return len(remaining)
+        if items and isinstance(items[0], dict) and "check_id" in items[0]:
+            remaining = [item for item in items if item.get("check_id") not in processed]
+            return len(remaining)
         return len(items) - len(processed)
     except FileNotFoundError:
         return 0
@@ -102,6 +106,8 @@ def get_dynamic_batch_size(queue_file: str, max_bytes: int) -> int:
     processed = set(data.get("processed", []))
     if items and isinstance(items[0], dict) and "property_id" in items[0]:
         remaining = [item for item in items if item.get("property_id") not in processed]
+    elif items and isinstance(items[0], dict) and "check_id" in items[0]:
+        remaining = [item for item in items if item.get("check_id") not in processed]
     else:
         remaining = [item for item in items if item not in processed]
 
@@ -337,8 +343,13 @@ def main():
                 f"outputs/02_CHECKLIST_PARTIAL_W{args.worker_id}_{timestamp}_{iteration}.json"
             )
             env_vars["OUTPUT_FILE"] = output_file
+        if args.phase == "03":
+            output_file = (
+                f"outputs/03_AUDITMAP_PARTIAL_W{args.worker_id}_{timestamp}_{iteration}.json"
+            )
+            env_vars["OUTPUT_FILE"] = output_file
         batch_size = args.batch_size
-        if batch_size is None and args.phase in ("01e", "02"):
+        if batch_size is None and args.phase in ("01e", "02", "03"):
             max_bytes = config.get("max_batch_bytes", 160 * 1024)
             batch_size = get_dynamic_batch_size(queue_file, max_bytes)
             if batch_size > 0:
