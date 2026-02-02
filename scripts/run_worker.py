@@ -66,6 +66,7 @@ PHASE_CONFIG = {
         "prompt_file": "prompts/04_review_worker.md",
         "log_prefix": "outputs/logs/04_review_w{worker_id}",
         "workdir": "target_workspace",
+        "max_batch_bytes": 120 * 1024,
     },
 }
 
