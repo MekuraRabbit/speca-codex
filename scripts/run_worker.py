@@ -14,6 +14,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -91,9 +92,19 @@ def load_json(path: str) -> dict[str, Any]:
 
 
 def save_json(path: str, data: dict[str, Any]) -> None:
-    """Save data to JSON file."""
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
+    """Save data to JSON file atomically."""
+    path_obj = Path(path)
+    path_obj.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_path = tempfile.mkstemp(prefix=path_obj.name, dir=str(path_obj.parent))
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(data, f, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_path, path_obj)
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
 
 
 def load_bug_bounty_scope() -> dict[str, Any] | None:
