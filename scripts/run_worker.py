@@ -144,7 +144,12 @@ def extract_output_ids(output_data: Any, phase: str) -> list[str]:
             checklist = output_data.get("checklist") or output_data.get("checklist_items") or []
         else:
             checklist = []
-        return [item.get("id") for item in checklist if isinstance(item, dict) and item.get("id")]
+        # Phase 02 queue tracks property_id, not check_id
+        return [
+            item.get("property_id")
+            for item in checklist
+            if isinstance(item, dict) and item.get("property_id")
+        ]
     if phase == "03":
         if isinstance(output_data, dict):
             audit_items = output_data.get("audit_items", [])
