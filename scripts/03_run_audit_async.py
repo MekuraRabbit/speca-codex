@@ -15,6 +15,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
+from tqdm.asyncio import tqdm_asyncio
 
 OUTPUT_DIR = Path("outputs")
 LOG_DIR = OUTPUT_DIR / "logs"
@@ -385,7 +386,9 @@ class AuditOrchestratorAsync:
             tasks.append(self._run_claude_cli(batch, worker_id, self._batch_counter))
 
         if tasks:
-            batch_results = await asyncio.gather(*tasks)
+            batch_results = await tqdm_asyncio.gather(
+                *tasks, desc="Auditing Batches", unit="batch"
+            )
             for result in batch_results:
                 self.results.extend(result)
 
