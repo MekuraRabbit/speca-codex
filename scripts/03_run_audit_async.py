@@ -306,8 +306,6 @@ class AuditOrchestratorAsync:
             cmd = [
                 "claude",
                 "--dangerously-skip-permissions",
-                "--agent",
-                "serena",
                 "--output-format",
                 "json",
                 "-p",
