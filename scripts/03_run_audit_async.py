@@ -289,7 +289,7 @@ class AuditOrchestratorAsync:
 
             queue_path = OUTPUT_DIR / f"03_ASYNC_QUEUE_W{worker_id}_{timestamp}_{batch_index}.json"
             output_path = OUTPUT_DIR / f"03_AUDITMAP_PARTIAL_W{worker_id}_{timestamp}_{batch_index}.json"
-            log_file = LOG_DIR / f"03_audit_async_w{worker_id}_{timestamp}_{batch_index}.json"
+            log_file = LOG_DIR / f"03_auditmap_w{worker_id}_{timestamp}_{batch_index}.json"
 
             save_json(queue_path, build_queue_payload(batch, worker_id, self.num_workers))
 
@@ -335,7 +335,11 @@ class AuditOrchestratorAsync:
                 env=env,
                 cwd=None,
             )
-            stdout, _ = await proc.communicate()
+            try:
+                stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=3600)
+            except asyncio.TimeoutError:
+                proc.kill()
+                return []
 
             try:
                 log_file.write_bytes(stdout or b"")
