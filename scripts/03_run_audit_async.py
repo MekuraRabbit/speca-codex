@@ -1,41 +1,29 @@
 #!/usr/bin/env python3
 """
-Phase 03 Audit Map Orchestrator Agent
+Phase 03 Audit Map Async Orchestrator
 
-This script replaces the legacy run_parallel.py and run_worker.py for phase 03.
-It orchestrates the formal audit process using a hierarchical agent architecture:
-
-L1: Orchestrator Agent (this script)
-    - Reads the main queue.
-    - Performs Early Exit checks for `out-of-scope` items.
-    - Forms dynamic, token-based batches.
-    - Invokes the `map` tool to spawn L2 Worker Subagents.
-    - Aggregates results and updates the main state.
-
-L2: Worker Subagent (spawned by `map`)
-    - Receives a batch of audit items.
-    - For each item, invokes the `formal-audit` skill.
-    - Returns a list of structured JSON audit results.
+This script handles phase 03 using asyncio to parallelize claude CLI calls,
+while maintaining the subscription-based billing model.
 """
 
+import argparse
+import asyncio
 import json
 import os
+import sys
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 
-# Assume the existence of Claude Code API bindings
-# from claude_code_api import default_api, MapOutputSchema
-
-# --- Constants ---
 OUTPUT_DIR = Path("outputs")
 LOG_DIR = OUTPUT_DIR / "logs"
 SKILL_PATH = Path("skills/formal-audit/SKILL.md")
 CHECKLIST_PARTIALS_PATTERN = "outputs/02_CHECKLIST_PARTIAL_*.json"
 PROPERTY_PARTIALS_PATTERN = "outputs/01e_PROP_PARTIAL_*.json"
 MAX_CONTEXT_TOKENS = 190_000  # Safety margin for 200K context window
-BASE_PROMPT_TOKENS = 5_000  # Estimated tokens for skill prompt + map prompt template
+BASE_PROMPT_TOKENS = 5_000  # Estimated tokens for skill prompt + prompt template
+PROMPT_FILE = Path("prompts/03_auditmap_worker.md")
 
 
 def load_json(path: Path) -> Any:
@@ -45,7 +33,7 @@ def load_json(path: Path) -> Any:
         return json.load(f)
 
 
-def save_json(path: Path, data: Any):
+def save_json(path: Path, data: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
         json.dump(data, f, indent=2)
@@ -134,14 +122,40 @@ def build_property_to_subgraph_map_via_elements(
     return property_to_subgraph
 
 
-class AuditOrchestrator:
-    def __init__(self, max_workers: int):
-        self.max_workers = max_workers
+def build_queue_payload(items: List[Dict[str, Any]], worker_id: int, total_workers: int) -> Dict[str, Any]:
+    return {
+        "worker_id": worker_id,
+        "phase": "03",
+        "total_workers": total_workers,
+        "items": items,
+        "processed": [],
+        "total_items": len(items),
+    }
+
+
+def parse_audit_results(output_path: Path) -> List[Dict[str, Any]]:
+    data = load_json(output_path)
+    if data is None:
+        return []
+    if isinstance(data, list):
+        return [item for item in data if isinstance(item, dict)]
+    if isinstance(data, dict):
+        audit_items = data.get("audit_items")
+        if isinstance(audit_items, list):
+            return [item for item in audit_items if isinstance(item, dict)]
+    return []
+
+
+class AuditOrchestratorAsync:
+    def __init__(self, num_workers: int, max_concurrent: int):
+        self.num_workers = max(1, num_workers)
+        self.semaphore = asyncio.Semaphore(max_concurrent)
+        self.results: List[Dict[str, Any]] = []
         self.all_checklist_items: Dict[str, Dict[str, Any]] = {}
         self.property_subgraph_map: Dict[str, Tuple[str | None, str]] = {}
+        self._batch_counter = 0
 
-    def _load_all_checklist_items(self):
-        """Load all checklist items from partials into memory."""
+    def _load_all_checklist_items(self) -> None:
         import glob
 
         print("Loading all checklist items...")
@@ -183,7 +197,6 @@ class AuditOrchestrator:
         self.all_checklist_items = items
 
     def _is_early_exit(self, item: Dict[str, Any]) -> bool:
-        """Perform a lightweight check to see if an item is out-of-scope."""
         code_scope = item.get("code_scope")
         if not code_scope and isinstance(item.get("checklist_item"), dict):
             code_scope = item["checklist_item"].get("code_scope")
@@ -195,7 +208,6 @@ class AuditOrchestrator:
         return False
 
     def _create_token_based_batches(self, items: List[Dict[str, Any]]) -> List[List[Dict[str, Any]]]:
-        """Group items into batches, respecting the token limit."""
         print("Creating token-based batches...")
         batches: List[List[Dict[str, Any]]] = []
         current_batch: List[Dict[str, Any]] = []
@@ -204,9 +216,6 @@ class AuditOrchestrator:
         for item in items:
             item_json = json.dumps(item)
             item_tokens = estimate_tokens(item_json)
-
-            # This is a simplified token calculation. A real implementation would also
-            # account for the size of referenced files (`checklist_file`, `subgraph_file`).
 
             if current_batch and (current_batch_tokens + item_tokens > MAX_CONTEXT_TOKENS):
                 batches.append(current_batch)
@@ -267,12 +276,90 @@ class AuditOrchestrator:
             },
         }
 
-    def run(self):
-        """Main orchestration logic."""
-        # 1. Load all necessary data into memory
+    async def _run_claude_cli(
+        self,
+        batch: List[Dict[str, Any]],
+        worker_id: int,
+        batch_index: int,
+    ) -> List[Dict[str, Any]]:
+        async with self.semaphore:
+            timestamp = int(time.time())
+            batch_size = len(batch)
+            LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+            queue_path = OUTPUT_DIR / f"03_ASYNC_QUEUE_W{worker_id}_{timestamp}_{batch_index}.json"
+            output_path = OUTPUT_DIR / f"03_AUDITMAP_PARTIAL_W{worker_id}_{timestamp}_{batch_index}.json"
+            log_file = LOG_DIR / f"03_audit_async_w{worker_id}_{timestamp}_{batch_index}.json"
+
+            save_json(queue_path, build_queue_payload(batch, worker_id, self.num_workers))
+
+            with open(PROMPT_FILE) as f:
+                prompt_content = f.read()
+
+            extra_args = (
+                f"WORKER_ID={worker_id} QUEUE_FILE={queue_path} "
+                f"BATCH_SIZE={batch_size} OUTPUT_FILE={output_path} "
+                f"ITERATION={batch_index} TIMESTAMP={timestamp}"
+            )
+            prompt_content = f"{prompt_content}\n\n{extra_args}"
+
+            cmd = [
+                "claude",
+                "--dangerously-skip-permissions",
+                "--agent",
+                "serena",
+                "--output-format",
+                "json",
+                "-p",
+                prompt_content,
+            ]
+
+            env = os.environ.copy()
+            env.update(
+                {
+                    "WORKER_ID": str(worker_id),
+                    "QUEUE_FILE": str(queue_path),
+                    "BATCH_SIZE": str(batch_size),
+                    "OUTPUT_FILE": str(output_path),
+                    "ITERATION": str(batch_index),
+                    "TIMESTAMP": str(timestamp),
+                    "CLAUDE_CODE_PERMISSIONS": "bypassPermissions",
+                    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "100000",
+                }
+            )
+
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+                env=env,
+                cwd=None,
+            )
+            stdout, _ = await proc.communicate()
+
+            try:
+                log_file.write_bytes(stdout or b"")
+            except Exception:
+                pass
+
+            if proc.returncode != 0:
+                print(
+                    f"[W{worker_id}] Claude failed for batch {batch_index} (exit {proc.returncode})",
+                    file=sys.stderr,
+                )
+                return []
+
+            results = parse_audit_results(output_path)
+            if not results:
+                print(
+                    f"[W{worker_id}] No audit results found for batch {batch_index}",
+                    file=sys.stderr,
+                )
+            return results
+
+    async def run(self) -> None:
         self._load_all_checklist_items()
 
-        # 2. Separate items into `early_exit` and `full_audit` queues
         full_audit_queue: List[Dict[str, Any]] = []
         early_exit_results: List[Dict[str, Any]] = []
 
@@ -285,55 +372,35 @@ class AuditOrchestrator:
         print(f"Identified {len(early_exit_results)} items for early exit.")
         print(f"Sending {len(full_audit_queue)} items for full audit.")
 
-        # 3. Create token-based batches for the full audit items
         batches = self._create_token_based_batches(full_audit_queue)
 
-        # 4. Invoke Worker Subagents in parallel using the `map` tool
-        map_inputs = [json.dumps(batch) for batch in batches]
+        tasks = []
+        for batch in batches:
+            worker_id = self._batch_counter % self.num_workers
+            self._batch_counter += 1
+            tasks.append(self._run_claude_cli(batch, worker_id, self._batch_counter))
 
-        print(f"Invoking `map` tool with {len(map_inputs)} parallel subagents...")
-        # This is a conceptual call to the `map` tool.
-        # map_results = default_api.map(
-        #     brief="Perform formal static audit on code batches",
-        #     name="formal_audit_batch",
-        #     title=f"Formal Audit of {len(full_audit_queue)} Code Items",
-        #     prompt_template=f"""
-        #     You are a security audit worker subagent.
-        #     For each item in the provided JSON batch, execute the formal audit methodology defined in <file>{SKILL_PATH}</file>.
-        #     Return a single JSON array containing the structured audit result for each item.
-        #
-        #     Batch to audit:
-        #     {{input}}
-        #     """,
-        #     target_count=len(map_inputs),
-        #     inputs=map_inputs,
-        #     output_schema=[
-        #         MapOutputSchema(
-        #             name="audit_results_json",
-        #             type="string",
-        #             title="Audit Results JSON",
-        #             description="A valid JSON string of a list of audit result objects.",
-        #             format="JSON array",
-        #         )
-        #     ],
-        # )
+        if tasks:
+            batch_results = await asyncio.gather(*tasks)
+            for result in batch_results:
+                self.results.extend(result)
 
-        # 5. Aggregate all results and save
-        final_results = list(early_exit_results)
-        # for result in map_results:
-        #     # Process and validate the JSON output from each subagent
-        #     subagent_output = json.loads(result["audit_results_json"])
-        #     final_results.extend(subagent_output)
-
+        final_results = early_exit_results + self.results
         timestamp = int(time.time())
         final_output_path = OUTPUT_DIR / f"03_AUDITMAP_FINAL_{timestamp}.json"
         save_json(final_output_path, {"audit_results": final_results})
-
         print(f"Orchestration complete. Final results saved to {final_output_path}")
 
 
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--workers", type=int, default=8)
+    parser.add_argument("--max-concurrent", type=int, default=4)
+    args = parser.parse_args()
+
+    orchestrator = AuditOrchestratorAsync(args.workers, args.max_concurrent)
+    asyncio.run(orchestrator.run())
+
+
 if __name__ == "__main__":
-    # This would be triggered by the Makefile or GitHub Actions
-    max_workers = int(os.environ.get("WORKERS", 4))
-    orchestrator = AuditOrchestrator(max_workers=max_workers)
-    orchestrator.run()
+    main()

@@ -21,6 +21,7 @@ MAX_ITERATIONS ?= 100
 # Parallel execution configuration
 WORKERS ?= 4
 BATCH_SIZE ?= 10
+MAX_CONCURRENT ?= 4
 SKIP_SPLIT ?=
 FORCE_EXECUTE ?=
 
@@ -76,6 +77,7 @@ help:
 	@echo ""
 	@echo "Configuration:"
 	@echo "  WORKERS        - Parallel workers (default: 4)"
+	@echo "  MAX_CONCURRENT - Max concurrent Claude calls (default: 4)"
 	@echo "  MAX_ITERATIONS - Safety limit (default: 100)"
 	@echo "  BATCH_SIZE     - Items per iteration (default: 10)"
 	@echo ""
@@ -267,8 +269,8 @@ clean:
 	if [ -z "$(FORCE_EXECUTE)" ] && ls $(OUTPUT_DIR)/04_REVIEW_PARTIAL_*.json >/dev/null 2>&1; then \
 		echo "⏭️  Skipping 03-parallel: 04_REVIEW_PARTIAL_*.json exists (use FORCE_EXECUTE=1 to override)"; \
 	else \
-		echo "🚀 Running 03 Audit Map Orchestrator..."; \
-		$(PYTHON_RUNNER) scripts/03_run_audit_orchestrator.py; \
+		echo "🚀 Running 03 Audit Map Async Orchestrator..."; \
+		$(PYTHON_RUNNER) scripts/03_run_audit_async.py --workers $(WORKERS) --max-concurrent $(MAX_CONCURRENT); \
 		echo "✅ Audit map generation complete."; \
 	fi
 
