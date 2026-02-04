@@ -159,7 +159,9 @@ First, scan the specification and identify which aspects are covered:
     *   `description`: The assumption being made.
     *   `impact_if_false`: The potential security consequence if the assumption does not hold.
 
-### **Task 2.3: Write Outputs**
+### **Task 2.3: Write Outputs (Atomic & Strict)**
+
+**Output MUST be valid JSON. Do NOT use expressions, concatenation, comments, or trailing commas.**
 
 **For EACH of the 5 URLs in the batch:**
 
@@ -170,10 +172,11 @@ First, scan the specification and identify which aspects are covered:
 
 **After processing ALL URLs in the batch:**
 
-2.  **Update Worker Queue File:**
-    *   Add ALL processed URLs from this batch to the `processed` array.
+2.  **Update Worker Queue File (atomic + strict):**
+    *   Add **only** the processed URLs from this batch to the `processed` array.
+    *   De-duplicate `processed` (treat as a set).
     *   **IMPORTANT:** Only update YOUR queue file, not others.
-    *   Overwrite `QUEUE_FILE`.
+    *   Write to a temporary file first, then atomically rename to `QUEUE_FILE`.
 
 **⚠️ BATCH SIZE:** Process exactly 5 URLs per iteration (or remaining URLs if fewer than 5 left).
 

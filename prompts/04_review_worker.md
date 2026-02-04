@@ -194,9 +194,10 @@ For each `item` in your `current_batch`:
    - `[Symbolic-Execution] file:line - description`
    - `[Invariant-Proof] file:line - description`
 
-### **Task 3: Write Outputs**
+### **Task 3: Write Outputs (Atomic & Strict)**
 
 **THIS STEP MUST HAPPEN BEFORE UPDATING THE QUEUE FILE**
+**Output MUST be valid JSON. Do NOT use expressions, concatenation, comments, or trailing commas.**
 
 1. **Generate Partial Review:**
    * Create `outputs/04_REVIEW_PARTIAL_W{WORKER_ID}_{TIMESTAMP}_{ITERATION}.json`
@@ -204,10 +205,11 @@ For each `item` in your `current_batch`:
    * Verify that all items in batch have been reviewed
    * Verify verdict counts in metadata match actual items
 
-2. **Update Worker Queue File:**
-   * Add ALL processed items to the `processed` array
+2. **Update Worker Queue File (atomic + strict):**
+   * Add **only** items processed in this output to the `processed` array
+   * De-duplicate `processed` (treat as a set)
    * **IMPORTANT:** Only update YOUR queue file, not others
-   * Overwrite `QUEUE_FILE`
+   * Write to a temporary file first, then atomically rename to `QUEUE_FILE`
 
 ---
 

@@ -149,19 +149,23 @@ For the identified **Code Scope**, perform the following three phases sequential
 - Use `out-of-scope` when Phase 3.5 indicates out-of-scope (API/config/CL dependency).
 - Use `inconclusive` when analysis cannot establish reachability or proof.
 
-### **Task 3.4: Write Outputs**
+### **Task 3.4: Write Outputs (Atomic & Strict)**
 
 **THIS STEP MUST HAPPEN BEFORE UPDATING THE QUEUE FILE**
+**Output MUST be valid JSON. Do NOT use expressions, concatenation, comments, or trailing commas.**
 
-1.  **Generate Partial Audit Map:**
+1.  **Generate Partial Audit Map (atomic write):**
     * Create `outputs/03_AUDITMAP_PARTIAL_W{WORKER_ID}_{TIMESTAMP}_{ITERATION}.json`.
     * Ensure all items in the batch are included.
     * **NEW**: Include `phase2_5_reachability_analysis` and `phase3_5_scope_filtering` in the output.
+    * Write to a temporary file first, then atomically rename to the final path.
 
-2.  **Update Worker Queue File:**
-    * Add all processed `check_id`s to the `processed` array.
+2.  **Update Worker Queue File (atomic + strict):**
+    * Add **only** the `check_id`s that were successfully written in this output file.
+    * De-duplicate `processed` (treat as a set) before saving.
     * **IMPORTANT:** Only update YOUR queue file, not others.
-    * Overwrite `QUEUE_FILE`.
+    * Write to a temporary file first, then atomically rename to `QUEUE_FILE`.
+    * After update, `processed` MUST be a subset of `items` and match the output’s `check_id`s.
 
 ---
 

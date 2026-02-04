@@ -209,16 +209,19 @@ Each property must include:
 Track which nodes and edges are covered by properties.
 Report coverage in metadata.
 
-### **Task 2.4: Write Outputs**
+### **Task 2.4: Write Outputs (Atomic & Strict)**
+
+**Output MUST be valid JSON. Do NOT use expressions, concatenation, comments, or trailing commas.**
 
 1. **Generate Partial Properties:**
    - Create `outputs/01e_PROP_PARTIAL_W{WORKER_ID}_{TIMESTAMP}_{ITERATION}.json`
    - Set `metadata.batch` to `ITERATION`
    - Ensure `metadata.source_files` lists **all files in this batch**
 
-2. **Update Worker Queue:**
-   - Add processed files to `processed` array
-   - Overwrite `QUEUE_FILE`
+2. **Update Worker Queue (atomic + strict):**
+   - Add **only** processed files from this batch to `processed`
+   - De-duplicate `processed` (treat as a set)
+   - Write to a temporary file first, then atomically rename to `QUEUE_FILE`
 
 ---
 
