@@ -88,7 +88,7 @@ jobs:
 
       - name: Download Benchmark Dataset
         if: ${{ inputs.dataset == 'primevul' }}
-        run: uv run python scripts/setup_benchmark.py
+        run: uv run python benchmarks/datasets/builders/setup_benchmark.py
 
       - name: Prepare CVEfixes Subset
         if: ${{ inputs.dataset == 'cvefixes' }}
@@ -100,11 +100,11 @@ jobs:
           REPOS="${{ inputs.cvefixes_repos }}"
           if [ -z "$REPOS" ]; then
             echo "cvefixes_repos not provided; using script defaults."
-            uv run python scripts/setup_cvefixes_subset.py \
+            uv run python benchmarks/datasets/builders/setup_cvefixes_subset.py \
               --db "${{ inputs.cvefixes_db_path }}" \
               --output "${{ inputs.cvefixes_output }}"
           else
-            uv run python scripts/setup_cvefixes_subset.py \
+            uv run python benchmarks/datasets/builders/setup_cvefixes_subset.py \
               --db "${{ inputs.cvefixes_db_path }}" \
               --output "${{ inputs.cvefixes_output }}" \
               --repos "$REPOS"
@@ -117,7 +117,7 @@ jobs:
             echo "vul4j_input_jsonl is required for vul4j dataset."
             exit 1
           fi
-          uv run python scripts/setup_vul4j_from_jsonl.py \
+          uv run python benchmarks/datasets/builders/setup_vul4j_from_jsonl.py \
             --input "${{ inputs.vul4j_input_jsonl }}" \
             --output "${{ inputs.vul4j_output }}"
 

@@ -111,7 +111,7 @@ jobs:
               ;;
           esac
           echo "DATASET_PATH=${DATASET_PATH}" >> $GITHUB_ENV
-          echo "RESULTS_DIR=benchmarks/results/${{ inputs.dataset }}" >> $GITHUB_ENV
+          echo "RESULTS_DIR=benchmarks/results/rq2/${{ inputs.dataset }}" >> $GITHUB_ENV
 
       - name: Verify Dataset
         run: |

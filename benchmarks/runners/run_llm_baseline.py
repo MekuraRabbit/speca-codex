@@ -43,7 +43,7 @@ def main() -> int:
 
     if args.metadata is None:
         dataset_name = args.dataset.parent.name
-        args.metadata = ROOT_DIR / "benchmarks" / "results" / dataset_name / "llm_baseline_metadata.json"
+        args.metadata = ROOT_DIR / "benchmarks" / "results" / "rq2" / dataset_name / "llm_baseline_metadata.json"
     spec = command_spec_from_args(args)
     spec.tmp_dir.mkdir(parents=True, exist_ok=True)
     results = []

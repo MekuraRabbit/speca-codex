@@ -18,7 +18,7 @@ from benchmarks.metrics.stats import bootstrap_metric_diffs, effect_size_cliffs_
 from benchmarks.tools.registry import TOOL_REGISTRY, resolve_metadata_path, resolve_results_path
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
-RESULTS_DIR = ROOT_DIR / "benchmarks" / "results"
+RESULTS_DIR = ROOT_DIR / "benchmarks" / "results" / "rq2"
 DATA_DIR = ROOT_DIR / "benchmarks" / "data"
 EVALUATION_OUTPUT_PATH = RESULTS_DIR / "evaluation_summary.json"
 METRICS_OUTPUT_PATH = RESULTS_DIR / "metrics.json"

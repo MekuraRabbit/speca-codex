@@ -25,7 +25,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--results-dir",
-        default=str(ROOT_DIR / "benchmarks" / "results" / "sherlock_ethereum_audit_contest"),
+        default=str(ROOT_DIR / "benchmarks" / "results" / "rq1" / "sherlock_ethereum_audit_contest"),
     )
     parser.add_argument("--use-llm", action="store_true")
     parser.add_argument("--llm-max", type=int, default=200)

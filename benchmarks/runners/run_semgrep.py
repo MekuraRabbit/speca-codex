@@ -15,12 +15,12 @@ RESULTS_DIR = ROOT_DIR / "benchmarks" / "results"
 
 def default_output_path(dataset_path: Path) -> Path:
     dataset_name = dataset_path.parent.name
-    return RESULTS_DIR / dataset_name / "semgrep_results.json"
+    return RESULTS_DIR / "rq2" / dataset_name / "semgrep_results.json"
 
 
 def default_metadata_path(dataset_path: Path) -> Path:
     dataset_name = dataset_path.parent.name
-    return RESULTS_DIR / dataset_name / "semgrep_metadata.json"
+    return RESULTS_DIR / "rq2" / dataset_name / "semgrep_metadata.json"
 
 def run_semgrep_on_primevul(dataset_path: Path, output_path: Path, config: str, timeout: int = 0):
     """Run Semgrep on the dataset."""

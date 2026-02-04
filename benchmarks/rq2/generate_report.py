@@ -9,8 +9,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
-DEFAULT_METRICS = ROOT_DIR / "benchmarks" / "results" / "metrics.json"
-DEFAULT_REPORT = ROOT_DIR / "benchmarks" / "results" / "report.md"
+DEFAULT_METRICS = ROOT_DIR / "benchmarks" / "results" / "rq2" / "metrics.json"
+DEFAULT_REPORT = ROOT_DIR / "benchmarks" / "results" / "rq2" / "report.md"
 
 
 def parse_args() -> argparse.Namespace:

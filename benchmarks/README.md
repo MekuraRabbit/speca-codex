@@ -67,9 +67,9 @@ Labeling guidance (recommended)
 - If unsure, mark false and add a note for adjudication.
 
 Outputs
-- benchmarks/results/sherlock_ethereum_audit_contest/evaluation_summary.json
-- benchmarks/results/sherlock_ethereum_audit_contest/evaluation_<branch>.json
-- benchmarks/results/sherlock_ethereum_audit_contest/human_eval_sample.jsonl (if requested)
+- benchmarks/results/rq1/sherlock_ethereum_audit_contest/evaluation_summary.json
+- benchmarks/results/rq1/sherlock_ethereum_audit_contest/evaluation_<branch>.json
+- benchmarks/results/rq1/sherlock_ethereum_audit_contest/human_eval_sample.jsonl (if requested)
 
 Workflow (GitHub Actions)
 - .github/workflows/benchmark-rq1-sherlock-eval.yml
@@ -114,7 +114,7 @@ How to run (local)
    uv run python benchmarks/rq2/evaluate.py --dataset primevul
 
 Optional report:
-   uv run python benchmarks/rq2/generate_report.py --rq1-summary benchmarks/results/sherlock_ethereum_audit_contest/evaluation_summary.json
+   uv run python benchmarks/rq2/generate_report.py --rq1-summary benchmarks/results/rq1/sherlock_ethereum_audit_contest/evaluation_summary.json
 
 Metadata capture
 - RQ1: pass --metadata /path/to/metadata.json to rq1/cli.py
@@ -125,14 +125,14 @@ Additional datasets (distributed OSS + Java)
 - CVEfixes subset (distributed systems OSS):
   - Requires a local CVEfixes SQLite DB.
   - Build subset:
-    uv run python scripts/setup_cvefixes_subset.py \
+    uv run python benchmarks/datasets/builders/setup_cvefixes_subset.py \
       --db /path/to/CVEfixes.db \
       --output benchmarks/data/cvefixes/cvefixes_subset_paired.jsonl
   - Optional: pass --repos to override the default distributed-OSS list.
 - Vul4J (Java):
   - Export or prepare a JSONL with before/after code pairs.
   - Convert:
-    uv run python scripts/setup_vul4j_from_jsonl.py \
+    uv run python benchmarks/datasets/builders/setup_vul4j_from_jsonl.py \
       --input /path/to/vul4j_export.jsonl \
       --output benchmarks/data/vul4j/vul4j_paired.jsonl
   - Evaluate:
@@ -156,8 +156,8 @@ Note: the above templates are placeholders; adapt to your tool output by setting
 predicted_vulnerable based on findings count.
 
 Outputs
-- benchmarks/results/metrics.json
-- benchmarks/results/evaluation_summary.json
+- benchmarks/results/rq2/metrics.json
+- benchmarks/results/rq2/evaluation_summary.json
 
 Notes
 - Statistical outputs are intended for CCS/USENIX-style reporting.
