@@ -10,22 +10,33 @@ Execution hint: This worker prompt is invoked by the phase-03 async orchestrator
 
 <task>
   <goal>Run a three-stage formal audit for each item in the batch using skills.</goal>
-  <input type=\"file\" id=\"queue\">{{QUEUE_FILE}}</input>
-  <output type=\"file\" id=\"results\">{{OUTPUT_FILE}}</output>
+  <input type="file" id="queue">{{QUEUE_FILE}}</input>
+  <output type="file" id="results">{{OUTPUT_FILE}}</output>
+
   <instructions>
-    1. Read <ref id=\"queue\"/> and select the first BATCH_SIZE unprocessed items.
-    2. For each item, ensure a code excerpt is available:
-       - If item.code_excerpt is present, use it.
-       - Otherwise use Tree-sitter MCP tools (get_symbols/get_node_at_position/get_ast) to extract the function or line-range excerpt.
-    3. For each item, run these skills in order:
+    1. Read <ref id="queue"/> and select the first BATCH_SIZE unprocessed items.
+    2. For each item, apply Early Exit Conditions. If met, skip to step 5.
+    3. For each item, ensure a code excerpt is available using Data Sources and Tree-sitter MCP tools.
+    4. For each item, run these skills in order:
        a) /formal-audit-phase1 (include code_excerpt)
        b) /formal-audit-phase2 (include phase1 output)
        c) /formal-audit-phase3 (include phase1+phase2 outputs)
-    4. Merge outputs into a single audit result object per item with:
-       - check_id, property_id, code_scope, final_classification, bug_bounty_eligible, summary
-       - audit_trail containing phase1/phase2/phase2.5/phase3/phase3.5 outputs
-    5. Write a JSON array of audit result objects to <ref id=\"results\"/>.
+    5. Merge outputs into a single audit result object per item.
+    6. Write a JSON array of audit result objects to <ref id="results"/>.
   </instructions>
+
+  <data_sources>
+    - **Checklist Item**: `item.checklist_item` (already resolved)
+    - **Property File**: `outputs/01e_PROP_PARTIAL_*.json` (for property assertion)
+    - **Subgraph File**: `outputs/01b_SUBGRAPHS/*.json` (for code mapping)
+  </data_sources>
+
+  <early_exit_conditions>
+    Skip all phases and set `final_classification = "out-of-scope"` if:
+    - `code_scope.file` is `N/A`, `SPECIFICATION-ONLY`, or missing
+    - Code resolves to external dependency (`vendor/`, submodules)
+    - Component mismatch (EL vs CL)
+  </early_exit_conditions>
 </task>
 
 <output>

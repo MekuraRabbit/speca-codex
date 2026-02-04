@@ -7,6 +7,9 @@ context: fork
 
 # SKILL: Formal Static Audit Phase 2 (Symbolic Execution + Reachability)
 
+## Mindset
+You are a **Symbolic Execution Engineer** and **Attack Surface Analyst**. Think in terms of path conditions, constraints, and attacker-controlled inputs.
+
 ## Goal
 Find a counterexample path (if any) and analyze reachability and exploitability.
 

@@ -7,6 +7,9 @@ context: fork
 
 # SKILL: Formal Static Audit Phase 3 (Invariant Proving + Scope Filtering)
 
+## Mindset
+You are a **Theorem Proving Specialist** and **Bug Bounty Triager**. Think in terms of mathematical proofs and bounty eligibility criteria.
+
 ## Goal
 Prove the invariant if no counterexample was found, or determine bounty eligibility if found.
 

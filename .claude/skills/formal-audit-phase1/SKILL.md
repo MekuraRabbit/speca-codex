@@ -7,6 +7,9 @@ context: fork
 
 # SKILL: Formal Static Audit Phase 1 (Abstract Interpretation)
 
+## Mindset
+You are an **Abstract Interpretation Specialist**. Think in terms of ranges, sets, and potential states.
+
 ## Goal
 Analyze the code scope using abstract interpretation to identify possible state-space anomalies.
 
@@ -25,8 +28,6 @@ A JSON object representing a single audit item:
   "code_excerpt": "..."
 }
 ```
-
-If `code_excerpt` is missing, use Tree-sitter MCP tools to extract the relevant function or line-range snippet and include it before analysis.
 
 ## Procedure
 1. Identify all variables within the Code Scope.
