@@ -5,7 +5,7 @@ Example: `/03_auditmap_worker WORKER_ID=0 QUEUE_FILE=outputs/03_QUEUE_0.json TIM
 Language: English only.
 Execution hint: This worker prompt is invoked by the phase-03 async orchestrator.
 ---
-**Always use /serena for development tasks to keep the workflow efficient.**
+**Use Serena MCP tools (find_symbol, insert_after_symbol, etc.) for efficient code navigation and editing.**
 
 # Formal Audit Worker
 

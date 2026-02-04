@@ -3,7 +3,6 @@ name: formal-audit
 description: Perform a rigorous three-phase formal static audit on code. Use when auditing checklist items for vulnerabilities.
 allowed-tools: Read, Grep, Glob, Write
 context: fork
-agent: serena
 ---
 
 # SKILL: Formal Static Audit
