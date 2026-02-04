@@ -1,0 +1,39 @@
+{
+  "mcpServers": {
+    "tree_sitter": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "--from",
+        "git+https://github.com/wrale/mcp-server-tree-sitter",
+        "mcp-server-tree-sitter",
+        "--workspace",
+        "./target_workspace"
+      ],
+      "env": {}
+    },
+    "serena": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena",
+        "--workspace",
+        "./target_workspace"
+      ],
+      "env": {}
+    },
+    "semgrep": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@semgrep/mcp-server"
+      ],
+      "env": {}
+    }
+  }
+}
