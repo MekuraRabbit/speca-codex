@@ -95,13 +95,9 @@ For each sub-graph in `sub_graphs`:
 3. Overwrite the original file with the verified version
 4. Also write a timestamped copy to `outputs/01b_SUBGRAPHS/spec_<hash>_verified_{TIMESTAMP}_{ITERATION}.json`
 
-### **Task 2.3: Update Worker Queue (Atomic & Strict)**
+### **Task 2.3: Update Worker Queue**
 
-**Output MUST be valid JSON. Do NOT use expressions, concatenation, comments, or trailing commas.**
-
-1. Add **only** processed file paths from this batch to the `processed` array
-2. De-duplicate `processed` (treat as a set)
-3. Write to a temporary file first, then atomically rename to `QUEUE_FILE`
+**DO NOT UPDATE THE QUEUE FILE.** The runner script (`run_worker.py`) will update `processed` atomically after validating your output.
 
 ---
 

@@ -100,7 +100,8 @@ Generate audit checklist items for properties assigned to this worker's queue. P
 **Output MUST be valid JSON. Do NOT use expressions, concatenation, comments, or trailing commas.**
 
 1.  **Generate Partial Checklist (atomic write):** Create `outputs/02_CHECKLIST_PARTIAL_W{WORKER_ID}_{TIMESTAMP}_{ITERATION}.json` containing all checks generated for the batch. Write to a temporary file first, then atomically rename to the final path.
-2.  **Update Worker Queue (atomic + strict):** Add **only** the `property_id`s from this output batch to the `processed` array, de-duplicate `processed` (treat as a set), then write to a temporary file and atomically rename to `QUEUE_FILE`.
+2.  **Update Worker Queue:** **DO NOT UPDATE THE QUEUE FILE.**
+    * The runner script (`run_worker.py`) will update `processed` atomically after validating your output.
 
 ---
 

@@ -218,10 +218,8 @@ Report coverage in metadata.
    - Set `metadata.batch` to `ITERATION`
    - Ensure `metadata.source_files` lists **all files in this batch**
 
-2. **Update Worker Queue (atomic + strict):**
-   - Add **only** processed files from this batch to `processed`
-   - De-duplicate `processed` (treat as a set)
-   - Write to a temporary file first, then atomically rename to `QUEUE_FILE`
+2. **Update Worker Queue:** **DO NOT UPDATE THE QUEUE FILE.**
+   - The runner script (`run_worker.py`) will update `processed` atomically after validating your output.
 
 ---
 

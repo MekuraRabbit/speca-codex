@@ -160,12 +160,8 @@ For the identified **Code Scope**, perform the following three phases sequential
     * **NEW**: Include `phase2_5_reachability_analysis` and `phase3_5_scope_filtering` in the output.
     * Write to a temporary file first, then atomically rename to the final path.
 
-2.  **Update Worker Queue File (atomic + strict):**
-    * Add **only** the `check_id`s that were successfully written in this output file.
-    * De-duplicate `processed` (treat as a set) before saving.
-    * **IMPORTANT:** Only update YOUR queue file, not others.
-    * Write to a temporary file first, then atomically rename to `QUEUE_FILE`.
-    * After update, `processed` MUST be a subset of `items` and match the output’s `check_id`s.
+2.  **Update Worker Queue File:** **DO NOT UPDATE THE QUEUE FILE.**
+    * The runner script (`run_worker.py`) will update `processed` atomically after validating your output.
 
 ---
 

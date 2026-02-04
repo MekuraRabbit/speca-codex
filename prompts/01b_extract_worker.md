@@ -172,11 +172,8 @@ First, scan the specification and identify which aspects are covered:
 
 **After processing ALL URLs in the batch:**
 
-2.  **Update Worker Queue File (atomic + strict):**
-    *   Add **only** the processed URLs from this batch to the `processed` array.
-    *   De-duplicate `processed` (treat as a set).
-    *   **IMPORTANT:** Only update YOUR queue file, not others.
-    *   Write to a temporary file first, then atomically rename to `QUEUE_FILE`.
+2.  **Update Worker Queue File:** **DO NOT UPDATE THE QUEUE FILE.**
+    *   The runner script (`run_worker.py`) will update `processed` atomically after validating your output.
 
 **⚠️ BATCH SIZE:** Process exactly 5 URLs per iteration (or remaining URLs if fewer than 5 left).
 
