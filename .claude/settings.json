@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": ["Read", "Write", "Glob", "Grep", "Bash(*)"]
+  },
+  "skills": {
+    "project": [".claude/skills"]
+  },
+  "mcpServers": {
+    "semgrep": {
+      "command": "npx",
+      "args": ["-y", "@semgrep/mcp-server"]
+    }
+  }
+}

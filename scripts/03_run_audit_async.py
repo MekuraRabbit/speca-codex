@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Tuple
 
 OUTPUT_DIR = Path("outputs")
 LOG_DIR = OUTPUT_DIR / "logs"
-SKILL_PATH = Path("skills/formal-audit/SKILL.md")
+SKILL_PATH = Path(".claude/skills/formal-audit/SKILL.md")
 CHECKLIST_PARTIALS_PATTERN = "outputs/02_CHECKLIST_PARTIAL_*.json"
 PROPERTY_PARTIALS_PATTERN = "outputs/01e_PROP_PARTIAL_*.json"
 MAX_CONTEXT_TOKENS = 190_000  # Safety margin for 200K context window
