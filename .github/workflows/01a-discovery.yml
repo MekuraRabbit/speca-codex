@@ -47,6 +47,17 @@ jobs:
           ref: ${{ inputs.branch || github.ref }}
           fetch-depth: 0
 
+      - name: Update Scripts and Prompts from Remote
+        run: |
+          set -e
+          echo "Syncing scripts and prompts with remote branch..."
+          git fetch --prune origin
+          # Use github.sha if ref_name is ambiguous or just rely on ref_name (base of workflow)
+          # Usually workflows run on master/main context or the branch itself.
+          # If we want LATEST scripts from default branch (likely master), we should explicitly checkout HEAD or master.
+          # But usually github.ref_name is correct for "the branch the action is defined in".
+          git checkout origin/${{ github.ref_name }} -- scripts/ prompts/ .github/workflows/ .claude/
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
