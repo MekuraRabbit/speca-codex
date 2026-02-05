@@ -2,7 +2,7 @@
 ---
 Description: [ORCHESTRATOR] Use the spec-discovery skill to find all specification documents from a seed URL.
 Usage: `/01a_crawl URL=... [OUTPUT_FILE=...]`
-Example: `/01a_crawl URL=https://ethereum.org/en/developers/docs/ OUTPUT_FILE=outputs/01a_discovered_specs.json`
+Example: `/01a_crawl URL=https://ethereum.org/en/developers/docs/ OUTPUT_FILE=outputs/01a_STATE.json`
 Language: English only.
 Execution hint: This prompt invokes the spec-discovery skill.
 ---

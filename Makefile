@@ -16,7 +16,7 @@ export CLAUDE_CODE_PERMISSIONS := bypassPermissions
 export CLAUDE_CODE_MAX_OUTPUT_TOKENS := 100000
 
 # Claude configuration
-CLAUDE_FLAGS ?= --dangerously-skip-permissions --agent serena --output-format json
+CLAUDE_FLAGS ?= --dangerously-skip-permissions --output-format stream-json
 PYTHON_RUNNER ?= uv run python3
 
 # Parallel execution configuration
@@ -150,12 +150,14 @@ mcp-verify:
 		if [ "$(APPEND_MODE)" = "true" ]; then \
 			echo "   Mode: APPEND (merging with existing STATE)"; \
 		fi; \
+		TIMESTAMP=$$(date +'%Y%m%d-%H%M%S'); \
+		LOG_FILE="$(LOG_DIR)/01a_crawl_$${TIMESTAMP}.json"; \
 		START_TIME=$$(date +%s); \
-		claude $(CLAUDE_FLAGS) -p "$$(cat prompts/01a_crawl.md) KEYWORDS=$(KEYWORDS) SPEC_URLS=$(SPEC_URLS) APPEND_MODE=$(APPEND_MODE)" > $(LOG_DIR)/01a_crawl.json; \
+		claude --dangerously-skip-permissions --verbose --output-format stream-json -p "$$(cat prompts/01a_crawl.md) KEYWORDS=$(KEYWORDS) SPEC_URLS=$(SPEC_URLS) APPEND_MODE=$(APPEND_MODE) OUTPUT_FILE=$(OUTPUT_DIR)/01a_STATE.json" > "$${LOG_FILE}"; \
 		END_TIME=$$(date +%s); \
 		DURATION=$$((END_TIME - START_TIME)); \
 		if [ -f "$(OUTPUT_DIR)/01a_STATE.json" ]; then \
-			COST=$$(grep -o '"total_cost_usd":[0-9.]*' $(LOG_DIR)/01a_crawl.json | head -1 | cut -d: -f2); \
+			COST=$$(grep -oE '"(total_cost_usd|costUSD)":[0-9.]*' "$${LOG_FILE}" | tail -1 | cut -d: -f2); \
 			QUEUE_SIZE=$$(grep -o '"work_queue":\[[^]]*\]' $(OUTPUT_DIR)/01a_STATE.json | tr ',' '\n' | wc -l); \
 			if [ "$(APPEND_MODE)" = "true" ]; then \
 				echo "✅ Finished 01a_crawl.md - APPEND mode (Time: $${DURATION}s | Total URLs in queue: ~$$QUEUE_SIZE | Cost: \$$$$COST)"; \
