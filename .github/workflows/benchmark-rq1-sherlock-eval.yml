@@ -118,6 +118,9 @@ jobs:
             --results-dir "benchmarks/results/rq1/sherlock_ethereum_audit_contest" \
             --llm-max "${{ inputs.llm_max }}" \
             --metadata "benchmarks/results/rq1/sherlock_ethereum_audit_contest/run_metadata.json" \
+            --audit-classifications "NEEDS-MANUAL-AUDIT,NEEDS-REVIEW,exploitable" \
+            --audit-include-bug-bounty \
+            --client-filter auto \
             $LLM_FLAG
 
       - name: Generate Markdown Report
