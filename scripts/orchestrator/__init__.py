@@ -11,7 +11,9 @@ Architecture:
         ├── BatchStrategy - Token-based or count-based batching
         ├── ClaudeRunner - Async Claude CLI execution
         │   ├── CircuitBreaker - Anomaly detection and cost control
-        │   └── LogAnomalyDetector - Heuristic log scanning
+        │   ├── LogAnomalyDetector - Heuristic log scanning
+        │   ├── LogWatcher - Real-time async log monitoring
+        │   └── CostTracker - Token usage & budget enforcement
         ├── ResultCollector - Output parsing, validation, and aggregation
         └── schemas - Pydantic data models for inter-phase data contracts
 
@@ -30,6 +32,7 @@ from .runner import ClaudeRunner, CircuitBreaker, CircuitBreakerTripped, LogAnom
 from .collector import ResultCollector
 from .resume import ResumeManager
 from .factory import create_orchestrator
+from .watchdog import LogWatcher, LogWatcherConfig, CostTracker, BudgetExceeded
 from . import schemas
 
 __all__ = [
@@ -44,6 +47,10 @@ __all__ = [
     "CircuitBreaker",
     "CircuitBreakerTripped",
     "LogAnomalyDetector",
+    "LogWatcher",
+    "LogWatcherConfig",
+    "CostTracker",
+    "BudgetExceeded",
     "ResultCollector",
     "ResumeManager",
     "create_orchestrator",

@@ -8,6 +8,8 @@ Includes:
   - Automatic retry on transient failures with exponential backoff
   - **Circuit breaker** that halts execution after consecutive failures
   - **Log anomaly detection** to catch runaway retry loops early
+  - **Real-time log watcher** that monitors logs during execution
+  - **Cost tracking** with per-batch token usage extraction
   - Structured logging and result parsing
 """
 
@@ -23,6 +25,13 @@ from typing import Any
 import aiofiles
 
 from .config import PhaseConfig
+from .watchdog import (
+    LogWatcher,
+    LogWatcherConfig,
+    CostTracker,
+    BudgetExceeded,
+    extract_token_usage_from_log,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -123,7 +132,7 @@ class CircuitBreaker:
 
 
 # ---------------------------------------------------------------------------
-# Log Anomaly Detector
+# Log Anomaly Detector (static / post-hoc — kept for backward compat)
 # ---------------------------------------------------------------------------
 
 class LogAnomalyDetector:
@@ -132,6 +141,9 @@ class LogAnomalyDetector:
 
     Detects patterns that indicate the LLM is stuck in a retry loop,
     producing garbage output, or otherwise behaving anomalously.
+
+    Note: For real-time monitoring during execution, use ``LogWatcher``
+    from the ``watchdog`` module instead.
     """
 
     # Patterns that suggest the worker is stuck
@@ -193,7 +205,9 @@ class ClaudeRunner:
     - Async execution with semaphore-based concurrency control
     - Automatic retry on transient failures
     - **Circuit breaker** integration (shared across workers)
-    - **Log anomaly detection** after each batch
+    - **Real-time log watcher** during each batch execution
+    - **Cost tracking** with token usage extraction from logs
+    - **Log anomaly detection** after each batch (post-hoc)
     - Structured logging
     - Result parsing
     """
@@ -204,11 +218,13 @@ class ClaudeRunner:
         semaphore: asyncio.Semaphore,
         max_retries: int = 2,
         circuit_breaker: CircuitBreaker | None = None,
+        cost_tracker: CostTracker | None = None,
     ):
         self.config = config
         self.semaphore = semaphore
         self.max_retries = max_retries
         self.circuit_breaker = circuit_breaker or CircuitBreaker(config)
+        self.cost_tracker = cost_tracker
 
         # Ensure directories exist
         self.output_dir = Path("outputs")
@@ -230,6 +246,7 @@ class ClaudeRunner:
 
         Raises:
             CircuitBreakerTripped: when failure thresholds are exceeded.
+            BudgetExceeded: when cumulative cost exceeds the budget.
         """
         async with self.semaphore:
             for attempt in range(self.max_retries + 1):
@@ -246,7 +263,7 @@ class ClaudeRunner:
                         else:
                             await self.circuit_breaker.record_success()
                         return result
-                except CircuitBreakerTripped:
+                except (CircuitBreakerTripped, BudgetExceeded):
                     raise  # Propagate immediately
                 except Exception as e:
                     print(
@@ -285,7 +302,7 @@ class ClaudeRunner:
 
         # Determine output paths based on output_mode
         if directory_mode:
-            batch_output_dir = self.output_dir / "graphs" / f"W{worker_id}B{batch_index}_{timestamp}"
+            batch_output_dir = self.output_dir / "graphs" / f"batch_w{worker_id}b{batch_index}_{timestamp}"
             batch_output_dir.mkdir(parents=True, exist_ok=True)
             result_parse_path = batch_output_dir / "index.json"
             output_kwargs: dict[str, str] = {"output_dir": str(batch_output_dir)}
@@ -326,6 +343,13 @@ class ClaudeRunner:
             **output_kwargs,
         )
 
+        # --- Start real-time log watcher ---
+        watcher_config = LogWatcherConfig(
+            anomaly_threshold=self.config.log_anomaly_threshold,
+        )
+        watcher = LogWatcher(log_file, config=watcher_config)
+        watcher_task = asyncio.create_task(watcher.watch())
+
         # Execute
         proc = await asyncio.create_subprocess_exec(
             *cmd,
@@ -345,13 +369,36 @@ class ClaudeRunner:
                             break
                         await f.write(chunk)
 
+                        # Check if the watcher has flagged anomalies
+                        if watcher.should_stop:
+                            print(
+                                f"[W{worker_id}] Batch {batch_index}: "
+                                f"LogWatcher detected anomalies — killing process",
+                                file=sys.stderr,
+                            )
+                            proc.kill()
+                            watcher.stop()
+                            await watcher_task
+                            # Treat as a failure so circuit breaker can track it
+                            return None
+
             await asyncio.wait_for(proc.wait(), timeout=self.config.timeout_seconds)
         except asyncio.TimeoutError:
             proc.kill()
             print(f"[W{worker_id}] Batch {batch_index} timed out", file=sys.stderr)
+            watcher.stop()
+            await watcher_task
             return None
+        finally:
+            # Ensure watcher is stopped
+            watcher.stop()
+            if not watcher_task.done():
+                try:
+                    await asyncio.wait_for(watcher_task, timeout=2.0)
+                except (asyncio.TimeoutError, asyncio.CancelledError):
+                    watcher_task.cancel()
 
-        # --- Log anomaly detection ---
+        # --- Post-hoc log anomaly detection (kept for backward compat) ---
         anomalies = LogAnomalyDetector.scan_log(log_file)
         if anomalies:
             print(
@@ -360,6 +407,25 @@ class ClaudeRunner:
             )
             for a in anomalies[:5]:  # cap output
                 print(f"    ⚠️  {a}", file=sys.stderr)
+
+        # --- Cost tracking: extract token usage from log ---
+        if self.cost_tracker:
+            usage = extract_token_usage_from_log(log_file)
+            if usage["input_tokens"] > 0 or usage["output_tokens"] > 0:
+                batch_cost = await self.cost_tracker.record_usage(
+                    input_tokens=usage["input_tokens"],
+                    output_tokens=usage["output_tokens"],
+                    worker_id=worker_id,
+                    batch_index=batch_index,
+                )
+                cost_stats = self.cost_tracker.get_stats()
+                print(
+                    f"[W{worker_id}] Batch {batch_index}: "
+                    f"tokens={usage['input_tokens']+usage['output_tokens']:,} "
+                    f"(+${batch_cost:.4f}, "
+                    f"total=${cost_stats['total_cost_usd']:.2f}/"
+                    f"${cost_stats['max_budget_usd']:.2f})",
+                )
 
         # Check result
         if proc.returncode != 0:

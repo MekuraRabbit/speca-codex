@@ -19,7 +19,8 @@ from tqdm import tqdm
 from .config import PhaseConfig, get_phase_config
 from .queue import QueueManager
 from .batch import BatchStrategy, TokenBasedBatch, CountBasedBatch
-from .runner import ClaudeRunner, CircuitBreaker, CircuitBreakerTripped
+from .runner import ClaudeRunner, CircuitBreaker, CircuitBreakerTripped, BudgetExceeded
+from .watchdog import CostTracker
 from .collector import ResultCollector
 from .resume import ResumeManager
 from .schemas import (
@@ -71,6 +72,7 @@ class BaseOrchestrator(ABC):
     - Parallel Claude execution
     - Result collection
     - **Circuit breaker** for anomaly detection and cost control
+    - **Cost tracking** with automatic budget enforcement
     
     Subclasses can override specific methods for phase-specific behavior.
     """
@@ -89,6 +91,13 @@ class BaseOrchestrator(ABC):
         # Shared circuit breaker for all workers in this phase
         self.circuit_breaker = CircuitBreaker(self.config)
 
+        # Cost tracker — shared across all workers
+        self.cost_tracker: CostTracker | None = None
+        if self.config.max_budget_usd > 0:
+            self.cost_tracker = CostTracker(
+                max_budget_usd=self.config.max_budget_usd,
+            )
+
         # Components
         self.queue_manager = QueueManager(self.config)
         self.batch_strategy = self._create_batch_strategy()
@@ -96,6 +105,7 @@ class BaseOrchestrator(ABC):
             self.config,
             self.semaphore,
             circuit_breaker=self.circuit_breaker,
+            cost_tracker=self.cost_tracker,
         )
         self.collector = ResultCollector(self.config)
         self.resume_manager = ResumeManager(self.config)
@@ -105,6 +115,7 @@ class BaseOrchestrator(ABC):
         self.failed_batches: list[tuple[int, int]] = []
         self._batch_counter = 0
         self._circuit_breaker_tripped = False
+        self._budget_exceeded = False
     
     def _create_batch_strategy(self) -> BatchStrategy:
         """Create the appropriate batch strategy based on config."""
@@ -178,6 +189,15 @@ class BaseOrchestrator(ABC):
         self._print_run_statistics(duration, total_results)
         
         # Step 7: Report failures
+        if self._budget_exceeded:
+            print(
+                f"\n\U0001f6d1 Phase {self.config.phase_id} ABORTED — budget exceeded "
+                f"after {duration:.1f}s",
+                file=sys.stderr,
+            )
+            print(f"   Saved results so far: {total_results}")
+            sys.exit(2)
+
         if self._circuit_breaker_tripped:
             print(
                 f"\n🛑 Phase {self.config.phase_id} ABORTED by circuit breaker "
@@ -213,8 +233,19 @@ class BaseOrchestrator(ABC):
         print(f"  Empty results:         {cb_stats['empty_results']}")
         print(f"  Validation warnings:   {val_stats['validation_warnings']}")
         print(f"  Validation errors:     {val_stats['validation_errors']}")
-        print(f"{'─'*40}")
-    
+
+        # Cost statistics
+        if self.cost_tracker:
+            cost_stats = self.cost_tracker.get_stats()
+            print(f"  ---- Cost ----")
+            print(f"  Input tokens:          {cost_stats['total_input_tokens']:,}")
+            print(f"  Output tokens:         {cost_stats['total_output_tokens']:,}")
+            print(f"  Estimated cost:        ${cost_stats['total_cost_usd']:.2f}")
+            print(f"  Budget:                ${cost_stats['max_budget_usd']:.2f}")
+            print(f"  Budget utilization:    {cost_stats['budget_utilization_pct']:.1f}%")
+        _sep = '\u2500' * 40
+        print(_sep)
+
     def load_items(self) -> list[dict[str, Any]]:
         """Load items from input sources. Override for custom loading logic."""
         return self.queue_manager.load_all_items()
@@ -295,11 +326,26 @@ class BaseOrchestrator(ABC):
                 except CircuitBreakerTripped as cb:
                     self._circuit_breaker_tripped = True
                     print(
-                        f"\n🛑 Circuit breaker tripped: {cb.reason}",
+                        f"\n\U0001f6d1 Circuit breaker tripped: {cb.reason}",
                         file=sys.stderr,
                     )
                     print(
                         f"   Stats: {cb.stats}",
+                        file=sys.stderr,
+                    )
+                    # Cancel all remaining tasks
+                    for task in tasks:
+                        if not task.done():
+                            task.cancel()
+                    break
+                except BudgetExceeded as be:
+                    self._budget_exceeded = True
+                    print(
+                        f"\n\U0001f4b8 Budget exceeded: {be}",
+                        file=sys.stderr,
+                    )
+                    print(
+                        f"   Stats: {be.stats}",
                         file=sys.stderr,
                     )
                     # Cancel all remaining tasks

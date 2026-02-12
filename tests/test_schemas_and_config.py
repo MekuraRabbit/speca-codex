@@ -1029,3 +1029,422 @@ class TestCircuitBreakerIntegration:
             assert cb.consecutive_failures == 4
         finally:
             loop.close()
+
+
+# =========================================================================
+# LogWatcher tests (real-time async log monitoring)
+# =========================================================================
+
+from orchestrator.watchdog import (
+    LogWatcher,
+    LogWatcherConfig,
+    CostTracker,
+    BudgetExceeded,
+    extract_token_usage_from_log,
+)
+
+
+class TestLogWatcher:
+    """Tests for the real-time LogWatcher in watchdog.py."""
+
+    def test_clean_log_no_anomalies(self):
+        """A clean log should produce no anomalies."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            log_path = os.path.join(tmpdir, "clean.log.jsonl")
+            with open(log_path, "w") as f:
+                f.write('{"type": "message", "content": "Hello"}\n')
+                f.write('{"type": "result", "result": "Done"}\n')
+
+            watcher = LogWatcher(log_path, config=LogWatcherConfig(poll_interval=0.05))
+            loop = asyncio.new_event_loop()
+            try:
+                # Run the watcher briefly then stop
+                async def run_and_stop():
+                    task = asyncio.create_task(watcher.watch())
+                    await asyncio.sleep(0.2)
+                    watcher.stop()
+                    await task
+
+                loop.run_until_complete(run_and_stop())
+            finally:
+                loop.close()
+
+            assert watcher.should_stop is False
+            assert len(watcher.anomalies) == 0
+            assert watcher.lines_scanned >= 2
+
+    def test_rate_limit_triggers_anomaly(self):
+        """Rate limit errors should be detected as anomalies."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            log_path = os.path.join(tmpdir, "ratelimit.log.jsonl")
+            with open(log_path, "w") as f:
+                for i in range(5):
+                    f.write(f'{{"type": "error", "message": "429 Too Many Requests attempt {i}"}}\n')
+
+            watcher = LogWatcher(
+                log_path,
+                config=LogWatcherConfig(poll_interval=0.05, anomaly_threshold=3),
+            )
+            loop = asyncio.new_event_loop()
+            try:
+                async def run_and_stop():
+                    task = asyncio.create_task(watcher.watch())
+                    await asyncio.sleep(0.3)
+                    watcher.stop()
+                    await task
+
+                loop.run_until_complete(run_and_stop())
+            finally:
+                loop.close()
+
+            assert watcher.should_stop is True
+            assert any("rate_limit_error" in a for a in watcher.anomalies)
+
+    def test_context_overflow_detected(self):
+        """Context overflow errors should be detected."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            log_path = os.path.join(tmpdir, "overflow.log.jsonl")
+            with open(log_path, "w") as f:
+                for i in range(4):
+                    f.write(f'{{"error": "context length exceeded maximum context window {i}"}}\n')
+
+            watcher = LogWatcher(
+                log_path,
+                config=LogWatcherConfig(poll_interval=0.05, anomaly_threshold=3),
+            )
+            loop = asyncio.new_event_loop()
+            try:
+                async def run_and_stop():
+                    task = asyncio.create_task(watcher.watch())
+                    await asyncio.sleep(0.3)
+                    watcher.stop()
+                    await task
+
+                loop.run_until_complete(run_and_stop())
+            finally:
+                loop.close()
+
+            assert watcher.should_stop is True
+            assert any("context_overflow" in a for a in watcher.anomalies)
+
+    def test_below_threshold_no_stop(self):
+        """Anomalies below threshold should not trigger stop."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            log_path = os.path.join(tmpdir, "below.log.jsonl")
+            with open(log_path, "w") as f:
+                f.write('{"error": "429 Too Many Requests"}\n')
+                f.write('{"type": "message", "content": "OK"}\n')
+
+            watcher = LogWatcher(
+                log_path,
+                config=LogWatcherConfig(poll_interval=0.05, anomaly_threshold=5),
+            )
+            loop = asyncio.new_event_loop()
+            try:
+                async def run_and_stop():
+                    task = asyncio.create_task(watcher.watch())
+                    await asyncio.sleep(0.2)
+                    watcher.stop()
+                    await task
+
+                loop.run_until_complete(run_and_stop())
+            finally:
+                loop.close()
+
+            assert watcher.should_stop is False
+            assert len(watcher.anomalies) == 1
+
+    def test_nonexistent_file_exits_gracefully(self):
+        """Watcher should exit gracefully if file never appears."""
+        watcher = LogWatcher(
+            "/nonexistent/path/log.jsonl",
+            config=LogWatcherConfig(poll_interval=0.05),
+        )
+        loop = asyncio.new_event_loop()
+        try:
+            # Override the wait loop to be shorter
+            async def run_short():
+                task = asyncio.create_task(watcher.watch())
+                await asyncio.sleep(2.0)  # wait for 30 polls at 0.05s
+                watcher.stop()
+                await task
+
+            loop.run_until_complete(run_short())
+        finally:
+            loop.close()
+
+        assert watcher.should_stop is False
+        assert watcher.lines_scanned == 0
+
+    def test_get_summary(self):
+        """get_summary should return a well-structured dict."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            log_path = os.path.join(tmpdir, "summary.log.jsonl")
+            with open(log_path, "w") as f:
+                f.write('{"type": "message"}\n')
+
+            watcher = LogWatcher(log_path, config=LogWatcherConfig(poll_interval=0.05))
+            loop = asyncio.new_event_loop()
+            try:
+                async def run_and_stop():
+                    task = asyncio.create_task(watcher.watch())
+                    await asyncio.sleep(0.2)
+                    watcher.stop()
+                    await task
+
+                loop.run_until_complete(run_and_stop())
+            finally:
+                loop.close()
+
+            summary = watcher.get_summary()
+            assert "log_path" in summary
+            assert "lines_scanned" in summary
+            assert "anomaly_count" in summary
+            assert "tool_call_count" in summary
+            assert "should_stop" in summary
+            assert "anomalies" in summary
+
+    def test_api_error_detected(self):
+        """APIError patterns should be detected."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            log_path = os.path.join(tmpdir, "apierror.log.jsonl")
+            with open(log_path, "w") as f:
+                for i in range(4):
+                    f.write(f'{{"error": "APIError: InternalServerError {i}"}}\n')
+
+            watcher = LogWatcher(
+                log_path,
+                config=LogWatcherConfig(poll_interval=0.05, anomaly_threshold=3),
+            )
+            loop = asyncio.new_event_loop()
+            try:
+                async def run_and_stop():
+                    task = asyncio.create_task(watcher.watch())
+                    await asyncio.sleep(0.3)
+                    watcher.stop()
+                    await task
+
+                loop.run_until_complete(run_and_stop())
+            finally:
+                loop.close()
+
+            assert watcher.should_stop is True
+            assert any("api_error" in a for a in watcher.anomalies)
+
+
+# =========================================================================
+# CostTracker tests
+# =========================================================================
+
+class TestCostTracker:
+    """Tests for the CostTracker in watchdog.py."""
+
+    def test_initial_state(self):
+        tracker = CostTracker(max_budget_usd=100.0)
+        stats = tracker.get_stats()
+        assert stats["total_input_tokens"] == 0
+        assert stats["total_output_tokens"] == 0
+        assert stats["total_cost_usd"] == 0
+        assert stats["max_budget_usd"] == 100.0
+        assert stats["budget_remaining_usd"] == 100.0
+        assert stats["budget_utilization_pct"] == 0.0
+        assert stats["batch_count"] == 0
+
+    def test_record_usage_accumulates(self):
+        tracker = CostTracker(max_budget_usd=100.0)
+        loop = asyncio.new_event_loop()
+        try:
+            cost1 = loop.run_until_complete(
+                tracker.record_usage(input_tokens=1000, output_tokens=500)
+            )
+            cost2 = loop.run_until_complete(
+                tracker.record_usage(input_tokens=2000, output_tokens=1000)
+            )
+            assert cost1 > 0
+            assert cost2 > 0
+            stats = tracker.get_stats()
+            assert stats["total_input_tokens"] == 3000
+            assert stats["total_output_tokens"] == 1500
+            assert stats["batch_count"] == 2
+            assert stats["total_cost_usd"] > 0
+        finally:
+            loop.close()
+
+    def test_budget_exceeded_raises(self):
+        tracker = CostTracker(max_budget_usd=0.001)  # Very small budget
+        loop = asyncio.new_event_loop()
+        try:
+            with pytest.raises(BudgetExceeded, match="Budget exceeded"):
+                loop.run_until_complete(
+                    tracker.record_usage(input_tokens=1_000_000, output_tokens=1_000_000)
+                )
+        finally:
+            loop.close()
+
+    def test_budget_not_exceeded_within_limit(self):
+        tracker = CostTracker(max_budget_usd=100.0)
+        loop = asyncio.new_event_loop()
+        try:
+            # Small usage should not trigger
+            loop.run_until_complete(
+                tracker.record_usage(input_tokens=100, output_tokens=50)
+            )
+            stats = tracker.get_stats()
+            assert stats["budget_remaining_usd"] > 99.0
+        finally:
+            loop.close()
+
+    def test_cost_calculation_accuracy(self):
+        """Verify cost calculation with known values."""
+        tracker = CostTracker(
+            max_budget_usd=100.0,
+            input_price_per_million=3.0,
+            output_price_per_million=15.0,
+        )
+        loop = asyncio.new_event_loop()
+        try:
+            cost = loop.run_until_complete(
+                tracker.record_usage(input_tokens=1_000_000, output_tokens=1_000_000)
+            )
+            # Expected: $3.00 + $15.00 = $18.00
+            assert abs(cost - 18.0) < 0.01
+        finally:
+            loop.close()
+
+    def test_get_history(self):
+        tracker = CostTracker(max_budget_usd=100.0)
+        loop = asyncio.new_event_loop()
+        try:
+            loop.run_until_complete(
+                tracker.record_usage(
+                    input_tokens=1000, output_tokens=500,
+                    worker_id=1, batch_index=3,
+                )
+            )
+            history = tracker.get_history()
+            assert len(history) == 1
+            assert history[0]["worker_id"] == 1
+            assert history[0]["batch_index"] == 3
+            assert history[0]["input_tokens"] == 1000
+            assert history[0]["output_tokens"] == 500
+        finally:
+            loop.close()
+
+    def test_budget_exceeded_has_stats(self):
+        tracker = CostTracker(max_budget_usd=0.001)
+        loop = asyncio.new_event_loop()
+        try:
+            with pytest.raises(BudgetExceeded) as exc_info:
+                loop.run_until_complete(
+                    tracker.record_usage(input_tokens=1_000_000, output_tokens=1_000_000)
+                )
+            assert "total_cost_usd" in exc_info.value.stats
+            assert "max_budget_usd" in exc_info.value.stats
+        finally:
+            loop.close()
+
+    def test_budget_utilization_percentage(self):
+        tracker = CostTracker(
+            max_budget_usd=100.0,
+            input_price_per_million=10.0,
+            output_price_per_million=0.0,
+        )
+        loop = asyncio.new_event_loop()
+        try:
+            # 5M input tokens at $10/M = $50 = 50% of $100 budget
+            loop.run_until_complete(
+                tracker.record_usage(input_tokens=5_000_000, output_tokens=0)
+            )
+            stats = tracker.get_stats()
+            assert abs(stats["budget_utilization_pct"] - 50.0) < 0.1
+        finally:
+            loop.close()
+
+
+# =========================================================================
+# extract_token_usage_from_log tests
+# =========================================================================
+
+class TestExtractTokenUsage:
+    """Tests for the extract_token_usage_from_log utility."""
+
+    def test_extract_from_stream_json(self):
+        """Should extract usage from Claude CLI stream-json format."""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
+            f.write('{"type": "message_start", "message": {"usage": {"input_tokens": 5000, "output_tokens": 0}}}\n')
+            f.write('{"type": "content_block_delta"}\n')
+            f.write('{"type": "message_delta", "usage": {"input_tokens": 5000, "output_tokens": 1200}}\n')
+            f.flush()
+            usage = extract_token_usage_from_log(f.name)
+        os.unlink(f.name)
+        assert usage["input_tokens"] == 5000
+        assert usage["output_tokens"] == 1200
+
+    def test_extract_from_empty_log(self):
+        """Empty log should return zero tokens."""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
+            f.flush()
+            usage = extract_token_usage_from_log(f.name)
+        os.unlink(f.name)
+        assert usage["input_tokens"] == 0
+        assert usage["output_tokens"] == 0
+
+    def test_extract_from_nonexistent_file(self):
+        """Nonexistent file should return zero tokens."""
+        usage = extract_token_usage_from_log("/nonexistent/file.jsonl")
+        assert usage["input_tokens"] == 0
+        assert usage["output_tokens"] == 0
+
+    def test_extract_with_multiple_usage_entries(self):
+        """Should take max input_tokens and sum output_tokens."""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
+            f.write('{"usage": {"input_tokens": 3000, "output_tokens": 500}}\n')
+            f.write('{"usage": {"input_tokens": 5000, "output_tokens": 800}}\n')
+            f.write('{"usage": {"input_tokens": 5000, "output_tokens": 200}}\n')
+            f.flush()
+            usage = extract_token_usage_from_log(f.name)
+        os.unlink(f.name)
+        assert usage["input_tokens"] == 5000  # max
+        assert usage["output_tokens"] == 1500  # sum
+
+    def test_extract_with_malformed_lines(self):
+        """Should gracefully skip malformed JSON lines."""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
+            f.write('not json at all\n')
+            f.write('{"usage": {"input_tokens": 1000, "output_tokens": 200}}\n')
+            f.write('{broken json\n')
+            f.flush()
+            usage = extract_token_usage_from_log(f.name)
+        os.unlink(f.name)
+        assert usage["input_tokens"] == 1000
+        assert usage["output_tokens"] == 200
+
+
+# =========================================================================
+# Integration: CostTracker + PhaseConfig
+# =========================================================================
+
+class TestCostTrackerIntegration:
+    """Test CostTracker with real PhaseConfig values."""
+
+    def test_phase03_budget(self):
+        """Phase 03 should have max_budget_usd=30.0."""
+        config = get_phase_config("03")
+        assert config.max_budget_usd == 30.0
+        tracker = CostTracker(max_budget_usd=config.max_budget_usd)
+        assert tracker.max_budget_usd == 30.0
+
+    def test_phase03_log_anomaly_threshold(self):
+        """Phase 03 should have log_anomaly_threshold=2."""
+        config = get_phase_config("03")
+        assert config.log_anomaly_threshold == 2
+
+    def test_default_phase_budget(self):
+        """Default phases should have max_budget_usd=50.0."""
+        config = get_phase_config("01a")
+        assert config.max_budget_usd == 50.0
+
+    def test_default_phase_log_anomaly_threshold(self):
+        """Default phases should have log_anomaly_threshold=3."""
+        config = get_phase_config("01a")
+        assert config.log_anomaly_threshold == 3

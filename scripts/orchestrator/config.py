@@ -78,6 +78,15 @@ class PhaseConfig(BaseModel):
     # Maximum empty-result batches (LLM returned nothing useful) before abort.
     max_empty_results: int = 10
 
+    # ---- Cost tracking ----
+    # Maximum budget in USD for a single phase run.  The CostTracker will
+    # abort execution when the estimated cumulative cost exceeds this value.
+    # Set to 0 to disable cost tracking.
+    max_budget_usd: float = 50.0
+    # Log watcher anomaly threshold — number of anomaly hits in a single
+    # batch log before the watcher recommends aborting.
+    log_anomaly_threshold: int = 3
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def effective_result_id_field(self) -> str:
@@ -207,6 +216,8 @@ PHASE_CONFIGS: dict[str, PhaseConfig] = {
         circuit_breaker_threshold=3,
         max_total_retries=10,
         max_empty_results=5,
+        max_budget_usd=30.0,
+        log_anomaly_threshold=2,
     ),
 
     "04": PhaseConfig(
