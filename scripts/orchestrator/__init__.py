@@ -6,11 +6,12 @@ across all phases (01, 02, 03, 04) of the security audit pipeline.
 
 Architecture:
     BaseOrchestrator (abstract)
-        ├── PhaseConfig (dataclass) - Phase-specific configuration
+        ├── PhaseConfig (Pydantic model) - Phase-specific configuration
         ├── QueueManager - Queue loading, splitting, and state management
         ├── BatchStrategy - Token-based or count-based batching
         ├── ClaudeRunner - Async Claude CLI execution
-        └── ResultCollector - Output parsing and aggregation
+        ├── ResultCollector - Output parsing and aggregation
+        └── schemas - Pydantic data models for inter-phase data contracts
 
 Usage:
     from orchestrator import create_orchestrator
@@ -27,6 +28,7 @@ from .runner import ClaudeRunner
 from .collector import ResultCollector
 from .resume import ResumeManager
 from .factory import create_orchestrator
+from . import schemas
 
 __all__ = [
     "BaseOrchestrator",
@@ -40,4 +42,5 @@ __all__ = [
     "ResultCollector",
     "ResumeManager",
     "create_orchestrator",
+    "schemas",
 ]

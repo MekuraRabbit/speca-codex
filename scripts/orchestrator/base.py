@@ -13,6 +13,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
 
+from pydantic import ValidationError
 from tqdm import tqdm
 
 from .config import PhaseConfig, get_phase_config
@@ -21,6 +22,14 @@ from .batch import BatchStrategy, TokenBasedBatch, CountBasedBatch
 from .runner import ClaudeRunner
 from .collector import ResultCollector
 from .resume import ResumeManager
+from .schemas import (
+    ChecklistItem,
+    Phase02Partial,
+    Phase03Partial,
+    AuditMapItem,
+    validate_checklist_item,
+    validate_audit_map_item,
+)
 
 
 class BaseOrchestrator(ABC):
@@ -373,21 +382,48 @@ class Phase03Orchestrator(BaseOrchestrator):
         self.property_subgraph_map: dict[str, tuple[str | None, str]] = {}
     
     def load_items(self) -> list[dict[str, Any]]:
-        """Load checklist items from 02 partials."""
+        """Load checklist items from 02 partials with Pydantic validation."""
         import glob
         
         # Build property to subgraph mapping
         self._build_property_subgraph_map()
         
         items = {}
+        validation_warnings = 0
         for filepath in sorted(glob.glob("outputs/02_PARTIAL_*.json")):
             try:
                 with open(filepath) as f:
                     data = json.load(f)
-                entries = data.get("checklist_items") or data.get("checklist") or []
-                for entry in entries:
+
+                # Validate the partial file structure using Pydantic
+                try:
+                    partial = Phase02Partial.model_validate(data)
+                    entries_raw = data.get("checklist_items") or data.get("checklist") or []
+                except ValidationError as ve:
+                    print(
+                        f"⚠️  Schema validation warning for {filepath}: {ve.error_count()} error(s)",
+                        file=sys.stderr,
+                    )
+                    for err in ve.errors():
+                        print(f"    {err['loc']}: {err['msg']}", file=sys.stderr)
+                    validation_warnings += 1
+                    # Fall back to raw dict parsing
+                    entries_raw = data.get("checklist_items") or data.get("checklist") or []
+
+                for entry in entries_raw:
                     if not isinstance(entry, dict):
                         continue
+
+                    # Validate individual checklist items
+                    parsed_item, item_errors = validate_checklist_item(entry)
+                    if item_errors:
+                        check_id_raw = entry.get("check_id", "<unknown>")
+                        for err in item_errors:
+                            print(
+                                f"    ⚠️  {filepath} item {check_id_raw}: {err}",
+                                file=sys.stderr,
+                            )
+
                     check_id = entry.get("check_id")
                     if not check_id:
                         continue
@@ -409,6 +445,12 @@ class Phase03Orchestrator(BaseOrchestrator):
                     items[check_id] = item
             except Exception as e:
                 print(f"Warning: Failed to load {filepath}: {e}", file=sys.stderr)
+
+        if validation_warnings:
+            print(
+                f"⚠️  {validation_warnings} file(s) had schema validation warnings",
+                file=sys.stderr,
+            )
         
         return list(items.values())
     
@@ -547,17 +589,39 @@ class Phase04Orchestrator(BaseOrchestrator):
     """Orchestrator for Phase 04 (Audit Review)."""
     
     def load_items(self) -> list[dict[str, Any]]:
-        """Load audit results from 03 partials."""
+        """Load audit results from 03 partials with Pydantic validation."""
         import glob
         
         items = []
+        validation_warnings = 0
         for filepath in sorted(glob.glob("outputs/03_AUDITMAP_PARTIAL_*.json")):
             try:
                 with open(filepath) as f:
                     data = json.load(f)
+
+                # Validate the partial file structure using Pydantic
+                try:
+                    Phase03Partial.model_validate(data)
+                except ValidationError as ve:
+                    print(
+                        f"⚠️  Schema validation warning for {filepath}: {ve.error_count()} error(s)",
+                        file=sys.stderr,
+                    )
+                    for err in ve.errors():
+                        print(f"    {err['loc']}: {err['msg']}", file=sys.stderr)
+                    validation_warnings += 1
+
                 audit_items = data.get("audit_items", [])
                 for item in audit_items:
                     if isinstance(item, dict) and item.get("check_id"):
+                        # Validate individual audit items
+                        parsed, errs = validate_audit_map_item(item)
+                        if errs:
+                            for err in errs:
+                                print(
+                                    f"    ⚠️  {filepath} item {item.get('check_id', '?')}: {err}",
+                                    file=sys.stderr,
+                                )
                         items.append({
                             "check_id": item.get("check_id"),
                             "audit_result": item,
@@ -565,5 +629,11 @@ class Phase04Orchestrator(BaseOrchestrator):
                         })
             except Exception as e:
                 print(f"Warning: Failed to load {filepath}: {e}", file=sys.stderr)
+
+        if validation_warnings:
+            print(
+                f"⚠️  {validation_warnings} file(s) had schema validation warnings",
+                file=sys.stderr,
+            )
         
         return items
