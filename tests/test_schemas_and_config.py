@@ -144,8 +144,8 @@ class TestPhaseConfig:
     def test_phase03_tighter_circuit_breaker(self):
         """Phase 03 should have tighter circuit breaker thresholds."""
         cfg = PHASE_CONFIGS["03"]
-        assert cfg.circuit_breaker_threshold == 3
-        assert cfg.max_total_retries == 10
+        assert cfg.circuit_breaker_threshold == 5
+        assert cfg.max_total_retries == 20
         assert cfg.max_empty_results == 5
 
 
@@ -848,9 +848,9 @@ class TestLogAnomalyDetector:
         assert any("api_error" in a for a in anomalies)
 
     def test_detects_excessive_tool_calls(self):
-        """More than 50 tool_use blocks should be flagged."""
+        """More than 200 tool_use blocks should be flagged."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
-            for _ in range(60):
+            for _ in range(210):
                 f.write('{"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "bash"}]}}\n')
             f.flush()
             anomalies = LogAnomalyDetector.scan_log(f.name)
@@ -859,12 +859,12 @@ class TestLogAnomalyDetector:
 
     def test_below_tool_call_threshold_no_anomaly(self):
         with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
-            for _ in range(10):
+            for _ in range(100):
                 f.write('{"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "bash"}]}}\n')
             f.flush()
             anomalies = LogAnomalyDetector.scan_log(f.name)
         os.unlink(f.name)
-        # 10 < 50 threshold, so no anomaly
+        # 100 < 200 threshold, so no anomaly
         assert not any("excessive_tool_calls" in a for a in anomalies)
 
     def test_nonexistent_file_returns_empty(self):
@@ -1036,26 +1036,26 @@ class TestResultCollector:
 class TestCircuitBreakerIntegration:
     """Test circuit breaker with real PhaseConfig values."""
 
-    def test_phase03_config_trips_at_3_consecutive(self):
-        """Phase 03 has circuit_breaker_threshold=3."""
+    def test_phase03_config_trips_at_5_consecutive(self):
+        """Phase 03 has circuit_breaker_threshold=5."""
         config = get_phase_config("03")
         cb = CircuitBreaker(config)
         loop = asyncio.new_event_loop()
         try:
-            loop.run_until_complete(cb.record_failure())
-            loop.run_until_complete(cb.record_failure())
+            for _ in range(4):
+                loop.run_until_complete(cb.record_failure())
             with pytest.raises(CircuitBreakerTripped):
                 loop.run_until_complete(cb.record_failure())
         finally:
             loop.close()
 
-    def test_phase03_config_trips_at_10_retries(self):
-        """Phase 03 has max_total_retries=10."""
+    def test_phase03_config_trips_at_20_retries(self):
+        """Phase 03 has max_total_retries=20."""
         config = get_phase_config("03")
         cb = CircuitBreaker(config)
         loop = asyncio.new_event_loop()
         try:
-            for _ in range(9):
+            for _ in range(19):
                 loop.run_until_complete(cb.record_retry())
                 # Reset consecutive failures to avoid that threshold
                 loop.run_until_complete(cb.record_success())
@@ -1639,9 +1639,9 @@ class TestCostTrackerIntegration:
         assert tracker.max_budget_usd == 30.0
 
     def test_phase03_log_anomaly_threshold(self):
-        """Phase 03 should have log_anomaly_threshold=2."""
+        """Phase 03 should have log_anomaly_threshold=3."""
         config = get_phase_config("03")
-        assert config.log_anomaly_threshold == 2
+        assert config.log_anomaly_threshold == 3
 
     def test_default_phase_budget(self):
         """Default phases should have max_budget_usd=50.0."""

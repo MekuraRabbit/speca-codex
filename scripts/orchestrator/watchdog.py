@@ -46,8 +46,10 @@ class LogWatcherConfig:
     # Number of anomaly hits before the watcher fires the stop event
     anomaly_threshold: int = 3
 
-    # Maximum tool_call blocks before flagging as excessive
-    tool_call_threshold: int = 50
+    # Maximum tool_call blocks before flagging as excessive.
+    # Phase 03 processes up to 25 items per batch, each requiring multiple
+    # tool calls (file reads, writes, etc.), so 50 is far too low.
+    tool_call_threshold: int = 200
 
     # Maximum number of lines to scan (safety cap for huge logs)
     max_lines: int = 100_000
@@ -178,6 +180,8 @@ class LogWatcher:
         self._stop_event = asyncio.Event()
         # Cancellation flag
         self._cancelled = False
+        # Flag to ensure excessive_tool_calls is only counted once
+        self._tool_call_flagged = False
 
     @property
     def should_stop(self) -> bool:
@@ -257,12 +261,18 @@ class LogWatcher:
     def _check_threshold(self) -> bool:
         """Check if anomaly counts exceed thresholds.  Returns True to stop."""
         total_anomalies = len(self.anomalies)
-        if self.tool_call_count > self.cfg.tool_call_threshold:
+
+        # Only flag excessive tool calls ONCE (not on every subsequent line)
+        if (
+            self.tool_call_count > self.cfg.tool_call_threshold
+            and not self._tool_call_flagged
+        ):
+            self._tool_call_flagged = True
             self.anomalies.append(
                 f"excessive_tool_calls: {self.tool_call_count} tool_call blocks "
                 f"(threshold={self.cfg.tool_call_threshold})"
             )
-            total_anomalies += 1
+            total_anomalies = len(self.anomalies)
 
         if total_anomalies >= self.cfg.anomaly_threshold:
             self._stop_event.set()

@@ -159,8 +159,10 @@ class LogAnomalyDetector:
         ("timeout_error", re.compile(r"timed?\s*out|deadline exceeded|ETIMEDOUT", re.IGNORECASE)),
     ]
 
-    # If the log contains more than this many tool_use blocks it's likely looping
-    TOOL_CALL_THRESHOLD = 50
+    # If the log contains more than this many tool_use blocks it's likely looping.
+    # Phase 03 batches of 25 items each require multiple tool calls, so 50 is
+    # too low and causes false positives.  200 is a safer default.
+    TOOL_CALL_THRESHOLD = 200
 
     @classmethod
     def scan_log(cls, log_path: Path | str) -> list[str]:
