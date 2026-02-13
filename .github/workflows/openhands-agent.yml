@@ -1,0 +1,51 @@
+name: Resolve Issue with OpenHands (LM Studio)
+
+on:
+  issues:
+    types: [labeled]
+  pull_request:
+    types: [labeled]
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  call-openhands-resolver:
+    uses: OpenHands/OpenHands/.github/workflows/openhands-resolver.yml@main
+    with:
+      # Trigger phrase in issue/PR comments
+      macro: "@openhands-agent"
+
+      # How long the agent is allowed to iterate
+      max_iterations: 50
+
+      # Branch to base the PR against
+      target_branch: "master"
+
+      # IMPORTANT:
+      # Use a self-hosted runner so it can reach LM Studio at localhost:1234
+      runner: "self-hosted"
+
+      # Your LM Studio model id
+      LLM_MODEL: "qwen3-coder-30b-a3b-instruct"
+
+    secrets:
+      # Recommended: set these as repo/org secrets.
+      PAT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PAT_USERNAME: grandchildrice
+
+      # LM Studio typically doesn't require a real key, but OpenHands expects one.
+      # Put any dummy string, e.g. "local-llm"
+      LLM_API_KEY: local-llm
+
+      # Must include /v1 for LM Studio OpenAI-compat API
+      # Set this secret value to: http://localhost:1234/v1
+      LLM_BASE_URL: "http://localhost:1234/v1"
