@@ -283,6 +283,7 @@ jobs:
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
           LLM_API_VERSION: ${{ inputs.LLM_API_VERSION }}
           PYTHONPATH: ""
+          SSL_CERT_FILE: /etc/ssl/certs/ca-bundle.crt
         run: |
           cd "$RUN_DIR"
           uvx --python 3.12 --from openhands-ai \
