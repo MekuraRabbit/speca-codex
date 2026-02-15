@@ -40,10 +40,10 @@ jobs:
           SWE_AGENT_TOOLS_DIR: /tmp/swe-agent-repo/tools
           SWE_AGENT_TRAJECTORY_DIR: /tmp/swe-agent-repo/trajectories
           SSL_CERT_FILE: /etc/ssl/certs/ca-bundle.crt
+          LITELLM_DROP_PARAMS: "True"
         run: |
           uv run sweagent run \
           --agent.model.name=gpt-5-mini \
           --agent.model.per_instance_cost_limit=2.00 \
-          --agent.model.top_p=1.0 \
           --env.repo.github_url="https://x-access-token:${{ env.GITHUB_TOKEN }}@github.com/NyxFoundation/security-agent" \
           --problem_statement.github_url=https://github.com/NyxFoundation/security-agent/issues/${{ github.event.issue.number }}
