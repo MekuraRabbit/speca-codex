@@ -210,6 +210,67 @@ jobs:
               console.log("Stable OpenHands selected (will use openhands-ai with uvx).");
             }
 
+      - name: Debug Python httpx connection
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd "$RUN_DIR"
+          cat > test_httpx.py << 'EOF'
+import httpx
+import ssl
+import sys
+
+print("=== Testing httpx connection to GitHub API ===" )
+print(f"Python version: {sys.version}")
+
+# Test 1: Basic GET request without authentication
+print("\n--- Test 1: GET https://api.github.com (no auth ) ---")
+try:
+    with httpx.Client(timeout=30.0 ) as client:
+        response = client.get("https://api.github.com" )
+        print(f"Status: {response.status_code}")
+        print(f"Headers: {dict(response.headers)}")
+except Exception as e:
+    print(f"ERROR: {type(e).__name__}: {e}")
+
+# Test 2: With SSL context (like OpenHands)
+print("\n--- Test 2: GET with ssl.create_default_context() ---")
+try:
+    ssl_context = ssl.create_default_context()
+    with httpx.Client(verify=ssl_context, timeout=30.0 ) as client:
+        response = client.get("https://api.github.com" )
+        print(f"Status: {response.status_code}")
+except Exception as e:
+    print(f"ERROR: {type(e).__name__}: {e}")
+    import traceback
+    traceback.print_exc()
+
+# Test 3: With authentication
+print("\n--- Test 3: GET with Bearer token ---")
+import os
+token = os.environ.get("GITHUB_TOKEN", "")
+if token:
+    print(f"Token length: {len(token)}")
+    try:
+        ssl_context = ssl.create_default_context()
+        headers = {"Authorization": f"Bearer {token}"}
+        with httpx.Client(verify=ssl_context, timeout=30.0 ) as client:
+            response = client.get("https://api.github.com", headers=headers )
+            print(f"Status: {response.status_code}")
+    except Exception as e:
+        print(f"ERROR: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
+else:
+    print("No GITHUB_TOKEN found")
+
+print("\n=== Environment variables ===")
+for key in ["HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "SSL_CERT_FILE", "REQUESTS_CA_BUNDLE"]:
+    print(f"{key}: {os.environ.get(key, '(not set)')}")
+EOF
+
+          uv run --python 3.12 python test_httpx.py
+
       - name: Attempt to resolve issue (run in per-run dir)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
