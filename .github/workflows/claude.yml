@@ -30,21 +30,49 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Install uv (for uvx MCP servers)
+        uses: astral-sh/setup-uv@v4
+
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
-          # This is an optional setting that allows Claude to read CI results on PRs
           additional_permissions: |
             actions: read
 
-          # Optional: Give a custom prompt to Claude. If this is not specified, Claude will perform the instructions specified in the comment that tagged it.
-          # prompt: 'Update the pull request description to include a summary of changes.'
-
-          # Optional: Add claude_args to customize behavior and configuration
-          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
-          # or https://code.claude.com/docs/en/cli-reference for available options
-          # claude_args: '--allowed-tools Bash(gh pr:*)'
+          mcp_config: |
+            {
+              "mcpServers": {
+                "tree_sitter": {
+                  "type": "stdio",
+                  "command": "uvx",
+                  "args": ["mcp-server-tree-sitter"]
+                },
+                "serena": {
+                  "type": "stdio",
+                  "command": "uvx",
+                  "args": ["--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-server", "--open-web-dashboard", "False"]
+                },
+                "fetch": {
+                  "type": "stdio",
+                  "command": "uvx",
+                  "args": ["mcp-server-fetch"]
+                },
+                "filesystem": {
+                  "type": "stdio",
+                  "command": "npx",
+                  "args": ["-y", "@modelcontextprotocol/server-filesystem", "."]
+                },
+                "github": {
+                  "type": "stdio",
+                  "command": "npx",
+                  "args": ["-y", "@modelcontextprotocol/server-github"],
+                  "env": {
+                    "GITHUB_PERSONAL_ACCESS_TOKEN": "${{ github.token }}"
+                  }
+                }
+              }
+            }
 
