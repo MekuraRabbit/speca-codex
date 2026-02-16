@@ -332,6 +332,12 @@ class Phase02Partial(BaseModel):
         return self
 
 
+class Phase02cPartial(BaseModel):
+    """Output of Phase 02c: checklist items with pre-resolved code locations."""
+    checklist_with_code: list[ChecklistItem] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
 # ---------------------------------------------------------------------------
 # Phase 03 – Audit Map
 # ---------------------------------------------------------------------------
@@ -398,7 +404,7 @@ class AuditMapItem(BaseModel):
     """A single audit result from Phase 03."""
     check_id: str
     property_id: str | None = None
-    code_scope: dict[str, Any] = Field(default_factory=dict)
+    code_scope: CodeScope = Field(default_factory=CodeScope)  # Type-safe code scope
     code_snippet: str = ""
     final_classification: str = ""
     bug_bounty_eligible: bool = False
