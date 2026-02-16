@@ -10,6 +10,7 @@ PhaseConfig is a Pydantic BaseModel, providing:
   - Immutability by default (frozen model)
 """
 
+import os
 from pathlib import Path
 from typing import Callable, Any
 
@@ -94,6 +95,10 @@ class PhaseConfig(BaseModel):
         """ID field name in result items. Falls back to item_id_field."""
         return self.result_id_field or self.item_id_field
 
+
+# Environment flag to use legacy (unoptimized) phase 03 configuration
+# Set USE_LEGACY_PHASE03=1 to use the old three-skill approach
+USE_LEGACY_PHASE03 = os.environ.get("USE_LEGACY_PHASE03", "") == "1"
 
 # Phase configurations - ALL use token-based batching
 PHASE_CONFIGS: dict[str, PhaseConfig] = {
@@ -202,14 +207,16 @@ PHASE_CONFIGS: dict[str, PhaseConfig] = {
         phase_id="03",
         name="Audit Map Generation",
         description="Perform formal audit analysis on checklist items",
-        skill_path=Path(".claude/skills/formal-audit/SKILL.md"),
-        prompt_path=Path("prompts/03_auditmap_worker.md"),
+        skill_path=Path(".claude/skills/formal-audit/SKILL.md") if USE_LEGACY_PHASE03
+                   else Path(".claude/skills/formal-audit-unified/SKILL.md"),
+        prompt_path=Path("prompts/03_auditmap_worker.md") if USE_LEGACY_PHASE03
+                    else Path("prompts/03_auditmap_worker_optimized.md"),
         queue_pattern="outputs/03_ASYNC_QUEUE_*.json",
         output_pattern="outputs/03_AUDITMAP_PARTIAL_*.json",
         depends_on=["02"],
         input_patterns=["outputs/02_PARTIAL_*.json"],
         batch_strategy="count",
-        max_batch_size=10,
+        max_batch_size=10 if USE_LEGACY_PHASE03 else 15,  # Increased batch size with optimization
         item_id_field="check_id",
         result_key="audit_items",
         output_prefix="AUDITMAP",

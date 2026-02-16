@@ -78,11 +78,13 @@ Skills live in `.claude/skills/<name>/SKILL.md`. Each has YAML frontmatter (`nam
 - **Circuit breaker is shared:** All workers in a phase share one circuit breaker, so systemic issues (bad prompt, API outage) trigger fast abort.
 - **MCP-first code resolution:** Phase 03 must use `mcp__tree_sitter__get_symbols` / `run_query` for code location before reading files. Direct file access for code resolution is not permitted.
 - **Budget enforcement:** Cost tracking is built into `ClaudeRunner`, not bolted on. Raises `BudgetExceeded` at the runner level.
+- **Phase 03 optimization:** Uses unified `formal-audit-unified` skill (single context fork) instead of sequential phase1→phase2→phase3 skills (triple context fork). Reduces token consumption by ~75-80% per item. Set `USE_LEGACY_PHASE03=1` to revert to legacy behavior.
 
 ### Environment Variables
 
 - `KEYWORDS`, `SPEC_URLS` — Phase 01a discovery inputs
 - `FORCE_EXECUTE=1` — Bypass resume (set automatically by `--force` flag)
+- `USE_LEGACY_PHASE03=1` — Use legacy three-skill phase 03 instead of optimized unified skill (default: optimized)
 - `CLAUDE_CODE_PERMISSIONS=bypassPermissions` — Used in CI
 - `CLAUDE_CODE_MAX_OUTPUT_TOKENS=100000` — Used in CI
 - `GITHUB_PERSONAL_ACCESS_TOKEN` — For GitHub MCP server
