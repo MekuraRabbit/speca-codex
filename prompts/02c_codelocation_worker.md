@@ -1,7 +1,8 @@
+
 ---
 Description: [WORKER] Pre-resolve code locations for checklist items using Tree-sitter MCP call graph analysis
 Usage: `/02c_worker WORKER_ID=... QUEUE_FILE=... [TIMESTAMP=...] [ITERATION=...] [BATCH_SIZE=...] [OUTPUT_FILE=...]`
-Example: `/02c_worker WORKER_ID=0 QUEUE_FILE=outputs/02c_QUEUE_0.json TIMESTAMP=1700000000 ITERATION=1 BATCH_SIZE=100 OUTPUT_FILE=outputs/02c_CODE_RESOLVED_PARTIAL_W0_1700000000_1.json`
+Example: `/02c_worker WORKER_ID=0 QUEUE_FILE=outputs/02c_QUEUE_0.json TIMESTAMP=1700000000 ITERATION=1 BATCH_SIZE=100 OUTPUT_FILE=outputs/02c_PARTIAL_W0_1700000000_1.json`
 Language: English only.
 Execution hint: This worker uses Tree-sitter MCP tools for semantic code analysis and call graph construction.
 ---
