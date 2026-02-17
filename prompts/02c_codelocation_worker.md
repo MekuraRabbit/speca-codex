@@ -1,782 +1,609 @@
-
 ---
-Description: [WORKER] Pre-resolve code locations for checklist items using Tree-sitter MCP call graph analysis
+Description: [WORKER] Pre-resolve code locations using multi-tier fallback strategy (MCP → Glob/Grep)
 Usage: `/02c_worker WORKER_ID=... QUEUE_FILE=... [TIMESTAMP=...] [ITERATION=...] [BATCH_SIZE=...] [OUTPUT_FILE=...]`
-Example: `/02c_worker WORKER_ID=0 QUEUE_FILE=outputs/02c_QUEUE_0.json TIMESTAMP=1700000000 ITERATION=1 BATCH_SIZE=100 OUTPUT_FILE=outputs/02c_PARTIAL_W0_1700000000_1.json`
 Language: English only.
-Execution hint: This worker uses Tree-sitter MCP tools for semantic code analysis and call graph construction.
+Execution hint: Prioritizes MCP Tree-sitter, falls back to filesystem-based search on failure.
 ---
 
 <task>
-  <goal>For each checklist item in the batch, use Tree-sitter MCP to: 1) identify entry points, 2) build call graphs, 3) match items to code locations, 4) extract code excerpts.</goal>
+  <goal>For each checklist item: 1) Check layer scope, 2) Use multi-tier fallback to find code locations, 3) Extract code excerpts.</goal>
   <input type="file" id="queue">{{QUEUE_FILE}}</input>
   <output type="file" id="results">{{OUTPUT_FILE}}</output>
 
   <critical_requirements>
     1. Process ALL items in the batch
-    2. Use Tree-sitter MCP tools (mcp__tree_sitter__*) for all code analysis
-    3. Build call graphs from entry points using Tree-sitter queries
-    4. Match checklist items to code locations using keyword extraction and graph traversal
-    5. Write JSON file to <ref id="results"/> after processing ALL items
-    6. File MUST be written even if some items fail resolution
-    7. Handle errors gracefully - continue processing even if individual items fail
+    2. Use multi-tier fallback: MCP Tree-sitter → Glob/Grep → Fuzzy matching
+    3. Mark layer-mismatched items as "out_of_scope" (skip analysis)
+    4. Write JSON file to <ref id="results"/> after processing ALL items
+    5. File MUST be written even if some items fail resolution
+    6. Handle errors gracefully - continue processing even if individual items fail
   </critical_requirements>
 
   <instructions>
-    ## Phase 0: Setup
+    ## Phase 0: Setup & Layer Validation
 
     1. **Read Input**:
-       - Read <ref id="queue"/> and parse JSON
-       - Select first BATCH_SIZE items
-       - Create empty `results = []` array
+       ```python
+       import json
+       with open(QUEUE_FILE) as f:
+           data = json.load(f)
 
-    2. **Register Target Project**:
+       items = data.get('checklist', [])[:BATCH_SIZE]
+       results = []
        ```
-       Use mcp__tree_sitter__register_project_tool with:
-       - path: "target_workspace" (absolute path to cloned target repo)
-       - name: "target-project"
+
+    2. **Detect Target Layer**:
+       ```python
+       import json
+
+       # Read target info
+       with open('outputs/02c_TARGET_INFO.json') as f:
+           target_info = json.load(f)
+
+       target_repo = target_info['target_repo']
+
+       def detect_target_layer(repo_name: str) -> str:
+           """Detect if target is consensus or execution layer."""
+           repo_lower = repo_name.lower()
+
+           # Consensus layer clients
+           if any(x in repo_lower for x in ['prysm', 'lighthouse', 'teku', 'nimbus', 'lodestar']):
+               return 'consensus'
+
+           # Execution layer clients
+           if any(x in repo_lower for x in ['geth', 'go-ethereum', 'nethermind', 'besu', 'erigon', 'reth']):
+               return 'execution'
+
+           return 'unknown'
+
+       TARGET_LAYER = detect_target_layer(target_repo)
+       print(f"Target layer detected: {TARGET_LAYER}")
        ```
-       This registers the target codebase for analysis.
 
-    ## Phase 1: Entry Point Identification
-
-    For each unique `reachability.entry_points` category in the batch:
-
-    **Entry Point Categories & Patterns:**
-
-    - **P2P**: Network message handlers
-      - Patterns: `Handle.*Message`, `Receive.*Block`, `Process.*Block`, `Validate.*Block`
-      - Go: `func Handle`, `func Receive`, `func Process`, `func Validate`
-      - File patterns: `**/p2p/**`, `**/sync/**`, `**/network/**`
-
-    - **Transaction**: Transaction processing
-      - Patterns: `Process.*Transaction`, `Validate.*Transaction`, `Apply.*Transaction`
-      - Go: `func ProcessTransaction`, `func ValidateTransaction`
-      - File patterns: `**/txpool/**`, `**/core/types/transaction*`, `**/core/state_transition*`
-
-    - **EngineAPI** / **Engine API**: Engine API handlers
-      - Patterns: `Engine.*`, `ForkchoiceUpdated.*`, `NewPayload.*`, `GetPayload.*`
-      - Go: `func ForkchoiceUpdatedV`, `func NewPayloadV`, `func GetPayloadV`
-      - File patterns: `**/eth/catalyst/**`, `**/beacon/engine/**`, `**/miner/payload*`
-
-    - **Consensus**: Consensus layer functions
-      - Patterns: `VerifyHeader.*`, `Prepare.*`, `Finalize.*`, `Seal.*`
-      - Go: `func VerifyHeader`, `func Prepare`, `func Finalize`
-      - File patterns: `**/consensus/**`, `**/core/headerchain*`
-
-    - **Internal** / **Internal API** / **Internal state transition**: Internal processing
-      - Patterns: `process.*`, `apply.*`, `execute.*`, `transition.*`
-      - Go: `func process`, `func apply`, `func execute`
-      - File patterns: `**/core/**`, `**/internal/**`
-
-    **Tool Usage:**
-    ```
-    For Go codebases:
-    1. List relevant files:
-       mcp__tree_sitter__list_files(
-         project="target-project",
-         pattern="**/*.go",
-         extensions=["go"]
-       )
-
-    2. For each relevant file, extract symbols:
-       mcp__tree_sitter__get_symbols(
-         project="target-project",
-         file_path="path/to/file.go"
-       )
-       Returns: Dict with "functions", "classes", etc. containing symbol info
-
-    3. Filter symbols by entry point patterns:
-       - Match function names against category patterns
-       - For Go: Look for exported functions (capitalized names)
-       - Extract line ranges from symbol definitions
-       - Store entry points: {function, file, line_start, line_end}
-    ```
-
-    **Output:**
-    Create a map of entry points per category:
-    ```json
-    {
-      "P2P": [
-        {
-          "function": "HandleBlockMessage",
-          "file": "beacon-chain/sync/rpc_block_handler.go",
-          "line_start": 45,
-          "line_end": 120
-        }
-      ],
-      "Transaction": [...]
-    }
-    ```
-
-    ## Phase 2: Call Graph Construction
-
-    For each identified entry point, build a call graph using Tree-sitter queries:
-
-    **Tree-sitter Query for Go Call Expressions:**
-    ```scheme
-    (call_expression
-      function: [
-        (identifier) @call
-        (selector_expression
-          field: (field_identifier) @call)
-      ])
-    ```
-
-    **Algorithm:**
-    ```python
-    def build_call_graph(entry_point: dict, max_depth: int = 3) -> list[dict]:
-        """
-        Build call graph from an entry point function.
-
-        Args:
-            entry_point: {function, file, line_start, line_end}
-            max_depth: Maximum recursion depth (default: 3)
-
-        Returns:
-            List of call edges: [{from, to, file, line, depth}]
-        """
-        visited = set()
-        call_graph = []
-
-        def traverse(func_name: str, file_path: str, depth: int):
-            if depth > max_depth or func_name in visited:
-                return
-            visited.add(func_name)
-
-            try:
-                # Query all function calls in the current file
-                query_result = mcp__tree_sitter__run_query(
-                    project="target-project",
-                    query="(call_expression function: [(identifier) @call (selector_expression field: (field_identifier) @call)])",
-                    file_path=file_path,
-                    language="go",
-                    max_results=100
-                )
-
-                # Extract called function names
-                called_functions = set()
-                for match in query_result.get("matches", []):
-                    for capture in match.get("captures", []):
-                        if capture.get("name") == "call":
-                            called_func = capture.get("text", "").strip()
-                            if called_func and len(called_func) > 0:
-                                called_functions.add(called_func)
-
-                # For each called function, find its definition
-                for called_func in called_functions:
-                    if len(call_graph) >= 50:  # Limit total edges per entry point
-                        break
-
-                    # Try to find the function definition
-                    # Option 1: Use find_text with regex
-                    find_results = mcp__tree_sitter__find_text(
-                        project="target-project",
-                        pattern=f"func\\s+({called_func}|\\([^)]+\\)\\s*{called_func})\\s*\\(",
-                        use_regex=True,
-                        file_pattern="**/*.go",
-                        max_results=5
-                    )
-
-                    for result in find_results:
-                        result_file = result.get("file", "")
-                        result_line = result.get("line", 0)
-
-                        # Verify this is actually a function definition
-                        symbols = mcp__tree_sitter__get_symbols(
-                            project="target-project",
-                            file_path=result_file
-                        )
-
-                        # Check if the function exists in symbols
-                        for func in symbols.get("functions", []):
-                            if func.get("name") == called_func:
-                                call_graph.append({
-                                    "from": func_name,
-                                    "to": called_func,
-                                    "file": result_file,
-                                    "line": func.get("start_line", result_line),
-                                    "depth": depth + 1
-                                })
-
-                                # Recursively traverse (depth limited)
-                                if depth + 1 < max_depth:
-                                    traverse(called_func, result_file, depth + 1)
-                                break
-
-            except Exception as e:
-                # Log error but continue
-                pass
-
-        # Start traversal from entry point
-        traverse(entry_point["function"], entry_point["file"], 0)
-        return call_graph
-    ```
-
-    **Simplified Alternative (if call graph is too slow):**
-    ```python
-    def build_simple_call_graph(entry_point: dict) -> list[dict]:
-        """
-        Build a simple 1-level call graph (just direct callees).
-        Much faster than full recursive traversal.
-        """
-        call_graph = []
-
-        try:
-            # Query calls in entry point function only
-            query_result = mcp__tree_sitter__run_query(
-                project="target-project",
-                query="(call_expression function: [(identifier) @call (selector_expression field: (field_identifier) @call)])",
-                file_path=entry_point["file"],
-                language="go",
-                max_results=50
-            )
-
-            # Extract function names
-            for match in query_result.get("matches", []):
-                for capture in match.get("captures", []):
-                    if capture.get("name") == "call":
-                        called_func = capture.get("text", "").strip()
-                        if called_func:
-                            call_graph.append({
-                                "from": entry_point["function"],
-                                "to": called_func,
-                                "file": entry_point["file"],
-                                "line": 0,  # Will be resolved later if needed
-                                "depth": 1
-                            })
-
-        except Exception:
-            pass
-
-        return call_graph
-    ```
-
-    **Tool Usage:**
-    ```
-    1. Extract function calls using Tree-sitter query:
-       mcp__tree_sitter__run_query(
-         project="target-project",
-         query="(call_expression function: [(identifier) @call (selector_expression field: (field_identifier) @call)])",
-         file_path="path/to/entry_point.go",
-         language="go"
-       )
-       Returns: List of query matches with captured nodes
-
-    2. Find function definitions for called functions:
-       Option A - Use find_usage:
-       mcp__tree_sitter__find_usage(
-         project="target-project",
-         symbol="FunctionName",
-         language="go"
-       )
-       Returns: List of usage locations
-
-       Option B - Use find_text to locate definitions:
-       mcp__tree_sitter__find_text(
-         project="target-project",
-         pattern="func.*FunctionName",
-         use_regex=true,
-         file_pattern="**/*.go"
-       )
-
-    3. Verify function definitions with get_symbols:
-       mcp__tree_sitter__get_symbols(
-         project="target-project",
-         file_path="path/to/file.go"
-       )
-       Returns: All symbols in file with line ranges
-    ```
-
-    **Optimization:**
-    - Cache call graphs per entry point (reuse for multiple checklist items)
-    - Limit max depth to 5 to prevent explosion
-    - Stop traversal if visited set exceeds 1000 functions
-
-    **Output:**
-    For each entry point, store:
-    ```json
-    {
-      "entry_point": "HandleBlockMessage",
-      "entry_file": "beacon-chain/sync/rpc_block_handler.go",
-      "call_graph": [
-        {
-          "from": "HandleBlockMessage",
-          "to": "ValidateBlock",
-          "file": "beacon-chain/sync/validator.go",
-          "line": 45,
-          "depth": 1
-        },
-        {
-          "from": "ValidateBlock",
-          "to": "ValidateRLPSize",
-          "file": "core/types/block.go",
-          "line": 120,
-          "depth": 2
-        }
-      ]
-    }
-    ```
-
-    ## Phase 3: Keyword Extraction and Matching
-
-    For each checklist item:
-
-    1. **Extract Keywords** from `test_procedure`:
-
-       **Keyword Extraction Algorithm:**
+    3. **Check Layer Scope for Each Item**:
        ```python
        import re
 
-       def extract_keywords(test_procedure: str) -> list[str]:
-           keywords = set()
+       # Known layer mappings for common EIPs
+       EXECUTION_LAYER_EIPS = {7823, 7825, 7883, 7917, 7920, 7623, 7691, 7702}
+       CONSENSUS_LAYER_EIPS = {7594, 7692, 7742, 7840, 7892, 7716, 7732, 7549, 7685, 7251}
 
-           # ALL_CAPS words (constants, types)
-           # Example: MAX_RLP_BLOCK_SIZE, GOSSIP_MAX_SIZE
-           all_caps = re.findall(r'\b[A-Z][A-Z0-9_]{2,}\b', test_procedure)
-           keywords.update(all_caps)
+       def extract_spec_layer_from_notes(notes: str) -> str:
+           """Extract EIP number and infer layer."""
+           match = re.search(r'EIP-(\d+)', notes, re.IGNORECASE)
+           if match:
+               eip_num = int(match.group(1))
+               if eip_num in EXECUTION_LAYER_EIPS:
+                   return 'execution'
+               if eip_num in CONSENSUS_LAYER_EIPS:
+                   return 'consensus'
+           return 'unknown'
 
-           # snake_case identifiers (functions, variables)
-           # Example: recover_sender, state_transition, apply_withdrawals
-           snake_case = re.findall(r'\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b', test_procedure)
-           keywords.update(snake_case)
+       for item in items:
+           spec_layer = extract_spec_layer_from_notes(item.get('notes', ''))
 
-           # camelCase identifiers (Go: exported functions start with uppercase)
-           # Example: validateBlock, processTransaction
-           camel_case = re.findall(r'\b[a-z][a-z0-9]*[A-Z][a-zA-Z0-9]*\b', test_procedure)
-           keywords.update(camel_case)
+           # Check for out-of-scope (layer mismatch)
+           if TARGET_LAYER != 'unknown' and spec_layer != 'unknown':
+               if TARGET_LAYER != spec_layer:
+                   # Mark as out_of_scope and skip analysis
+                   item['code_scope'] = {
+                       'locations': [],
+                       'resolution_status': 'out_of_scope',
+                       'resolution_error': f'Spec layer ({spec_layer}) does not match target layer ({TARGET_LAYER}). Skipped per audit scope.'
+                   }
+                   item['code_excerpt'] = ''
+                   results.append(item)
+                   continue  # Skip to next item
 
-           # PascalCase identifiers (Go: exported types/functions)
-           # Example: ProcessBlock, ValidateAttestation, ApplyTransaction
-           pascal_case = re.findall(r'\b[A-Z][a-z0-9]*[A-Z][a-zA-Z0-9]*\b', test_procedure)
-           keywords.update(pascal_case)
-
-           # Technical terms (database, network, crypto, etc.)
-           # Example: "signature", "hash", "merkle", "withdrawal"
-           technical_terms = re.findall(r'\b(?:signature|hash|merkle|withdrawal|attestation|validator|block|transaction|state|proof|verify|validate|process|apply|execute|transition)\b', test_procedure, re.IGNORECASE)
-           keywords.update([t.lower() for t in technical_terms])
-
-           # Remove common words (stop words)
-           stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'should', 'could', 'may', 'might', 'must', 'can', 'to', 'of', 'in', 'for', 'on', 'at', 'by', 'with', 'from', 'as', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between', 'under', 'over', 'again', 'further', 'then', 'once'}
-           keywords = {k for k in keywords if k.lower() not in stop_words and len(k) > 2}
-
-           # Sort by length (longer = more specific)
-           return sorted(keywords, key=len, reverse=True)
+           # If in scope, proceed with multi-tier analysis
+           # ... (see Phase 1-3 below)
        ```
 
-       **Example:**
-       ```
-       test_procedure = "Check that MAX_RLP_BLOCK_SIZE is enforced in validateBlock()
-                         and that recover_sender is called before state_transition"
+    ## Phase 1: Multi-Tier Fallback Strategy
 
-       keywords = extract_keywords(test_procedure)
-       # Result: ['MAX_RLP_BLOCK_SIZE', 'state_transition', 'recover_sender',
-       #          'validateBlock', 'signature', 'block', 'state', 'validate']
-       ```
+    For items that are in-scope, use a multi-tier fallback approach:
 
-    2. **Match Against Call Graphs**:
-       For each entry point's call graph:
-       - Search function names for exact keyword matches
-       - Search for partial matches (e.g., "validate" matches "ValidateBlock")
-       - Assign relevance scores:
-         ```
-         exact_match_score = 10.0
-         partial_match_score = 5.0
-         depth_penalty = 1.0 / (1 + depth * 0.2)
-         total_score = match_score * depth_penalty
-         ```
+    **Tier 1: MCP Tree-sitter (Preferred)**
+    - Full call graph analysis
+    - Highest accuracy, but may fail
 
-    3. **Rank Matches**:
-       - Sort by total_score descending
-       - Select top 5 matches
-       - Include entry point itself if it matches
+    **Tier 2: MCP Simple Symbol Search**
+    - Direct symbol lookup without call graph
+    - Faster, more reliable
 
-    4. **Extract Code Locations**:
-       For each matched function:
-       ```
-       mcp__tree_sitter__get_symbols(
-         project="target-project",
-         file_path="matched_file.go"
-       )
+    **Tier 3: Glob + Grep Filesystem Search (Fallback)**
+    - Pure filesystem-based search
+    - Always works, good accuracy with smart keywords
 
-       Find the function in the symbols["functions"] list and extract:
-       - file: relative path from workspace root
-       - symbol: function name
-       - line_range: {start: symbol.start_line, end: symbol.end_line}
-       - role: "primary" (if highest score), "caller", "callee", or "related"
-       ```
+    **Tier 4: Fuzzy Matching**
+    - Last resort for complex cases
 
-    5. **Extract Code Excerpts**:
-       For the top 3 matches:
-       ```
-       mcp__tree_sitter__get_file(
-         project="target-project",
-         path="matched_file.go",
-         start_line=line_range.start,
-         max_lines=min(50, line_range.end - line_range.start + 1)
-       )
-
-       Format as:
-       // PRIMARY: matched_file.go:FunctionName (lines X-Y)
-       [code excerpt]
-
-       // CALLER: caller_file.go:CallerName (lines A-B)
-       [code excerpt]
-       ```
-
-    ## Phase 4: Result Assembly
-
-    For each checklist item, create:
-    ```json
-    {
-      "check_id": "...",
-      "property_id": "...",
-      "title": "...",
-      ...all original fields...,
-      "code_scope": {
-        "entry_points_analyzed": ["HandleBlockMessage", "ProcessBlock"],
-        "locations": [
-          {
-            "file": "core/types/block.go",
-            "symbol": "ValidateRLPSize",
-            "line_range": {"start": 120, "end": 145},
-            "role": "primary"
-          },
-          {
-            "file": "beacon-chain/sync/validator.go",
-            "symbol": "ValidateBlock",
-            "line_range": {"start": 45, "end": 78},
-            "role": "caller"
-          }
-        ],
-        "resolution_status": "resolved|not_found|no_entry_points|error",
-        "resolution_error": "error message if status=error"
-      },
-      "code_excerpt": "// PRIMARY: core/types/block.go:ValidateRLPSize (lines 120-145)\n[code]\n\n// CALLER: beacon-chain/sync/validator.go:ValidateBlock (lines 45-78)\n[code]"
-    }
-    ```
-
-    **Resolution Status Values:**
-    - `resolved`: Successfully found code locations
-    - `not_found`: Keywords didn't match any functions in call graphs
-    - `no_entry_points`: Entry points category not found in codebase
-    - `error`: Exception occurred during processing
-
-    ## Phase 5: Error Handling & Output
-
-    1. **Error Handling**:
-       - Wrap each item processing in try-except
-       - If error: set `resolution_status: "error"`, add error message, continue
-       - Log errors but DO NOT stop batch processing
-
-    2. **Write Output**:
-       - After ALL items processed, write results to <ref id="results"/>
-       - Format: `{"checklist_with_code": [...]}`
-       - Ensure valid JSON
-
-    3. **Print Summary**:
-       ```
-       Processed: 100 items
-       Resolved: 75
-       Not found: 15
-       No entry points: 5
-       Errors: 5
-       Output File: {{OUTPUT_FILE}}
-       ```
-  </instructions>
-
-  <simplified_approach>
-    **IMPORTANT: Simplified Implementation for Reliability**
-
-    If the full call graph analysis is too complex or fails, use this simplified approach:
-
-    1. **Direct Symbol Search**:
-       ```
-       # Extract keywords from checklist item test_procedure
-       keywords = extract_keywords(item.test_procedure)
-
-       # Search for each keyword directly using find_text
-       for keyword in keywords:
-         results = mcp__tree_sitter__find_text(
-           project="target-project",
-           pattern=f"func.*{keyword}",
-           use_regex=true,
-           file_pattern="**/*.go",
-           max_results=10
-         )
-
-         # For each match, get exact symbol definition
-         for match in results:
-           symbols = mcp__tree_sitter__get_symbols(
-             project="target-project",
-             file_path=match.file
-           )
-           # Extract line range and add to locations
-       ```
-
-    2. **Fallback Strategy**:
-       - Try call graph analysis first (if entry_points field exists)
-       - If call graph fails or takes too long (>30s): fallback to direct search
-       - If direct search fails: try fuzzy matching on keywords
-       - If all fails: mark as "not_found"
-
-    3. **Performance Limits**:
-       - Max 30 seconds per checklist item
-       - Max 5 code locations per item
-       - Max 50 lines per code excerpt
-       - Skip call graph if depth would exceed 3 levels
-
-  </simplified_approach>
-
-  <batch_optimization>
-    **Efficiency Strategies:**
-
-    1. **Group by Entry Points Category**:
-       ```
-       P2P items: 40
-       Transaction items: 30
-       EngineAPI items: 20
-       Total: 90 items
-
-       Build call graphs once per category:
-       - P2P: 5 entry points → 5 call graphs
-       - Transaction: 3 entry points → 3 call graphs
-       - EngineAPI: 2 entry points → 2 call graphs
-
-       Total: 10 call graphs built
-       Reused across 90 items = 9x efficiency gain
-       ```
-
-    2. **Cache Call Graphs**:
-       ```python
-       call_graph_cache = {}
-
-       def get_call_graph(entry_point):
-         key = f"{entry_point.file}:{entry_point.function}"
-         if key not in call_graph_cache:
-           call_graph_cache[key] = build_call_graph(entry_point)
-         return call_graph_cache[key]
-       ```
-
-    3. **Parallel Keyword Matching**:
-       - Extract keywords for all items upfront
-       - Match all items against same call graph in one pass
-       - Use batch symbol lookups when possible
-
-    **Expected Performance:**
-    - 100 items per batch
-    - ~10 unique entry point categories
-    - ~50 MCP calls total (vs. 1,000+ without optimization)
-    - <3 minutes per batch
-  </batch_optimization>
-
-  <implementation_pseudocode>
-    **Recommended Implementation Flow:**
+    ### Implementation:
 
     ```python
-    # Phase 0: Setup
-    items = read_queue(QUEUE_FILE, BATCH_SIZE)
-    results = []
+    def resolve_code_location_multi_tier(item: dict) -> dict:
+        """
+        Multi-tier fallback for code location resolution.
 
-    # Register target project
-    mcp__tree_sitter__register_project_tool(
-        path=os.path.abspath("target_workspace"),
-        name="target-project"
-    )
+        Returns:
+            Item with code_scope and code_excerpt populated
+        """
+        test_procedure = item.get('test_procedure', '')
+        keywords = extract_keywords(test_procedure)
 
-    # Phase 1: Collect entry points (if using call graph approach)
-    entry_point_cache = {}
-    for item in items:
-        if "reachability" in item and "entry_points" in item["reachability"]:
-            category = item["reachability"]["entry_points"]
-            if category not in entry_point_cache:
-                entry_point_cache[category] = identify_entry_points(category)
-
-    # Phase 2: Build call graphs (cached per entry point)
-    call_graph_cache = {}
-    for category, entry_points in entry_point_cache.items():
-        for ep in entry_points[:5]:  # Limit to top 5 entry points per category
-            key = f"{ep['file']}:{ep['function']}"
-            if key not in call_graph_cache:
-                call_graph_cache[key] = build_call_graph(ep, max_depth=3)
-
-    # Phase 3: Process each item
-    for item in items:
+        # Try Tier 1: MCP Tree-sitter call graph
         try:
-            # Extract keywords from test_procedure
-            keywords = extract_keywords(item.get("test_procedure", ""))
+            result = try_mcp_call_graph(item, keywords)
+            if result['code_scope']['resolution_status'] == 'resolved':
+                return result
+        except Exception as e:
+            print(f"Tier 1 (MCP call graph) failed: {e}")
 
-            # Try call graph matching first
-            locations = []
-            if "reachability" in item:
-                category = item["reachability"]["entry_points"]
-                entry_points = entry_point_cache.get(category, [])
-                for ep in entry_points:
-                    key = f"{ep['file']}:{ep['function']}"
-                    call_graph = call_graph_cache.get(key)
-                    if call_graph:
-                        matches = match_keywords_to_call_graph(keywords, call_graph)
-                        locations.extend(matches[:5])
+        # Try Tier 2: MCP simple symbol search
+        try:
+            result = try_mcp_simple_search(item, keywords)
+            if result['code_scope']['resolution_status'] == 'resolved':
+                return result
+        except Exception as e:
+            print(f"Tier 2 (MCP simple) failed: {e}")
 
-            # Fallback: Direct symbol search
-            if len(locations) == 0:
-                for keyword in keywords[:10]:  # Limit keywords
-                    matches = mcp__tree_sitter__find_text(
-                        project="target-project",
-                        pattern=f"(func|type).*{keyword}",
-                        use_regex=True,
-                        file_pattern="**/*.go",
-                        max_results=3
+        # Try Tier 3: Glob + Grep filesystem search
+        try:
+            result = try_glob_grep_search(item, keywords)
+            if result['code_scope']['resolution_status'] == 'resolved':
+                return result
+        except Exception as e:
+            print(f"Tier 3 (Glob+Grep) failed: {e}")
+
+        # Tier 4: Fuzzy matching (last resort)
+        try:
+            result = try_fuzzy_matching(item, keywords)
+            if result['code_scope']['resolution_status'] == 'resolved':
+                return result
+        except Exception as e:
+            print(f"Tier 4 (Fuzzy) failed: {e}")
+
+        # All tiers failed
+        item['code_scope'] = {
+            'locations': [],
+            'resolution_status': 'not_found',
+            'resolution_error': 'All resolution tiers failed to locate code'
+        }
+        item['code_excerpt'] = ''
+        return item
+    ```
+
+    ## Phase 2: Enhanced Keyword Extraction
+
+    **Improved keyword extraction for better filesystem search:**
+
+    ```python
+    import re
+    from typing import List
+
+    def extract_keywords(test_procedure: str) -> List[str]:
+        """
+        Extract high-quality keywords from test procedure.
+        Optimized for both MCP and filesystem search.
+        """
+        keywords = set()
+
+        # 1. ALL_CAPS constants (highest priority)
+        # Example: MAX_RLP_BLOCK_SIZE, GOSSIP_MAX_SIZE
+        all_caps = re.findall(r'\b[A-Z][A-Z0-9_]{2,}\b', test_procedure)
+        keywords.update(all_caps)
+
+        # 2. PascalCase identifiers (Go exported functions/types)
+        # Example: ProcessBlock, ValidateAttestation
+        pascal_case = re.findall(r'\b[A-Z][a-z]+(?:[A-Z][a-z]+)+\b', test_procedure)
+        keywords.update(pascal_case)
+
+        # 3. snake_case identifiers
+        # Example: state_transition, apply_withdrawals
+        snake_case = re.findall(r'\b[a-z][a-z0-9]*(?:_[a-z0-9]+){2,}\b', test_procedure)
+        keywords.update(snake_case)
+
+        # 4. camelCase identifiers
+        # Example: validateBlock, processTransaction
+        camel_case = re.findall(r'\b[a-z][a-z0-9]*[A-Z][a-zA-Z0-9]*\b', test_procedure)
+        keywords.update(camel_case)
+
+        # 5. Technical domain terms (blockchain/crypto specific)
+        domain_terms = [
+            'signature', 'hash', 'merkle', 'withdrawal', 'attestation',
+            'validator', 'block', 'transaction', 'state', 'proof',
+            'verify', 'validate', 'process', 'apply', 'execute',
+            'transition', 'consensus', 'fork', 'beacon', 'payload',
+            'execution', 'blob', 'commitment', 'precompile', 'evm'
+        ]
+        for term in domain_terms:
+            # Find term variations (case-insensitive, word boundaries)
+            matches = re.findall(rf'\b{term}\w*\b', test_procedure, re.IGNORECASE)
+            keywords.update(matches)
+
+        # 6. Remove stop words
+        stop_words = {
+            'the', 'a', 'an', 'and', 'or', 'but', 'is', 'are', 'was', 'were',
+            'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did',
+            'will', 'would', 'should', 'could', 'may', 'might', 'must', 'can'
+        }
+        keywords = {k for k in keywords if k.lower() not in stop_words and len(k) > 2}
+
+        # 7. Sort by specificity (longer = more specific)
+        return sorted(keywords, key=lambda x: (len(x), x.lower()), reverse=True)
+    ```
+
+    ## Phase 3: Tier 3 Implementation (Glob + Grep)
+
+    **Robust filesystem-based search using Claude Code's Glob and Grep tools:**
+
+    ```python
+    def try_glob_grep_search(item: dict, keywords: List[str]) -> dict:
+        """
+        Tier 3: Filesystem-based search using Glob and Grep.
+        This ALWAYS works even if MCP fails.
+        """
+        locations = []
+
+        # 1. Identify relevant file patterns based on entry points
+        entry_points = item.get('reachability', {}).get('entry_points', [])
+        file_patterns = get_file_patterns_for_entry_points(entry_points)
+
+        # 2. For each keyword, search in relevant files
+        for keyword in keywords[:15]:  # Top 15 keywords
+            # Search for function/method definitions
+            grep_patterns = [
+                # Go function definitions
+                f'func\\s+.*{keyword}',
+                f'func\\s+\\([^)]+\\)\\s+{keyword}',
+                # Type definitions
+                f'type\\s+{keyword}',
+                # Variable/constant definitions with keyword
+                f'(const|var)\\s+{keyword}',
+            ]
+
+            for pattern in grep_patterns:
+                try:
+                    # Use Grep tool with regex
+                    matches = Grep(
+                        pattern=pattern,
+                        path='target_workspace',
+                        glob=file_patterns,
+                        output_mode='content',
+                        multiline=False,
+                        head_limit=10
                     )
-                    for match in matches:
-                        symbols = mcp__tree_sitter__get_symbols(
-                            project="target-project",
-                            file_path=match["file"]
-                        )
-                        # Extract matching function from symbols
-                        for func in symbols.get("functions", []):
-                            if keyword.lower() in func["name"].lower():
-                                locations.append({
-                                    "file": match["file"],
-                                    "symbol": func["name"],
-                                    "line_range": {
-                                        "start": func["start_line"],
-                                        "end": func["end_line"]
-                                    },
-                                    "role": "primary"
-                                })
 
-            # Extract code excerpts for top 3 locations
-            code_excerpts = []
-            for loc in locations[:3]:
+                    # Parse matches and extract locations
+                    for match in matches:
+                        location = parse_grep_match(match, keyword)
+                        if location:
+                            locations.append(location)
+
+                    if len(locations) >= 5:
+                        break
+
+                except Exception as e:
+                    continue
+
+            if len(locations) >= 5:
+                break
+
+        # 3. Extract code excerpts for top 3 locations
+        code_excerpts = []
+        for loc in locations[:3]:
+            try:
+                excerpt = Read(
+                    file_path=f"target_workspace/{loc['file']}",
+                    offset=loc['line_range']['start'] - 1,
+                    limit=min(50, loc['line_range']['end'] - loc['line_range']['start'] + 1)
+                )
+                code_excerpts.append(
+                    f"// {loc['role'].upper()}: {loc['file']}:{loc['symbol']} "
+                    f"(lines {loc['line_range']['start']}-{loc['line_range']['end']})\n"
+                    f"{excerpt}"
+                )
+            except Exception:
+                pass
+
+        # 4. Build result
+        if locations:
+            item['code_scope'] = {
+                'locations': locations[:5],
+                'resolution_status': 'resolved',
+                'resolution_error': '',
+                'resolution_method': 'grep_fallback'  # Track which method succeeded
+            }
+            item['code_excerpt'] = '\n\n'.join(code_excerpts)
+        else:
+            item['code_scope'] = {
+                'locations': [],
+                'resolution_status': 'not_found',
+                'resolution_error': 'Grep search found no matching functions'
+            }
+            item['code_excerpt'] = ''
+
+        return item
+
+
+    def get_file_patterns_for_entry_points(entry_points: List[str]) -> str:
+        """
+        Map entry point categories to file glob patterns.
+        Optimized for Go codebases (prysm, geth, etc.)
+        """
+        pattern_map = {
+            'P2P': '**/{p2p,sync,network}/**/*.go',
+            'Transaction': '**/{txpool,transaction,core/types}/**/*.go',
+            'EngineAPI': '**/{engine,catalyst,beacon,miner}/**/*.go',
+            'Engine API': '**/{engine,catalyst,beacon,miner}/**/*.go',
+            'Consensus': '**/{consensus,forkchoice,validator}/**/*.go',
+            'Internal': '**/{core,internal,state}/**/*.go',
+            'Internal API': '**/{core,internal,state}/**/*.go',
+        }
+
+        # Combine patterns for all entry points
+        patterns = []
+        for ep in entry_points:
+            if ep in pattern_map:
+                patterns.append(pattern_map[ep])
+
+        # If no specific pattern, search all Go files
+        if not patterns:
+            return '**/*.go'
+
+        # Return combined pattern (Glob supports multiple patterns)
+        return '|'.join(patterns) if len(patterns) > 1 else patterns[0]
+
+
+    def parse_grep_match(match: str, keyword: str) -> dict:
+        """
+        Parse Grep output to extract location information.
+
+        Grep output format (content mode):
+        file_path:line_number:line_content
+        """
+        lines = match.strip().split('\n')
+        if not lines:
+            return None
+
+        # Parse first line to get file and line number
+        first_line = lines[0]
+        parts = first_line.split(':', 2)
+        if len(parts) < 3:
+            return None
+
+        file_path = parts[0].replace('target_workspace/', '')
+        line_num = int(parts[1])
+        line_content = parts[2]
+
+        # Extract function/symbol name from line content
+        # Go function pattern: func (receiver) FunctionName(
+        func_match = re.search(r'func\s+(?:\([^)]+\)\s+)?(\w+)', line_content)
+        if func_match:
+            symbol = func_match.group(1)
+        else:
+            # Type definition: type TypeName
+            type_match = re.search(r'type\s+(\w+)', line_content)
+            if type_match:
+                symbol = type_match.group(1)
+            else:
+                symbol = keyword  # Fallback to keyword
+
+        # Estimate line range (will be refined when reading file)
+        estimated_end = line_num + 30  # Assume ~30 lines per function
+
+        return {
+            'file': file_path,
+            'symbol': symbol,
+            'line_range': {
+                'start': line_num,
+                'end': estimated_end
+            },
+            'role': 'primary' if keyword.lower() in symbol.lower() else 'related'
+        }
+    ```
+
+    ## Phase 4: Optimized MCP Wrappers
+
+    **Simplified MCP calls for Tier 1 & 2:**
+
+    ```python
+    def try_mcp_simple_search(item: dict, keywords: List[str]) -> dict:
+        """
+        Tier 2: Simplified MCP search without call graph.
+        Faster and more reliable than full call graph analysis.
+        """
+        try:
+            # Register project (idempotent)
+            mcp__tree_sitter__register_project_tool(
+                path=os.path.abspath('target_workspace'),
+                name='target-project'
+            )
+        except Exception:
+            pass  # Already registered
+
+        locations = []
+
+        for keyword in keywords[:10]:  # Top 10 keywords
+            try:
+                # Direct text search
+                results = mcp__tree_sitter__find_text(
+                    project='target-project',
+                    pattern=f'(func|type).*{keyword}',
+                    use_regex=True,
+                    file_pattern='**/*.go',
+                    max_results=5,
+                    context_lines=0
+                )
+
+                # For each result, get symbol info
+                for result in results:
+                    try:
+                        symbols = mcp__tree_sitter__get_symbols(
+                            project='target-project',
+                            file_path=result['file']
+                        )
+
+                        # Find matching function in symbols
+                        for func in symbols.get('functions', []):
+                            if keyword.lower() in func['name'].lower():
+                                locations.append({
+                                    'file': result['file'],
+                                    'symbol': func['name'],
+                                    'line_range': {
+                                        'start': func.get('start_line', result.get('line', 1)),
+                                        'end': func.get('end_line', result.get('line', 1) + 30)
+                                    },
+                                    'role': 'primary'
+                                })
+                                break
+                    except Exception:
+                        continue
+
+                if len(locations) >= 5:
+                    break
+
+            except Exception:
+                continue
+
+        # Extract code excerpts
+        code_excerpts = []
+        for loc in locations[:3]:
+            try:
                 content = mcp__tree_sitter__get_file(
-                    project="target-project",
-                    path=loc["file"],
-                    start_line=loc["line_range"]["start"],
-                    max_lines=min(50, loc["line_range"]["end"] - loc["line_range"]["start"] + 1)
+                    project='target-project',
+                    path=loc['file'],
+                    start_line=loc['line_range']['start'] - 1,
+                    max_lines=min(50, loc['line_range']['end'] - loc['line_range']['start'] + 1)
                 )
                 code_excerpts.append(
                     f"// {loc['role'].upper()}: {loc['file']}:{loc['symbol']} "
                     f"(lines {loc['line_range']['start']}-{loc['line_range']['end']})\n"
                     f"{content}"
                 )
+            except Exception:
+                pass
 
-            # Build result
-            result = {
-                **item,  # Keep all original fields
-                "code_scope": {
-                    "locations": locations[:5],
-                    "resolution_status": "resolved" if locations else "not_found",
-                    "resolution_error": ""
-                },
-                "code_excerpt": "\n\n".join(code_excerpts) if code_excerpts else ""
+        if locations:
+            item['code_scope'] = {
+                'locations': locations[:5],
+                'resolution_status': 'resolved',
+                'resolution_error': '',
+                'resolution_method': 'mcp_simple'
             }
-            results.append(result)
+            item['code_excerpt'] = '\n\n'.join(code_excerpts)
+        else:
+            raise Exception('MCP simple search found no results')
+
+        return item
+    ```
+
+    ## Phase 5: Main Processing Loop
+
+    ```python
+    # Main processing loop
+    for item in items:
+        try:
+            # Check layer scope first
+            spec_layer = extract_spec_layer_from_notes(item.get('notes', ''))
+
+            if TARGET_LAYER != 'unknown' and spec_layer != 'unknown':
+                if TARGET_LAYER != spec_layer:
+                    # Out of scope - skip analysis
+                    item['code_scope'] = {
+                        'locations': [],
+                        'resolution_status': 'out_of_scope',
+                        'resolution_error': f'Spec layer ({spec_layer}) does not match target layer ({TARGET_LAYER})'
+                    }
+                    item['code_excerpt'] = ''
+                    results.append(item)
+                    continue
+
+            # In scope - resolve with multi-tier fallback
+            resolved_item = resolve_code_location_multi_tier(item)
+            results.append(resolved_item)
 
         except Exception as e:
-            # Error handling: mark as error but continue
-            results.append({
-                **item,
-                "code_scope": {
-                    "locations": [],
-                    "resolution_status": "error",
-                    "resolution_error": str(e)
-                },
-                "code_excerpt": ""
-            })
+            # Error handling - mark as error but continue
+            item['code_scope'] = {
+                'locations': [],
+                'resolution_status': 'error',
+                'resolution_error': str(e)
+            }
+            item['code_excerpt'] = ''
+            results.append(item)
 
     # Write output
-    write_json(OUTPUT_FILE, {"checklist_with_code": results})
+    with open(OUTPUT_FILE, 'w') as f:
+        json.dump({'checklist_with_code': results}, f, indent=2)
 
     # Print summary
-    resolved = sum(1 for r in results if r["code_scope"]["resolution_status"] == "resolved")
+    status_counts = {}
+    for item in results:
+        status = item['code_scope']['resolution_status']
+        status_counts[status] = status_counts.get(status, 0) + 1
+
     print(f"Processed: {len(results)} items")
-    print(f"Resolved: {resolved}")
-    print(f"Not found: {len([r for r in results if r['code_scope']['resolution_status'] == 'not_found'])}")
-    print(f"Errors: {len([r for r in results if r['code_scope']['resolution_status'] == 'error'])}")
+    for status, count in sorted(status_counts.items()):
+        print(f"  {status}: {count}")
     print(f"Output File: {OUTPUT_FILE}")
     ```
-  </implementation_pseudocode>
 
-  <example_workflow>
-    **Example: Batch of 15 Items**
+  </instructions>
 
-    1. Read queue → 15 items
-    2. Register project → "target-project"
-    3. Group by entry_points:
-       - P2P: 10 items
-       - Transaction: 3 items
-       - EngineAPI: 2 items
+  <output>
+    <format>JSON object with "checklist_with_code" array</format>
+    <schema>
+      IMPORTANT: Output MUST match the Phase 02c schema exactly.
 
-    4. Identify entry points (once per category):
-       - P2P: HandleBlockMessage, ReceiveBlock, ProcessAttestation
-       - Transaction: ProcessTransaction, ValidateTransaction
-       - EngineAPI: ForkchoiceUpdatedV3, NewPayloadV3
+      {
+        "checklist_with_code": [
+          {
+            // Keep ALL original fields from input checklist item
+            "check_id": "string",
+            "property_id": "string",
+            "title": "string",
+            "severity": "string",
+            "reachability": {...},
+            "test_procedure": "string",
+            "expected_behavior": "string",
+            "graph_element_under_test": "string",
+            // ... all other original fields ...
 
-    5. Build call graphs (once per entry point):
-       - 7 entry points → 7 call graphs (max depth 3)
-       - Cache for reuse
+            // Add/update these fields:
+            "code_scope": {
+              "locations": [
+                {
+                  "file": "string (relative path from workspace root, e.g., 'core/types/block.go')",
+                  "symbol": "string (function/method/type name, e.g., 'ValidateRLPSize')",
+                  "line_range": {
+                    "start": int,
+                    "end": int
+                  },
+                  "role": "primary" | "caller" | "callee" | "related"
+                }
+              ],
+              "resolution_status": "resolved" | "out_of_scope" | "not_found" | "error",
+              "resolution_error": "string (only if status=error, otherwise empty string)",
+              "resolution_method": "mcp_callgraph" | "mcp_simple" | "grep_fallback" | "fuzzy" (optional, only if resolved)
+            },
+            "code_excerpt": "string (formatted code excerpts with markers, or empty string)"
+          }
+        ]
+      }
 
-    6. Process items:
-       For each of 15 items:
-       - Extract keywords
-       - Try matching against cached call graphs
-       - If no match: fallback to direct symbol search
-       - Extract code locations and excerpts
-
-    7. Write results → 15 items with code_scope populated
-    8. Print summary
-  </example_workflow>
+      Schema Requirements:
+      1. ALL original fields from input MUST be preserved
+      2. code_scope.locations is a list (may be empty if not_found or out_of_scope)
+      3. code_scope.resolution_status is REQUIRED:
+         - "resolved": Successfully found code locations
+         - "out_of_scope": Spec layer does not match target layer (e.g., EL spec on CL target)
+         - "not_found": All resolution tiers failed to locate code
+         - "error": Exception occurred during processing
+      4. code_scope.resolution_error is REQUIRED (empty string if no error)
+      5. line_range.start and line_range.end are both required integers
+    </schema>
+    <stdout>Max 10 lines: batch size, resolution stats, status.</stdout>
+    <final_line>Output File: {{OUTPUT_FILE}}</final_line>
+  </output>
 </task>
-
-<output>
-  <format>JSON object with "checklist_with_code" array</format>
-  <schema>
-    IMPORTANT: Output MUST match the Phase 02c schema exactly.
-
-    {
-      "checklist_with_code": [
-        {
-          // Keep ALL original fields from input checklist item
-          "check_id": "string",
-          "property_id": "string",
-          "title": "string",
-          "severity": "string",
-          "reachability": {...},
-          "test_procedure": "string",
-          "expected_behavior": "string",
-          "graph_element_under_test": "string",
-          // ... all other original fields ...
-
-          // Add/update these fields:
-          "code_scope": {
-            "locations": [
-              {
-                "file": "string (relative path from workspace root, e.g., 'core/types/block.go')",
-                "symbol": "string (function/method/type name, e.g., 'ValidateRLPSize')",
-                "line_range": {
-                  "start": int,
-                  "end": int
-                },
-                "role": "primary" | "caller" | "callee" | "related"
-              }
-            ],
-            "resolution_status": "resolved" | "not_found" | "no_entry_points" | "error",
-            "resolution_error": "string (only if status=error, otherwise empty string)"
-          },
-          "code_excerpt": "string (formatted code excerpts with markers, or empty string)"
-        }
-      ]
-    }
-
-    Schema Requirements:
-    1. ALL original fields from input MUST be preserved
-    2. code_scope.locations is a list (may be empty if not_found)
-    3. code_scope.resolution_status is REQUIRED (one of: resolved, not_found, no_entry_points, error)
-    4. code_scope.resolution_error is REQUIRED (empty string if no error)
-    5. DO NOT add extra fields (e.g., no relevance_score, no entry_points_analyzed)
-    6. line_range.start and line_range.end are both required integers
-  </schema>
-  <stdout>Max 10 lines: batch size, resolution stats, status.</stdout>
-  <final_line>Output File: {{OUTPUT_FILE}}</final_line>
-</output>
