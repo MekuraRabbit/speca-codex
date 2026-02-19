@@ -1,3 +1,4 @@
+
 ---
 Description: "[WORKER] Perform inline adversarial 3-phase formal audit for a single checklist item (no skill fork)."
 Usage: "/03_auditmap_worker WORKER_ID=... QUEUE_FILE=... [TIMESTAMP=...] [ITERATION=...] [BATCH_SIZE=1] [OUTPUT_FILE=...]"

@@ -151,6 +151,40 @@ class TestPhaseConfig:
         assert cfg.max_total_retries == 20
         assert cfg.max_empty_results == 5
 
+    def test_mcp_servers_defaults(self):
+        """Phases without mcp_servers set should default to None (all servers)."""
+        cfg = PhaseConfig(
+            phase_id="test", name="test", description="test",
+            skill_path=Path("x"), prompt_path=Path("x"),
+            queue_pattern="", output_pattern="",
+        )
+        assert cfg.mcp_servers is None
+        assert cfg.tools_filter is None
+
+    def test_phase03_mcp_filtering(self):
+        """Phase 03 should have no MCP servers and a strict tools whitelist."""
+        cfg = PHASE_CONFIGS["03"]
+        assert cfg.mcp_servers == []
+        assert cfg.tools_filter == ["Read", "Write", "Grep", "Glob"]
+
+    def test_all_phases_have_mcp_servers_defined(self):
+        """Every phase should explicitly declare its mcp_servers."""
+        for phase_id, cfg in PHASE_CONFIGS.items():
+            assert cfg.mcp_servers is not None, (
+                f"Phase {phase_id} should have mcp_servers defined"
+            )
+
+    def test_phase_mcp_no_serena_or_semgrep(self):
+        """No phase should load serena or semgrep (interactive-only servers)."""
+        for phase_id, cfg in PHASE_CONFIGS.items():
+            if cfg.mcp_servers is not None:
+                assert "serena" not in cfg.mcp_servers, (
+                    f"Phase {phase_id} should not load serena"
+                )
+                assert "semgrep" not in cfg.mcp_servers, (
+                    f"Phase {phase_id} should not load semgrep"
+                )
+
 
 # =========================================================================
 # Enum tests
@@ -2145,6 +2179,62 @@ class TestClaudeRunnerCommand(unittest.TestCase):
         runner = ClaudeRunner(config, sem)
         cmd = runner._build_cmd("hello")
         assert "--model" not in cmd
+
+    def test_tools_filter_in_cmd(self):
+        """Phase 03 should pass --tools to restrict tool definitions."""
+        from orchestrator.runner import ClaudeRunner
+        from orchestrator.config import get_phase_config
+        config = get_phase_config("03")
+        sem = asyncio.Semaphore(1)
+        runner = ClaudeRunner(config, sem)
+        cmd = runner._build_cmd("hello")
+        assert "--tools" in cmd
+        tools_index = cmd.index("--tools")
+        assert cmd[tools_index + 1] == "Read,Write,Grep,Glob"
+
+    def test_no_tools_filter_when_none(self):
+        """Phases without tools_filter should not pass --tools."""
+        from orchestrator.runner import ClaudeRunner
+        from orchestrator.config import get_phase_config
+        config = get_phase_config("01a")
+        sem = asyncio.Semaphore(1)
+        runner = ClaudeRunner(config, sem)
+        cmd = runner._build_cmd("hello")
+        assert "--tools" not in cmd
+
+    def test_strict_mcp_config_in_cmd(self):
+        """Phases with mcp_servers defined should pass --strict-mcp-config."""
+        from orchestrator.runner import ClaudeRunner
+        from orchestrator.config import get_phase_config
+        config = get_phase_config("03")
+        sem = asyncio.Semaphore(1)
+        runner = ClaudeRunner(config, sem)
+        cmd = runner._build_cmd("hello")
+        assert "--strict-mcp-config" in cmd
+        assert "--mcp-config" in cmd
+
+    def test_phase_mcp_config_generation(self):
+        """_get_phase_mcp_config should create a filtered MCP config file."""
+        import json as _json
+        from orchestrator.runner import ClaudeRunner
+        from orchestrator.config import get_phase_config
+        config = get_phase_config("03")
+        sem = asyncio.Semaphore(1)
+        runner = ClaudeRunner(config, sem)
+        old_cwd = os.getcwd()
+        try:
+            os.chdir(Path(__file__).parent.parent)
+            config_path = runner._get_phase_mcp_config()
+            assert config_path.exists()
+            with open(config_path) as f:
+                data = _json.load(f)
+            # Phase 03 has mcp_servers=[] → empty mcpServers
+            assert data["mcpServers"] == {}
+        finally:
+            # Cleanup generated file
+            if config_path.exists():
+                config_path.unlink()
+            os.chdir(old_cwd)
 
 
 # =========================================================================

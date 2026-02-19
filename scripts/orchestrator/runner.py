@@ -706,6 +706,42 @@ class ClaudeRunner:
             env[key.upper()] = str(value)
         return env
 
+    def _get_phase_mcp_config(self) -> Path:
+        """Generate a filtered MCP config containing only the servers this phase needs.
+
+        Reads the project ``.mcp.json``, keeps only the servers listed in
+        ``self.config.mcp_servers``, and writes the result to a deterministic
+        path so it can be reused across workers of the same phase.
+        """
+        config_dir = Path("outputs/.mcp_configs")
+        config_dir.mkdir(parents=True, exist_ok=True)
+        config_path = config_dir / f"mcp_{self.config.phase_id}.json"
+
+        # Reuse if already generated (deterministic per phase)
+        if config_path.exists():
+            return config_path
+
+        base_mcp = Path(".mcp.json")
+        if base_mcp.exists():
+            with open(base_mcp) as f:
+                base_config = json.load(f)
+        else:
+            base_config = {"mcpServers": {}}
+
+        needed = set(self.config.mcp_servers or [])
+        filtered = {
+            "mcpServers": {
+                name: srv
+                for name, srv in base_config.get("mcpServers", {}).items()
+                if name in needed
+            }
+        }
+
+        with open(config_path, "w") as f:
+            json.dump(filtered, f, indent=2)
+
+        return config_path
+
     def _build_cmd(self, prompt_content: str) -> list[str]:
         """Build the Claude CLI command."""
         cmd = [
@@ -719,6 +755,13 @@ class ClaudeRunner:
             cmd.extend(["--model", self.config.model])
         if self.config.max_turns_per_batch:
             cmd.extend(["--max-turns", str(self.config.max_turns_per_batch)])
+        # Tool whitelist: restrict which tool definitions are sent to the API
+        if self.config.tools_filter is not None:
+            cmd.extend(["--tools", ",".join(self.config.tools_filter)])
+        # MCP server filtering: only start the servers this phase needs
+        if self.config.mcp_servers is not None:
+            mcp_config_path = self._get_phase_mcp_config()
+            cmd.extend(["--strict-mcp-config", "--mcp-config", str(mcp_config_path)])
         return cmd
 
     def _save_json(self, path: Path, data: Any) -> None:

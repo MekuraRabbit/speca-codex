@@ -93,6 +93,16 @@ class PhaseConfig(BaseModel):
     # batch log before the watcher recommends aborting.
     log_anomaly_threshold: int = 3
 
+    # ---- MCP / tool filtering ----
+    # Which MCP servers to load.  None = all servers from .mcp.json (default).
+    # Empty list = no MCP servers.  When set, the runner uses
+    # --strict-mcp-config to load only the listed servers.
+    mcp_servers: list[str] | None = None
+    # Built-in + MCP tool whitelist.  None = all available tools (default).
+    # When set, the runner passes --tools to restrict which tool definitions
+    # are sent to the API, reducing context token consumption.
+    tools_filter: list[str] | None = None
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def effective_result_id_field(self) -> str:
@@ -114,6 +124,7 @@ PHASE_CONFIGS: dict[str, PhaseConfig] = {
         batch_strategy="count",
         max_batch_size=1,
         item_id_field="url",
+        mcp_servers=["fetch"],
     ),
 
     "01b": PhaseConfig(
@@ -132,6 +143,7 @@ PHASE_CONFIGS: dict[str, PhaseConfig] = {
         result_id_field="source_url",
         result_key="specs",
         output_mode="directory",
+        mcp_servers=["fetch", "filesystem"],
     ),
 
     "01c": PhaseConfig(
@@ -147,6 +159,7 @@ PHASE_CONFIGS: dict[str, PhaseConfig] = {
         batch_strategy="count",
         max_batch_size=10,
         item_id_field="file_path",
+        mcp_servers=["filesystem"],
     ),
 
     "01d": PhaseConfig(
@@ -163,6 +176,7 @@ PHASE_CONFIGS: dict[str, PhaseConfig] = {
         max_batch_size=1,
         item_id_field="file_path",
         result_key="trust_model",
+        mcp_servers=["filesystem"],
     ),
 
     "01e": PhaseConfig(
@@ -179,6 +193,7 @@ PHASE_CONFIGS: dict[str, PhaseConfig] = {
         max_batch_size=1,
         item_id_field="property_id",
         result_key="properties",
+        mcp_servers=[],
     ),
 
     "02": PhaseConfig(
@@ -196,6 +211,7 @@ PHASE_CONFIGS: dict[str, PhaseConfig] = {
         item_id_field="property_id",
         result_id_field="property_id",
         result_key="checklist",
+        mcp_servers=[],
     ),
 
     "02c": PhaseConfig(
@@ -218,6 +234,7 @@ PHASE_CONFIGS: dict[str, PhaseConfig] = {
         max_total_retries=50,  # Increased - each tier may retry
         max_empty_results=20,  # Increased - out_of_scope items are valid results
         max_budget_usd=20.0,  # Moderate increase - Grep fallback reduces MCP costs
+        mcp_servers=["tree_sitter", "filesystem"],
     ),
 
     "03": PhaseConfig(
@@ -245,6 +262,8 @@ PHASE_CONFIGS: dict[str, PhaseConfig] = {
         log_anomaly_threshold=3,
         max_turns_per_batch=5,  # More turns for single-item inline audit
         max_cache_read_tokens=100_000,  # Reduced — single item needs less cache
+        mcp_servers=[],  # No MCP — inlined prompt uses Read/Grep/Glob only
+        tools_filter=["Read", "Write", "Grep", "Glob"],
     ),
 
     "04": PhaseConfig(
@@ -261,6 +280,7 @@ PHASE_CONFIGS: dict[str, PhaseConfig] = {
         max_batch_size=2,
         item_id_field="check_id",
         result_key="reviewed_items",
+        mcp_servers=["filesystem"],
     ),
 }
 
