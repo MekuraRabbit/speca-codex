@@ -490,6 +490,165 @@ print(f'Output tokens: {total_output:,}')
 
 ---
 
+## 7. RQ2 ベンチマーク: データセット取得とキャッシュの確認
+
+### 7.1 やったことの説明
+
+RQ2 ベンチマークでは「セキュリティツール（Semgrep、CodeQL など）がどれくらい脆弱性を検出できるか」を比較評価します。
+そのためにまずテスト用のデータセット（PrimeVul）をダウンロードする必要があります。
+
+この作業では以下の **3 つのこと** を行いました:
+
+#### (1) データセット取得スクリプトの動作確認
+`setup_benchmark.py` というスクリプトが、PrimeVul データセットを Hugging Face からダウンロードします。
+ローカルで実行し、ファイルが正しく取得されることを確認しました。
+
+```
+取得先 URL → ダウンロード → benchmarks/data/primevul/primevul_test_paired.jsonl に保存
+                          → ~/.cache/security-agent/benchmarks/primevul/ にもキャッシュ
+```
+
+#### (2) GitHub Actions ワークフロー 01（セットアップ）に「Artifact 保存」を追加
+GitHub Actions で CI を回すとき、ダウンロードしたデータセットを **Artifact**（GitHub が提供する一時ファイル保存機能）として 30 日間保存するようにしました。
+こうすると、次のワークフローでわざわざ再ダウンロードしなくて済みます。
+
+**変更ファイル:** `.github/workflows/benchmark-rq2-01-setup.yml`
+
+**追加したステップ:**
+- `Cache Dataset to Artifact` — データセットを GitHub Artifact にアップロード
+- `Cache to ~/.cache` — ランナーのローカルキャッシュにもコピー
+- Summary にアーティファクト名を表示（次のワークフローで使う Run ID がわかる）
+
+#### (3) GitHub Actions ワークフロー 02（ツール実行）に「Artifact ダウンロード」を追加
+ツール実行ワークフローが始まるとき、ワークフロー 01 で保存した Artifact からデータセットを取得します。
+Artifact が見つからない場合は `~/.cache` から復元するフォールバック機能も追加しました。
+
+**変更ファイル:** `.github/workflows/benchmark-rq2-02-tools.yml`
+
+**追加したもの:**
+- `dataset_run_id` 入力パラメータ — ワークフロー 01 の Run ID を指定
+- `Download Dataset Artifact` ステップ — Artifact からデータセットをダウンロード
+- `Fallback to ~/.cache` ステップ — Artifact が無い場合のフォールバック
+
+```
+ワークフロー全体の流れ:
+
+  [01-setup] データセットDL → Git push → Artifact保存 → ~/.cache保存
+                                              ↓
+  [02-tools] Artifactダウンロード（or ~/.cache復元）→ ツール実行 → 結果push
+                                              ↓
+  [03-evaluate] 結果を集計・評価
+```
+
+---
+
+### 7.2 ローカルでの手動検証手順
+
+#### ステップ 1: データセット取得スクリプトの動作確認
+
+```bash
+cd /path/to/security-agent
+uv sync --python 3.11
+uv run python benchmarks/datasets/builders/setup_benchmark.py
+```
+
+**確認コマンド:**
+
+```bash
+# ファイルが存在するか
+ls -la benchmarks/data/primevul/primevul_test_paired.jsonl
+
+# 行数の確認（数百行以上あれば正常）
+wc -l benchmarks/data/primevul/primevul_test_paired.jsonl
+
+# JSONL 形式として先頭行が読めるか
+head -n 1 benchmarks/data/primevul/primevul_test_paired.jsonl | python3 -m json.tool
+
+# キャッシュにもコピーされているか
+ls -la ~/.cache/security-agent/benchmarks/primevul/primevul_test_paired.jsonl
+```
+
+**期待される結果:**
+
+| # | 確認内容 | 期待値 |
+|---|---------|--------|
+| 1 | ファイルが存在する | `primevul_test_paired.jsonl` がある |
+| 2 | ファイルサイズ | 5MB 以上（小さすぎるとエラーページの可能性） |
+| 3 | 行数 | 870 行 |
+| 4 | JSONL 形式 | `head -n 1` が valid JSON として表示される |
+| 5 | キャッシュ | `~/.cache/...` にも同じファイルがある |
+
+#### ステップ 2: ワークフロー YAML の変更確認
+
+```bash
+# 変更差分を確認
+git diff HEAD~1 -- .github/workflows/benchmark-rq2-01-setup.yml
+git diff HEAD~1 -- .github/workflows/benchmark-rq2-02-tools.yml
+```
+
+**01-setup.yml の確認ポイント:**
+
+| # | 確認内容 | 確認方法 |
+|---|---------|---------|
+| 1 | `Cache Dataset to Artifact` ステップがある | `grep "Cache Dataset to Artifact" .github/workflows/benchmark-rq2-01-setup.yml` |
+| 2 | `actions/upload-artifact@v4` を使っている | `grep "upload-artifact" .github/workflows/benchmark-rq2-01-setup.yml` |
+| 3 | 保持期間が 30 日 | `grep "retention-days: 30" .github/workflows/benchmark-rq2-01-setup.yml` |
+| 4 | `Cache to ~/.cache` ステップがある | `grep "Cache to" .github/workflows/benchmark-rq2-01-setup.yml` |
+| 5 | Summary にアーティファクト名が表示される | `grep "Dataset artifact" .github/workflows/benchmark-rq2-01-setup.yml` |
+
+**02-tools.yml の確認ポイント:**
+
+| # | 確認内容 | 確認方法 |
+|---|---------|---------|
+| 1 | `dataset_run_id` 入力パラメータがある | `grep "dataset_run_id" .github/workflows/benchmark-rq2-02-tools.yml` |
+| 2 | `Download Dataset Artifact` ステップがある | `grep "Download Dataset Artifact" .github/workflows/benchmark-rq2-02-tools.yml` |
+| 3 | `continue-on-error: true` が設定されている | Artifact が無くてもエラーにならない |
+| 4 | `Fallback to ~/.cache` ステップがある | `grep "Fallback" .github/workflows/benchmark-rq2-02-tools.yml` |
+| 5 | Verify Dataset がフォールバックの後にある | ダウンロード → フォールバック → 検証 の順序 |
+
+#### ステップ 3: ワークフローのステップ順序確認
+
+```bash
+# 01-setup のステップ一覧（順序確認）
+grep "name:" .github/workflows/benchmark-rq2-01-setup.yml
+```
+
+期待される順序:
+```
+1. Checkout Repository
+2. Validate Dataset Selection
+3. Setup Python (uv)
+4. Fetch CVEfixes Cache (optional)
+5. Fetch Vul4J Cache (optional)
+6. Prepare Git & Branch
+7. Download Benchmark Dataset
+8. Prepare CVEfixes Subset
+9. Prepare Vul4J Dataset
+10. Push Dataset
+11. Cache Dataset to Artifact     ← 追加
+12. Cache to ~/.cache             ← 追加
+13. Summary                       ← アーティファクト名追加
+```
+
+```bash
+# 02-tools のステップ一覧（順序確認）
+grep "name:" .github/workflows/benchmark-rq2-02-tools.yml
+```
+
+期待される順序:
+```
+1. Checkout Branch
+2. Validate Dataset Selection
+3. Resolve Dataset Paths
+4. Download Dataset Artifact      ← 追加
+5. Fallback to ~/.cache           ← 追加
+6. Verify Dataset
+7. Setup Python (uv)
+8. ... (ツール実行ステップ)
+```
+
+---
+
 ## チェックリスト: 全フェーズ完了確認
 
 ```
@@ -506,4 +665,7 @@ print(f'Output tokens: {total_output:,}')
 [ ] Phase 04:  レビュー verdict 付与・最終判定確認
 [ ] フェーズ間 ID 整合性チェック OK
 [ ] ログにサーキットブレーカー/予算超過エラーなし
+[ ] RQ2: setup_benchmark.py で primevul_test_paired.jsonl 取得成功（870行）
+[ ] RQ2: 01-setup.yml に Artifact 保存ステップがある
+[ ] RQ2: 02-tools.yml に Artifact ダウンロード + フォールバックがある
 ```
