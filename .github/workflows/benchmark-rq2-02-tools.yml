@@ -266,18 +266,6 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-      - name: Push Results
-        if: always()
-        run: |
-          git config --local user.name "Security Agent Bot"
-          git config --local user.email "bot@nyxfoundation.org"
-          git add benchmarks/results/
-          if ! git diff --staged --quiet; then
-            git commit -m "benchmark: tool results (${{ inputs.dataset }}, ${{ inputs.tools }})"
-            git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-            git push origin "${{ inputs.branch }}" --force-with-lease
-          fi
-
       - name: Summary
         run: |
           echo "## RQ2 Benchmark 02: Tool Results" >> $GITHUB_STEP_SUMMARY

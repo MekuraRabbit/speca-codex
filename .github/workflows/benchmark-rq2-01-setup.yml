@@ -87,16 +87,6 @@ jobs:
         run: |
           uv run python benchmarks/datasets/builders/setup_vul4j_from_jsonl.py
 
-      - name: Push Dataset
-        if: always()
-        run: |
-          git add benchmarks/data/
-          if ! git diff --staged --quiet; then
-            git commit -m "benchmark: dataset setup (${{ inputs.dataset }})"
-            git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-            git push origin "${{ steps.git_config.outputs.branch }}" --force-with-lease
-          fi
-
       - name: Cache Dataset to Artifact
         if: always()
         uses: actions/upload-artifact@v4
