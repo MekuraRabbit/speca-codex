@@ -63,8 +63,7 @@ jobs:
       - name: Clean workspace (fix Docker root-owned files)
         run: |
           if [ -d "${{ github.workspace }}" ]; then
-            sudo find "${{ github.workspace }}" -type f -not -writable -delete 2>/dev/null || true
-            sudo find "${{ github.workspace }}" -type d -not -writable -exec rm -rf {} + 2>/dev/null || true
+            sudo chown -R "$(id -u):$(id -g)" "${{ github.workspace }}" 2>/dev/null || true
           fi
 
       - name: Checkout Branch
