@@ -29,12 +29,6 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-      - name: Clean workspace (fix Docker root-owned files)
-        run: |
-          if [ -d "${{ github.workspace }}" ]; then
-            sudo chown -R "$(id -u):$(id -g)" "${{ github.workspace }}" 2>/dev/null || true
-          fi
-
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
