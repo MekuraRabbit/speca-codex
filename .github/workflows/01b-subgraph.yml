@@ -86,7 +86,7 @@ jobs:
           if ! git diff --staged --quiet; then
             git add outputs/logs/
             git commit -m "01b: extraction"
-            git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+            git config --local http.https://github.com/.extraheader "Authorization: bearer ${GH_TOKEN}"
             git push origin "${{ inputs.branch }}" --force-with-lease
           fi
         env:
