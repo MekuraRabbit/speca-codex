@@ -214,7 +214,7 @@ class BaseOrchestrator(ABC):
         total_results = len(early_exit_results) + len(self.results)
 
         # Step 6: Print statistics
-        self._print_run_statistics(duration, total_results)
+        await self._print_run_statistics(duration, total_results)
         
         # Step 7: Report failures
         if self._budget_exceeded:
@@ -245,9 +245,9 @@ class BaseOrchestrator(ABC):
         print(f"\n✅ Phase {self.config.phase_id} completed in {duration:.1f}s")
         print(f"   Total results: {total_results}")
 
-    def _print_run_statistics(self, duration: float, total_results: int) -> None:
+    async def _print_run_statistics(self, duration: float, total_results: int) -> None:
         """Print circuit breaker and validation statistics."""
-        cb_stats = self.circuit_breaker.get_stats()
+        cb_stats = await self.circuit_breaker.get_stats()
         val_stats = self.collector.get_validation_summary()
 
         print(f"\n{'─'*40}")

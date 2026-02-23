@@ -1,0 +1,4 @@
+# Security-critical paths require review from security team
+/.github/workflows/ @NyxFoundation/security-team
+/scripts/orchestrator/ @NyxFoundation/security-team
+/benchmarks/runners/ @NyxFoundation/security-team
