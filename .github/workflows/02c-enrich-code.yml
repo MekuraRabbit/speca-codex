@@ -268,7 +268,7 @@ jobs:
           if ! git diff --staged --quiet; then
             git add outputs/logs/
             git commit -m "02c: code pre-resolution for ${{ env.TARGET_REPO }}@${{ steps.target_info.outputs.short_sha }} (from ${{ github.ref_name }})"
-            git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+            git config --local http.https://github.com/.extraheader "Authorization: bearer ${GH_TOKEN}"
             git push origin "${{ steps.audit_branch.outputs.branch_name }}" --force-with-lease
           fi
 

@@ -18,6 +18,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 import time
 from pathlib import Path
 from typing import Any
@@ -797,12 +798,16 @@ class ClaudeRunner:
         Reads the project ``.mcp.json``, keeps only the servers listed in
         ``self.config.mcp_servers``, and writes the result to a deterministic
         path so it can be reused across workers of the same phase.
+
+        Uses atomic write (tempfile + os.replace) to avoid TOCTOU races
+        when multiple workers start concurrently.
         """
         config_dir = Path("outputs/.mcp_configs")
         config_dir.mkdir(parents=True, exist_ok=True)
         config_path = config_dir / f"mcp_{self.config.phase_id}.json"
 
-        # Reuse if already generated (deterministic per phase)
+        # Reuse if already generated (deterministic per phase).
+        # Safe because the file is always written atomically via os.replace().
         if config_path.exists():
             return config_path
 
@@ -822,8 +827,21 @@ class ClaudeRunner:
             }
         }
 
-        with open(config_path, "w") as f:
-            json.dump(filtered, f, indent=2)
+        # Atomic write: write to temp file then rename to avoid partial reads
+        fd, tmp_path = tempfile.mkstemp(
+            dir=str(config_dir), suffix=".json.tmp"
+        )
+        try:
+            with os.fdopen(fd, "w") as f:
+                json.dump(filtered, f, indent=2)
+            os.replace(tmp_path, str(config_path))
+        except BaseException:
+            # Clean up temp file on failure
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+            raise
 
         return config_path
 
