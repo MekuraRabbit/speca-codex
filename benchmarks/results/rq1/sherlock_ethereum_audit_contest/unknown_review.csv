@@ -9,11 +9,6 @@ PROP-5a6a79d5-inv-008,alloy-rs/evm,a3ee030baf,vulnerability,"Code: crates/evm/sr
 Proof: Block executor validates regular gas limit (L119-127) but completely omits blob gas limit validation. Blob gas is accumulated (L152-154) without any check against MAX_BLOB_GAS_PER_BLOCK, allowing blocks to exceed consensus-mandated blob gas limits.
 
 Attack: Attacker submits multiple blob transactions whose cumulative blob gas exceeds MAX_BLOB_GAS_PER_BLOCK. Block executor accepts all transactions, producing an invalid block that violates consensus rules and will be rejected by other nodes.",
-PROP-57888860-inv-053,ethereum/c-kzg-4844,0aa3a1aa0f,vulnerability,"Code: src/eip7594/eip7594.c::verify_cell_kzg_proof_batch::L802-951
-
-Proof: Proof fails: validate_kzg_g1 (bytes.c:90) explicitly accepts point-at-infinity commitments without rejection. No additional infinity check exists before line 910 aggregation. Point-at-infinity contributes zero to weighted sum but corresponding proof remains in equation, creating exploitable imbalance in pairing verification.
-
-Attack: Attacker sends P2P data availability sample with commitment=0xc00000...(infinity) plus arbitrary cell data and proof. Batch verification accepts the infinity commitment (bytes.c:90), aggregates it into random linear combination where it contributes zero, while weighted proof remains. Invalid cell data passes verification because commitment term vanishes from pairing equation.",
 PROP-6a4369e9-inv-037,ethereum/c-kzg-4844,0aa3a1aa0f,potential-vulnerability,"Code: src/eip7594/eip7594.c::verify_cell_kzg_proof_batch::L802-952
 
 Proof: The C function does not validate that input arrays (commitments_bytes, cell_indices, cells, proofs_bytes) actually have num_cells elements. Lines 838-840, 858, and 894-896 index/copy arrays assuming this length, causing out-of-bounds reads if a caller passes mismatched lengths. All examined language bindings (Go:548, Node.js:877-879, Python:637-650, Java:683-701, Rust:528-548) validate before calling, but a direct C/C++ caller or incorrect FFI usage could bypass validation.
@@ -24,11 +19,6 @@ PROP-57888860-post-001,ethereum/c-kzg-4844,0aa3a1aa0f,vulnerability,"Code: src/e
 Proof: The recovered polynomial coefficients are not validated to have degree < FIELD_ELEMENTS_PER_BLOB. While the encoding side (eip7594.c:94-96) asserts the upper half coefficients are zero, recover_cells computes a full FIELD_ELEMENTS_PER_EXT_BLOB coefficient array via coset_ifft without verifying coefficients [FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_EXT_BLOB) equal zero, violating the stated post-condition and erasure coding assumption.
 
 Attack: An attacker crafts malicious cells that produce a recovered polynomial with non-zero coefficients in the upper half. When recover_cells_and_kzg_proofs recomputes proofs (eip7594.c:264), compute_fk20_cell_proofs expects only FIELD_ELEMENTS_PER_BLOB coefficients but receives incorrect data, producing invalid proofs that could bypass downstream validation or cause state inconsistencies.",
-PROP-6a4369e9-asm-002,grandinetech/grandine,f1d757971d,potential-vulnerability,"Code: eth1_api/src/auth.rs::Auth::headers::L96-98
-
-Proof: JWT authentication is optional: auth.headers() returns Ok(None) when no jwt_secret is configured (auth.rs:96-98), yet Engine API calls proceed without authentication. Blobs from unauthenticated EL connections are marked ExecutionLayer origin and skip KZG verification (store.rs:2185-2200). Misconfiguration enables spoofed EL to inject unverified blobs.
-
-Attack: Operator starts Grandine without --jwt-secret flag. Attacker performs MITM or DNS poisoning on localhost EL connection, serves malicious blobs via engine_getBlobsV1. Blobs skip cryptographic verification and are accepted into fork choice.",
 PROP-57888860-pre-003,grandinetech/grandine,f1d757971d,potential-vulnerability,"Code: operation_pools/src/blob_reconstruction_pool/tasks.rs::ReconstructDataColumnSidecarsTask::run::L42-64
 
 Proof: Column-level 50% threshold check (≥64/128 columns) does not guarantee per-blob 50% threshold. When columns contain different subsets of blobs, individual blobs may have <50% cells available even when total column count is sufficient, causing KZG recovery to fail or produce incorrect results.
@@ -39,41 +29,16 @@ PROP-56ad1eb2-inv-005,grandinetech/grandine,f1d757971d,vulnerability,"Code: help
 Proof: Line 148 uses blob_entry.epoch (the schedule entry's activation epoch) instead of the current epoch parameter when computing the blob params hash. This makes fork digest constant across all epochs within the same blob schedule period, violating the epoch-dependent property. Nodes with different blob schedule activation epochs but identical current blob limits will compute different digests despite having identical network state.
 
 Attack: Attacker deploys nodes with blob schedule configured at different activation epochs (e.g., epoch 100 vs 200) but same max_blobs value. At epoch 300, both node sets are in identical state but compute different fork digests (hash(100||15) vs hash(200||15)). This causes P2P topic subscription mismatch and network partition between otherwise-compatible nodes.",
-PROP-6a4369e9-pre-008,grandinetech/grandine,f1d757971d,vulnerability,"Code: p2p/src/network.rs::handle_data_columns_by_range_request::L1395-1410
-
-Proof: The handler rejects out-of-range requests with RpcErrorResponse::InvalidRequest (error code 1) at L1402-1408, but the Ethereum consensus spec mandates RESOURCE_UNAVAILABLE (error code 3) for requests outside the data_column_serve_range. InvalidRequest is reserved for malformed requests, not unavailable data.
-
-Attack: A peer requesting data columns outside the serve range receives InvalidRequest instead of ResourceUnavailable, violating spec compliance and potentially causing interoperability issues where spec-compliant peers may ban or deprioritize this node for incorrect error responses.",
-PROP-57888860-inv-032,grandinetech/grandine,f1d757971d,vulnerability,"Code: fork_choice_control/src/mutator.rs::try_spawn_persist_data_columns_task::L486-490
-
-Proof: Cache prunes data columns after only 2 slots (DATA_COLUMN_RETAIN_DURATION_IN_SLOTS=2) instead of the required 131,072 slots (MIN_EPOCHS_FOR_DATA_COLUMN_SIDECARS_REQUESTS=4096 epochs). This 65,536x discrepancy causes premature eviction of data that must be served to peers.
-
-Attack: Peer requests data columns for slot current_slot-100 (valid per MIN_EPOCHS). P2P handler validates request as legitimate, but cache has already pruned entries older than 2 slots. Node fails to serve valid historical data, violating protocol availability requirements.",
-PROP-6a4369e9-inv-010,sigp/lighthouse,b8178515cd,vulnerability,"Code: beacon_node/beacon_chain/src/data_column_verification.rs::verify_data_column_sidecar::L532-561
-
-Proof: Validation exists but is only enforced on gossip path (L480). RPC paths (DataColumnsByRoot/ByRange at lighthouse_network/src/rpc/codec.rs:696,717) and database loads (store/src/hot_cold_store.rs:2529,3252) bypass the guard, allowing mismatched array lengths.
-
-Attack: Malicious peer sends RPC response with column.len()≠kzg_commitments.len()≠kzg_proofs.len(). Deserialization succeeds, validation is skipped, KZG verification accesses wrong indices causing out-of-bounds panic or incorrect proof validation.",
 PROP-6a4369e9-inv-011,sigp/lighthouse,b8178515cd,vulnerability,"Code: beacon_node/beacon_chain/src/data_column_verification.rs::verify_data_column_sidecar::L538-540
 
 Proof: The empty kzg_commitments check at L538-540 is enforced only in gossip and block publishing paths. RPC-received data columns bypass verify_data_column_sidecar entirely, going directly to KZG verification in data_availability_checker.rs:446, which accepts empty commitment lists.
 
 Attack: Attacker sends DataColumnSidecar with empty kzg_commitments via RPC DataColumnsByRange/DataColumnsByRoot request. Bypasses structural validation, passes KZG batch verification (empty list valid), and gets imported into availability cache with semantically invalid state.",
-PROP-6a4369e9-post-003,sigp/lighthouse,b8178515cd,vulnerability,"Code: beacon_node/beacon_chain/src/data_column_verification.rs::new_for_block_publishing::L221-250
-
-Proof: Columns from EL (engine_getBlobs) bypass gossip verification via new_for_block_publishing, which skips signature, parent, inclusion proof, and KZG verification, yet are treated as gossip-verified when passed to process_gossip_data_columns. Malicious local EL can inject invalid columns that bypass all consensus validation.
-
-Attack: Compromised local EL returns crafted columns via engine_getBlobs with invalid signatures/proofs. These bypass gossip checks via new_for_block_publishing (L221-250), get published to network via publish_column_sidecars, and propagated as valid. Network peers reject them after full verification, causing failed block import and potential slashing.",
 PROP-6a4369e9-inv-036,sigp/lighthouse,b8178515cd,vulnerability,"Code: beacon_node/http_api/src/publish_blocks.rs::publish_column_sidecars::L522-529
 
 Proof: publish_column_sidecars() publishes data columns to all computed subnets without validating against the node's sampling_subnets. The subnet is derived from column index (L525) and published directly (L529) with no check that subnet ∈ network_globals.sampling_subnets, violating PeerDAS custody requirements.
 
 Attack: A block producer publishes all 128 data columns. The node publishes to all 128 subnets even though it's only subscribed to ~8 custody subnets, violating the PeerDAS spec and enabling network pollution/DOS through unsubscribed subnet publishing.",
-PROP-57888860-asm-003,sigp/lighthouse,b8178515cd,vulnerability,"Code: beacon_node/beacon_chain/src/fetch_blobs/mod.rs::build_blob_sidecars::L434-437
-
-Proof: Blobs from EL are wrapped with KzgVerifiedBlob::from_execution_verified() which skips KZG proof verification entirely. Same issue in v2 path where blobs_to_data_column_sidecars uses EL-provided proofs without validation before propagation.
-
-Attack: Malicious or compromised EL sends invalid blob-commitment pairs. CL accepts them without verification, propagates to network, causing consensus splits when honest nodes reject invalid blobs.",
 PROP-6a4369e9-inv-026,sigp/lighthouse,b8178515cd,vulnerability,"Code: beacon_node/network/src/network_beacon_processor/rpc_methods.rs::handle_data_columns_by_root_request_inner::L408-460
 
 Proof: Data columns are added to cache during KZG verification (block_verification.rs:1324-1332) BEFORE state transition validation (per_block_processing at L1614-1629). When blocks fail state transition, their columns remain in cache. RPC handler serves cached columns without checking if the block passed state transition, violating the invariant.
@@ -89,26 +54,6 @@ PROP-56ad1eb2-inv-014,sigp/lighthouse,b8178515cd,vulnerability,"Code: consensus/
 Proof: BlobSchedule deserialization and construction lack validation that max_blobs_per_block <= MAX_BLOB_COMMITMENTS_PER_BLOCK (4096). Config entries can specify arbitrary values (e.g., 5000) which are accepted without bounds checking, creating type-safety violations and potential consensus splits.
 
 Attack: Attacker provides ChainSpec config with BLOB_SCHEDULE entry containing max_blobs_per_block=5000. Nodes load config successfully, then accept blocks with 4500 blob commitments (passing runtime check at block_verification.rs:885) but violating SSZ VariableList constraints, causing divergent validation behavior.",
-PROP-6a4369e9-inv-013,sigp/lighthouse,b8178515cd,vulnerability,"Code: beacon_node/beacon_chain/src/data_availability_checker.rs::put_rpc_custody_columns::L240-267
-
-Proof: RPC-imported columns bypass observed_column_sidecars cache. Gossip path calls observe_gossip_data_column (L521 data_column_verification.rs) which updates the cache, but put_rpc_custody_columns only updates observed_slashable. A proposer can publish conflicting columns: column A via gossip gets observed, then column B (different data, same slot/index/proposer) via RPC passes all checks because observed_column_sidecars is never consulted on the RPC path.
-
-Attack: Attacker proposes block B with data column C1 and publishes C1 via gossip (gets cached in observed_column_sidecars). Attacker then serves conflicting column C2 (same index, different data, same signature) via RPC to specific peers. RPC path imports C2 without checking observed_column_sidecars, allowing two contradictory columns for the same (slot, proposer, index) tuple to coexist across the network.",
-PROP-6a4369e9-asm-001,sigp/lighthouse,b8178515cd,vulnerability,"Code: beacon_node/beacon_chain/src/data_availability_checker.rs::verify_kzg_for_rpc_blocks::L434-448
-
-Proof: RPC/sync data columns from untrusted P2P peers bypass full validation. Gossip path enforces signature verification, proposer checks, and inclusion proofs (L479-508), but RPC custody columns receive only KZG validation (L446), skipping all cryptographic authenticity checks.
-
-Attack: Attacker responds to DataColumnsByRange with columns having valid KZG proofs but forged signatures or invalid merkle proofs. Columns pass KZG check (L446), get marked available (L467-475), and could be reconstructed or propagated without detecting the forgery.",
-PROP-6a4369e9-inv-028,sigp/lighthouse,b8178515cd,vulnerability,"Code: beacon_node/lighthouse_network/src/rpc/protocol.rs::currently_supported::L396-401
-
-Proof: BlobsByRange protocol remains in supported_protocols list forever (conditional only on Deneb fork existence, not epoch). No code rejects requests after FULU_FORK_EPOCH + MIN_EPOCHS. Handler only validates availability boundary for pruning, not deprecation.
-
-Attack: After FULU activation + MIN_EPOCHS, attacker sends BlobsByRange requests to force nodes to serve deprecated blob data instead of data columns, bypassing PeerDAS migration and enabling resource exhaustion via dual serving obligations.",
-PROP-6a4369e9-inv-039,sigp/lighthouse,b8178515cd,potential-vulnerability,"Code: beacon_node/network/src/network_beacon_processor/gossip_methods.rs::process_gossip_data_column_sidecar::L745-765
-
-Proof: IGNORE validation prevents forwarding (correct) but lacks explicit re-processing queue. Messages with FutureSlot/PastFinalizedSlot errors return IGNORE without application-level re-queuing, unlike ParentUnknown which explicitly queues for sync. Proof fails on reprocessability guarantee.
-
-Attack: Attacker sends data columns just outside clock disparity window. Node returns IGNORE (no forward, correct) but never re-processes when slot becomes valid, causing availability failures if those columns are needed for reconstruction.",
 PROP-57888860-inv-028,sigp/lighthouse,b8178515cd,potential-vulnerability,"Code: beacon_node/beacon_chain/src/data_column_verification.rs::verify_data_column_sidecar::L532-561
 
 Proof: Gossip validation checks index bounds (<NUMBER_OF_COLUMNS) but does not verify index matches positional column_index in iteration. An attacker can send sidecars with swapped indices (e.g., index=5 at position 0), passing validation but violating the invariant that downstream code assumes.
@@ -119,51 +64,11 @@ PROP-6a4369e9-inv-008,sigp/lighthouse,b8178515cd,potential-vulnerability,"Code: 
 Proof: Gossip path validates index range before KZG verification (L480→L535). RPC path performs KZG verification without index validation (L247-249), then silently filters invalid indices (L261). This allows attackers to force expensive KZG operations on invalid data without penalty.
 
 Attack: Malicious peer sends DataColumnsByRoot responses with index >= 128. Node performs costly KZG verification before filtering. Attacker repeats to exhaust CPU resources. No peer penalty applied since validation succeeds but columns are silently dropped.",
-PROP-6a4369e9-inv-013,ChainSafe/lodestar,598c1ec54e,vulnerability,"Code: packages/beacon-node/src/chain/validation/dataColumnSidecar.ts::validateGossipDataColumnSidecar::L178-180
-
-Proof: The anti-equivocation check (spec requirement #12) is delegated to seenGossipBlockInput which keys by blockRootHex. Two equivocating columns (same slot, proposer, index but different content/signatures) have different blockRootHex values, so both pass validation. Unlike block validation which uses seenBlockProposers keyed by (slot, proposer), columns lack per-(slot, proposer, index) deduplication.
-
-Attack: Malicious proposer sends two DataColumnSidecars for (slot=N, proposer=V, index=I) with different content and valid signatures. Both are accepted and stored under different blockRootHex keys, enabling equivocation attacks.",
 PROP-6a4369e9-post-002,ChainSafe/lodestar,598c1ec54e,vulnerability,"Code: packages/beacon-node/src/chain/validation/dataColumnSidecar.ts::validateGossipDataColumnSidecar::L23-181
 
 Proof: Validation checks execute in wrong order: expensive getBlockSlotState (check 7, line 101) runs before cheap signature verification (check 5, line 129). Spec mandates check 5 before check 7 to minimize wasted work on invalid messages.
 
 Attack: Attacker floods P2P network with data column sidecars having valid headers but invalid proposer signatures. Each message triggers expensive state lookups before rejection, exhausting node resources and degrading network performance.",
-PROP-6a4369e9-pre-008,ChainSafe/lodestar,598c1ec54e,vulnerability,"Code: packages/beacon-node/src/network/reqresp/handlers/dataColumnSidecarsByRange.ts::validateDataColumnSidecarsByRangeRequest::L124-144
-
-Proof: The validateDataColumnSidecarsByRangeRequest function lacks epoch range validation against MIN_EPOCHS_FOR_DATA_COLUMN_SIDECARS_REQUESTS (confirmed by TODO at line 134). The parallel byRoot handler implements this check (lines 18-23), but byRange does not, allowing requests for slots older than the serve window to be processed instead of rejected with RESOURCE_UNAVAILABLE.
-
-Attack: Attacker sends P2P DataColumnSidecarsByRange request with startSlot from epoch older than currentEpoch - 4096. Handler processes request instead of rejecting, causing unnecessary DB queries and violating spec requirement that peers MUST support only the serve range window.",
-PROP-6a4369e9-inv-027,ChainSafe/lodestar,598c1ec54e,vulnerability,"Code: packages/beacon-node/src/network/reqresp/handlers/dataColumnSidecarsByRange.ts::validateDataColumnSidecarsByRangeRequest::L124-144
-
-Proof: The validation function is missing the required epoch range check: max(current_epoch - MIN_EPOCHS_FOR_DATA_COLUMN_SIDECARS_REQUESTS, FULU_FORK_EPOCH). Only GENESIS_SLOT is validated (L135). The TODO comment at L134 confirms this is unimplemented, while dataColumnSidecarsByRoot correctly implements this check at L18-23.
-
-Attack: Attacker sends DataColumnSidecarsByRangeRequest with startSlot from epochs before max(current_epoch - 4096, FULU_FORK_EPOCH), bypassing validation. Node wastes resources attempting to serve data columns from epochs it's not required to retain, or serves incorrect partial data.",
-PROP-1ada093f-inv-041,NethermindEth/nethermind,7d34bdd47a,vulnerability,"Code: src/Nethermind/Nethermind.Serialization.Rlp/Rlp.cs::DecodeArrayPool::L230-241
-
-Proof: DecodeArrayPool lacks per-item exception isolation; one malformed blob tx throws RlpException which propagates through ProtocolHandlerBase.Deserialize (re-throws at L54), causing entire TransactionsMessage batch to fail and peer disconnect at ZeroNettyP2PHandler.ExceptionCaught L129-133.
-
-Attack: Attacker sends TransactionsMessage containing 99 valid txs plus 1 blob tx with malformed RLP blob wrapper; DecodeByteArrays throws RlpException on invalid sequence prefix, batch decode fails mid-loop, all 99 valid txs are lost, peer is disconnected with DisconnectReason.Exception.",
-PROP-aa9e39fd-inv-008,NethermindEth/nethermind,7d34bdd47a,potential-vulnerability,"Code: src/Nethermind/Nethermind.TxPool/Filters/MalformedTxFilter.cs::Accept::L21-22
-
-Proof: TxPool and BlockValidator share the same TxValidator singleton that enforces Eip7825Constants.DefaultTxGasLimitCap (16,777,216). However, TxPool uses GetCurrentHeadSpec() while BlockValidator uses GetSpec(block.Header), creating a race window during fork activation where TxPool may accept transactions under the old spec that BlockValidator rejects under the new spec.
-
-Attack: During EIP-7825 fork activation at block N, submit transaction with gasLimit=20M. TxPool accepts it (old spec, cap=MaxValue), peers broadcast it, but block producers reject it when building block N (new spec, cap=16,777,216). This creates mempool pollution and wastes network bandwidth on un-mineable transactions.",
-PROP-aa9e39fd-pre-002,NethermindEth/nethermind,7d34bdd47a,vulnerability,"Code: src/Nethermind/Nethermind.Consensus/Processing/BlockProcessor.cs::ProcessOne::L56-70
-
-Proof: Block transactions execute before gas cap validation. BlockProcessor.ProcessOne calls ProcessBlock (L62) which executes transactions (L106) without invoking ValidateSuggestedBlock. Gas cap validator (GasLimitCapTxValidator.IsWellFormed) exists but is only called in ValidateSuggestedBlock, which is never invoked before execution in the main processing pipeline.
-
-Attack: Attacker constructs block with transactions exceeding EIP-7825 gas cap and propagates via P2P. BlockchainProcessor enqueues block, BranchProcessor calls BlockProcessor.ProcessOne which executes all transactions before any validation, consuming excessive gas and enabling DoS.",
-PROP-6a4369e9-inv-036,status-im/nimbus-eth2,da9305a984,potential-vulnerability,"Code: beacon_chain/validators/message_router.nim::routeSignedBeaconBlock::L161-167
-
-Proof: Node subscribes only to custody group subnets (~8-16 of 128 total) via nimbus_beacon_node.nim:1350-1352, but when proposing broadcasts ALL 128 data columns to their respective subnets. This violates gossipsub protocol requirement to subscribe before publishing.
-
-Attack: Proposer nodes attempt to publish to unsubscribed topics causing libp2p errors, failed message delivery, or peer reputation degradation. Not externally exploitable but causes operational failures.",
-PROP-57888860-asm-003,OffchainLabs/prysm,238d5c07df,vulnerability,"Code: beacon-chain/execution/engine_client.go::ReconstructBlobSidecars::L641
-
-Proof: ELMemPoolRequirements is empty (verification/blob.go:77), so KZG proof verification (RequireSidecarKzgProofVerified) is skipped. GetBlobsV2 path (L714) bypasses verification entirely via NewVerifiedRODataColumn. Trust assumption contradicts semi-trusted property requirement.
-
-Attack: Compromised EL sends blobs with invalid KZG proofs via GetBlobsV1/V2. CL accepts without cryptographic verification and propagates them as verified, corrupting network consensus with invalid blob data.",
 PROP-6a4369e9-inv-025,OffchainLabs/prysm,238d5c07df,potential-vulnerability,"Code: beacon-chain/sync/rpc_data_column_sidecars_by_root.go::dataColumnSidecarByRootRPCHandler::L123
 
 Proof: Storage contains data columns verified via RPC by_root (ByRootRequestDataColumnSidecarRequirements: 3 checks) mixed with gossip-validated columns (GossipDataColumnSidecarRequirements: 12 checks). RPC by_root handler serves from storage without re-validating gossip requirements, potentially serving columns for blocks that fail proposer signature, parent validity, or finality checks.
@@ -179,36 +84,16 @@ PROP-6a4369e9-inv-026,OffchainLabs/prysm,238d5c07df,vulnerability,"Code: beacon-
 Proof: The RPC handler serves data columns directly from storage without verifying their parent block passed state transition. Data columns are saved asynchronously (subscriber_beacon_blocks.go:40) before block validation completes (L42). The storage retrieval at L123 has no state transition check.
 
 Attack: Attacker proposes a block with invalid state transition. The execution-side data column reconstruction (processDataColumnSidecarsFromExecution) runs async and saves columns to storage before ReceiveBlock validation fails. Peers requesting via DataColumnSidecarsByRoot RPC receive invalid sidecars during the race window.",
-PROP-6a4369e9-inv-028,OffchainLabs/prysm,238d5c07df,vulnerability,"Code: beacon-chain/sync/rpc_blob_sidecars_by_range.go::BlobRPCMinValidSlot::L136-148
-
-Proof: Missing Fulu deprecation check. After FULU_FORK_EPOCH + MIN_EPOCHS, BlobRPCMinValidSlot still calculates minStart = currEpoch - minReqEpochs, allowing recent blobs to be served indefinitely. Should reject all requests or return far-future slot once deprecation deadline passes.
-
-Attack: After current epoch >= FULU_FORK_EPOCH + MIN_EPOCHS_FOR_BLOB_SIDECARS_REQUESTS, peer sends BlobSidecarsByRangeRequest for recent slots. Handler serves blobs instead of responding empty, violating protocol deprecation requirement and preventing migration to data columns.",
 PROP-6a4369e9-inv-043,OffchainLabs/prysm,238d5c07df,vulnerability,"Code: beacon-chain/sync/rpc_data_column_sidecars_by_range.go::streamDataColumnBatch::L164-165
 
 Proof: The quota check exits immediately when quota reaches zero, breaking out of the sidecar loop mid-block. This violates atomicity: if Block B has sidecars [1,2,3] and quota=2, only sidecars 1 and 2 are sent, leaving sidecar 3 unsent despite sidecar 1 being included in the response.
 
 Attack: Attacker requests a large range forcing quota exhaustion mid-block. Peer receives partial sidecars for the final block, causing reconstruction failure or wasted bandwidth as the incomplete set is below the PeerDAS threshold required for data availability.",
-PROP-6a4369e9-inv-013,OffchainLabs/prysm,238d5c07df,vulnerability,"Code: beacon-chain/rpc/prysm/v1alpha1/validator/proposer.go::broadcastAndReceiveDataColumns::L502-504
-
-Proof: Locally-produced data columns bypass anti-equivocation cache. The broadcastAndReceiveDataColumns path saves columns via ReceiveDataColumns but never calls setSeenDataColumnIndex, while the gossip subscriber path (receiveDataColumnSidecar:L42) does update the cache. This violates the invariant that all imported columns must be tracked.
-
-Attack: Validator produces and broadcasts data columns which are saved to storage but not marked in the anti-equivocation cache, creating cache inconsistency that could allow duplicate column acceptance if re-submitted through different paths or enable equivocation detection bypass.",
-PROP-6a4369e9-pre-008,OffchainLabs/prysm,238d5c07df,vulnerability,"Code: beacon-chain/sync/rpc_data_column_sidecars_by_range.go::dataColumnSidecarsByRangeRPCHandler::L72-74
-
-Proof: When requests fall outside data_column_serve_range, validateDataColumnsByRange returns nil (L198-200), causing the handler to return nil (L72-74) which sends a success response with zero sidecars instead of responseCodeResourceUnavailable as required by the assertion.
-
-Attack: Attacker sends DataColumnSidecarsByRangeRequest with startSlot before minValidSlot or after currentSlot. Server responds with success (code 0x00) and empty data instead of ResourceUnavailable (code 0x03), violating P2P spec expectations.",
 PROP-57888860-post-003,OffchainLabs/prysm,238d5c07df,potential-vulnerability,"Code: beacon-chain/blockchain/kzg/validation.go::VerifyCellKZGProofBatchFromBlobData::L135-149
 
 Proof: ComputeCells returns len(cells) from external library without validating len(cells) == 128. Code then accesses cells[0..127] in loop without bounds check. Proof fails because contract depends on unverified assumption that c-kzg-4844 library always returns exactly CELLS_PER_EXT_BLOB cells.
 
 Attack: If external library has bug or version mismatch causing it to return fewer than 128 cells, code panics at cells[columnIndex] access (out-of-bounds), causing validator DoS.",
-PROP-6a4369e9-pre-006,OffchainLabs/prysm,238d5c07df,vulnerability,"Code: beacon-chain/verification/data_column.go::SidecarDescendsFromFinalized::L337-354
-
-Proof: Spec requires get_checkpoint_block(store, parent_root, finalized_epoch) == finalized_root to verify ancestry. Implementation only checks fc.HasNode(parentRoot) which verifies parent exists in fork choice store but does NOT verify it descends from finalized checkpoint. An attacker can send sidecars on finalized-conflicting forks that exist in fork choice.
-
-Attack: Attacker broadcasts data column sidecar with parent_root on a non-finalized fork (e.g., during reorg window). If parent exists in fork choice but conflicts with finalized checkpoint ancestry, gossip accepts it, causing honest nodes to propagate invalid sidecars and potentially reconstruct invalid blocks.",
 PROP-6a4369e9-post-002,OffchainLabs/prysm,238d5c07df,vulnerability,"Code: beacon-chain/sync/validate_data_column.go::validateDataColumn::L37-38
 
 Proof: Self-peer bypass at L37-38 accepts own messages without any REJECT checks. Local validator's data columns skip all 12 gossip requirements (field validity, KZG proofs, proposer signature, inclusion proofs, etc.) and return ValidationAccept immediately.
@@ -224,8 +109,3 @@ PROP-ff7df16a-inv-011,paradigmxyz/reth,8e65a1d1a2,vulnerability,"Code: crates/tr
 Proof: The transaction pool validates EIP-7702 transactions have non-empty authorization lists (L443) but never validates individual authorization chain_ids. While transaction-level chain_id is checked (L424-432), each SignedAuthorization has its own chain_id field that must match current_chain_id or be 0 per EIP-7702. The pool accepts transactions where auth.chain_id != current_chain_id.
 
 Attack: Attacker crafts EIP-7702 transaction with valid tx.chain_id=1 (mainnet) but includes authorizations with auth.chain_id=999. Transaction passes pool validation and enters mempool, enabling cross-chain replay or execution of authorizations intended for different chains.",
-PROP-ff7df16a-asm-002,paradigmxyz/reth,8e65a1d1a2,potential-vulnerability,"Code: crates/rpc/rpc-builder/src/auth.rs::AuthServerConfig::start::L105-114
-
-Proof: Property claims all Engine API calls are JWT-authenticated, but IPC transport bypasses JWT entirely. The AuthLayer middleware is only applied to HTTP server (L93) via set_http_middleware(). IPC server is built and started (L109-110) without any authentication layer, accepting any local process that can access the Unix socket.
-
-Attack: Local attacker (malicious process, compromised container, local user) connects to Engine API IPC socket and sends newPayload/forkchoiceUpdated without JWT token, bypassing authentication. EL data is still verified post-execution, but unauthenticated access violates the JWT authentication requirement.",
