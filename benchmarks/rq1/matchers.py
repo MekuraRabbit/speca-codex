@@ -137,7 +137,8 @@ def is_selected_audit_item(
     if include_bug_bounty and raw.get("bug_bounty_eligible") is True:
         return True
     if classification_filter is None:
-        return False
+        # bug_bounty is additive, not exclusive; include non-bug-bounty items too
+        return True
     classifications = extract_classifications(raw)
     return bool(classifications & classification_filter)
 
@@ -342,7 +343,7 @@ def match_items(
         for issue in issues:
             overlap = len(item.tokens & issue.tokens)
             score = jaccard(item.tokens, issue.tokens)
-            if score > best_score and overlap >= 3:
+            if score > best_score and overlap >= keyword_min_overlap:
                 best_score = score
                 best_issue = issue
         if best_issue and best_score >= stage2_threshold:

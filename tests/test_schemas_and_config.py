@@ -635,6 +635,67 @@ class TestPhase02:
         assert len(partial.checklist) == 1
 
 
+class TestPhase02PartialMergeValidator:
+    """Tests for Phase02Partial merge validator edge cases (BUG-SCH14)."""
+
+    def test_both_checklist_and_checklist_items_merged(self):
+        """When both checklist and checklist_items are provided, they should be merged."""
+        partial = Phase02Partial(
+            checklist=[
+                {"check_id": "CHK-001", "property_id": "PROP-001"},
+            ],
+            checklist_items=[
+                {"check_id": "CHK-002", "property_id": "PROP-002"},
+            ],
+        )
+        assert len(partial.checklist) == 2
+        ids = {item.check_id for item in partial.checklist}
+        assert ids == {"CHK-001", "CHK-002"}
+
+    def test_both_with_duplicates_deduplicates(self):
+        """Duplicate check_ids across checklist and checklist_items should be deduplicated."""
+        partial = Phase02Partial(
+            checklist=[
+                {"check_id": "CHK-001", "property_id": "PROP-001"},
+            ],
+            checklist_items=[
+                {"check_id": "CHK-001", "property_id": "PROP-001"},
+                {"check_id": "CHK-002", "property_id": "PROP-002"},
+            ],
+        )
+        assert len(partial.checklist) == 2
+        ids = {item.check_id for item in partial.checklist}
+        assert ids == {"CHK-001", "CHK-002"}
+
+    def test_only_checklist_provided(self):
+        """When only checklist is provided, it should be used as-is."""
+        partial = Phase02Partial(
+            checklist=[
+                {"check_id": "CHK-001", "property_id": "PROP-001"},
+            ],
+        )
+        assert len(partial.checklist) == 1
+        assert partial.checklist[0].check_id == "CHK-001"
+
+    def test_only_checklist_items_provided(self):
+        """When only checklist_items is provided, it should be copied to checklist."""
+        partial = Phase02Partial(
+            checklist_items=[
+                {"check_id": "CHK-001", "property_id": "PROP-001"},
+                {"check_id": "CHK-002", "property_id": "PROP-002"},
+            ],
+        )
+        assert len(partial.checklist) == 2
+        ids = {item.check_id for item in partial.checklist}
+        assert ids == {"CHK-001", "CHK-002"}
+
+    def test_neither_provided(self):
+        """When neither checklist nor checklist_items is provided, checklist should be empty."""
+        partial = Phase02Partial()
+        assert len(partial.checklist) == 0
+        assert len(partial.checklist_items) == 0
+
+
 # =========================================================================
 # Phase 03 – Audit Map
 # =========================================================================
@@ -902,6 +963,12 @@ class TestCrossPhaseDataFlow:
         parsed, errs = validate_property(entry)
         assert parsed is not None
         assert errs == []
+        # Validate with PropertyWithCode to ensure code_scope is preserved (BUG-SCH07)
+        pwc_parsed = PropertyWithCode.model_validate(entry)
+        assert pwc_parsed.code_scope is not None
+        assert pwc_parsed.code_scope.resolution_status == "resolved"
+        assert len(pwc_parsed.code_scope.locations) == 1
+        assert pwc_parsed.code_scope.locations[0].file == "test.go"
 
     def test_03_audit_to_04_review(self):
         """Audit item from 03 should be parseable as Phase04 input."""
@@ -1185,8 +1252,8 @@ class TestResultCollector:
                 config = self._make_config("03")
                 collector = ResultCollector(config)
                 results = [
-                    {"check_id": "CHK-001", "classification": "safe"},
-                    {"check_id": "CHK-002", "classification": "vulnerable"},
+                    {"property_id": "PROP-001", "check_id": "CHK-001", "classification": "safe"},
+                    {"property_id": "PROP-002", "check_id": "CHK-002", "classification": "vulnerable"},
                 ]
                 path = collector.save_partial(results, worker_id=0, batch_index=1)
                 assert path.exists()
@@ -1195,6 +1262,11 @@ class TestResultCollector:
                 assert "audit_items" in data
                 assert len(data["audit_items"]) == 2
                 assert "metadata" in data
+                # BUG-SCH11: Verify processed_ids are tracked in metadata
+                assert "processed_ids" in data["metadata"]
+                assert "PROP-001" in data["metadata"]["processed_ids"]
+                assert "PROP-002" in data["metadata"]["processed_ids"]
+                assert len(data["metadata"]["processed_ids"]) == 2
             finally:
                 os.chdir(old_cwd)
 
@@ -1829,7 +1901,8 @@ class TestExtractTokenUsage:
         assert usage["output_tokens"] == 3
         assert usage["cache_read_tokens"] == 9200
         assert usage["cache_creation_tokens"] == 1800
-        assert usage["num_turns"] == 2
+        # BUG-ORC15: turns = messages // 2 (a turn is a request-response pair)
+        assert usage["num_turns"] == 1
 
     def test_extract_from_empty_log(self):
         """Empty log should return zero tokens."""

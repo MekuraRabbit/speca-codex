@@ -284,7 +284,7 @@ def evaluate_branches(
                     "n": n,
                     "discordant": {"current_only_matched": b, "baseline_only_matched": c},
                     "mcnemar_p": p_value,
-                    "effect_size": {"cliffs_delta": delta, "magnitude": magnitude},
+                    "effect_size": {"paired_proportion_diff": delta, "magnitude": magnitude},
                 }
 
         summary["branches"][branch] = {

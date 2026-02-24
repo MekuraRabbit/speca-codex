@@ -50,7 +50,7 @@ def filter_output_files(files: Iterable[str], globs: list[str]) -> list[str]:
     return filtered
 
 
-_TS_RE = re.compile(r"_W(?P<worker>\d+)_(?P<ts>\d{9,})_(?P<seq>\d+)\.json$")
+_TS_RE = re.compile(r"_W(?P<worker>\d+)(?:B(?P<batch>\d+))?_(?P<ts>\d{9,})(?:_(?P<seq>\d+))?\.json$")
 _LOG_PHASE_RE = re.compile(r"^(?P<phase>\d+)_.*\.jsonl$", re.IGNORECASE)
 _LOG_TS_RE = re.compile(r"(?P<ts>\d{9,})")
 
@@ -265,6 +265,8 @@ def collect_phase_logs(branch: str, logs_dir: str, phase_id: str) -> dict:
         "total_tokens": 0,
         "prompt_tokens": 0,
         "completion_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0,
     }
     total_num_turns = 0
 

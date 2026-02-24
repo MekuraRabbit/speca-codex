@@ -252,12 +252,14 @@ class ResumeManager:
         """
         Delete ALL output files and logs for this phase.
         Used when --force is specified to ensure a clean run.
-        
+
         Returns:
             Number of files/directories deleted.
         """
         count = 0
-        
+        # Track already-counted log files to avoid double-counting
+        counted_logs: set[str] = set()
+
         # 1. Delete PARTIAL files (file mode)
         pattern = str(self.output_dir / f"{self.config.phase_id}_PARTIAL_*.json")
         for filepath in glob.glob(pattern):
@@ -278,25 +280,29 @@ class ResumeManager:
                      if not batch_dir.is_dir(): continue
                      logs = self._get_log_files_for_batch(batch_dir)
                      # correct phase logs exist for this batch?
-                     if logs: 
+                     if logs:
                          if dry_run:
                              print(f"Would delete batch: {batch_dir}")
                              for log in logs:
                                  print(f"  Would delete log: {log}")
+                                 counted_logs.add(str(log))
                          else:
                              shutil.rmtree(batch_dir)
                              print(f"Deleted batch: {batch_dir}")
                              for log in logs:
+                                 counted_logs.add(str(log))
                                  log.unlink()
                                  print(f"Deleted log: {log}")
                              count += 1
-        
+
         # 3. Delete leftover logs (file mode or orphaned)
         # _get_log_files_for_batch handles directory mode logs.
         # For file mode, logs are: {phase_id}_w{worker}b{batch}_{timestamp}.log.jsonl
         log_pattern = str(self.logs_dir / f"{self.config.phase_id}_*.log.jsonl")
         for logpath in glob.glob(log_pattern):
-             if Path(logpath).exists(): # Check exists because directory mode loop might have deleted it
+             if str(Path(logpath)) in counted_logs:
+                 continue  # Already counted/deleted in directory mode
+             if Path(logpath).exists():
                 if dry_run:
                     print(f"Would delete log: {logpath}")
                 else:
