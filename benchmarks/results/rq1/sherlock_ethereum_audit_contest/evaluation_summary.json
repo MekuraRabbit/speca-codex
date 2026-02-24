@@ -3,7 +3,7 @@
     "path": "/home/gohan/runners/security-agent-1/_work/security-agent/security-agent/benchmarks/data/rq1/sherlock_contest_1140_issues_1766639267091.csv",
     "issues": 366
   },
-  "generated_at": "2026-02-24T09:45:40.398696+00:00",
+  "generated_at": "2026-02-24T09:58:00.389638+00:00",
   "branches": {
     "alloy_evm_fusaka": {
       "items_total": 3,
@@ -401,8 +401,6 @@
   "match_config": {
     "stage1_threshold": 0.88,
     "stage2_threshold": 0.25,
-    "keyword_min_overlap": 2,
-    "candidate_top_k": 5,
     "llm_max": 200,
     "llm_used": true
   },
@@ -417,7 +415,7 @@
     "keywords": null
   },
   "run_metadata": {
-    "generated_at": "2026-02-24T09:45:40.175659+00:00",
+    "generated_at": "2026-02-24T09:58:00.170192+00:00",
     "ai": {
       "name": "claude",
       "version": "codex-cli 0.92.0"
