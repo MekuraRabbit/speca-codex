@@ -132,9 +132,9 @@ class ResumeManager:
         partial_pattern = str(self.output_dir / f"{self.config.phase_id}_PARTIAL_*.json")
         referenced_prefixes: set[str] = set()
         for filepath in glob.glob(partial_pattern):
-            match = re.search(r"(W\d+B\d+)", Path(filepath).name)
+            match = re.search(r"(W\d+B\d+)", Path(filepath).name, re.IGNORECASE)
             if match:
-                referenced_prefixes.add(match.group(1))
+                referenced_prefixes.add(match.group(1).upper())
 
         incomplete: list[Path] = []
         for batch_dir in graphs_dir.iterdir():
@@ -143,8 +143,8 @@ class ResumeManager:
             has_mmd = any(batch_dir.rglob("*.mmd"))
             if not has_mmd:
                 continue
-            dir_prefix_match = re.search(r"(W\d+B\d+)", batch_dir.name)
-            dir_prefix = dir_prefix_match.group(1) if dir_prefix_match else ""
+            dir_prefix_match = re.search(r"(W\d+B\d+)", batch_dir.name, re.IGNORECASE)
+            dir_prefix = dir_prefix_match.group(1).upper() if dir_prefix_match else ""
             if dir_prefix not in referenced_prefixes:
                 incomplete.append(batch_dir)
 

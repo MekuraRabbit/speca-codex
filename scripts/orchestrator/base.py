@@ -23,6 +23,11 @@ from .queue import QueueManager
 from .batch import BatchStrategy, TokenBasedBatch, CountBasedBatch
 from .runner import ClaudeRunner, CircuitBreaker, CircuitBreakerTripped, BudgetExceeded
 from .watchdog import CostTracker
+
+
+class PhaseAbortError(Exception):
+    """Raised when a phase must abort (replaces sys.exit calls)."""
+    pass
 from .collector import ResultCollector
 from .resume import ResumeManager
 from .schemas import (
@@ -247,7 +252,9 @@ class BaseOrchestrator(ABC):
                 file=sys.stderr,
             )
             print(f"   Saved results so far: {total_results}")
-            sys.exit(2)
+            raise PhaseAbortError(
+                f"Phase {self.config.phase_id} ABORTED — budget exceeded after {duration:.1f}s"
+            )
 
         if self._circuit_breaker_tripped:
             print(
@@ -256,14 +263,18 @@ class BaseOrchestrator(ABC):
                 file=sys.stderr,
             )
             print(f"   Saved results so far: {total_results}")
-            sys.exit(2)
+            raise PhaseAbortError(
+                f"Phase {self.config.phase_id} ABORTED by circuit breaker after {duration:.1f}s"
+            )
 
         if self.failed_batches:
             print(f"\n⚠️  {len(self.failed_batches)} batch(es) failed (successful results saved as partials)", file=sys.stderr)
             for worker_id, batch_index in self.failed_batches:
                 print(f"  - Worker {worker_id}, Batch {batch_index}", file=sys.stderr)
             print(f"   Saved results: {total_results}")
-            sys.exit(1)
+            raise PhaseAbortError(
+                f"Phase {self.config.phase_id}: {len(self.failed_batches)} batch(es) failed"
+            )
         
         print(f"\n✅ Phase {self.config.phase_id} completed in {duration:.1f}s")
         print(f"   Total results: {total_results}")
@@ -709,24 +720,20 @@ class Phase01Orchestrator(BaseOrchestrator):
         """
         scope_path = Path("outputs/BUG_BOUNTY_SCOPE.json")
         if not scope_path.exists():
-            print(
-                f"ERROR: {scope_path} not found. "
+            raise PhaseAbortError(
+                f"{scope_path} not found. "
                 f"bug_bounty_scope is required for Phase 01e. "
-                f"Create the file before running this phase.",
-                file=sys.stderr,
+                f"Create the file before running this phase."
             )
-            sys.exit(1)
 
         try:
             with open(scope_path) as f:
                 scope_data = json.load(f)
             print(f"  Injected bug_bounty_scope from {scope_path}")
         except Exception as e:
-            print(
-                f"ERROR: Failed to parse {scope_path}: {e}",
-                file=sys.stderr,
-            )
-            sys.exit(1)
+            raise PhaseAbortError(
+                f"Failed to parse {scope_path}: {e}"
+            ) from e
 
         for item in items:
             item["bug_bounty_scope"] = scope_data
@@ -1088,14 +1095,12 @@ class Phase04Orchestrator(BaseOrchestrator):
         # Verify required context files exist before processing
         for path in self._REQUIRED_FILES:
             if not Path(path).exists():
-                print(
-                    f"ERROR: {path} not found. "
-                    f"Phase 04 requires this file for severity calibration and spec cross-reference.",
-                    file=sys.stderr,
+                raise PhaseAbortError(
+                    f"{path} not found. "
+                    f"Phase 04 requires this file for severity calibration and spec cross-reference."
                 )
-                sys.exit(1)
 
-        items = []
+        items_dict: dict[str, dict] = {}  # keyed by property_id for dedup
         validation_warnings = 0
         for filepath in sorted(glob.glob("outputs/03_PARTIAL_*.json")):
             try:
@@ -1122,11 +1127,11 @@ class Phase04Orchestrator(BaseOrchestrator):
                                 f"    ⚠️  {filepath} item {prop_id}: {err}",
                                 file=sys.stderr,
                             )
-                    items.append({
+                    items_dict[prop_id] = {
                         "property_id": prop_id,
                         "audit_result": item,
                         "source_file": filepath,
-                    })
+                    }
             except Exception as e:
                 print(f"Warning: Failed to load {filepath}: {e}", file=sys.stderr)
 
@@ -1136,6 +1141,7 @@ class Phase04Orchestrator(BaseOrchestrator):
                 file=sys.stderr,
             )
 
+        items = list(items_dict.values())
         return items
 
     # Only these classifications need LLM review.

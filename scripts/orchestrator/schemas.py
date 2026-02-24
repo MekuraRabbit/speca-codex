@@ -25,8 +25,8 @@ from pydantic import BaseModel, Field, model_validator
 class Severity(str, Enum):
     """Severity levels used across the pipeline.
 
-    Members are ordered from most to least severe so that numeric
-    comparison works:  ``Severity.CRITICAL < Severity.HIGH`` is ``True``.
+    Members are ordered from most to least severe so that severity
+    comparison works:  ``Severity.CRITICAL > Severity.HIGH`` is ``True``.
     The ``rank`` property returns a numeric value (lower = more severe)
     for use in threshold comparisons.
     """
@@ -100,11 +100,18 @@ class BugBountyScope(str, Enum):
 
 
 class AuditClassification(str, Enum):
-    """Final classification from the formal audit."""
+    """Final classification from the formal audit.
+
+    Includes both the original schema values and the Phase 03 prompt output values.
+    """
     VULNERABLE = "vulnerable"
+    VULNERABILITY = "vulnerability"
     SAFE = "safe"
+    NOT_A_VULNERABILITY = "not-a-vulnerability"
     INCONCLUSIVE = "inconclusive"
+    POTENTIAL_VULNERABILITY = "potential-vulnerability"
     OUT_OF_SCOPE = "out-of-scope"
+    INFORMATIONAL = "informational"
 
 
 class ReviewVerdict(str, Enum):

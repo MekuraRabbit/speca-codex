@@ -368,7 +368,11 @@ class TestEnums:
 
     def test_audit_classification_values(self):
         assert AuditClassification.VULNERABLE == "vulnerable"
+        assert AuditClassification.VULNERABILITY == "vulnerability"
         assert AuditClassification.SAFE == "safe"
+        assert AuditClassification.NOT_A_VULNERABILITY == "not-a-vulnerability"
+        assert AuditClassification.POTENTIAL_VULNERABILITY == "potential-vulnerability"
+        assert AuditClassification.INFORMATIONAL == "informational"
 
     def test_review_verdict_values(self):
         assert ReviewVerdict.CONFIRMED == "Confirmed"
@@ -533,17 +537,19 @@ class TestTrustModelSchemas:
         stride = StrideAnalysisItem(
             threat_type="Spoofing",
             description="Attacker spoofs identity",
-            affected_boundary="tb-001",
+            trust_boundary_id="tb-001",
         )
         assert stride.threat_type == "Spoofing"
+        assert stride.trust_boundary_id == "tb-001"
 
     def test_trust_model_valid(self):
         tm = TrustModel(
             actors=[{"id": "a1", "name": "User"}],
             trust_boundaries=[{"id": "tb-001", "from_actor": "a1", "to_actor": "a2"}],
-            trust_assumptions=[{"id": "ta-001", "description": "Users are untrusted"}],
+            assumptions=[{"id": "ta-001", "text": "Users are untrusted"}],
         )
         assert len(tm.actors) == 1
+        assert tm.assumptions[0].text == "Users are untrusted"
 
     def test_phase01d_partial_valid(self):
         partial = Phase01dPartial(

@@ -29,6 +29,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from orchestrator import create_orchestrator
+from orchestrator.base import PhaseAbortError
 from orchestrator.config import get_phase_config, get_phase_chain, PHASE_CONFIGS
 from orchestrator.resume import ResumeManager
 
@@ -186,6 +187,9 @@ async def run_phase(
 
         await orchestrator.run()
         return True
+    except PhaseAbortError as e:
+        print(f"Phase {phase_id} aborted: {e}", file=sys.stderr)
+        return False
     except Exception as e:
         import traceback
         traceback.print_exc()

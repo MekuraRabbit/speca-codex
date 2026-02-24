@@ -131,6 +131,11 @@ jobs:
             --collection "benchmarks/results/rq1/sherlock_ethereum_audit_contest/collection_summary.json" \
             --output "benchmarks/results/rq1/sherlock_ethereum_audit_contest/evaluation_summary.md"
 
+      - name: Prepare Git
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: Push Evaluation Results
         if: always()
         run: |
