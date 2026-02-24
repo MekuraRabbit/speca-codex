@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-02-24T11:55:58.391383+00:00",
+  "generated_at": "2026-02-24T12:03:05.612576+00:00",
   "dataset": {
-    "path": "/home/gohan/runners/security-agent-2/_work/security-agent/security-agent/benchmarks/data/rq1/sherlock_contest_1140_issues_1766639267091.csv",
+    "path": "/home/gohan/runners/security-agent-1/_work/security-agent/security-agent/benchmarks/data/rq1/sherlock_contest_1140_issues_1766639267091.csv",
     "issues_csv_total": 366
   },
   "severity_filter": [
@@ -27,13 +27,13 @@
   ],
   "audit_items_total": 102,
   "issues_total": 15,
-  "issues_matched": 15,
-  "recall": 1.0,
+  "issues_matched": 14,
+  "recall": 0.9333,
   "severity_breakdown": {
     "high": {
       "total": 5,
-      "matched": 5,
-      "recall": 1.0
+      "matched": 4,
+      "recall": 0.8
     },
     "low": {
       "total": 8,
@@ -103,14 +103,30 @@
     "381": {
       "finding_id": "PROP-56ad1eb2-inv-032",
       "confidence": 0.95
-    },
-    "176": {
-      "finding_id": "PROP-5a6a79d5-inv-059",
-      "confidence": 0.95,
-      "note": "Root cause match: same file (IBlobProofsManager.cs::ValidateHashes), same defect (missing length equality assertion). LLM matcher conservatively rejected due to untraced impact chain."
     }
   },
-  "missed_issues": [],
+  "missed_issues": [
+    {
+      "issue_id": "176",
+      "severity": "high",
+      "title": "Malformed blob tx causes Nethermind validators to stop producing blocks"
+    }
+  ],
+  "precision": {
+    "total_findings": 102,
+    "auto_tp": 17,
+    "auto_fp_invalid": 53,
+    "auto_fp_info": 25,
+    "auto_unknown": 7,
+    "human_tp": 0,
+    "human_fp": 0,
+    "human_unlabeled": 7,
+    "precision_auto": 0.1789,
+    "precision_full": 0.1789,
+    "precision_conservative": 0.1667,
+    "total_tp": 17
+  },
+  "f1": 0.3002,
   "run_metadata": {
     "generated_at": "2026-02-24T11:53:07.735735+00:00",
     "ai": {
