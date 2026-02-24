@@ -1,12 +1,12 @@
 # RQ1 Evaluation Report
 
-- Generated at (UTC): 2026-02-24T10:07:11.324862+00:00
-- Dataset: /home/gohan/runners/security-agent-1/_work/security-agent/security-agent/benchmarks/data/rq1/sherlock_contest_1140_issues_1766639267091.csv (366 issues)
+- Generated at (UTC): 2026-02-24T10:13:55.104590+00:00
+- Dataset: /home/gohan/runners/security-agent-2/_work/security-agent/security-agent/benchmarks/data/rq1/sherlock_contest_1140_issues_1766639267091.csv (366 issues)
 - Audit item filter: classifications=['potential-vulnerability', 'vulnerability']
 - Issue filter: mode=auto
 
 ## Experiment Environment
-- AI: claude (codex-cli 0.92.0)
+- AI: claude (2.1.39 (Claude Code))
 | Branch | Commit | Phase 03 Runtime | Tokens (in/out/total) | Num Turns | Files |
 | --- | --- | --- | --- | --- | --- |
 | alloy_evm_fusaka | a3ee030 | 2.4m | 23121/435014/105879944 | 1389 | 82 |
@@ -21,9 +21,8 @@
 | prysm_fusaka | 238d5c07df | 4.2m | 54387/1356380/462839722 | 3437 | 149 |
 
 ## Matching & Recall
-- Keyword matching against CSV issues selects candidate issues; LLM judges semantic similarity for final match.
+- LLM judges whether each audit finding shares the same root cause as any candidate issue.
 - Recall definition: issue_recall = unique_issue_ids_matched / total_issues_in_scope (per branch).
-- unique_issue_ids_matched is computed from matched audit items' issue_id values.
 - Match config: llm_max=200
 
 ## Results
@@ -45,10 +44,10 @@
 ## Raw Metadata
 ```json
 {
-  "generated_at": "2026-02-24T10:07:11.105069+00:00",
+  "generated_at": "2026-02-24T10:13:54.884206+00:00",
   "ai": {
     "name": "claude",
-    "version": "codex-cli 0.92.0"
+    "version": "2.1.39 (Claude Code)"
   },
   "targets": [
     {

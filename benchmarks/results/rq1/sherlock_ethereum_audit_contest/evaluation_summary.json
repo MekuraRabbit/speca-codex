@@ -1,9 +1,9 @@
 {
   "dataset": {
-    "path": "/home/gohan/runners/security-agent-1/_work/security-agent/security-agent/benchmarks/data/rq1/sherlock_contest_1140_issues_1766639267091.csv",
+    "path": "/home/gohan/runners/security-agent-2/_work/security-agent/security-agent/benchmarks/data/rq1/sherlock_contest_1140_issues_1766639267091.csv",
     "issues": 366
   },
-  "generated_at": "2026-02-24T10:07:11.324862+00:00",
+  "generated_at": "2026-02-24T10:13:55.104590+00:00",
   "branches": {
     "alloy_evm_fusaka": {
       "items_total": 3,
@@ -352,10 +352,10 @@
     "keywords": null
   },
   "run_metadata": {
-    "generated_at": "2026-02-24T10:07:11.105069+00:00",
+    "generated_at": "2026-02-24T10:13:54.884206+00:00",
     "ai": {
       "name": "claude",
-      "version": "codex-cli 0.92.0"
+      "version": "2.1.39 (Claude Code)"
     },
     "targets": [
       {
