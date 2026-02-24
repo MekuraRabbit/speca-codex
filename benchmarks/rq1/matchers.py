@@ -209,9 +209,10 @@ def _truncate_description(description: str, max_chars: int = 300) -> str:
     return description[:max_chars].rstrip() + "..."
 
 
-def llm_match(audit_item: AuditItem, candidates: list[Issue], llm_id: str) -> tuple[bool, str | None, float]:
+def llm_match(audit_item: AuditItem, candidates: list[Issue], llm_id: str) -> tuple[bool, str | None, float, str]:
+    """Returns (matched, issue_id, confidence, raw_response)."""
     if not candidates:
-        return False, None, 0.0
+        return False, None, 0.0, ""
 
     candidate_block = []
     for idx, issue in enumerate(candidates):
@@ -236,17 +237,10 @@ def llm_match(audit_item: AuditItem, candidates: list[Issue], llm_id: str) -> tu
     if raw:
         preview = raw[:500].replace("\n", "\\n")
         print(f"[rq1] {llm_id}: raw response: {preview}")
-    payload = extract_json_from_text(raw) or {}
-    match = bool(payload.get("match"))
-    idx = payload.get("candidate_index")
-    confidence = payload.get("confidence")
-    try:
-        confidence = float(confidence)
-    except (TypeError, ValueError):
-        confidence = 0.0
-    if match and isinstance(idx, int) and 0 <= idx < len(candidates):
-        return True, candidates[idx].issue_id, confidence
-    return False, None, confidence
+
+    candidate_ids = [c.issue_id for c in candidates]
+    matched, issue_id, confidence = _parse_llm_response(raw, candidate_ids, llm_id)
+    return matched, issue_id, confidence, raw
 
 
 def _rank_candidates_by_jaccard(
@@ -264,27 +258,95 @@ def _rank_candidates_by_jaccard(
     return [issue for _, issue in scored[:max_candidates]]
 
 
+def _parse_llm_response(
+    raw: str,
+    candidate_ids: list[str],
+    llm_id: str,
+) -> tuple[bool, str | None, float]:
+    """Parse a cached LLM response into (matched, issue_id, confidence)."""
+    payload = extract_json_from_text(raw) or {}
+    match = bool(payload.get("match"))
+    idx = payload.get("candidate_index")
+    confidence = payload.get("confidence")
+    try:
+        confidence = float(confidence)
+    except (TypeError, ValueError):
+        confidence = 0.0
+    if match and isinstance(idx, int) and 0 <= idx < len(candidate_ids):
+        return True, candidate_ids[idx], confidence
+    return False, None, confidence
+
+
 def match_items(
     audit_items: list[AuditItem],
     issues: list[Issue],
     llm_max: int,
+    cache_path: Path | None = None,
 ) -> tuple[dict[str, dict], int]:
     matches: dict[str, dict] = {}
     llm_calls = 0
 
-    for item in audit_items:
-        if llm_calls >= llm_max:
-            break
-        candidates = _rank_candidates_by_jaccard(item, issues)
-        if not candidates:
+    cache_handle = None
+    if cache_path:
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        cache_handle = cache_path.open("w", encoding="utf-8")
+
+    try:
+        for item in audit_items:
+            if llm_calls >= llm_max:
+                break
+            candidates = _rank_candidates_by_jaccard(item, issues)
+            if not candidates:
+                continue
+            llm_calls += 1
+            llm_id = item.item_id or f"item_{llm_calls}"
+            matched, issue_id, confidence, raw = llm_match(item, candidates, llm_id)
+
+            if cache_handle:
+                cache_record = {
+                    "item_id": item.item_id,
+                    "raw": raw,
+                    "candidate_ids": [c.issue_id for c in candidates],
+                }
+                cache_handle.write(json.dumps(cache_record, ensure_ascii=False) + "\n")
+                cache_handle.flush()
+
+            if matched and issue_id:
+                matches[item.item_id] = {
+                    "issue_id": issue_id,
+                    "score": confidence,
+                }
+    finally:
+        if cache_handle:
+            cache_handle.close()
+
+    return matches, llm_calls
+
+
+def reparse_items(cache_path: Path) -> tuple[dict[str, dict], int]:
+    """Re-parse cached LLM responses without calling the LLM again."""
+    matches: dict[str, dict] = {}
+    total = 0
+
+    for line in cache_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
             continue
-        llm_calls += 1
-        llm_id = item.item_id or f"item_{llm_calls}"
-        matched, issue_id, confidence = llm_match(item, candidates, llm_id)
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        total += 1
+        item_id = record.get("item_id", "")
+        raw = record.get("raw", "")
+        candidate_ids = record.get("candidate_ids", [])
+        llm_id = item_id or f"item_{total}"
+
+        matched, issue_id, confidence = _parse_llm_response(raw, candidate_ids, llm_id)
         if matched and issue_id:
-            matches[item.item_id] = {
+            matches[item_id] = {
                 "issue_id": issue_id,
                 "score": confidence,
             }
+        print(f"[rq1] reparse {llm_id}: matched={matched}, issue_id={issue_id}, confidence={confidence}")
 
-    return matches, llm_calls
+    return matches, total

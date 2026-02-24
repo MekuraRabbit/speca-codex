@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from benchmarks.bench_utils import normalize_bool
-from benchmarks.rq1.matchers import AuditItem, Issue, extract_audit_items, load_csv_issues, match_items
+from benchmarks.rq1.matchers import AuditItem, Issue, extract_audit_items, load_csv_issues, match_items, reparse_items
 from benchmarks.metrics.stats import bootstrap_rate, effect_size_cliffs_delta, mcnemar_exact
 
 
@@ -101,6 +101,7 @@ def match_branch(
     results_dir: Path,
     llm_max: int,
     audit_classifications: set[str] | None,
+    reparse: bool = False,
 ) -> tuple[dict, list[AuditItem]]:
     sanitized = sanitize_branch(branch)
     branch_dir = results_dir / sanitized
@@ -112,11 +113,22 @@ def match_branch(
     )
     print(f"[rq1] {branch}: {len(audit_items)} audit items after filter")
 
-    matches, llm_calls = match_items(
-        audit_items,
-        issues,
-        llm_max,
-    )
+    cache_path = results_dir / f"evaluation_{sanitized}_llm_cache.jsonl"
+
+    if reparse:
+        if not cache_path.exists():
+            print(f"[rq1] {branch}: no cache file at {cache_path}, skipping reparse")
+            matches, llm_calls = {}, 0
+        else:
+            print(f"[rq1] {branch}: reparsing from {cache_path}")
+            matches, llm_calls = reparse_items(cache_path)
+    else:
+        matches, llm_calls = match_items(
+            audit_items,
+            issues,
+            llm_max,
+            cache_path=cache_path,
+        )
 
     total = len(audit_items)
     matched_total = len(matches)
@@ -168,6 +180,7 @@ def evaluate_branches(
     audit_classifications: set[str] | None,
     client_filter: str,
     client_keywords: list[str],
+    reparse: bool = False,
 ) -> dict:
     issues = load_csv_issues(csv_path)
     issue_map = {issue.issue_id: issue for issue in issues}
@@ -218,6 +231,7 @@ def evaluate_branches(
             results_dir,
             llm_max,
             audit_classifications,
+            reparse=reparse,
         )
 
         matched_flags = [item.item_id in detail["matches"] for item in audit_items]

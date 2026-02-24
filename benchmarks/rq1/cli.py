@@ -57,6 +57,12 @@ def main() -> None:
         default="",
         help="Comma-separated keywords for issue filtering (used when client-filter=keywords or to override auto)",
     )
+    parser.add_argument(
+        "--reparse",
+        action="store_true",
+        default=False,
+        help="Re-parse cached LLM responses without calling the LLM again",
+    )
     args = parser.parse_args()
     results_dir = Path(args.results_dir)
     results_dir.mkdir(parents=True, exist_ok=True)
@@ -90,6 +96,7 @@ def main() -> None:
         audit_classifications=audit_classifications,
         client_filter=client_filter,
         client_keywords=client_keywords,
+        reparse=args.reparse,
     )
 
 
