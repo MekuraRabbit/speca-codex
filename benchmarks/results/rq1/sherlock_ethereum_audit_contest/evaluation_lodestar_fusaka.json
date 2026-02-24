@@ -1,11 +1,11 @@
 {
   "branch": "lodestar_fusaka",
   "sanitized_branch": "lodestar_fusaka",
-  "items_total": 0,
+  "items_total": 9,
   "matched_total": 0,
-  "new_total": 0,
+  "new_total": 9,
   "overlap_rate": 0.0,
-  "new_rate": 0.0,
+  "new_rate": 1.0,
   "issues_matched_total": 0,
   "issue_recall": 0.0,
   "stage_counts": {
@@ -14,6 +14,6 @@
     "stage3": 0
   },
   "llm_used": true,
-  "llm_calls": 0,
+  "llm_calls": 9,
   "matches": {}
 }

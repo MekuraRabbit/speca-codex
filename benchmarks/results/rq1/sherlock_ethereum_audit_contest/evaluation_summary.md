@@ -1,8 +1,8 @@
 # RQ1 Evaluation Report
 
-- Generated at (UTC): 2026-02-24T09:37:58.378812+00:00
+- Generated at (UTC): 2026-02-24T09:45:40.398696+00:00
 - Dataset: /home/gohan/runners/security-agent-1/_work/security-agent/security-agent/benchmarks/data/rq1/sherlock_contest_1140_issues_1766639267091.csv (366 issues)
-- Audit item filter: classifications=['exploitable', 'needs-manual-audit', 'needs-review'], include_bug_bounty=True
+- Audit item filter: classifications=['potential-vulnerability', 'vulnerability']
 - Issue filter: mode=auto
 
 ## Experiment Environment
@@ -29,23 +29,23 @@
 ## Results
 | Branch | Items | Matched | Overlap | Issues | Issues Matched | Issue Recall | New | LLM Calls |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| alloy_evm_fusaka | 0 | 0 | 0.000 | 20 | 0 | 0.000 | 0 | 0 |
-| rust_eth_kzg_fusaka | 0 | 0 | 0.000 | 333 | 0 | 0.000 | 0 | 0 |
-| c_kzg_4844_fusaka | 0 | 0 | 0.000 | 366 | 0 | 0.000 | 0 | 0 |
-| grandine_fusaka | 0 | 0 | 0.000 | 29 | 0 | 0.000 | 0 | 0 |
-| lodestar_fusaka | 0 | 0 | 0.000 | 24 | 0 | 0.000 | 0 | 0 |
-| reth_fusaka | 0 | 0 | 0.000 | 34 | 0 | 0.000 | 0 | 0 |
-| nimbus_fusaka | 0 | 0 | 0.000 | 63 | 0 | 0.000 | 0 | 0 |
-| nethermind_fusaka | 0 | 0 | 0.000 | 50 | 0 | 0.000 | 0 | 0 |
-| lighthouse_fusaka | 0 | 0 | 0.000 | 51 | 0 | 0.000 | 0 | 0 |
-| prysm_fusaka | 0 | 0 | 0.000 | 50 | 0 | 0.000 | 0 | 0 |
+| alloy_evm_fusaka | 3 | 0 | 0.000 | 20 | 0 | 0.000 | 3 | 3 |
+| rust_eth_kzg_fusaka | 1 | 0 | 0.000 | 333 | 0 | 0.000 | 1 | 1 |
+| c_kzg_4844_fusaka | 5 | 0 | 0.000 | 366 | 0 | 0.000 | 5 | 5 |
+| grandine_fusaka | 12 | 0 | 0.000 | 29 | 0 | 0.000 | 12 | 12 |
+| lodestar_fusaka | 9 | 0 | 0.000 | 24 | 0 | 0.000 | 9 | 9 |
+| reth_fusaka | 4 | 0 | 0.000 | 34 | 0 | 0.000 | 4 | 4 |
+| nimbus_fusaka | 14 | 0 | 0.000 | 63 | 0 | 0.000 | 14 | 14 |
+| nethermind_fusaka | 5 | 0 | 0.000 | 50 | 0 | 0.000 | 5 | 5 |
+| lighthouse_fusaka | 24 | 0 | 0.000 | 51 | 0 | 0.000 | 24 | 24 |
+| prysm_fusaka | 25 | 0 | 0.000 | 50 | 0 | 0.000 | 25 | 25 |
 
 - Overall issue recall (union of branches): 0.000 (0/366)
 
 ## Raw Metadata
 ```json
 {
-  "generated_at": "2026-02-24T09:37:58.153712+00:00",
+  "generated_at": "2026-02-24T09:45:40.175659+00:00",
   "ai": {
     "name": "claude",
     "version": "codex-cli 0.92.0"

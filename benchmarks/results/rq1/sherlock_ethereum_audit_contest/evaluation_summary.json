@@ -3,14 +3,14 @@
     "path": "/home/gohan/runners/security-agent-1/_work/security-agent/security-agent/benchmarks/data/rq1/sherlock_contest_1140_issues_1766639267091.csv",
     "issues": 366
   },
-  "generated_at": "2026-02-24T09:37:58.378812+00:00",
+  "generated_at": "2026-02-24T09:45:40.398696+00:00",
   "branches": {
     "alloy_evm_fusaka": {
-      "items_total": 0,
+      "items_total": 3,
       "matched_total": 0,
-      "new_total": 0,
+      "new_total": 3,
       "overlap_rate": 0.0,
-      "new_rate": 0.0,
+      "new_rate": 1.0,
       "issues_matched_total": 0,
       "issue_recall": 0.0,
       "issues_total": 20,
@@ -22,10 +22,10 @@
         ]
       },
       "new_rate_ci": {
-        "mean": 0.0,
+        "mean": 1.0,
         "ci": [
-          0.0,
-          0.0
+          1.0,
+          1.0
         ]
       },
       "stage_counts": {
@@ -34,7 +34,7 @@
         "stage3": 0
       },
       "llm_used": true,
-      "llm_calls": 0,
+      "llm_calls": 3,
       "issue_filter": {
         "mode": "auto",
         "keywords": [
@@ -44,11 +44,11 @@
       }
     },
     "rust_eth_kzg_fusaka": {
-      "items_total": 0,
+      "items_total": 1,
       "matched_total": 0,
-      "new_total": 0,
+      "new_total": 1,
       "overlap_rate": 0.0,
-      "new_rate": 0.0,
+      "new_rate": 1.0,
       "issues_matched_total": 0,
       "issue_recall": 0.0,
       "issues_total": 333,
@@ -60,10 +60,10 @@
         ]
       },
       "new_rate_ci": {
-        "mean": 0.0,
+        "mean": 1.0,
         "ci": [
-          0.0,
-          0.0
+          1.0,
+          1.0
         ]
       },
       "stage_counts": {
@@ -72,7 +72,7 @@
         "stage3": 0
       },
       "llm_used": true,
-      "llm_calls": 0,
+      "llm_calls": 1,
       "issue_filter": {
         "mode": "auto",
         "keywords": [
@@ -85,11 +85,11 @@
       }
     },
     "c_kzg_4844_fusaka": {
-      "items_total": 0,
+      "items_total": 5,
       "matched_total": 0,
-      "new_total": 0,
+      "new_total": 5,
       "overlap_rate": 0.0,
-      "new_rate": 0.0,
+      "new_rate": 1.0,
       "issues_matched_total": 0,
       "issue_recall": 0.0,
       "issues_total": 366,
@@ -101,10 +101,10 @@
         ]
       },
       "new_rate_ci": {
-        "mean": 0.0,
+        "mean": 1.0,
         "ci": [
-          0.0,
-          0.0
+          1.0,
+          1.0
         ]
       },
       "stage_counts": {
@@ -113,7 +113,7 @@
         "stage3": 0
       },
       "llm_used": true,
-      "llm_calls": 0,
+      "llm_calls": 5,
       "issue_filter": {
         "mode": "auto",
         "keywords": [
@@ -126,11 +126,11 @@
       }
     },
     "grandine_fusaka": {
-      "items_total": 0,
+      "items_total": 12,
       "matched_total": 0,
-      "new_total": 0,
+      "new_total": 12,
       "overlap_rate": 0.0,
-      "new_rate": 0.0,
+      "new_rate": 1.0,
       "issues_matched_total": 0,
       "issue_recall": 0.0,
       "issues_total": 29,
@@ -142,10 +142,10 @@
         ]
       },
       "new_rate_ci": {
-        "mean": 0.0,
+        "mean": 1.0,
         "ci": [
-          0.0,
-          0.0
+          1.0,
+          1.0
         ]
       },
       "stage_counts": {
@@ -154,7 +154,7 @@
         "stage3": 0
       },
       "llm_used": true,
-      "llm_calls": 0,
+      "llm_calls": 12,
       "issue_filter": {
         "mode": "auto",
         "keywords": [
@@ -164,11 +164,11 @@
       }
     },
     "lodestar_fusaka": {
-      "items_total": 0,
+      "items_total": 9,
       "matched_total": 0,
-      "new_total": 0,
+      "new_total": 9,
       "overlap_rate": 0.0,
-      "new_rate": 0.0,
+      "new_rate": 1.0,
       "issues_matched_total": 0,
       "issue_recall": 0.0,
       "issues_total": 24,
@@ -180,10 +180,10 @@
         ]
       },
       "new_rate_ci": {
-        "mean": 0.0,
+        "mean": 1.0,
         "ci": [
-          0.0,
-          0.0
+          1.0,
+          1.0
         ]
       },
       "stage_counts": {
@@ -192,7 +192,7 @@
         "stage3": 0
       },
       "llm_used": true,
-      "llm_calls": 0,
+      "llm_calls": 9,
       "issue_filter": {
         "mode": "auto",
         "keywords": [
@@ -203,11 +203,11 @@
       }
     },
     "reth_fusaka": {
-      "items_total": 0,
+      "items_total": 4,
       "matched_total": 0,
-      "new_total": 0,
+      "new_total": 4,
       "overlap_rate": 0.0,
-      "new_rate": 0.0,
+      "new_rate": 1.0,
       "issues_matched_total": 0,
       "issue_recall": 0.0,
       "issues_total": 34,
@@ -219,10 +219,10 @@
         ]
       },
       "new_rate_ci": {
-        "mean": 0.0,
+        "mean": 1.0,
         "ci": [
-          0.0,
-          0.0
+          1.0,
+          1.0
         ]
       },
       "stage_counts": {
@@ -231,7 +231,7 @@
         "stage3": 0
       },
       "llm_used": true,
-      "llm_calls": 0,
+      "llm_calls": 4,
       "issue_filter": {
         "mode": "auto",
         "keywords": [
@@ -241,11 +241,11 @@
       }
     },
     "nimbus_fusaka": {
-      "items_total": 0,
+      "items_total": 14,
       "matched_total": 0,
-      "new_total": 0,
+      "new_total": 14,
       "overlap_rate": 0.0,
-      "new_rate": 0.0,
+      "new_rate": 1.0,
       "issues_matched_total": 0,
       "issue_recall": 0.0,
       "issues_total": 63,
@@ -257,10 +257,10 @@
         ]
       },
       "new_rate_ci": {
-        "mean": 0.0,
+        "mean": 1.0,
         "ci": [
-          0.0,
-          0.0
+          1.0,
+          1.0
         ]
       },
       "stage_counts": {
@@ -269,7 +269,7 @@
         "stage3": 0
       },
       "llm_used": true,
-      "llm_calls": 0,
+      "llm_calls": 14,
       "issue_filter": {
         "mode": "auto",
         "keywords": [
@@ -282,11 +282,11 @@
       }
     },
     "nethermind_fusaka": {
-      "items_total": 0,
+      "items_total": 5,
       "matched_total": 0,
-      "new_total": 0,
+      "new_total": 5,
       "overlap_rate": 0.0,
-      "new_rate": 0.0,
+      "new_rate": 1.0,
       "issues_matched_total": 0,
       "issue_recall": 0.0,
       "issues_total": 50,
@@ -298,10 +298,10 @@
         ]
       },
       "new_rate_ci": {
-        "mean": 0.0,
+        "mean": 1.0,
         "ci": [
-          0.0,
-          0.0
+          1.0,
+          1.0
         ]
       },
       "stage_counts": {
@@ -310,7 +310,7 @@
         "stage3": 0
       },
       "llm_used": true,
-      "llm_calls": 0,
+      "llm_calls": 5,
       "issue_filter": {
         "mode": "auto",
         "keywords": [
@@ -320,11 +320,11 @@
       }
     },
     "lighthouse_fusaka": {
-      "items_total": 0,
+      "items_total": 24,
       "matched_total": 0,
-      "new_total": 0,
+      "new_total": 24,
       "overlap_rate": 0.0,
-      "new_rate": 0.0,
+      "new_rate": 1.0,
       "issues_matched_total": 0,
       "issue_recall": 0.0,
       "issues_total": 51,
@@ -336,10 +336,10 @@
         ]
       },
       "new_rate_ci": {
-        "mean": 0.0,
+        "mean": 1.0,
         "ci": [
-          0.0,
-          0.0
+          1.0,
+          1.0
         ]
       },
       "stage_counts": {
@@ -348,7 +348,7 @@
         "stage3": 0
       },
       "llm_used": true,
-      "llm_calls": 0,
+      "llm_calls": 24,
       "issue_filter": {
         "mode": "auto",
         "keywords": [
@@ -359,11 +359,11 @@
       }
     },
     "prysm_fusaka": {
-      "items_total": 0,
+      "items_total": 25,
       "matched_total": 0,
-      "new_total": 0,
+      "new_total": 25,
       "overlap_rate": 0.0,
-      "new_rate": 0.0,
+      "new_rate": 1.0,
       "issues_matched_total": 0,
       "issue_recall": 0.0,
       "issues_total": 50,
@@ -375,10 +375,10 @@
         ]
       },
       "new_rate_ci": {
-        "mean": 0.0,
+        "mean": 1.0,
         "ci": [
-          0.0,
-          0.0
+          1.0,
+          1.0
         ]
       },
       "stage_counts": {
@@ -387,7 +387,7 @@
         "stage3": 0
       },
       "llm_used": true,
-      "llm_calls": 0,
+      "llm_calls": 25,
       "issue_filter": {
         "mode": "auto",
         "keywords": [
@@ -408,18 +408,16 @@
   },
   "audit_item_filter": {
     "classifications": [
-      "exploitable",
-      "needs-manual-audit",
-      "needs-review"
-    ],
-    "include_bug_bounty": true
+      "potential-vulnerability",
+      "vulnerability"
+    ]
   },
   "issue_filter": {
     "mode": "auto",
     "keywords": null
   },
   "run_metadata": {
-    "generated_at": "2026-02-24T09:37:58.153712+00:00",
+    "generated_at": "2026-02-24T09:45:40.175659+00:00",
     "ai": {
       "name": "claude",
       "version": "codex-cli 0.92.0"
