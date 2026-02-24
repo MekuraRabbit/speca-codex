@@ -1,4 +1,4 @@
-name: "RQ1 Benchmark: Sherlock Audit Map Evaluation"
+name: "RQ1 Benchmark 01: Setup Data"
 
 on:
   workflow_dispatch:
@@ -7,22 +7,17 @@ on:
         description: "Comma-separated list of audit branches"
         required: true
         type: string
-      llm_max:
-        description: "Max LLM calls per branch"
-        required: false
-        type: number
-        default: 200
 
 permissions:
   contents: write
 
 jobs:
-  sherlock-eval:
+  setup-data:
     runs-on: self-hosted
 
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      CLAUDE_CODE_PERMISSIONS: bypassPermissions
+      RESULTS_DIR: benchmarks/results/rq1/sherlock_ethereum_audit_contest
 
     steps:
       - name: Checkout Branch
@@ -39,33 +34,33 @@ jobs:
 
       - name: Reset Previous Results
         run: |
-          rm -rf benchmarks/results/rq1/sherlock_ethereum_audit_contest
-          mkdir -p benchmarks/results/rq1/sherlock_ethereum_audit_contest
+          rm -rf "${RESULTS_DIR}"
+          mkdir -p "${RESULTS_DIR}"
 
       - name: Collect Audit Outputs
         run: |
           uv run python benchmarks/scripts/collect_branch_outputs.py \
             --branches "${{ inputs.branches }}" \
             --output-globs "03_PARTIAL_*.json,03_AUDITMAP_PARTIAL_*.json,TARGET_INFO.json" \
-            --output-root "benchmarks/results/rq1/sherlock_ethereum_audit_contest"
+            --output-root "${RESULTS_DIR}"
 
       - name: Verify Collected Outputs
         run: |
           python3 - <<'PY'
-          import glob
-          import os
+          import glob, os
           branches = [b.strip() for b in os.environ.get("BRANCHES", "").split(",") if b.strip()]
+          results_dir = os.environ["RESULTS_DIR"]
           patterns = [p.strip() for p in os.environ.get("OUTPUT_GLOBS", "").split(",") if p.strip()]
           missing = []
           for branch in branches:
             sanitized = branch.replace("/", "__")
             matches = []
             for pattern in patterns:
-              matches.extend(glob.glob(f"benchmarks/results/rq1/sherlock_ethereum_audit_contest/{sanitized}/{pattern}"))
+              matches.extend(glob.glob(f"{results_dir}/{sanitized}/{pattern}"))
             if not matches:
               missing.append(branch)
           if missing:
-            raise SystemExit(f"No outputs/03_*.json collected for: {', '.join(missing)}")
+            raise SystemExit(f"No outputs collected for: {', '.join(missing)}")
           PY
         env:
           BRANCHES: ${{ inputs.branches }}
@@ -85,32 +80,15 @@ jobs:
       - name: Build Run Metadata
         run: |
           uv run python benchmarks/rq1/build_metadata.py \
-            --collection "benchmarks/results/rq1/sherlock_ethereum_audit_contest/collection_summary.json" \
-            --output "benchmarks/results/rq1/sherlock_ethereum_audit_contest/run_metadata.json" \
+            --collection "${RESULTS_DIR}/collection_summary.json" \
+            --output "${RESULTS_DIR}/run_metadata.json" \
             --ai-version "${AI_VERSION}"
 
-      - name: Evaluate Matches
-        run: |
-          uv run python -m benchmarks.rq1.cli \
-            --branches "${{ inputs.branches }}" \
-            --results-dir "benchmarks/results/rq1/sherlock_ethereum_audit_contest" \
-            --llm-max "${{ inputs.llm_max }}" \
-            --metadata "benchmarks/results/rq1/sherlock_ethereum_audit_contest/run_metadata.json" \
-            --audit-classifications "vulnerability,potential-vulnerability" \
-            --client-filter auto
-
-      - name: Generate Markdown Report
-        run: |
-          uv run python benchmarks/rq1/generate_report.py \
-            --summary "benchmarks/results/rq1/sherlock_ethereum_audit_contest/evaluation_summary.json" \
-            --collection "benchmarks/results/rq1/sherlock_ethereum_audit_contest/collection_summary.json" \
-            --output "benchmarks/results/rq1/sherlock_ethereum_audit_contest/evaluation_summary.md"
-
-      - name: Push Evaluation Results
+      - name: Push Setup Results
         if: always()
         run: |
-          git add benchmarks/results/rq1/sherlock_ethereum_audit_contest/
+          git add "${RESULTS_DIR}/"
           if ! git diff --staged --quiet; then
-            git commit -m "benchmark: sherlock audit evaluation"
+            git commit -m "benchmark: rq1 01-setup data collection"
             git push origin "${{ github.ref_name }}" --force-with-lease
           fi
