@@ -176,7 +176,15 @@ def main() -> None:
         lines.append("")
 
     # Missed issues
-    if issues_total > issues_matched:
+    missed = summary.get("missed_issues", [])
+    if missed:
+        lines.append("## Missed Issues")
+        lines.append("| Issue # | Severity | Title |")
+        lines.append("| --- | --- | --- |")
+        for m in missed:
+            lines.append(f"| #{m.get('issue_id', '?')} | {(m.get('severity') or '').capitalize()} | {m.get('title', '')} |")
+        lines.append("")
+    elif issues_total > issues_matched:
         lines.append("## Missed Issues")
         lines.append(f"{issues_total - issues_matched} issue(s) not matched by any audit finding.")
         lines.append("")

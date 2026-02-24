@@ -251,6 +251,15 @@ def evaluate(
         "severity_breakdown": severity_breakdown,
         "llm_calls": llm_calls,
         "matches": recall_matches,
+        "missed_issues": [
+            {
+                "issue_id": i.issue_id,
+                "severity": i.severity,
+                "title": i.title,
+            }
+            for i in issues
+            if i.issue_id not in recall_matches
+        ],
     }
 
     # Generate labels CSV (FP detection)
