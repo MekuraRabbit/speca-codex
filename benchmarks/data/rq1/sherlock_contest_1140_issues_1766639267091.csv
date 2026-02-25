@@ -450,7 +450,7 @@ _No response_
 
 ### Mitigation
 
-_No response_","Invalid",""
+_No response_","Invalid","Invalid."
 "4","Teeny Honeysuckle Lion","Erigon: remote Denial of Service via req/resp query","### Summary
 
 
@@ -739,7 +739,14 @@ A single invocation of `RealSlotReport::update_performance` with `state.slot() =
 #### Mitigation
 
 Replace the `expect`-based conversion with explicit, non-panicking handling: convert the difference to an integer, then call `NonZeroU64::new(raw_delay).ok_or(Error::InvalidInclusionDelay)?` (or otherwise return a `Result` error) so the function returns a controlled error when the inclusion delay is zero instead of panicking.
-","Invalid",""
+","Invalid","From Grandine team:
+
+As the expect says, ""MIN_ATTESTATION_INCLUSION_DELAY is at least 1 in all presets"". Attestations with slots that violate MIN_ATTESTATION_INCLUSION_DELAY requirement are not accepted in fork choice (they are delayed instead), and will never appear in RealSlotReport::update_performance. This is a non-issue.
+
+Correction: ""included in block"" instead of ""accepted in fork choice (they are delayed instead)"".
+
+SlotReport::update_performance is only called in state transition, and only after attestations are validated. And during validations MIN_ATTESTATION_INCLUSION_DELAY is checked:
+attestation_slot + P::MIN_ATTESTATION_INCLUSION_DELAY.get() <= state.slot()"
 "6","Strong Inky Mustang","Teku recoverMatrix - Sidecars are unordered causing `recoverCellsAndProofs()` to fail","### Summary
 
 [`recoverCellsAndProofs()`](https://github.com/Consensys/teku/blob/fe5753d0659339463f969c18c812119ecededbbd/ethereum/spec/src/main/java/tech/pegasys/teku/spec/logic/versions/fulu/helpers/MiscHelpersFulu.java#L555) are called with cells that are not guaranteed to be ordered by column index causing [`recoverMatrix()`](https://github.com/Consensys/teku/blob/fe5753d0659339463f969c18c812119ecededbbd/ethereum/spec/src/main/java/tech/pegasys/teku/spec/logic/versions/fulu/helpers/MiscHelpersFulu.java#L539-L569) to regularly fail.
@@ -805,7 +812,13 @@ A single `Attestation` whose `data.target.epoch` is outside `{current_epoch, pre
 
 #### Mitigation
 Replace the `?` propagation on `attestation_epoch(...)` inside `initialize_shuffled_indices` with explicit handling that skips attestations returning `Err` (e.g. `match attestation_epoch(...) { Ok(AttestationEpoch::Previous) => need_previous = true, Ok(AttestationEpoch::Current) => need_current = true, Err(_) => { log::debug!(""skipping attestation with out-of-range target.epoch""); continue } }`) so a single malformed/out-of-range attestation cannot cause the function to return `Err`.
-","Invalid",""
+","Invalid","From the EF team:
+
+initialize_shuffled_indices is used in state transition functions only, it initializes the new state's internal shuffling cache. The desired behaviour of state transition is to reject the block on first validation failure encountered.
+
+initialize_shuffled_indices works as it was designed, block can only contain attestations that are not older than MIN_ATTESTATION_INCLUSION_DELAY, it definitely cannot include earlier attestations than from previous epoch.
+
+The proposed mitigation not only tries to solve non-existing issue, it also can be considered harmful, as it will proceed with shuffling initialization with invalid attestations instead of exiting early and thus degrading the performance."
 "8","Macho Tartan Ladybug","Early gas limit validation reduces unnecessary state accesses for invalid transactions","### Summary
 
 Moving the Osaka gas limit validation to the beginning of `preCheck` function can prevent unnecessary state accesses for transactions that will inevitably fail due to exceeding the gas limit cap.
@@ -908,7 +921,8 @@ func (st *StateTransition) preCheck() error {
     // Then proceed with other checks...
     // ...rest of preCheck logic
 }
-```","Invalid",""
+```","potential-info","potential info, but remains invalid as for issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed.
+The PR https://github.com/ethereum/go-ethereum/pull/32641 was created one day before the issue submission. Also, the Geth team has explicitly stated that they won't fix this issue. Planning to keep as invalid."
 "9","Creamy Pear Horse","EIP-7594: Lodestar deviates from specs due to wrong operator in `computeColumnsForCustodyGroup` allowing network split","## Summary
 The `computeColumnsForCustodyGroup()` function in Lodestar uses `>` instead of `>=` for boundary validation, accepting invalid `custodyIndex=128` while other clients explicitly reject it per EIP-7594 specification.
 
@@ -1397,7 +1411,12 @@ Block may be build with fewer transactions than possible
 
 ### Mitigation
 
-Correctly calculate the exact block header RLP length.","Invalid",""
+Correctly calculate the exact block header RLP length.","potential-info","potential info, but remains invalid as for issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed.
+From the Reth team:
+
+no fix, so invalid per contest rules
+
+Keeping as invalid."
 "13","Creamy Pear Horse","EIP-7825: Confusion on RPC and debugging due to inappropriate usage of `GasLimitTooHigh` error","## Summary
 Erigon's transaction validation returns the same error code `txpoolcfg.GasLimitTooHigh` for both block gas limit violations and EIP-7825 transaction gas limit cap violations, making it impossible to distinguish between different types of gas limit failures.
 
@@ -1487,7 +1506,13 @@ index 3f6b00cf15..955da14d39 100644
         default:
                 panic(fmt.Sprintf(""discard reason: %d"", r))
         }
-```","Invalid",""
+```","potential-info","potential info, but remains invalid as for issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed.
+
+From the Erigon team:
+
+Invalid as no fix
+
+Keeping as invalid."
 "14","Furry Cedar Mink","Unsafe automatic reset on missing/partial head state in go-ethereum/core/blockchain.go","### Summary
 
 A missing or partially available head block/header will cause a full chain reset for a Geth node (potentially forcing a full resync) as the node startup logic will call bc.Reset() when rawdb.ReadHeadBlockHash or GetHeaderByHash or the head block lookup returns empty/nil, allowing an attacker or a transient DB inconsistency to trigger a destructive recovery path.
@@ -1714,7 +1739,7 @@ If maintainers prefer a smaller change, require an explicit config flag (e.g., c
 
 ```
 
-This is defensive and preserves backward compatibility for operators who intentionally allow auto-reset, but prevents accidental destructive resets by default.","Invalid",""
+This is defensive and preserves backward compatibility for operators who intentionally allow auto-reset, but prevents accidental destructive resets by default.","Invalid","I don’t think this issue was introduced by Fusaka. It should be submitted to the EF bounty instead. Also, this issue is a design suggestion rather than a real security issue — it relies on other potential vulnerabilities to have any impact."
 "15","Teeny Honeysuckle Lion","Nimbus: remote DoS via large custody group count metadata update","### Summary
 
 The function `checkPeerCustody` is a part of PeerDAS protocol implementation.
@@ -2238,7 +2263,11 @@ def calc_excess_blob_gas(parent: Header) -> int:
     else:
         return parent.excess_blob_gas + parent.blob_gas_used - target_blob_gas
 ```
-","Invalid",""
+","potential-info","potential info, but remains invalid as for issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed.
+
+From the Geth team:
+
+Invalid as no fix"
 "18","Smooth Walnut Pigeon","Nimbus PeerDAS builds wrong `DataColumnSidecars` in repair/reconstruction path","### Summary
 
 Wrong column assembly in `get_data_column_sidecars()` will cause invalid `DataColumnSidecars` and extra memory usage for Nimbus nodes during PeerDAS repair/reconstruction. The function appends full rows instead of selecting one cell/proof at the column index. When Nimbus reconstructs cells/proofs and invokes this helper to rebuild sidecars (e.g., after receiving malformed columns via req/resp), it produces oversized, invalid sidecars that peers reject.
@@ -2411,7 +2440,9 @@ if body.Header == nil {
     return nil, ethereum.NotFound
 }
 return &body, nil
-```","Invalid",""
+```","potential-info","potential info, but remains invalid as for issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed.
+
+Invalid as no fix."
 "22","Furry Cedar Mink","Unchecked RLP encoding errors when serving contiguous block header queries (may cause crash or malformed responses)","### Summary
 
 Ignoring RLP encoding errors will cause a reliability/availability impact for Geth network peers and node operators as a node may crash, return malformed/partial header responses, or leak internal failures when a crafted or unexpected header triggers an encoding failure and the error is silently ignored (actor: remote peer or corrupted on-disk header; attack path: request contiguous headers that include an unencodable header).
@@ -2508,7 +2539,19 @@ Apply the same pattern inside the ancestor loop:
 +            }
 +            headers = append(headers, rlpData)
 
-```","Invalid",""
+```","Invalid","Attacker (or bad/corrupt disk) ensures the node stores or is asked to serve a header whose RLP encoding triggers an error.
+Remote peer sends a contiguous GetBlockHeaders request that includes the problematic header in the served range (either by number or by hash origin).
+serviceContiguousBlockHeaderQuery calls rlp.EncodeToBytes(header) and discards the returned error.
+Because the error is ignored the function either:
+appends an invalid/zero rlp.RawValue into the response (if encoding returned nil bytes), or
+continues and later returns a partial/malformed header list, or
+if the encode failure indicates deeper corruption, the node may panic elsewhere or produce inconsistent network responses.
+The remote peer receives incorrect/malformed header data (or the node experiences an internal failure), which can cause downstream sync failures, misbehaviour detection, or require operator intervention (resync).
+
+The attack path is overly abstract and relies on too many assumptions. This attack path does not cause any impact on entities other than the attacker — if the attacker intentionally or due to disk factors produces bad data, other nodes will simply reject the payload. This would not trigger downstream sync failures on other nodes.
+
+In addition, issues of Low severity or higher must be submitted along with a PoC.
+Invalid as no fix."
 "23","Creamy Pear Horse","EIP-7642: eth/69 `BlockRangeUpdateMessage` class docs contains mathematically impossible condition contradicting implementation.","## Summary
 The [`BlockRangeUpdateMessage` class](https://github.com/NethermindEth/nethermind/blob/0e5dba9f207d192b4cef72c76245782bba5fe145/src/Nethermind/Nethermind.Network/P2P/Subprotocols/Eth/V69/Messages/BlockRangeUpdateMessage.cs#L9C1-L12C15) documentation states that blocks `b` with `earliest >= b >= latest` are available, which is mathematically impossible for normal block ranges where `earliest < latest`. The implementation and tests clearly demonstrate the correct logic should be `earliest <= b <= latest`.
 
@@ -2638,7 +2681,7 @@ ipts</c>.
  public class BlockRangeUpdateMessage : P2PMessage
  {
      public override int PacketType { get; } = Eth69MessageCode.BlockRangeUpdate;
-```","Invalid",""
+```","Invalid","The Nethermind team doesn’t plan to fix this comment issue. planning to keep it as invalid."
 "24","Bent Slate Iguana","[Reth][EIP-7910] Incorrect address for the p256verify precompile","### Summary
 
 In `eth_config`, the advertised address for the `p256verify` precompile is `0x12`
@@ -2727,7 +2770,9 @@ _No response_
 
 ### Mitigation
 
-_No response_","Invalid",""
+_No response_","potential-info","potential info, but remains invalid as for issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed.
+
+Invalid as no fix"
 "26","Bent Slate Iguana","[Erigon][EIP-7934] RLP block size effectively never enforced","### Summary
 
 When determining the max RLP size to enforce, we call `GetMaxRlpBlockSize` with the block header
@@ -2814,7 +2859,9 @@ As such the last blob transaction that should be included in a block can be inco
 
 ### Mitigation
 
--","Invalid",""
+-","potential-info","potential info, but remains invalid as for issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed.
+
+Invalid as no fix."
 "28","Bent Slate Iguana","[Erigon][EIP-7934] Nil withdrawals size is not counted in RLP block size check.","### Summary
 
 In case a block being mined does not contain any withdrawals, [this if](https://github.com/erigontech/erigon/blob/df50b68b6720fbfd2f7ff5f121d4a97bda25d39f/execution/stagedsync/stage_mining_create_block.go#L79) does not count the size of withdrawals. However, the empty field (for the empty `withdrawals`) still takes the space, and this should be counted.
@@ -2851,7 +2898,9 @@ The fact that `nil` is used instead of an empty `make([]...)` derives from the p
 
 ### Impact
 
--","Invalid",""
+-","potential-info","potential info, but remains invalid as for issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed.
+
+Invalid as no fix"
 "29","Bent Slate Iguana","[Reth][EIP-7642] Incorrect 120s interval for `BlockRangeUpdate`","### Summary
 
 In Reth, a 120s periodic tick enqueues `BlockRangeUpdate` for eth/69 sessions
@@ -2968,7 +3017,7 @@ _No response_
 
 ### Mitigation
 
-_No response_","Invalid",""
+_No response_","potential-info","Keeping as invalid. for issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed."
 "31","Bent Slate Iguana","[Besu][EIP-7892] Chain split if BPO params at Osaka hardfork differ from Prague","### Summary
 
 In Besu, the `osakaDefinition` does not apply the blob schedule configured in the BPO config for the Osaka hardfork. Hence, during the Osaka hardfork, Besu will rely on the parameters defined in Prague.
@@ -3063,7 +3112,11 @@ See the [gist](https://gist.github.com/3docSec/a568a71116291e99a1fd68a232badec3)
 
 ### Mitigation
 
-_No response_","Invalid",""
+_No response_","Invalid","Osaka blob parameters differ from Prague
+User sends blob transactions >max in Prague
+Chain split as Besu rejects a block while other clients accept
+
+Agree with the protocol team’s judgement. The configuration described by Watson will not occur. Considering other clients are deprecating support, limiting blob schedule changes to BPO forks only, I believe this is a valid design choice."
 "32","Furry Cedar Mink","Misleading assertNotNull parameter names for slashing processors in Eth2P2PNetworkBuilder","### Summary
 
 A mismatch between the asserted parameter name and the actual variable checked will cause a confusing/incorrect error message for operators and developers when the builder validation fails, as a null consumer variable will produce an error message that refers to a processor instead. This affects maintainability and debugging for Teku networking (teku/networking/eth2/src/main/java/tech/pegasys/teku/networking/eth2/Eth2P2PNetworkBuilder.java) as an operator or developer will be misled when diagnosing a missing configuration during network construction.
@@ -3141,7 +3194,7 @@ Suggested minimal patch (diff-style):
      assertNotNull(""gossipedVoluntaryExitProcessor"", gossipedVoluntaryExitConsumer);
      ...
 
-```","Invalid",""
+```","Invalid","Out of scope. Issue was not introduced in Fusaka."
 "33","Mammoth Sandstone Rat","EstimateGas Not Enforce MaxTxnGaslimit By EIP-7825 in Erigon","### Summary
 
 **`EIP-7825`** mandates a cap on transaction gas limits, which is properly enforced in the state and transaction pool. However, this enforcement is missing in EstimateGas. This oversight can lead to an overflowed gas assignment for transactions and a lack of user feedback when interacting with the `eth_estimateGas` API on an Erigon node.
@@ -3205,7 +3258,16 @@ _No response_
 
 ### Mitigation
 
-_No response_","Invalid",""
+_No response_","Invalid","Client comment:
+
+#33 is invalid.
+
+curl -s -X POST localhost:8545 -H 'content-type: application/json' --data '{""jsonrpc"":""2.0"",""id"":3,""method"":""eth_estimateGas"",""params"":[{""from"":""0x0000000000000000000000000000000000000001"",""to"":""0x0000000000000000000000000000000000000002"",""gas"":""0x1000001""}]}'
+{""jsonrpc"":""2.0"",""id"":3,""error"":{""code"":-32000,""message"":""gas limit too high: address 0x0000000000000000000000000000000000000001, gas limit 16777217""}}
+
+Running with
+
+./build/bin/erigon --override.osaka=0"
 "34","Bent Slate Iguana","[Nimbus][EIP-7594] Nimbus accepts duplicate sidecars when proposer publishes multiple blocks","### Summary
 
 Clients are consistently following the spec of [ignoring duplicate sidecars based on the (block_header.slot, block_header.proposer_index, sidecar.index) tuple](https://github.com/ethereum/consensus-specs/blob/master/specs/fulu/p2p-interface.md#data_column_sidecar_subnet_id).
@@ -3318,7 +3380,9 @@ _No response_
 
 ### Mitigation
 
-_No response_","Invalid",""
+_No response_","potential-info","This does describe a good test case for boundary testing, but in terms of what's possible on a network, its not really possible IMO
+
+Keeping as invalid. For issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed."
 "36","Furry Cedar Mink","Uninitialized channel in AbstractGossipManager may cause unexpected ""Gossip channel not available"" failures","### Summary
 
 An uninitialized channel field will cause a gossip publishing failure / silent runtime error for Teku networking as a developer/operator will attempt to publish messages before subscribing and thereby encounter IllegalStateException(""Gossip channel not available"") or fire-and-forget failures where gossip never occurred.
@@ -3427,7 +3491,7 @@ protected SafeFuture<Void> publishMessageWithFeedback(final T message) {
       .orElse(SafeFuture.failedFuture(new IllegalStateException(""Gossip channel not available"")))
       .handle(...);
 }
-```","Invalid",""
+```","Invalid","Out of scope, the issue was not introduced in Fusaka."
 "37","Furry Cedar Mink","Hanging SafeFuture returned after shutdown in ScheduledExecutorAsyncRunner","### Summary
 
 Returning an uncompleted SafeFuture on shutdown will cause a hang / indefinite wait for callers and degrade availability for Teku infrastructure as a caller (developer/operator or internal component) will call runAsync/runAfterDelay after shutdown and then block or wait forever on the returned future.
@@ -3642,7 +3706,7 @@ Additional improvements (recommended)
 - Use shutdown() + awaitTermination(timeout) pattern before calling shutdownNow() to attempt graceful completion of running tasks and avoid abrupt cancellations.
 - Consider using delay.toNanos() and TimeUnit.NANOSECONDS for more accurate scheduling and to avoid overflow for large durations.
 - Consider making thread factory threads daemon (or at least document rationale) to avoid JVM shutdown delays, or ensure explicit lifecycle management.
-- Add concurrency tests to ensure no races between shutdown() and run*() calls.","Invalid",""
+- Add concurrency tests to ensure no races between shutdown() and run*() calls.","Invalid","Invalid as it wasn't introduced by Fusaka upgrade."
 "38","Furry Cedar Mink","Lost sync committee messages when state or assignments are unavailable in SyncCommitteeMessageGossipManager","### Summary
 
 Failing to compute or retrieve the applicable subcommittee assignments will cause a message publication failure / lost sync committee message for validators and node operators as the manager will log an error and drop the message (no retry, no queuing), meaning locally-produced sync committee messages may never be gossiped to the network.
@@ -3806,7 +3870,7 @@ private void bufferAndRetryWhenStateAvailable(
   // Schedule short delayed retry (or hook into state-ready notifications)
   // Pseudo-code: async scheduler: after delay -> attempt getStateForSyncCommittee and publish buffered messages
 }
-```","Invalid",""
+```","Invalid","This issue was not introduced by the Fusaka upgrade. Planning to keep it as invalid because it’s OOS."
 "39","Teeny Honeysuckle Lion","Nimbus: queryRandom lacks subnet overlap checks","### Summary
 
 The `queryRandom` function in Nimbus PeerDAS implementation is used to discover peers for data column distribution.
@@ -4026,7 +4090,11 @@ Node 2 (custody_count=3) was selected
 
 ### Mitigation
 
-_No response_","Invalid",""
+_No response_","Invalid","From Nimbus team:
+
+here the custody subnets and the custody group counts exactly end up to be the same value, numerically, so even if the peer searches for custody subnets and matches them with custody group count (fetched from the ENR), it should be totally fine, the reason being, right now there's 1 column per subnet. for 39, i feel it's invalid
+
+Planning to keep this as invalid."
 "40","Teeny Syrup Parakeet","Proposer calculation can be incorrect since proposer lookahead is not considered inside get_beacon_proposer_indices","### Summary
 
 There can be a mismatch b/w the actual proposer and computed proposer in flows which internally invoke `get_beacon_proposer_indices` since effective balance updates can occur in between
@@ -4380,7 +4448,7 @@ See code flow
 
 ### Mitigation
 
-Remove the unnecessary `EC_POINT_is_on_curve` duplicate check","Invalid",""
+Remove the unnecessary `EC_POINT_is_on_curve` duplicate check","Invalid","This issue has no impact, and the protocol team does not plan to fix it. Planning to keep as invalid."
 "43","Spicy Rouge Finch","[INFO] Unreachable code path in besu-native's implementation of `p256_verify` as part of EIP-7951","### Summary
 
 In besu-native's [p256_verify](https://github.com/hyperledger/besu-native/blob/main/boringssl/boringssl_jni/p256_verify.c#L125-L127), used by the Besu client as a native implementation of the `P256VERIFY` precompile from EIP-7951, it checks if the return value from `ECDSA_do_verify` is different than 0 or 1, and creates a different error message for failure.
@@ -4420,7 +4488,7 @@ See above.
 
 ### Mitigation
 
-Remove the code path that checks if `verify_status` is different than 0 or 1","Invalid",""
+Remove the code path that checks if `verify_status` is different than 0 or 1","Invalid","This issue has no impact, and the protocol team does not plan to fix it. Planning to keep as invalid."
 "46","Petite Infrared Goat","Tx selection underestimates block RLP size, causing block import rejection","Selection uses an underestimate. `Transaction.getSizeForBlockInclusion()` returns the opaque typed‑tx bytes (type byte + inner RLP), computed via `TransactionEncoder.encodeOpaqueBytes(this, EncodingContext.BLOCK_BODY)`. That’s the raw payload before it gets wrapped as an RLP byte string item when inserted into the block’s transactions list.
 
 But validation uses the full block RLP. `MainnetBlockValidator` rejects a block if `block.getSize()` (the full RLP of `[header, tx_list, ommers_list, withdrawals_list]`) exceeds `maxRlpBlockSize`. `Block#getSize()` is derived from `Block#writeTo`, which adds:
@@ -4705,7 +4773,13 @@ func Test_ChainInfoForkchoice_NoDeadlineBlocksWriter(t *testing.T) {
  Enforce bounded contexts in Service wrappers:
 If the incoming ctx has no deadline, derive a short, configurable timeout and pass that downstream. Example: if _, ok := ctx.Deadline(); !ok { ctx, cancel := context.WithTimeout(ctx, defaultForkchoiceTimeout); defer cancel() }
 Reduce lock scope:
-Where feasible, avoid holding the store lock across long-running computations; compute outside the lock or copy data under lock then release before heavy work. This requires careful refactoring to maintain correctness.","Invalid",""
+Where feasible, avoid holding the store lock across long-running computations; compute outside the lock or copy data under lock then release before heavy work. This requires careful refactoring to maintain correctness.","potential-info","The impact of this issue does not meet our requirements for L/M/H severity
+
+Vulnerabilities that allow an attacker to slash more than 0.01% of validators, trivially cause network splits affecting at least 0.01% of the network, or being able to bring down more than 0.01% of the network by sending a single network packet or an on-chain transaction.
+
+The node can experience increased latency or temporary stalls in forkchoice updates and block processing. This is an availability degradation; depending on timing and load, it could manifest as delayed head updates or missed performance targets.
+
+Keeping as potential info, but remains invalid as for issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed."
 "48","Shambolic Steel Armadillo","Lighthouse uses latest version 0.9.0 of rust-eth-kzg library which doesn't properly support point of infinity","","Low",""
 "49","Bent Slate Iguana","[Lodestar][EIP-7594] Inbound rate-limiter undercounts `DataColumnByRange` and `DataColumnByRoot` requests","## Summary
 
@@ -5219,7 +5293,11 @@ Add a nil check before dereferencing BlobGasUsed in CalcExcessBlobGas, e.g.:
 ```
 if parent.BlobGasUsed != nil {
     blobGasUsed = *parent.BlobGasUsed
-}","Invalid",""
+}","Invalid","From Geth team:
+
+I triaged issue #54, its another invalid. There is no case where the parent header has ExcessBlobGas set without also having BlobGasUsed set. If BlobGasUsed is 0, it will be set to 0 not to nil
+
+Planning to keep this as invalid."
 "55","Mammoth Sandstone Rat","EstimateGas Not Be Enforced Against MaxTxnGaslimit By EIP-7825 In Nethermind","### Summary
 
 Nethermind enforces the `EIP-7825` per transaction gas limit cap in transaction validation ( including in txpool and block verification) but does not enforce it in `eth_estimateGas`. Estimation is bounded by a separate JSON-RPC `GasCap` (default 100,000,000) or the block gas limit, which can exceed the limit (16,777,216) defined in `EIP-7825`. This can return estimates above the cap, leading to later tx rejection with `TxGasLimitCapExceeded`.
@@ -6439,7 +6517,7 @@ public class DataColumnSidecarGossipValidator {
   record InclusionProofInfo(
       Bytes32 commitmentsRoot, Bytes32 inclusionProofRoot, Bytes32 bodyRoot) {}
 }
-```","Invalid",""
+```","potential-info","Keeping as invalid. For issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed."
 "58","Petite Infrared Goat","ENR custody group count spoofing drives sampling failure and selective eclipse","Prysm currently trusts the custody‑group count (cgc) advertised in a peer’s ENR in two key places. That ENR value directly influences 
 - which nodes we try to dial for PeerDAS data‑column subnets, and 
 - which connected peers we consider “eligible” to request columns from when their metadata is missing/zero. 
@@ -6778,7 +6856,11 @@ In `dataColumnSubnets(...)`, clamp ENR.cgc to a safe upper bound for dial filter
 cgc := min( peerdas.CustodyGroupCountFromRecord(record), params.BeaconConfig().CustodyRequirement )
 ```
 
-This keeps ENR useful (rough routing) without letting “cgc = NumberOfCustodyGroups” dominate the search space.","Invalid",""
+This keeps ENR useful (rough routing) without letting “cgc = NumberOfCustodyGroups” dominate the search space.","Invalid","Client comment:
+
+This is a non-issue in my opinion. If a peer claims to custody some columns it doesn't actually custody, it will be de-peered via downscoring pretty quickly. A realistic attack scenario would require the attacker spin up a very large number of nodes. Unless they can prove this is worth fixing, I would consider it an invalid finding.
+
+The report was submitted as info and did not prove this can reach a higher severity. If you still believe this issue can be a valid low, please submit a high-level attack path and a PoC. The Prysm team is currently unwilling to fix it, so we will keep it as invalid."
 "59","Hot Hazel Otter","Goroutine Fan-out under Burst Load in P2P Broadcaster enables Local DoS","### Summary
 
  An adversarial peer or adverse network conditions will cause CPU and memory exhaustion for beacon node operators
@@ -6941,7 +7023,7 @@ How to run (Go):
 
 - Replace direct go-spawn with submission to a bounded work queue per topic.
 - Use a small timeout when ListPeers()==0 (e.g., a few hundred ms) and fall back to scheduling a retry rather than blocking for an epoch.
-- Guard PublishToTopic with a global in-flight cap; beyond the cap, drop with metrics to preserve node liveness.","Invalid",""
+- Guard PublishToTopic with a global in-flight cap; beyond the cap, drop with metrics to preserve node liveness.","Invalid","This issue describes an overly abstract scenario and lacks high-level supporting evidence. Agree with the protocol team’s judgement."
 "61","Spicy Rouge Finch","[INFO] Unnecessary computation in lighthouse implementation of `get_custody_groups`","### Summary
 
 Lighthouse's implementation of `get_custody_groups`, as defined by the `das-core` spec, does not follow the [latest recommendation](https://github.com/ethereum/consensus-specs/blob/master/specs/fulu/das-core.md#get_custody_groups) (main branch) to skip computation if all groups are custodied:
@@ -6983,7 +7065,9 @@ See above
 
 ### Mitigation
 
-Skip computation if all groups are custodied, as recommended by the latest spec.","Invalid",""
+Skip computation if all groups are custodied, as recommended by the latest spec.","Invalid","Agree with the protocol team's judgement. Keeping as invalid.
+
+Invalid as no fix."
 "62","Hot Hazel Otter","Dial-before-freshness in subnet broadcasting enables dial exhaustion under stale inputs","### Summary
 
  An attacker injecting stale gossip across subnets will increase outbound dials and lock contention for beacon node operators.
@@ -8054,7 +8138,7 @@ Move `helpers.ValidateAttestationTime` and `altair.ValidateSyncMessageTime` chec
 
 Add a freshness/time-range gate to data column sidecar broadcasting (if semantics demand it) before attempting discovery/dial.
 Bound dial attempts per subnet over time (rate limit/backoff with jitter) to curb amplification.
-Consider reducing dial attempts under lock or restructuring to minimize lock contention.","Invalid",""
+Consider reducing dial attempts under lock or restructuring to minimize lock contention.","Invalid","Agree this issue was not introduced by Fusaka and should be submitted to the EF bounty instead."
 "63","Macho Tartan Ladybug","`GetInputLengthsMayOverflow` function is redundant and can be removed for code simplification","### Summary
 
 The `GetInputLengthsMayOverflow` function in `ModExpPrecompile` is redundant and adds unnecessary complexity without providing value.
@@ -8113,7 +8197,7 @@ if (first_28_bytes_nonzero) {
 
 ### Mitigation
 
-Remove `GetInputLengthsMayOverflow` and simplify `GetInputLengths` to directly return `(uint.MaxValue, uint.MaxValue, uint.MaxValue)` when overflow is detected, letting `ExceedsMaxInputSize` handle all boundary checks uniformly.","Invalid",""
+Remove `GetInputLengthsMayOverflow` and simplify `GetInputLengths` to directly return `(uint.MaxValue, uint.MaxValue, uint.MaxValue)` when overflow is detected, letting `ExceedsMaxInputSize` handle all boundary checks uniformly.","potential-info","Keeping as invalid. For issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed."
 "64","Hot Hazel Otter","An attacker can censor broadcasts by ensuring node has exactly one peer on a subnet","### Summary
 
  A hard-coded broadcast threshold of 1 peer per subnet, combined with a lower-bound check in `hasPeerWithSubnet` that also resolves to 1, will cause the broadcaster to proceed with sending when only a single peer is available. This will cause censorship or DoS for beacon node operators as an attacker can sybil the target subnet so that your node dials exactly one malicious peer; your broadcasts succeed locally but get blackholed.
@@ -8512,7 +8596,11 @@ The use of this deprecated api can lead to security and compatibility issues in 
 
 
 ## Recommended Mitigation
-Switch to the crypto/ecdh package for onCurve checks, which is as recommended by the official go documentation","Invalid",""
+Switch to the crypto/ecdh package for onCurve checks, which is as recommended by the official go documentation","Invalid","From Geth team:
+
+invalid: We are aware of this and using the deprecated API does not make it unsafe.
+
+Planning to keep as invalid."
 "68","Restless Citron Lemur","A legacy blob spammer will starve Osaka blobpool capacity for post-upgrade operators","### Summary
 
 Skipping Osaka ValidateTxBasics during blobpool disk rehydration will cause a sustained blob-capacity denial for post-upgrade operators as a legacy blob spammer will rehydrate pre-Osaka oversized entries and monopolise eviction priority.

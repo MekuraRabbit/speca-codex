@@ -1,107 +1,192 @@
-#16
-Keeping this as invalid since the team doesn’t plan to fix it.
+#3
+Invalid.
 
-#18
-This is a logical bug in a dead code path that is never executed. Although the code indeed contains a bug, it has no impact on the actual network or client behavior, so invalid is appropriate.
-get_data_column_sidecars() was already unused by that time, and https://github.com/status-im/nimbus-eth2/pull/7511 removes the function entirely. The PR post-dates this report by some days, but doesn't have to remove any usage of it, because it doesn't exist. The PoC has to manually call get_data_column_sidecars() precisely because there's no way to access it otherwise.
+#5
+From Grandine team:
 
-#51
-Client comments:
+As the expect says, "MIN_ATTESTATION_INCLUSION_DELAY is at least 1 in all presets". Attestations with slots that violate MIN_ATTESTATION_INCLUSION_DELAY requirement are not accepted in fork choice (they are delayed instead), and will never appear in RealSlotReport::update_performance. This is a non-issue.
 
-This is a design choice for performance (O(1) lookups with HashSet) and simplicity. This result is stored internally and is fully encapsulated within lighthouse, i.e. no impact on functionality and not exposed externally.
+Correction: "included in block" instead of "accepted in fork choice (they are delayed instead)".
 
-See discussion here:
-https://github.com/sigp/lighthouse/pull/7711#issuecomment-3157508418
+SlotReport::update_performance is only called in state transition, and only after attestations are validated. And during validations MIN_ATTESTATION_INCLUSION_DELAY is checked:
+attestation_slot + P::MIN_ATTESTATION_INCLUSION_DELAY.get() <= state.slot()
 
-#53
-Erigon CL is out of scope, only the EL side was in scope, so invalid
+#7
+From the EF team:
 
-#56
-Client comments:
+initialize_shuffled_indices is used in state transition functions only, it initializes the new state's internal shuffling cache. The desired behaviour of state transition is to reject the block on first validation failure encountered.
 
-is an informational at best.
+initialize_shuffled_indices works as it was designed, block can only contain attestations that are not older than MIN_ATTESTATION_INCLUSION_DELAY, it definitely cannot include earlier attestations than from previous epoch.
 
-"State root divergence on/after the Fulu upgrade if a mis-sized vector slips in." "That makes a mis-size unlikely today, but the upgrade path’s lack of validation is still a consensus foot-gun." "Mock a malicious/buggy InitializeProposerLookahead that returns wrong length"
+The proposed mitigation not only tries to solve non-existing issue, it also can be considered harmful, as it will proceed with shuffling initialization with invalid attestations instead of exiting early and thus degrading the performance.
 
-I doubt they'd be able to trigger this outside of some unrealistic test case.
+#8
+potential info, but remains invalid as for issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed.
+The PR https://github.com/ethereum/go-ethereum/pull/32641 was created one day before the issue submission. Also, the Geth team has explicitly stated that they won't fix this issue. Planning to keep as invalid.
 
-Planning to keep this as info.
-The issue is not going to be fixed, so will be invalidated unless fixed.
 
-#64
-Agree that the public disclosure occurred before the issue submission. Planning to keep this as invalid.
+#12
+potential info, but remains invalid as for issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed.
+From the Reth team:
 
-This bug was noted in a public discord conversation before the report:
+no fix, so invalid per contest rules
 
-https://discord.com/channels/595666850260713488/598292067260825641/1418242503261552801
+Keeping as invalid.
 
-#92
-EL is trusted.
+#13
+potential info, but remains invalid as for issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed.
 
-A compromised or buggy execution endpoint could still feed reordered blobs
+From the Erigon team:
 
-is not a valid assumption. Planning to keep as invalid.
+Invalid as no fix
 
-#94
-Agree with protocol judging. According to the specification defined in EIP-7892:
+Keeping as invalid.
 
-BLOB_SCHEDULE only contains two fields: EPOCH and MAX_BLOBS_PER_BLOCK.
+#14
+I don’t think this issue was introduced by Fusaka. It should be submitted to the EF bounty instead. Also, this issue is a design suggestion rather than a real security issue — it relies on other potential vulnerabilities to have any impact.
 
-TARGET_BLOBS_PER_BLOCK and BASE_FEE_UPDATE_FRACTION should not appear in the CL’s BLOB_SCHEDULE. Therefore, if a CL client detects these extra fields when loading the configuration and rejects it, this is the correct behavior — not a bug.
+#17
+potential info, but remains invalid as for issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed.
 
-#107
+From the Geth team:
+
+Invalid as no fix
+
+#21
+potential info, but remains invalid as for issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed.
+
+Invalid as no fix.
+
+#22
+Attacker (or bad/corrupt disk) ensures the node stores or is asked to serve a header whose RLP encoding triggers an error.
+Remote peer sends a contiguous GetBlockHeaders request that includes the problematic header in the served range (either by number or by hash origin).
+serviceContiguousBlockHeaderQuery calls rlp.EncodeToBytes(header) and discards the returned error.
+Because the error is ignored the function either:
+appends an invalid/zero rlp.RawValue into the response (if encoding returned nil bytes), or
+continues and later returns a partial/malformed header list, or
+if the encode failure indicates deeper corruption, the node may panic elsewhere or produce inconsistent network responses.
+The remote peer receives incorrect/malformed header data (or the node experiences an internal failure), which can cause downstream sync failures, misbehaviour detection, or require operator intervention (resync).
+
+The attack path is overly abstract and relies on too many assumptions. This attack path does not cause any impact on entities other than the attacker — if the attacker intentionally or due to disk factors produces bad data, other nodes will simply reject the payload. This would not trigger downstream sync failures on other nodes.
+
+In addition, issues of Low severity or higher must be submitted along with a PoC.
+Invalid as no fix.
+
+
+#23
+The Nethermind team doesn’t plan to fix this comment issue. planning to keep it as invalid.
+
+
+#25
+potential info, but remains invalid as for issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed.
+
+Invalid as no fix
+
+#27
+potential info, but remains invalid as for issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed.
+
+Invalid as no fix.
+
+#28
+potential info, but remains invalid as for issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed.
+
+Invalid as no fix
+
+#30
+Keeping as invalid. for issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed.
+
+#31
+Osaka blob parameters differ from Prague
+User sends blob transactions >max in Prague
+Chain split as Besu rejects a block while other clients accept
+
+Agree with the protocol team’s judgement. The configuration described by Watson will not occur. Considering other clients are deprecating support, limiting blob schedule changes to BPO forks only, I believe this is a valid design choice.
+
+#32
+Out of scope. Issue was not introduced in Fusaka.
+
+#33
+Client comment:
+
+#33 is invalid.
+
+curl -s -X POST localhost:8545 -H 'content-type: application/json' --data '{"jsonrpc":"2.0","id":3,"method":"eth_estimateGas","params":[{"from":"0x0000000000000000000000000000000000000001","to":"0x0000000000000000000000000000000000000002","gas":"0x1000001"}]}'
+{"jsonrpc":"2.0","id":3,"error":{"code":-32000,"message":"gas limit too high: address 0x0000000000000000000000000000000000000001, gas limit 16777217"}}
+
+Running with
+
+./build/bin/erigon --override.osaka=0
+
+#35
+This does describe a good test case for boundary testing, but in terms of what's possible on a network, its not really possible IMO
+
+Keeping as invalid. For issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed.
+
+#36
+Out of scope, the issue was not introduced in Fusaka.
+
+#37
+Invalid as it wasn't introduced by Fusaka upgrade.
+
+#38
+This issue was not introduced by the Fusaka upgrade. Planning to keep it as invalid because it’s OOS.
+
+#39
+From Nimbus team:
+
+here the custody subnets and the custody group counts exactly end up to be the same value, numerically, so even if the peer searches for custody subnets and matches them with custody group count (fetched from the ENR), it should be totally fine, the reason being, right now there's 1 column per subnet. for 39, i feel it's invalid
+
+Planning to keep this as invalid.
+
+#42
+This issue has no impact, and the protocol team does not plan to fix it. Planning to keep as invalid.
+
+#43
+This issue has no impact, and the protocol team does not plan to fix it. Planning to keep as invalid.
+
+#47
+The impact of this issue does not meet our requirements for L/M/H severity
+
+Vulnerabilities that allow an attacker to slash more than 0.01% of validators, trivially cause network splits affecting at least 0.01% of the network, or being able to bring down more than 0.01% of the network by sending a single network packet or an on-chain transaction.
+
+The node can experience increased latency or temporary stalls in forkchoice updates and block processing. This is an availability degradation; depending on timing and load, it could manifest as delayed head updates or missed performance targets.
+
+Keeping as potential info, but remains invalid as for issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed.
+
+#54
 From Geth team:
 
-invalid: We are checking the TxGasLimit not in the engine API but deeper in the stack during the actual execution of the block here: https://github.com/ethereum/go-ethereum/blob/2872242045377abe1ec9a54b8bc874dc2bb4febd/core/state_transition.go#L330
+I triaged issue #54, its another invalid. There is no case where the parent header has ExcessBlobGas set without also having BlobGasUsed set. If BlobGasUsed is 0, it will be set to 0 not to nil
 
-#121
-This is an issue in unused code. Planning to keep as invalid.
+Planning to keep this as invalid.
 
-#154
-Agree with the protocol team’s judgement. The correct ForkDigest function should be: https://github.com/OffchainLabs/prysm/blob/08be6fde92aef248980d27cc8c522d328cded6f6/config/params/fork.go#L23
+#57
+Keeping as invalid. For issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed.
 
-This issue was submitted without a PoC. So invalid is appropriate.
+#58
+Client comment:
 
-#211
-We agree with the protocol team’s judgement. As noted, this is a known issue and may be addressed if support for this endpoint beyond the spec becomes necessary.
+This is a non-issue in my opinion. If a peer claims to custody some columns it doesn't actually custody, it will be de-peered via downscoring pretty quickly. A realistic attack scenario would require the attacker spin up a very large number of nodes. Unless they can prove this is worth fixing, I would consider it an invalid finding.
 
-#222
-Keeping as invalid due to contest rules:
+The report was submitted as info and did not prove this can reach a higher severity. If you still believe this issue can be a valid low, please submit a high-level attack path and a PoC. The Prysm team is currently unwilling to fix it, so we will keep it as invalid.
 
-Informational issues are valid if they don't lead to a sufficient impact to count as Low or higher and are valuable enough for the client that they decided to implement the change in the code.
+#59
+This issue describes an overly abstract scenario and lacks high-level supporting evidence. Agree with the protocol team’s judgement.
 
-It is invalid, based on the following:
+#61
+Agree with the protocol team's judgement. Keeping as invalid.
 
-Doesn't make sense, we still count those requests in our rate limiter and will throttle them. Requesting data columns we don't have because they are outside of MIN_EPOCHS_FOR_DATA_COLUMN_SIDECARS_REQUESTS to DoS the node doesn't make sense, you would rather request data we have as it adds more burden to the node.
+Invalid as no fix.
 
-From code perspective it makes sense to check MIN_EPOCHS_FOR_DATA_COLUMN_SIDECARS_REQUESTS but this has no impact and does not open a attack surface in any way.
+#62
+Agree this issue was not introduced by Fusaka and should be submitted to the EF bounty instead.
 
-#239
-Keeping as invalid due to contest rules:
+#63
+Keeping as invalid. For issue to be valid info, it requires a client to fix the issue. It will be invalid unless fixed.
 
-Informational issues are valid if they don't lead to a sufficient impact to count as Low or higher and are valuable enough for the client that they decided to implement the change in the code.
+#67
+From Geth team:
 
-#250
-Agree with the protocol team’s judgement. This type of validation should be performed on the EL side.
+invalid: We are aware of this and using the deprecated API does not make it unsafe.
 
-From the nimbus team:
-
-A length check isn't incorrect, but it's neither a necessary nor sufficient check. A faulty execution client could just as easily "slip unverifiable data columns past Nimbus" of the correct length, but by design of the engine API (especially getBlobsV2; that's its entire point, to avoid CL verification overhead) the CL should not waste resources checking this.
-
-A faulty execution client should be fixed, not patched around by the CL.
-
-#264
-Unfortunately, submission #243 was made earlier than this issue(#264). According to the contest rules, only the first submitted info is considered valid. If this issue cannot be H/M/L in severity, we can only keep it as invalid.
-
-#282
-Too abstract and lacks sufficient evidence. I don’t see any connection between the “OpenZeppelin audit of Mantle’s implementation” and Besu’s secp256r1 implementation.
-
-#317
-This issue was not introduced in Fusaka. So we consider it OOS.
-
-#331
-The execution layer is trusted. It's intended design that data from EL is not verified as it's considered trusted. Additionally, the checks from EIP are done by EL.
-
-#389
-This is invalid as EL is assumed trusted and it's intended not to check the date from the execution layer as it would make the process too slow.
-
+Planning to keep as invalid.
