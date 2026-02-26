@@ -193,6 +193,7 @@ def compute_precision(labels_csv_path: Path) -> dict:
       fixed           — real issue already fixed before audit → TP
       partially_fixed — real issue partially fixed → TP
       fp_invalid      — matched an invalid contest issue → FP
+      fp_review       — Phase 04 DISPUTED_FP (was unknown) → FP
       unknown         — no contest match found
 
     Precision variants:
@@ -208,6 +209,7 @@ def compute_precision(labels_csv_path: Path) -> dict:
     total = len(rows)
     auto_tp = sum(1 for r in rows if r.get("auto_label") == "tp")
     auto_fp_invalid = sum(1 for r in rows if r.get("auto_label") == "fp_invalid")
+    auto_fp_review = sum(1 for r in rows if r.get("auto_label") == "fp_review")
     auto_tp_info = sum(1 for r in rows if r.get("auto_label") == "tp_info")
     auto_tp_other = sum(1 for r in rows if r.get("auto_label") in {"potential-info", "fixed", "partially_fixed"})
     auto_unknown = sum(1 for r in rows if r.get("auto_label") == "unknown")
@@ -219,10 +221,11 @@ def compute_precision(labels_csv_path: Path) -> dict:
 
     # All TP: tp + tp_info + potential-info + fixed + partially_fixed + human_tp
     auto_tp_total = auto_tp + auto_tp_info + auto_tp_other
+    auto_fp_total = auto_fp_invalid + auto_fp_review
     total_tp = auto_tp_total + human_tp
 
     # Auto precision (unknown excluded from denominator)
-    auto_labeled = auto_tp_total + auto_fp_invalid
+    auto_labeled = auto_tp_total + auto_fp_total
     precision_auto = total_tp / auto_labeled if auto_labeled else 0.0
 
     # Conservative precision (unknown treated as FP)
@@ -232,6 +235,7 @@ def compute_precision(labels_csv_path: Path) -> dict:
         "total_findings": total,
         "auto_tp": auto_tp,
         "auto_fp_invalid": auto_fp_invalid,
+        "auto_fp_review": auto_fp_review,
         "auto_tp_info": auto_tp_info,
         "auto_tp_other": auto_tp_other,
         "auto_unknown": auto_unknown,

@@ -194,11 +194,13 @@ def _compute_precision_from_rows(rows: list[dict]) -> dict:
       fixed           — real issue already fixed → TP
       partially_fixed — real issue partially fixed → TP
       fp_invalid      — matched invalid issue → FP
+      fp_review       — Phase 04 DISPUTED_FP (was unknown) → FP
       unknown         — no match
     """
     total = len(rows)
     auto_tp = sum(1 for r in rows if r.get("auto_label") == "tp")
     auto_fp_invalid = sum(1 for r in rows if r.get("auto_label") == "fp_invalid")
+    auto_fp_review = sum(1 for r in rows if r.get("auto_label") == "fp_review")
     auto_tp_info = sum(1 for r in rows if r.get("auto_label") == "tp_info")
     auto_tp_other = sum(1 for r in rows if r.get("auto_label") in {"potential-info", "fixed", "partially_fixed"})
     auto_unknown = sum(1 for r in rows if r.get("auto_label") == "unknown")
@@ -208,9 +210,10 @@ def _compute_precision_from_rows(rows: list[dict]) -> dict:
     human_unlabeled = auto_unknown - human_tp - human_fp
 
     auto_tp_total = auto_tp + auto_tp_info + auto_tp_other
+    auto_fp_total = auto_fp_invalid + auto_fp_review
     total_tp = auto_tp_total + human_tp
 
-    auto_labeled = auto_tp_total + auto_fp_invalid
+    auto_labeled = auto_tp_total + auto_fp_total
     precision_auto = total_tp / auto_labeled if auto_labeled else 0.0
     precision_conservative = total_tp / total if total else 0.0
 
@@ -218,6 +221,7 @@ def _compute_precision_from_rows(rows: list[dict]) -> dict:
         "total_findings": total,
         "auto_tp": auto_tp,
         "auto_fp_invalid": auto_fp_invalid,
+        "auto_fp_review": auto_fp_review,
         "auto_tp_info": auto_tp_info,
         "auto_tp_other": auto_tp_other,
         "auto_unknown": auto_unknown,
@@ -228,6 +232,42 @@ def _compute_precision_from_rows(rows: list[dict]) -> dict:
         "precision_conservative": round(precision_conservative, 4),
         "total_tp": total_tp,
     }
+
+
+def update_labels_csv(results_dir: Path, verdicts: dict[str, dict]) -> int:
+    """Update findings_labels.csv: relabel 'unknown' findings that Phase 04 filtered as 'fp_review'.
+
+    Returns the number of rows updated.
+    """
+    csv_path = results_dir / "findings_labels.csv"
+    if not csv_path.exists():
+        return 0
+
+    rows: list[dict] = []
+    with csv_path.open("r", encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        fieldnames = reader.fieldnames or []
+        for row in reader:
+            rows.append(row)
+
+    updated = 0
+    for row in rows:
+        if row.get("auto_label") != "unknown":
+            continue
+        fid = row.get("finding_id", "")
+        v = verdicts.get(fid)
+        if v and v["classification"] == "filtered":
+            row["auto_label"] = "fp_review"
+            updated += 1
+
+    if updated > 0:
+        with csv_path.open("w", encoding="utf-8", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(rows)
+        print(f"[phase04] updated {updated} unknown → fp_review in findings_labels.csv")
+
+    return updated
 
 
 def compare_metrics(
@@ -355,10 +395,13 @@ def run(results_dir: Path, collection_summary_path: Path | None = None) -> dict:
     if collection_summary_path:
         update_run_metadata(metadata_path, collection_summary_path)
 
-    # 3. Compare metrics
+    # 3. Update labels CSV — relabel unknown findings filtered by Phase 04
+    update_labels_csv(results_dir, verdicts)
+
+    # 4. Compare metrics
     comparison = compare_metrics(results_dir, verdicts)
 
-    # 4. Write phase_comparison.json
+    # 5. Write phase_comparison.json
     output = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "verdict_breakdown": breakdown,
