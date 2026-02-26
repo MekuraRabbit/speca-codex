@@ -34,11 +34,6 @@ PROP-57888860-inv-028,sigp/lighthouse,b8178515cd,potential-vulnerability,"Code: 
 Proof: Gossip validation checks index bounds (<NUMBER_OF_COLUMNS) but does not verify index matches positional column_index in iteration. An attacker can send sidecars with swapped indices (e.g., index=5 at position 0), passing validation but violating the invariant that downstream code assumes.
 
 Attack: Malicious peer sends DataColumnSidecar with index=N at array position M (N≠M). Gossip verification accepts it (bounds check passes). Downstream KZG operations using cell_ids.push(data_column.index) at line 396 of reconstruct_data_columns will use wrong column indices for cryptographic verification, potentially causing incorrect reconstruction or bypassing data availability guarantees.",
-PROP-6a4369e9-post-002,ChainSafe/lodestar,598c1ec54e,vulnerability,"Code: packages/beacon-node/src/chain/validation/dataColumnSidecar.ts::validateGossipDataColumnSidecar::L23-181
-
-Proof: Validation checks execute in wrong order: expensive getBlockSlotState (check 7, line 101) runs before cheap signature verification (check 5, line 129). Spec mandates check 5 before check 7 to minimize wasted work on invalid messages.
-
-Attack: Attacker floods P2P network with data column sidecars having valid headers but invalid proposer signatures. Each message triggers expensive state lookups before rejection, exhausting node resources and degrading network performance.",
 PROP-6a4369e9-inv-025,OffchainLabs/prysm,238d5c07df,potential-vulnerability,"Code: beacon-chain/sync/rpc_data_column_sidecars_by_root.go::dataColumnSidecarByRootRPCHandler::L123
 
 Proof: Storage contains data columns verified via RPC by_root (ByRootRequestDataColumnSidecarRequirements: 3 checks) mixed with gossip-validated columns (GossipDataColumnSidecarRequirements: 12 checks). RPC by_root handler serves from storage without re-validating gossip requirements, potentially serving columns for blocks that fail proposer signature, parent validity, or finality checks.
@@ -59,16 +54,6 @@ PROP-6a4369e9-inv-043,OffchainLabs/prysm,238d5c07df,vulnerability,"Code: beacon-
 Proof: The quota check exits immediately when quota reaches zero, breaking out of the sidecar loop mid-block. This violates atomicity: if Block B has sidecars [1,2,3] and quota=2, only sidecars 1 and 2 are sent, leaving sidecar 3 unsent despite sidecar 1 being included in the response.
 
 Attack: Attacker requests a large range forcing quota exhaustion mid-block. Peer receives partial sidecars for the final block, causing reconstruction failure or wasted bandwidth as the incomplete set is below the PeerDAS threshold required for data availability.",
-PROP-57888860-post-003,OffchainLabs/prysm,238d5c07df,potential-vulnerability,"Code: beacon-chain/blockchain/kzg/validation.go::VerifyCellKZGProofBatchFromBlobData::L135-149
-
-Proof: ComputeCells returns len(cells) from external library without validating len(cells) == 128. Code then accesses cells[0..127] in loop without bounds check. Proof fails because contract depends on unverified assumption that c-kzg-4844 library always returns exactly CELLS_PER_EXT_BLOB cells.
-
-Attack: If external library has bug or version mismatch causing it to return fewer than 128 cells, code panics at cells[columnIndex] access (out-of-bounds), causing validator DoS.",
-PROP-6a4369e9-post-002,OffchainLabs/prysm,238d5c07df,vulnerability,"Code: beacon-chain/sync/validate_data_column.go::validateDataColumn::L37-38
-
-Proof: Self-peer bypass at L37-38 accepts own messages without any REJECT checks. Local validator's data columns skip all 12 gossip requirements (field validity, KZG proofs, proposer signature, inclusion proofs, etc.) and return ValidationAccept immediately.
-
-Attack: Compromised local validator or malicious modification of validator client can broadcast invalid data columns (wrong KZG proofs, invalid signatures, incorrect subnets) which are auto-accepted by own node, bypassing all consensus validation. These invalid sidecars propagate to forkchoice/storage before detection.",
 PROP-ff7df16a-inv-020,paradigmxyz/reth,8e65a1d1a2,potential-vulnerability,"Code: crates/transaction-pool/src/validate/eth.rs::validate_one_no_state::L434-449
 
 Proof: Authorization chain_id validation is missing from Reth's transaction pool validation. Transaction's chain_id is validated (L425-431), but individual authorization.chain_id fields in the authorization_list are never checked. Validation may exist in downstream revm execution layer (unverified).

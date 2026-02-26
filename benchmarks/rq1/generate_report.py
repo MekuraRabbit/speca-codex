@@ -189,6 +189,24 @@ def main() -> None:
         lines.append(f"{issues_total - issues_matched} issue(s) not matched by any audit finding.")
         lines.append("")
 
+    # Efficiency (from phase_comparison.json)
+    results_dir = summary_path.parent
+    phase_cmp = load_json(results_dir / "phase_comparison.json")
+    eff = phase_cmp.get("efficiency", {})
+    e03 = eff.get("phase_03", {})
+    e04 = eff.get("phase_04", {})
+    if e03 or e04:
+        lines.append("## Token Efficiency")
+        lines.append("")
+        lines.append("| Metric | Phase 03 (Audit) | Phase 04 (Review) |")
+        lines.append("| --- | --- | --- |")
+        lines.append(f"| Total tokens | {e03.get('total_tokens', 0):,} | {e04.get('total_tokens', 0):,} |")
+        lines.append(f"| Total time (sum of batches) | {e03.get('total_secs', 0):.0f}s | {e04.get('total_secs', 0):.0f}s |")
+        lines.append(f"| Items | {e03.get('total_findings', 0)} findings | {e04.get('total_reviews', 0)} reviews |")
+        lines.append(f"| **Tokens/item** | **{e03.get('tokens_per_finding', 0):,}** | **{e04.get('tokens_per_review', 0):,}** |")
+        lines.append(f"| **Secs/item** | **{e03.get('secs_per_finding', 0):.1f}s** | **{e04.get('secs_per_review', 0):.1f}s** |")
+        lines.append("")
+
     # Metadata
     lines.append("## Raw Metadata")
     lines.append("```json")

@@ -270,6 +270,87 @@ def update_labels_csv(results_dir: Path, verdicts: dict[str, dict]) -> int:
     return updated
 
 
+def compute_efficiency(results_dir: Path) -> dict:
+    """Compute per-unit token and time efficiency for Phase 03 (findings) and Phase 04 (reviews).
+
+    Returns:
+        {
+          "phase_03": {tokens_per_finding, secs_per_finding, total_tokens, total_secs, total_findings},
+          "phase_04": {tokens_per_review, secs_per_review, total_tokens, total_secs, total_reviews},
+        }
+    """
+
+    def _load_collection(path: Path) -> dict:
+        if not path.exists():
+            return {}
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return {}
+
+    def _aggregate_tokens_secs(collection: dict) -> tuple[int, float]:
+        total_tokens = 0
+        total_secs = 0.0
+        for branch in collection.get("branches", []):
+            timing = branch.get("phase_log_timing") or {}
+            tokens = timing.get("tokens") or {}
+            total_tokens += tokens.get("total_tokens") or 0
+            for per_log in timing.get("per_log", []):
+                total_secs += per_log.get("estimated_seconds") or 0
+        return total_tokens, total_secs
+
+    def _count_items(results_dir: Path, phase_prefix: str, items_key: str) -> int:
+        count = 0
+        for branch_dir in sorted(results_dir.iterdir()):
+            if not branch_dir.is_dir() or branch_dir.name.startswith("."):
+                continue
+            for fpath in sorted(branch_dir.glob(f"{phase_prefix}*.json")):
+                try:
+                    data = json.loads(fpath.read_text(encoding="utf-8"))
+                except (json.JSONDecodeError, OSError):
+                    continue
+                count += len(data.get(items_key, []))
+        return count
+
+    # Phase 03
+    cs03 = _load_collection(results_dir / "collection_summary.json")
+    tokens_03, secs_03 = _aggregate_tokens_secs(cs03)
+    findings_03 = _count_items(results_dir, "03_", "audit_items")
+
+    # Phase 04
+    cs04 = _load_collection(results_dir / "collection_summary_04.json")
+    tokens_04, secs_04 = _aggregate_tokens_secs(cs04)
+    reviews_04 = _count_items(results_dir, "04_", "reviewed_items")
+
+    result: dict = {
+        "phase_03": {
+            "total_tokens": tokens_03,
+            "total_secs": round(secs_03, 1),
+            "total_findings": findings_03,
+            "tokens_per_finding": round(tokens_03 / findings_03) if findings_03 else 0,
+            "secs_per_finding": round(secs_03 / findings_03, 1) if findings_03 else 0,
+        },
+        "phase_04": {
+            "total_tokens": tokens_04,
+            "total_secs": round(secs_04, 1),
+            "total_reviews": reviews_04,
+            "tokens_per_review": round(tokens_04 / reviews_04) if reviews_04 else 0,
+            "secs_per_review": round(secs_04 / reviews_04, 1) if reviews_04 else 0,
+        },
+    }
+    print(
+        f"[phase04] efficiency: "
+        f"Phase03 {tokens_03:,} tok / {findings_03} findings = {result['phase_03']['tokens_per_finding']:,} tok/finding, "
+        f"{result['phase_03']['secs_per_finding']:.1f}s/finding"
+    )
+    print(
+        f"[phase04] efficiency: "
+        f"Phase04 {tokens_04:,} tok / {reviews_04} reviews = {result['phase_04']['tokens_per_review']:,} tok/review, "
+        f"{result['phase_04']['secs_per_review']:.1f}s/review"
+    )
+    return result
+
+
 def compare_metrics(
     results_dir: Path,
     verdicts: dict[str, dict],
@@ -401,12 +482,16 @@ def run(results_dir: Path, collection_summary_path: Path | None = None) -> dict:
     # 4. Compare metrics
     comparison = compare_metrics(results_dir, verdicts)
 
-    # 5. Write phase_comparison.json
+    # 5. Compute efficiency metrics
+    efficiency = compute_efficiency(results_dir)
+
+    # 6. Write phase_comparison.json
     output = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "verdict_breakdown": breakdown,
         "verdicts": verdicts,
         "comparison": comparison,
+        "efficiency": efficiency,
     }
     out_path = results_dir / "phase_comparison.json"
     out_path.write_text(json.dumps(output, indent=2), encoding="utf-8")
