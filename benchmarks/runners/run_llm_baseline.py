@@ -51,16 +51,42 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def call_llm(prompt: str, model: str = "claude-sonnet-4-20250514") -> tuple[str, str | None]:
+def _resolve_llm_config() -> tuple[str, dict]:
+    """Resolve LLM model and extra kwargs from environment.
+
+    Priority:
+    1. LLM_BASE_URL + LLM_API_KEY (OpenAI-compatible endpoint)
+    2. ANTHROPIC_API_KEY (direct Anthropic)
+    3. Default claude model (requires ANTHROPIC_API_KEY at runtime)
+    """
+    base_url = os.environ.get("LLM_BASE_URL", "").strip()
+    llm_key = os.environ.get("LLM_API_KEY", "").strip()
+    llm_model = os.environ.get("LLM_MODEL", "").strip()
+
+    if base_url and llm_key:
+        model = llm_model or "openai/gpt-4o-mini"
+        return model, {"api_base": base_url, "api_key": llm_key}
+
+    if llm_model:
+        return llm_model, {}
+
+    return "claude-sonnet-4-20250514", {}
+
+
+def call_llm(prompt: str, model: str | None = None) -> tuple[str, str | None]:
     """Call LLM via litellm (API-based, more reliable than CLI in CI)."""
     try:
         import litellm
 
+        resolved_model, extra_kwargs = _resolve_llm_config()
+        use_model = model or resolved_model
+
         response = litellm.completion(
-            model=model,
+            model=use_model,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=256,
             temperature=0,
+            **extra_kwargs,
         )
         text = response.choices[0].message.content or ""
         return text, None

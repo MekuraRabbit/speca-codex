@@ -274,6 +274,8 @@ jobs:
         continue-on-error: true
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
         run: |
           if [ "${{ inputs.force_execute }}" != "true" ] && [ -f "${RESULTS_DIR}/llm_baseline_results.jsonl" ]; then
             echo "LLM baseline results already exist. Use force_execute to re-run."
