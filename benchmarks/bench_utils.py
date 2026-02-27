@@ -54,6 +54,7 @@ CODE_KEYS = (
 
 PATH_KEYS = (
     "filename",
+    "file_name",
     "file",
     "file_path",
     "path",
