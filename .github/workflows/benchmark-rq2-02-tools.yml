@@ -192,6 +192,34 @@ jobs:
               --config auto \
               --timeout "${{ inputs.tool_timeout }}"
 
+      - name: Install CodeQL CLI
+        if: steps.tool_select.outputs.run_codeql == 'true'
+        run: |
+          if command -v codeql &>/dev/null; then
+            echo "CodeQL CLI already installed: $(codeql version --format=terse 2>/dev/null || echo 'unknown')"
+            exit 0
+          fi
+          echo "Installing CodeQL CLI bundle..."
+          CODEQL_DIR="$HOME/.local/codeql-bundle"
+          mkdir -p "$CODEQL_DIR"
+          # Download the CodeQL bundle (includes CLI + standard query packs)
+          curl -sSL "https://github.com/github/codeql-action/releases/latest/download/codeql-bundle-linux64.tar.gz" \
+            | tar xz -C "$CODEQL_DIR" --strip-components=0
+          echo "$CODEQL_DIR/codeql" >> $GITHUB_PATH
+          export PATH="$CODEQL_DIR/codeql:$PATH"
+          echo "CodeQL installed: $(codeql version --format=terse 2>/dev/null || echo 'check PATH')"
+
+      - name: Install C/C++ Compilers (for CodeQL/Infer)
+        if: steps.tool_select.outputs.run_codeql == 'true' || steps.tool_select.outputs.run_static == 'true'
+        run: |
+          if command -v clang &>/dev/null && command -v clang++ &>/dev/null; then
+            echo "clang already installed: $(clang --version | head -1)"
+            exit 0
+          fi
+          echo "Installing clang..."
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang
+
       - name: Run CodeQL
         id: run_codeql
         if: steps.tool_select.outputs.run_codeql == 'true'
@@ -259,6 +287,23 @@ jobs:
             --tmp-dir benchmarks/tmp/llm_baseline \
             --timeout "${{ inputs.tool_timeout }}" \
             --shell
+
+      - name: Install Facebook Infer
+        if: steps.tool_select.outputs.run_static == 'true'
+        run: |
+          if command -v infer &>/dev/null; then
+            echo "Infer already installed: $(infer --version 2>/dev/null | head -1)"
+            exit 0
+          fi
+          echo "Installing Facebook Infer..."
+          INFER_VERSION="v1.2.0"
+          INFER_DIR="$HOME/.local/infer"
+          mkdir -p "$INFER_DIR"
+          curl -sSL "https://github.com/facebook/infer/releases/download/${INFER_VERSION}/infer-linux-x86_64-${INFER_VERSION}.tar.xz" \
+            | tar xJ -C "$INFER_DIR" --strip-components=1
+          echo "$INFER_DIR/bin" >> $GITHUB_PATH
+          export PATH="$INFER_DIR/bin:$PATH"
+          echo "Infer installed: $(infer --version 2>/dev/null | head -1 || echo 'check PATH')"
 
       - name: Run Static Baseline
         id: run_static

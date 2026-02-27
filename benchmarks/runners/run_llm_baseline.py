@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import os
 import re
 import shutil
@@ -31,6 +32,8 @@ from benchmarks.runners.base_runner import (
     write_metadata,
 )
 
+logger = logging.getLogger(__name__)
+
 ROOT_DIR = Path(__file__).resolve().parents[2]
 DEFAULT_DATASET = ROOT_DIR / "benchmarks" / "data" / "primevul" / "primevul_test_paired.jsonl"
 DEFAULT_TMP = ROOT_DIR / "benchmarks" / "tmp" / "llm_baseline"
@@ -48,7 +51,27 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def call_claude(prompt: str) -> tuple[str, str | None]:
+def call_llm(prompt: str, model: str = "claude-sonnet-4-20250514") -> tuple[str, str | None]:
+    """Call LLM via litellm (API-based, more reliable than CLI in CI)."""
+    try:
+        import litellm
+
+        response = litellm.completion(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=256,
+            temperature=0,
+        )
+        text = response.choices[0].message.content or ""
+        return text, None
+    except ImportError:
+        return _call_claude_cli(prompt)
+    except Exception as e:
+        return "", f"litellm_error: {str(e)[:200]}"
+
+
+def _call_claude_cli(prompt: str) -> tuple[str, str | None]:
+    """Fallback: call claude CLI directly."""
     if shutil.which("claude") is None:
         return "", "claude_not_found"
     # Remove CLAUDECODE env var to allow nested invocation from within
@@ -62,7 +85,8 @@ def call_claude(prompt: str) -> tuple[str, str | None]:
         env=env,
     )
     if result.returncode != 0:
-        return "", (result.stderr or "claude_error").strip()
+        stderr = (result.stderr or "").strip()
+        return "", f"claude_error: {stderr[:200]}" if stderr else "claude_error"
     return result.stdout, None
 
 
@@ -170,7 +194,7 @@ def main() -> int:
                 results.append(row)
         else:
             prompt = build_prompt(code)
-            raw, err = call_claude(prompt)
+            raw, err = call_llm(prompt)
             if err:
                 results.append(
                     {
@@ -199,7 +223,7 @@ def main() -> int:
                 )
 
     write_jsonl(spec.output, results)
-    extra = {"provider": "claude"} if not spec.command else None
+    extra = {"provider": "litellm"} if not spec.command else None
     write_metadata(spec, extra=extra)
     print(f"Wrote {len(results)} LLM baseline results to {spec.output}")
     return 0
