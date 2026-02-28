@@ -5,8 +5,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
+
+# Ensure project root is on sys.path for direct script execution
+_PROJECT_ROOT = str(Path(__file__).resolve().parents[2])
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 DEFAULT_METRICS = ROOT_DIR / "benchmarks" / "results" / "rq2" / "metrics.json"
@@ -172,33 +178,43 @@ def main() -> int:
     cwe_totals = dataset.get("cwe_totals", {})
     if cwe_totals:
         top_cwes = sorted(cwe_totals.items(), key=lambda item: item[1], reverse=True)[:10]
-        lines.append("| CWE | Total | Semgrep Recall | CodeQL Recall | Security Agent Recall |")
-        lines.append("| --- | ----- | -------------- | ------------- | --------------------- |")
+        # Dynamically build columns for tools that have CWE coverage data
+        TOOL_DISPLAY = {
+            "semgrep": "Semgrep",
+            "codeql": "CodeQL",
+            "security_agent": "Security Agent",
+            "llm_baseline": "LLM Baseline",
+            "static_baseline": "Static Baseline",
+        }
+        active_tools = [
+            t for t in tools
+            if tools[t].get("status") == "ok" and tools[t].get("cwe_coverage")
+        ]
+        header_cols = ["CWE", "Total"] + [f"{TOOL_DISPLAY.get(t, t)} Recall" for t in active_tools]
+        lines.append("| " + " | ".join(header_cols) + " |")
+        lines.append("| " + " | ".join(["---"] * len(header_cols)) + " |")
         for cwe, total in top_cwes:
-            lines.append(
-                "| {cwe} | {total} | {semgrep} | {codeql} | {agent} |".format(
-                    cwe=cwe,
-                    total=total,
-                    semgrep=format_metric(tools.get("semgrep", {}).get("cwe_coverage", {}).get(cwe, {}).get("recall")),
-                    codeql=format_metric(tools.get("codeql", {}).get("cwe_coverage", {}).get(cwe, {}).get("recall")),
-                    agent=format_metric(
-                        tools.get("security_agent", {}).get("cwe_coverage", {}).get(cwe, {}).get("recall")
-                    ),
-                )
-            )
+            row = [cwe, str(total)]
+            for t in active_tools:
+                recall = tools.get(t, {}).get("cwe_coverage", {}).get(cwe, {}).get("recall")
+                row.append(format_metric(recall))
+            lines.append("| " + " | ".join(row) + " |")
     else:
         lines.append("- n/a")
     lines.append("")
-    lines.append("## Traditional Tool Weaknesses (Missed CWE)")
+    lines.append("## Tool Weaknesses (Top Missed CWEs)")
     lines.append("")
-    for tool in ("semgrep", "codeql"):
+    has_missed = False
+    for tool in tools:
         missed = tools.get(tool, {}).get("missed_by_cwe", {})
         if not missed:
-            lines.append(f"- {tool}: n/a")
             continue
+        has_missed = True
         top_missed = sorted(missed.items(), key=lambda item: item[1], reverse=True)[:5]
         entries = ", ".join(f"{cwe} ({count})" for cwe, count in top_missed)
         lines.append(f"- {tool}: {entries}")
+    if not has_missed:
+        lines.append("- n/a")
     lines.append("")
     lines.append("## Example Cases (Security Agent Only)")
     lines.append("")

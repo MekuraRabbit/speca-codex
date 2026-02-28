@@ -5,7 +5,14 @@ import argparse
 import json
 import logging
 import subprocess
+import sys
+import tempfile
 from pathlib import Path
+
+# Ensure project root is on sys.path for direct script execution
+_PROJECT_ROOT = str(Path(__file__).resolve().parents[2])
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
 
 from benchmarks.bench_utils import extract_id, guess_extension
 from benchmarks.runners.base_runner import CommandSpec, write_metadata
@@ -33,79 +40,90 @@ def run_semgrep_on_primevul(dataset_path: Path, output_path: Path, config: str, 
     print(f"--> Running Semgrep on {dataset_path}...")
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
+    # Use a temp directory next to the output (within the mounted volume in Docker)
+    # to avoid permission issues with /tmp when running as a non-root user.
+    tmp_dir = Path(tempfile.mkdtemp(prefix="semgrep_", dir=output_path.parent))
+
     results = []
-    with open(dataset_path, "r") as f:
-        for idx, line in enumerate(f):
-            sample = json.loads(line)
-            func_id = extract_id(sample, idx)
+    try:
+        with open(dataset_path, "r") as f:
+            for idx, line in enumerate(f):
+                sample = json.loads(line)
+                func_id = extract_id(sample, idx)
 
-            # BUG-BEN08: Try multiple code keys for CVEfixes compat
-            code = None
-            for key in CODE_KEYS:
-                code = sample.get(key)
-                if code is not None:
-                    break
+                # BUG-BEN08: Try multiple code keys for CVEfixes compat
+                code = None
+                for key in CODE_KEYS:
+                    code = sample.get(key)
+                    if code is not None:
+                        break
 
-            # BUG-BEN05: Skip samples with no code
-            if code is None:
-                logger.warning("Sample %s has no code (tried keys: %s), skipping", func_id, CODE_KEYS)
+                # BUG-BEN05: Skip samples with no code
+                if code is None:
+                    logger.warning("Sample %s has no code (tried keys: %s), skipping", func_id, CODE_KEYS)
+                    results.append({
+                        "func_id": func_id,
+                        "semgrep_findings": [],
+                        "error": "missing_code",
+                    })
+                    continue
+
+                # BUG-BEN04: Use correct extension based on language
+                ext = guess_extension(sample)
+                # Sanitize func_id to avoid path traversal in temp file names
+                safe_name = func_id.replace("/", "_").replace("..", "_")
+                temp_file = tmp_dir / f"{safe_name}.{ext}"
+                temp_file.write_text(code)
+
+                # Run Semgrep
+                try:
+                    process = subprocess.run(
+                        ["semgrep", "--config", config, "--json", str(temp_file)],
+                        capture_output=True,
+                        text=True,
+                        timeout=timeout or None,
+                    )
+                except subprocess.TimeoutExpired:
+                    results.append({
+                        "func_id": func_id,
+                        "semgrep_findings": [],
+                        "error": "timeout",
+                    })
+                    temp_file.unlink(missing_ok=True)
+                    continue
+
+                # BUG-BEN06: Handle non-JSON output from Semgrep gracefully
+                try:
+                    semgrep_output = json.loads(process.stdout) if process.stdout else {}
+                except json.JSONDecodeError:
+                    results.append({
+                        "func_id": func_id,
+                        "semgrep_findings": [],
+                        "error": "semgrep_json_parse_failed",
+                        "raw_output": (process.stdout or "")[:500],
+                    })
+                    temp_file.unlink(missing_ok=True)
+                    continue
                 results.append({
                     "func_id": func_id,
-                    "semgrep_findings": [],
-                    "error": "missing_code",
+                    "semgrep_findings": semgrep_output.get("results", []),
                 })
-                continue
 
-            # BUG-BEN04: Use correct extension based on language
-            ext = guess_extension(sample)
-            temp_file = Path(f"/tmp/{func_id}.{ext}")
-            temp_file.write_text(code)
-
-            # Run Semgrep
-            try:
-                process = subprocess.run(
-                    ["semgrep", "--config", config, "--json", str(temp_file)],
-                    capture_output=True,
-                    text=True,
-                    timeout=timeout or None,
-                )
-            except subprocess.TimeoutExpired:
-                results.append({
-                    "func_id": func_id,
-                    "semgrep_findings": [],
-                    "error": "timeout",
-                })
-                temp_file.unlink()
-                continue
-            
-            # BUG-BEN06: Handle non-JSON output from Semgrep gracefully
-            try:
-                semgrep_output = json.loads(process.stdout) if process.stdout else {}
-            except json.JSONDecodeError:
-                results.append({
-                    "func_id": func_id,
-                    "semgrep_findings": [],
-                    "error": "semgrep_json_parse_failed",
-                    "raw_output": (process.stdout or "")[:500],
-                })
                 temp_file.unlink(missing_ok=True)
-                continue
-            results.append({
-                "func_id": func_id,
-                "semgrep_findings": semgrep_output.get("results", []),
-            })
-
-            temp_file.unlink()
+    finally:
+        # Clean up temp directory
+        import shutil
+        shutil.rmtree(tmp_dir, ignore_errors=True)
 
     with open(output_path, "w") as f:
         json.dump(results, f, indent=2)
-    
+
     metadata_path = default_metadata_path(dataset_path)
     write_metadata(
         CommandSpec(
             dataset=dataset_path,
             output=output_path,
-            tmp_dir=Path("/tmp"),
+            tmp_dir=tmp_dir,
             command=f"semgrep --config {config}",
             version_command="semgrep --version",
             timeout=timeout,

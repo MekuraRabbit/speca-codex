@@ -6,10 +6,16 @@ from __future__ import annotations
 import json
 import re
 import argparse
+import sys
 from collections import Counter, defaultdict
 import os
 from pathlib import Path
 from typing import Iterable
+
+# Ensure project root is on sys.path for direct script execution
+_PROJECT_ROOT = str(Path(__file__).resolve().parents[2])
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
 
 from benchmarks.bench_utils import extract_code, extract_id, extract_label, guess_extension, normalize_bool
 from benchmarks.datasets.registry import resolve_dataset_path

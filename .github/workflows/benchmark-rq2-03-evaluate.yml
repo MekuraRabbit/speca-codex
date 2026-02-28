@@ -114,7 +114,7 @@ jobs:
           fi
 
       - name: Setup Python (uv)
-        run: uv sync --python 3.11
+        run: uv sync --python 3.11 --group benchmark
 
       - name: Evaluate Benchmark
         run: uv run python benchmarks/rq2/evaluate.py --dataset "${{ inputs.dataset }}" --dataset-path "${DATASET_PATH}"
@@ -130,6 +130,13 @@ jobs:
             --output benchmarks/results/rq2/report.md \
             ${RQ1_ARG}
 
+      - name: Generate Visualizations
+        continue-on-error: true
+        run: |
+          uv run python benchmarks/rq2/visualize.py \
+            --metrics benchmarks/results/rq2/metrics.json \
+            --output-dir benchmarks/results/rq2/figures
+
       - name: Save Evaluation to Cache
         if: always()
         run: |
@@ -140,6 +147,9 @@ jobs:
               cp "benchmarks/results/rq2/${f}" "${CACHE_DIR}/${f}"
             fi
           done
+          if [ -d "benchmarks/results/rq2/figures" ]; then
+            cp -rf "benchmarks/results/rq2/figures" "${CACHE_DIR}/figures"
+          fi
           echo "Saved evaluation results to ${CACHE_DIR}"
 
       - name: Upload Evaluation Artifacts
@@ -151,6 +161,7 @@ jobs:
             benchmarks/results/rq2/evaluation_summary.json
             benchmarks/results/rq2/metrics.json
             benchmarks/results/rq2/report.md
+            benchmarks/results/rq2/figures/
           retention-days: 90
           if-no-files-found: warn
 

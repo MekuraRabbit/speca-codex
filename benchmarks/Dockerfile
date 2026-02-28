@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 ENV PYTHONUNBUFFERED=1 \
     SEMGREP_ENABLE_VERSION_CHECK=0 \
-        PYTHONPATH=/app
+    PYTHONPATH=/app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
@@ -13,9 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN pip install --no-cache-dir semgrep
 
-RUN groupadd -r bench && useradd -r -g bench -m bench
-
 WORKDIR /app
-ENV PYTHONPATH=/app
 
-USER bench
+# No USER directive: the workflow passes --user "$(id -u):$(id -g)"
+# to match the host user and avoid EACCES on mounted volumes.
