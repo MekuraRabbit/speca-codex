@@ -25,6 +25,8 @@ OUTPUT_DIR = ROOT_DIR / "benchmarks" / "results" / "rq2" / "figures"
 
 TOOL_DISPLAY = {
     "semgrep": "Semgrep",
+    "cppcheck": "Cppcheck",
+    "flawfinder": "Flawfinder",
     "codeql": "CodeQL",
     "security_agent": "Security Agent",
     "llm_baseline": "LLM Baseline",
@@ -33,6 +35,8 @@ TOOL_DISPLAY = {
 
 TOOL_COLORS = {
     "semgrep": "#4CAF50",
+    "cppcheck": "#FF9800",
+    "flawfinder": "#00BCD4",
     "codeql": "#2196F3",
     "security_agent": "#FF5722",
     "llm_baseline": "#9C27B0",

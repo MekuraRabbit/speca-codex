@@ -1,0 +1,10 @@
+{
+  "tool": "cppcheck",
+  "dataset": "/Users/hiro/Documents/security-agent/.claude/worktrees/zealous-cohen/benchmarks/data/primevul/primevul_test_paired.jsonl",
+  "output": "/Users/hiro/Documents/security-agent/.claude/worktrees/zealous-cohen/benchmarks/results/rq2/primevul/cppcheck_results.json",
+  "command": "cppcheck --enable=all --check-level=exhaustive --xml",
+  "version": "Cppcheck 2.17.1 from cppcheck-wheel 1.5.1",
+  "timeout_sec": 30,
+  "limit": 0,
+  "generated_at": "2026-02-28T00:35:36.518166+00:00"
+}

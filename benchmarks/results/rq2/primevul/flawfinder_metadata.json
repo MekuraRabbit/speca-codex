@@ -1,0 +1,10 @@
+{
+  "tool": "flawfinder",
+  "dataset": "/Users/hiro/Documents/security-agent/.claude/worktrees/zealous-cohen/benchmarks/data/primevul/primevul_test_paired.jsonl",
+  "output": "/Users/hiro/Documents/security-agent/.claude/worktrees/zealous-cohen/benchmarks/results/rq2/primevul/flawfinder_results.json",
+  "command": "flawfinder --csv --minlevel=1",
+  "version": "2.0.19",
+  "timeout_sec": 30,
+  "limit": 0,
+  "generated_at": "2026-02-28T00:38:12.972643+00:00"
+}

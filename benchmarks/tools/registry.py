@@ -7,7 +7,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterable
 
-from benchmarks.tools.loaders import load_jsonl_predictions, load_semgrep_results
+from benchmarks.tools.loaders import (
+    load_cppcheck_results,
+    load_flawfinder_results,
+    load_jsonl_predictions,
+    load_semgrep_results,
+)
 
 ToolLoader = Callable[[Path], tuple[dict[str, bool | None], int, dict[str, dict]] | None]
 
@@ -43,6 +48,18 @@ TOOL_REGISTRY: dict[str, ToolSpec] = {
         patterns=("semgrep_results.json", "semgrep.json"),
         loader=load_semgrep_results,
         metadata_filename="semgrep_metadata.json",
+    ),
+    "cppcheck": ToolSpec(
+        name="cppcheck",
+        patterns=("cppcheck_results.json", "cppcheck.json"),
+        loader=load_cppcheck_results,
+        metadata_filename="cppcheck_metadata.json",
+    ),
+    "flawfinder": ToolSpec(
+        name="flawfinder",
+        patterns=("flawfinder_results.json", "flawfinder.json"),
+        loader=load_flawfinder_results,
+        metadata_filename="flawfinder_metadata.json",
     ),
     "codeql": ToolSpec(
         name="codeql",

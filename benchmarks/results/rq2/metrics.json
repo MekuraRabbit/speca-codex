@@ -1,12 +1,12 @@
 {
   "dataset": {
     "name": "primevul",
-    "path": "benchmarks/data/primevul/primevul_test_paired.jsonl",
+    "path": "/Users/hiro/Documents/security-agent/.claude/worktrees/zealous-cohen/benchmarks/data/primevul/primevul_test_paired.jsonl",
     "ground_truth_count": 868,
     "sample_count": 868,
-    "pair_count": 0,
-    "pair_eligible": 0,
-    "pair_skipped": 0,
+    "pair_count": 412,
+    "pair_eligible": 386,
+    "pair_skipped": 26,
     "cwe_totals": {
       "CWE-704": 2,
       "CWE-190": 11,
@@ -86,12 +86,12 @@
       "skipped_missing_pred": 0,
       "skipped_missing_gt": 0,
       "status": "ok",
-      "results_path": "/home/user/security-agent/benchmarks/results/rq2/primevul/semgrep_results.json",
+      "results_path": "/Users/hiro/Documents/security-agent/.claude/worktrees/zealous-cohen/benchmarks/results/rq2/primevul/semgrep_results.json",
       "error_count": 0,
       "pairwise": {
         "correct": 0,
-        "scored": 0,
-        "total": 0,
+        "scored": 386,
+        "total": 386,
         "skipped": 0,
         "accuracy": 0.0
       },
@@ -472,6 +472,751 @@
         "CWE-327": 1
       }
     },
+    "cppcheck": {
+      "tp": 377,
+      "fp": 379,
+      "tn": 54,
+      "fn": 58,
+      "accuracy": 0.4965437788018433,
+      "precision": 0.49867724867724866,
+      "recall": 0.8666666666666667,
+      "f1": 0.6330814441645676,
+      "coverage": 1.0,
+      "skipped_missing_pred": 0,
+      "skipped_missing_gt": 0,
+      "status": "ok",
+      "results_path": "/Users/hiro/Documents/security-agent/.claude/worktrees/zealous-cohen/benchmarks/results/rq2/primevul/cppcheck_results.json",
+      "error_count": 2,
+      "pairwise": {
+        "correct": 1,
+        "scored": 386,
+        "total": 386,
+        "skipped": 0,
+        "accuracy": 0.0025906735751295338
+      },
+      "cwe_coverage": {
+        "CWE-704": {
+          "tp": 2,
+          "total": 2,
+          "recall": 1.0
+        },
+        "CWE-190": {
+          "tp": 8,
+          "total": 11,
+          "recall": 0.7272727272727273
+        },
+        "CWE-401": {
+          "tp": 8,
+          "total": 8,
+          "recall": 1.0
+        },
+        "CWE-476": {
+          "tp": 33,
+          "total": 39,
+          "recall": 0.8461538461538461
+        },
+        "CWE-617": {
+          "tp": 7,
+          "total": 12,
+          "recall": 0.5833333333333334
+        },
+        "CWE-287": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-909": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-125": {
+          "tp": 41,
+          "total": 47,
+          "recall": 0.8723404255319149
+        },
+        "CWE-354": {
+          "tp": 0,
+          "total": 2,
+          "recall": 0.0
+        },
+        "CWE-787": {
+          "tp": 70,
+          "total": 72,
+          "recall": 0.9722222222222222
+        },
+        "CWE-369": {
+          "tp": 9,
+          "total": 14,
+          "recall": 0.6428571428571429
+        },
+        "CWE-120": {
+          "tp": 7,
+          "total": 7,
+          "recall": 1.0
+        },
+        "CWE-416": {
+          "tp": 27,
+          "total": 29,
+          "recall": 0.9310344827586207
+        },
+        "CWE-415": {
+          "tp": 10,
+          "total": 10,
+          "recall": 1.0
+        },
+        "CWE-862": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-754": {
+          "tp": 2,
+          "total": 2,
+          "recall": 1.0
+        },
+        "CWE-843": {
+          "tp": 1,
+          "total": 3,
+          "recall": 0.3333333333333333
+        },
+        "CWE-295": {
+          "tp": 0,
+          "total": 1,
+          "recall": 0.0
+        },
+        "CWE-362": {
+          "tp": 5,
+          "total": 8,
+          "recall": 0.625
+        },
+        "CWE-908": {
+          "tp": 1,
+          "total": 2,
+          "recall": 0.5
+        },
+        "CWE-20": {
+          "tp": 14,
+          "total": 14,
+          "recall": 1.0
+        },
+        "CWE-400": {
+          "tp": 2,
+          "total": 3,
+          "recall": 0.6666666666666666
+        },
+        "CWE-276": {
+          "tp": 2,
+          "total": 2,
+          "recall": 1.0
+        },
+        "CWE-522": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-134": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-119": {
+          "tp": 14,
+          "total": 14,
+          "recall": 1.0
+        },
+        "CWE-703": {
+          "tp": 35,
+          "total": 47,
+          "recall": 0.7446808510638298
+        },
+        "CWE-200": {
+          "tp": 15,
+          "total": 16,
+          "recall": 0.9375
+        },
+        "CWE-269": {
+          "tp": 4,
+          "total": 4,
+          "recall": 1.0
+        },
+        "CWE-284": {
+          "tp": 4,
+          "total": 4,
+          "recall": 1.0
+        },
+        "CWE-399": {
+          "tp": 2,
+          "total": 3,
+          "recall": 0.6666666666666666
+        },
+        "CWE-552": {
+          "tp": 0,
+          "total": 1,
+          "recall": 0.0
+        },
+        "CWE-252": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-345": {
+          "tp": 0,
+          "total": 1,
+          "recall": 0.0
+        },
+        "CWE-824": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-288": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-189": {
+          "tp": 5,
+          "total": 5,
+          "recall": 1.0
+        },
+        "CWE-22": {
+          "tp": 6,
+          "total": 6,
+          "recall": 1.0
+        },
+        "CWE-444": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-264": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-665": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-212": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-310": {
+          "tp": 2,
+          "total": 2,
+          "recall": 1.0
+        },
+        "CWE-59": {
+          "tp": 1,
+          "total": 2,
+          "recall": 0.5
+        },
+        "CWE-122": {
+          "tp": 3,
+          "total": 3,
+          "recall": 1.0
+        },
+        "CWE-772": {
+          "tp": 2,
+          "total": 2,
+          "recall": 1.0
+        },
+        "CWE-434": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-94": {
+          "tp": 2,
+          "total": 2,
+          "recall": 1.0
+        },
+        "CWE-193": {
+          "tp": 2,
+          "total": 2,
+          "recall": 1.0
+        },
+        "CWE-834": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-672": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-924": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-191": {
+          "tp": 2,
+          "total": 3,
+          "recall": 0.6666666666666666
+        },
+        "CWE-835": {
+          "tp": 5,
+          "total": 5,
+          "recall": 1.0
+        },
+        "CWE-863": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-17": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-668": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-732": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-79": {
+          "tp": 1,
+          "total": 2,
+          "recall": 0.5
+        },
+        "CWE-275": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-770": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-327": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        }
+      },
+      "missed_by_cwe": {
+        "CWE-617": 5,
+        "CWE-190": 3,
+        "CWE-354": 2,
+        "CWE-843": 2,
+        "CWE-295": 1,
+        "CWE-362": 3,
+        "CWE-476": 6,
+        "CWE-908": 1,
+        "CWE-125": 6,
+        "CWE-369": 5,
+        "CWE-703": 12,
+        "CWE-787": 2,
+        "CWE-399": 1,
+        "CWE-552": 1,
+        "CWE-345": 1,
+        "CWE-416": 2,
+        "CWE-191": 1,
+        "CWE-200": 1,
+        "CWE-79": 1,
+        "CWE-400": 1,
+        "CWE-59": 1
+      }
+    },
+    "flawfinder": {
+      "tp": 126,
+      "fp": 122,
+      "tn": 311,
+      "fn": 309,
+      "accuracy": 0.5034562211981567,
+      "precision": 0.5080645161290323,
+      "recall": 0.2896551724137931,
+      "f1": 0.3689604685212299,
+      "coverage": 1.0,
+      "skipped_missing_pred": 0,
+      "skipped_missing_gt": 0,
+      "status": "ok",
+      "results_path": "/Users/hiro/Documents/security-agent/.claude/worktrees/zealous-cohen/benchmarks/results/rq2/primevul/flawfinder_results.json",
+      "error_count": 0,
+      "pairwise": {
+        "correct": 4,
+        "scored": 386,
+        "total": 386,
+        "skipped": 0,
+        "accuracy": 0.010362694300518135
+      },
+      "cwe_coverage": {
+        "CWE-704": {
+          "tp": 1,
+          "total": 2,
+          "recall": 0.5
+        },
+        "CWE-190": {
+          "tp": 4,
+          "total": 11,
+          "recall": 0.36363636363636365
+        },
+        "CWE-401": {
+          "tp": 1,
+          "total": 8,
+          "recall": 0.125
+        },
+        "CWE-476": {
+          "tp": 10,
+          "total": 39,
+          "recall": 0.2564102564102564
+        },
+        "CWE-617": {
+          "tp": 4,
+          "total": 12,
+          "recall": 0.3333333333333333
+        },
+        "CWE-287": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-909": {
+          "tp": 0,
+          "total": 1,
+          "recall": 0.0
+        },
+        "CWE-125": {
+          "tp": 11,
+          "total": 47,
+          "recall": 0.23404255319148937
+        },
+        "CWE-354": {
+          "tp": 1,
+          "total": 2,
+          "recall": 0.5
+        },
+        "CWE-787": {
+          "tp": 21,
+          "total": 72,
+          "recall": 0.2916666666666667
+        },
+        "CWE-369": {
+          "tp": 1,
+          "total": 14,
+          "recall": 0.07142857142857142
+        },
+        "CWE-120": {
+          "tp": 4,
+          "total": 7,
+          "recall": 0.5714285714285714
+        },
+        "CWE-416": {
+          "tp": 6,
+          "total": 29,
+          "recall": 0.20689655172413793
+        },
+        "CWE-415": {
+          "tp": 3,
+          "total": 10,
+          "recall": 0.3
+        },
+        "CWE-862": {
+          "tp": 0,
+          "total": 1,
+          "recall": 0.0
+        },
+        "CWE-754": {
+          "tp": 0,
+          "total": 2,
+          "recall": 0.0
+        },
+        "CWE-843": {
+          "tp": 0,
+          "total": 3,
+          "recall": 0.0
+        },
+        "CWE-295": {
+          "tp": 0,
+          "total": 1,
+          "recall": 0.0
+        },
+        "CWE-362": {
+          "tp": 4,
+          "total": 8,
+          "recall": 0.5
+        },
+        "CWE-908": {
+          "tp": 0,
+          "total": 2,
+          "recall": 0.0
+        },
+        "CWE-20": {
+          "tp": 6,
+          "total": 14,
+          "recall": 0.42857142857142855
+        },
+        "CWE-400": {
+          "tp": 2,
+          "total": 3,
+          "recall": 0.6666666666666666
+        },
+        "CWE-276": {
+          "tp": 1,
+          "total": 2,
+          "recall": 0.5
+        },
+        "CWE-522": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-134": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-119": {
+          "tp": 5,
+          "total": 14,
+          "recall": 0.35714285714285715
+        },
+        "CWE-703": {
+          "tp": 10,
+          "total": 47,
+          "recall": 0.2127659574468085
+        },
+        "CWE-200": {
+          "tp": 5,
+          "total": 16,
+          "recall": 0.3125
+        },
+        "CWE-269": {
+          "tp": 1,
+          "total": 4,
+          "recall": 0.25
+        },
+        "CWE-284": {
+          "tp": 0,
+          "total": 4,
+          "recall": 0.0
+        },
+        "CWE-399": {
+          "tp": 1,
+          "total": 3,
+          "recall": 0.3333333333333333
+        },
+        "CWE-552": {
+          "tp": 0,
+          "total": 1,
+          "recall": 0.0
+        },
+        "CWE-252": {
+          "tp": 0,
+          "total": 1,
+          "recall": 0.0
+        },
+        "CWE-345": {
+          "tp": 0,
+          "total": 1,
+          "recall": 0.0
+        },
+        "CWE-824": {
+          "tp": 0,
+          "total": 1,
+          "recall": 0.0
+        },
+        "CWE-288": {
+          "tp": 0,
+          "total": 1,
+          "recall": 0.0
+        },
+        "CWE-189": {
+          "tp": 3,
+          "total": 5,
+          "recall": 0.6
+        },
+        "CWE-22": {
+          "tp": 4,
+          "total": 6,
+          "recall": 0.6666666666666666
+        },
+        "CWE-444": {
+          "tp": 0,
+          "total": 1,
+          "recall": 0.0
+        },
+        "CWE-264": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-665": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-212": {
+          "tp": 0,
+          "total": 1,
+          "recall": 0.0
+        },
+        "CWE-310": {
+          "tp": 1,
+          "total": 2,
+          "recall": 0.5
+        },
+        "CWE-59": {
+          "tp": 1,
+          "total": 2,
+          "recall": 0.5
+        },
+        "CWE-122": {
+          "tp": 0,
+          "total": 3,
+          "recall": 0.0
+        },
+        "CWE-772": {
+          "tp": 1,
+          "total": 2,
+          "recall": 0.5
+        },
+        "CWE-434": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-94": {
+          "tp": 0,
+          "total": 2,
+          "recall": 0.0
+        },
+        "CWE-193": {
+          "tp": 0,
+          "total": 2,
+          "recall": 0.0
+        },
+        "CWE-834": {
+          "tp": 0,
+          "total": 1,
+          "recall": 0.0
+        },
+        "CWE-672": {
+          "tp": 0,
+          "total": 1,
+          "recall": 0.0
+        },
+        "CWE-924": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-191": {
+          "tp": 0,
+          "total": 3,
+          "recall": 0.0
+        },
+        "CWE-835": {
+          "tp": 1,
+          "total": 5,
+          "recall": 0.2
+        },
+        "CWE-863": {
+          "tp": 0,
+          "total": 1,
+          "recall": 0.0
+        },
+        "CWE-17": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-668": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-732": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-79": {
+          "tp": 1,
+          "total": 2,
+          "recall": 0.5
+        },
+        "CWE-275": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        },
+        "CWE-770": {
+          "tp": 0,
+          "total": 1,
+          "recall": 0.0
+        },
+        "CWE-327": {
+          "tp": 1,
+          "total": 1,
+          "recall": 1.0
+        }
+      },
+      "missed_by_cwe": {
+        "CWE-190": 7,
+        "CWE-401": 7,
+        "CWE-617": 8,
+        "CWE-476": 29,
+        "CWE-909": 1,
+        "CWE-125": 36,
+        "CWE-354": 1,
+        "CWE-787": 51,
+        "CWE-369": 13,
+        "CWE-120": 3,
+        "CWE-416": 23,
+        "CWE-415": 7,
+        "CWE-862": 1,
+        "CWE-754": 2,
+        "CWE-843": 3,
+        "CWE-295": 1,
+        "CWE-908": 2,
+        "CWE-276": 1,
+        "CWE-703": 37,
+        "CWE-200": 11,
+        "CWE-269": 3,
+        "CWE-284": 4,
+        "CWE-20": 8,
+        "CWE-362": 4,
+        "CWE-399": 2,
+        "CWE-552": 1,
+        "CWE-252": 1,
+        "CWE-345": 1,
+        "CWE-824": 1,
+        "CWE-288": 1,
+        "CWE-444": 1,
+        "CWE-212": 1,
+        "CWE-122": 3,
+        "CWE-119": 9,
+        "CWE-704": 1,
+        "CWE-772": 1,
+        "CWE-94": 2,
+        "CWE-193": 2,
+        "CWE-834": 1,
+        "CWE-672": 1,
+        "CWE-191": 3,
+        "CWE-863": 1,
+        "CWE-835": 4,
+        "CWE-22": 2,
+        "CWE-189": 2,
+        "CWE-79": 1,
+        "CWE-310": 1,
+        "CWE-770": 1,
+        "CWE-400": 1,
+        "CWE-59": 1
+      }
+    },
     "codeql": {
       "status": "missing_results"
     },
@@ -491,13 +1236,13 @@
       "skipped_missing_pred": 868,
       "skipped_missing_gt": 0,
       "status": "ok",
-      "results_path": "/home/user/security-agent/benchmarks/results/rq2/primevul/llm_baseline_results.jsonl",
+      "results_path": "/Users/hiro/Documents/security-agent/.claude/worktrees/zealous-cohen/benchmarks/results/rq2/primevul/llm_baseline_results.jsonl",
       "error_count": 20,
       "pairwise": {
         "correct": 0,
         "scored": 0,
-        "total": 0,
-        "skipped": 0,
+        "total": 386,
+        "skipped": 386,
         "accuracy": 0.0
       },
       "cwe_coverage": {
@@ -904,6 +1649,26 @@
       "generated_at": "2026-02-22T03:56:45.376132+00:00",
       "config": "auto",
       "batch_mode": true
+    },
+    "cppcheck": {
+      "tool": "cppcheck",
+      "dataset": "/Users/hiro/Documents/security-agent/.claude/worktrees/zealous-cohen/benchmarks/data/primevul/primevul_test_paired.jsonl",
+      "output": "/Users/hiro/Documents/security-agent/.claude/worktrees/zealous-cohen/benchmarks/results/rq2/primevul/cppcheck_results.json",
+      "command": "cppcheck --enable=all --check-level=exhaustive --xml",
+      "version": "Cppcheck 2.17.1 from cppcheck-wheel 1.5.1",
+      "timeout_sec": 30,
+      "limit": 0,
+      "generated_at": "2026-02-28T00:35:36.518166+00:00"
+    },
+    "flawfinder": {
+      "tool": "flawfinder",
+      "dataset": "/Users/hiro/Documents/security-agent/.claude/worktrees/zealous-cohen/benchmarks/data/primevul/primevul_test_paired.jsonl",
+      "output": "/Users/hiro/Documents/security-agent/.claude/worktrees/zealous-cohen/benchmarks/results/rq2/primevul/flawfinder_results.json",
+      "command": "flawfinder --csv --minlevel=1",
+      "version": "2.0.19",
+      "timeout_sec": 30,
+      "limit": 0,
+      "generated_at": "2026-02-28T00:38:12.972643+00:00"
     },
     "llm_baseline": {
       "tool": "llm_baseline",

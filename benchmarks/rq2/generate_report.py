@@ -181,6 +181,8 @@ def main() -> int:
         # Dynamically build columns for tools that have CWE coverage data
         TOOL_DISPLAY = {
             "semgrep": "Semgrep",
+            "cppcheck": "Cppcheck",
+            "flawfinder": "Flawfinder",
             "codeql": "CodeQL",
             "security_agent": "Security Agent",
             "llm_baseline": "LLM Baseline",
