@@ -567,6 +567,12 @@ The following are real vulnerabilities discovered by SPECA during the [Sherlock 
 
 **Aggregate results:** 100% recall (15/15 ground-truth issues matched), 66% precision, F1 = 0.80. 5 findings independently confirmed by developer fix commits.
 
+| Metric | Phase 03 (Audit) | Phase 04 (Review) |
+|---|---|---|
+| Items | 647 findings | 550 reviews |
+| Tokens/item | 2,917,937 | 393,277 |
+| Secs/item | 119.6s | 22.0s |
+
 ## Benchmarks
 
 See [benchmarks page](./benchmarks/README.md)
