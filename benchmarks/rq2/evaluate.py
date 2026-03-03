@@ -162,6 +162,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate benchmark results.")
     parser.add_argument("--dataset", type=str, default="primevul")
     parser.add_argument("--dataset-path", type=Path, default=None)
+    parser.add_argument("--output-dir", type=Path, default=None,
+                        help="Output directory for metrics/evaluation JSON (default: benchmarks/results/rq2)")
     return parser.parse_args()
 
 
@@ -425,13 +427,16 @@ def main() -> None:
                 metrics["run_metadata"] = json.loads(path.read_text(encoding="utf-8"))
             except json.JSONDecodeError:
                 metrics["run_metadata"] = {"error": "invalid_json", "path": str(path)}
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    with METRICS_OUTPUT_PATH.open("w", encoding="utf-8") as handle:
+    output_dir = args.output_dir or RESULTS_DIR
+    output_dir.mkdir(parents=True, exist_ok=True)
+    metrics_path = output_dir / "metrics.json"
+    eval_path = output_dir / "evaluation_summary.json"
+    with metrics_path.open("w", encoding="utf-8") as handle:
         json.dump(metrics, handle, indent=2)
-    with EVALUATION_OUTPUT_PATH.open("w", encoding="utf-8") as handle:
+    with eval_path.open("w", encoding="utf-8") as handle:
         json.dump(metrics, handle, indent=2)
-    print(f"    Evaluation summary saved to {EVALUATION_OUTPUT_PATH}")
-    print(f"    Metrics saved to {METRICS_OUTPUT_PATH}")
+    print(f"    Evaluation summary saved to {eval_path}")
+    print(f"    Metrics saved to {metrics_path}")
 
 
 if __name__ == "__main__":

@@ -218,8 +218,8 @@ def main() -> int:
             "language": data.get("language"),
             "repo": data.get("repo"),
         }
-        output.append({**base, "vul_type": "vulnerable", "before": before})
-        output.append({**base, "vul_type": "clean", "after": after})
+        output.append({**base, "id": f"{pair_id}:vuln", "vul_type": "vulnerable", "before": before})
+        output.append({**base, "id": f"{pair_id}:clean", "vul_type": "clean", "after": after})
         per_repo_counts[repo_key] = per_repo_counts.get(repo_key, 0) + 1
         total += 1
         if args.limit and total >= args.limit:

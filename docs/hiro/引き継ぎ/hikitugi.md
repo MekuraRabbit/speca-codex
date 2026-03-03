@@ -1,237 +1,197 @@
 # 引き継ぎ資料 — SPECA セキュリティエージェント
 
 > 次回セッション開始時にこのファイルを読んで状況を把握してください。
-> 最終更新: 2026-02-23
+> 最終更新: 2026-03-03
 
 ---
 
 ## 1. プロジェクト概要
 
-**SPECA** (Specification-to-Property Agentic Auditing) は、Claude Code CLI を使った自動セキュリティ監査パイプラインです。仕様書からフォーマルなプログラムグラフ（Nielson & Nielson 形式）を構築し、Ethereum 特化 STRIDE 脅威モデルによるセキュリティプロパティを生成、ターゲットコードに対して3フェーズの形式的監査（抽象解釈→記号実行→不変条件証明）を実行します。
+**SPECA** (Specification-to-Property Agentic Auditing) は、Claude Code CLI を使った自動セキュリティ監査パイプラインです。仕様書からフォーマルなプログラムグラフを構築し、ドメイン非依存の STRIDE + CWE Top 25 脅威モデルによるセキュリティプロパティを生成、ターゲットコードに対して証明ベースの形式的監査（Map → Prove → Stress-Test）を実行し、recall-safe な3ゲートレビュー（Dead Code → Trust Boundary → Scope Check）で偽陽性をフィルタします。
 
 詳細は `CLAUDE.md`（リポジトリルート）を参照。
 
 ---
 
-## 2. リポジトリ構成
+## 2. パイプラインフロー
+
+Phase IDs: `01a` → `01b` → `01e` → `02c` → `03` → `04`
+
+```
+01a Spec Discovery       仕様書URLのクロール・発見
+  |
+01b Subgraph Extraction  仕様書 → Mermaid 状態図 (.mmd + YAML frontmatter)
+  |
+01e Property Generation  ドメイン非依存 STRIDE + CWE Top 25 + セキュリティプロパティ生成
+  |                      ※ BUG_BOUNTY_SCOPE.json 必須（なければ sys.exit(1)）
+  |                      ※ インラインプロンプト（スキルフォークなし）
+02c Code Pre-resolution  Tree-sitter MCP でコード位置の事前解決（トークン 40-60% 削減）
+  |                      ※ TARGET_INFO.json 必須（ワークフローが事前作成）
+  |                      ※ Informational 深刻度はゲートで除外
+03  Audit Map            証明ベース3段階フォーマル監査（Map → Prove → Stress-Test）
+  |                      プロパティの証明を試み、証明のギャップが finding となる
+04  Review               recall-safe 3ゲート FP フィルタ（早期終了あり）
+                         Dead Code → Trust Boundary → Scope Check
+                         判定: CONFIRMED_VULNERABILITY / CONFIRMED_POTENTIAL /
+                               DISPUTED_FP / DOWNGRADED / NEEDS_MANUAL_REVIEW / PASS_THROUGH
+--- 手動フェーズ ---
+05  PoC Generation       脆弱性ごとの再現テスト生成
+06  Bug-Bounty Report    プラットフォーム別レポート
+06b Full Audit Report    出版可能な完全監査レポート
+```
+
+**スキルシステム**: Phase 01a (`spec-discovery`), 01b (`subgraph-extractor`) のみスキルフォーク使用。01e, 02c, 03, 04 はインラインプロンプト。
+
+---
+
+## 3. リポジトリ構成（主要ファイル）
 
 ```
 security-agent/
 ├── CLAUDE.md                          # Claude Code 用プロジェクト規約（必読）
-├── OPTIMIZATION_NOTES.md              # Phase 03 最適化詳細
 ├── pyproject.toml                     # Python 依存関係（uv, Python >=3.11）
-├── conftest.py                        # pytest 設定
-├── .mcp.json                          # MCP サーバー設定（tree_sitter, serena, semgrep, filesystem, fetch）
-├── .claude/skills/                    # スキル定義（SKILL.md）
-│   ├── spec-discovery/                # Phase 01a — URL クロール
-│   ├── subgraph-extractor/            # Phase 01b — プログラムグラフ抽出
-│   └── audit-reviewer/                # Phase 04 — 監査レビュー
+├── .mcp.json                          # MCP サーバー設定
+├── .claude/skills/                    # スキル定義
+│   ├── spec-discovery/                # Phase 01a
+│   └── subgraph-extractor/            # Phase 01b
 ├── scripts/
 │   ├── run_phase.py                   # パイプライン実行エントリポイント
-│   ├── setup_mcp.sh                   # MCP サーバー登録スクリプト
+│   ├── setup_mcp.sh                   # MCP サーバー登録
 │   └── orchestrator/                  # 非同期 Python オーケストレーター
 │       ├── base.py                    # BaseOrchestrator（並列実行、レジューム）
 │       ├── config.py                  # PhaseConfig（全フェーズ定義）
 │       ├── runner.py                  # ClaudeRunner（CLI 呼び出し、サーキットブレーカー）
 │       ├── watchdog.py                # LogWatcher、CostTracker（予算管理）
-│       ├── resume.py                  # ResumeManager（部分結果からのレジューム）
+│       ├── resume.py                  # ResumeManager
 │       ├── collector.py               # ResultCollector（部分結果の即時保存）
-│       ├── schemas.py                 # Pydantic データ契約（フェーズ間検証）
-│       ├── batch.py                   # バッチ戦略（トークンベース/件数ベース）
-│       ├── queue.py                   # キュー管理
-│       └── factory.py                 # オーケストレーター生成
+│       └── schemas.py                 # Pydantic データ契約（フェーズ間検証）
 ├── prompts/                           # フェーズ別ワーカープロンプト
-│   ├── 01a_crawl.md                   # 仕様書ディスカバリ
-│   ├── 01b_extract_worker.md          # サブグラフ抽出
-│   ├── 01e_prop_worker.md             # プロパティ生成（インライン、スキルフォークなし）
-│   ├── 02c_codelocation_worker.md     # コード位置事前解決（インライン）
-│   ├── 03_auditmap_worker_inline.md   # 3フェーズ形式的監査（インライン）
-│   ├── 04_review_worker.md            # 監査レビュー
-│   ├── 05_poc.md                      # PoC 生成（手動）
-│   ├── 06_report.md                   # バグバウンティレポート（手動）
-│   └── 06b_audit_report.md            # 完全監査レポート（手動）
+│   ├── 01a_crawl.md
+│   ├── 01b_extract_worker.md
+│   ├── 01e_prop_worker.md             # インライン
+│   ├── 02c_codelocation_worker.md     # インライン
+│   ├── 03_auditmap_worker_inline.md   # インライン
+│   ├── 04_review_worker.md            # インライン
+│   ├── 05_poc.md                      # 手動
+│   ├── 06_report.md                   # 手動
+│   └── 06b_audit_report.md            # 手動
 ├── outputs/                           # パイプライン出力（PARTIAL_*.json）
-│   └── logs/                          # JSONL ストリームログ
-├── tests/                             # pytest テスト（215件）
-│   ├── test_schemas_and_config.py     # メインテスト（スキーマ、設定、回路遮断器、使用量制限検出）
-│   ├── test_code_scope.py             # コードスコープ解決
-│   ├── test_phase03_early_exit.py     # Phase 03 早期終了
-│   ├── test_severity_gate.py          # 深刻度ゲート（Informational フィルタリング）
-│   └── test_watchdog_cache_tokens.py  # キャッシュトークン追跡、予算制御
-├── benchmarks/                        # ベンチマーク
-│   ├── README.md                      # RQ1 & RQ2 評価方法論
-│   ├── rq1/                           # RQ1: Sherlock 監査コンテスト評価
-│   ├── rq2/                           # RQ2: PrimeVul ツール比較
-│   │   ├── evaluate.py                # 修正済み（bootstrap_metric_diffs 引数追加）
-│   │   └── generate_report.py
+├── tests/                             # pytest テスト
+├── benchmarks/                        # RQ1 & RQ2 ベンチマーク
+│   ├── rq1/                           # Sherlock 監査コンテスト評価
+│   ├── rq2/                           # PrimeVul ツール比較
 │   ├── runners/                       # ツール実行ラッパー
-│   │   ├── run_semgrep.py
-│   │   ├── run_codeql.py
-│   │   ├── run_llm_baseline.py
-│   │   ├── run_static_baseline.py
-│   │   ├── run_security_agent.py
-│   │   └── invoke_security_agent.sh   # プレースホルダー（本体未実装）
-│   ├── scripts/
-│   │   └── run_rq2_local.sh           # ローカル一括実行
 │   ├── datasets/builders/             # データセットビルダー
-│   ├── metrics/                       # 統計ユーティリティ（classification.py, stats.py）
-│   ├── results/                       # ベンチマーク結果
-│   └── tools/                         # ツールレジストリ・ローダー
-├── .github/workflows/                 # CI/CD（14 ワークフロー）
-│   ├── 01a-discovery.yml ... 04-audit-review.yml  # パイプラインフェーズ
-│   ├── benchmark-rq1-sherlock-eval.yml             # RQ1 評価
-│   ├── benchmark-rq2-01-setup.yml                  # RQ2 Step 1: データセット
-│   ├── benchmark-rq2-02-tools.yml                  # RQ2 Step 2: ツール実行
-│   └── benchmark-rq2-03-evaluate.yml               # RQ2 Step 3: 評価・レポート
-└── docs/
-    ├── hiro/
-    │   ├── hikitugi.md                # ← この文書
-    │   └── LOCAL_VERIFICATION_GUIDE.md # ローカル実行ガイド（日本語）
-    ├── CLAUDE_CACHE_STRATEGY.md       # キャッシュ最適化ガイド
-    ├── ethereum/                      # Ethereum 仕様・バグデータ
-    └── report_templates/              # バグバウンティレポートテンプレート
+│   └── results/                       # ベンチマーク結果
+└── .github/workflows/                 # CI/CD ワークフロー
 ```
 
 ---
 
-## 3. パイプラインフロー
+## 4. セキュリティ脆弱性修正（SEC-C01〜C04）
 
-```
-01a Spec Discovery       仕様書URLのクロール・発見
-  ↓
-01b Subgraph Extraction  仕様書 → Nielson & Nielson 形式的プログラムグラフ (.mmd)
-  ↓
-01e Property Generation  Ethereum 特化 STRIDE 脅威モデル + セキュリティプロパティ生成
-  ↓                      ※ BUG_BOUNTY_SCOPE.json 必須（なければ sys.exit(1)）
-02c Code Pre-resolution  Tree-sitter MCP でコード位置の事前解決（トークン 40-60% 削減）
-  ↓                      ※ TARGET_INFO.json 必須（ワークフローが事前作成）
-03  Audit Map            3段階フォーマル監査
-  ↓                      Phase 1: 抽象解釈（状態異常検出）
-  ↓                      Phase 2: 記号実行（具体的攻撃シナリオ構築）
-  ↓                      Phase 3: 不変条件証明（ガード充足性の懐疑的検証）
-04  Review               6カテゴリ判定
-                         CONFIRMED_VULNERABILITY / LIKELY_VULNERABILITY /
-                         VERIFIED_SAFE / FALSE_POSITIVE /
-                         CODE_QUALITY_ISSUE / REQUIRES_MANUAL_REVIEW
---- 手動フェーズ ---
-05  PoC Generation       脆弱性ごとの再現テスト生成
-06  Bug-Bounty Report    プラットフォーム別レポート（Cantina, Code4rena, Ethereum, Immunefi, Sherlock）
-06b Full Audit Report    出版可能な完全監査レポート
-```
+Critical 4件を修正済み（PR マージ済み）。
+
+| ID | 脆弱性 | ファイル | 修正内容 |
+|---|---|---|---|
+| SEC-C01 | コマンドインジェクション (`run_command`) | `benchmarks/runners/base_runner.py` | `shell=True` 時に `shlex.quote()` で全パラメータをエスケープ |
+| SEC-C02 | パストラバーサル (LLM出力パス) | `scripts/orchestrator/base.py` | `_is_safe_output_path()` ヘルパー追加、`outputs/` 外へのアクセスをブロック |
+| SEC-C03 | スクリプトインジェクション (GitHub Actions) | `.github/workflows/openhands-resolver.yml` | `${{ }}` 展開を `context.payload` 経由に変更 |
+| SEC-C04 | コマンドインジェクション (`resolve_version`) | `benchmarks/runners/base_runner.py` | `shlex.split()` + `shell=False` に変更 |
+
+### 追加されたセキュリティテスト
+
+| テストファイル | 件数 | 内容 |
+|---|---|---|
+| `tests/test_sec_c01_c04_command_injection.py` | 8件 | シェルエスケープ検証、`shell=False` 検証 |
+| `tests/test_sec_c02_path_traversal.py` | 6件 | パストラバーサルガードの正常/異常パス検証 |
+
+### 技術的注意点
+
+- **SEC-C02**: `_is_safe_output_path()` は `Path("outputs").resolve()` をベースにしている。CWD 依存のため、テストはリポジトリルートが CWD である前提
+- **SEC-C01**: `use_shell=True` 時のみエスケープ適用。テンプレート自体にクォートを含めないこと
 
 ---
 
-## 4. 現在のブランチ状態
+## 5. RQ2 ベンチマーク結果（PrimeVul ベースライン）
 
-| 項目 | 値 |
-|------|-----|
-| **作業ブランチ** | `work/20260223` |
-| **ベースブランチ** | `master` |
-| **master からの差分** | なし（master から分岐直後） |
-| **テスト** | **215 passed** (全パス, 5.35s) |
+データセット: PrimeVul test paired (868 samples, 386 pairs)
 
-### master の最新コミット（2026-02-21 以降）
+### 現在のベースライン結果
 
-| # | コミット | 内容 |
-|---|---------|------|
-| 1 | `939f385` | Dockerfile に PYTHONPATH 環境変数追加 |
-| 2 | `6d03e79` | Docker root-owned ファイルパーミッションエラー修正 |
-| 3 | `49bbed8` | `chown` による Docker クリーンアップ（`find -not -writable` 置換） |
-| 4 | `2a97761` | PR #60 マージ（上記修正の統合） |
+| ツール | TP | FP | TN | FN | Precision | Recall | **F1** | Pairwise Acc |
+|--------|----|----|----|----|-----------|--------|--------|-------------|
+| **Semgrep** | 0 | 0 | 433 | 435 | 0.000 | 0.000 | **0.000** | 0.000 |
+| **Cppcheck** | 377 | 379 | 54 | 58 | 0.499 | 0.867 | **0.633** | 0.003 |
+| **Flawfinder** | 126 | 122 | 311 | 309 | 0.508 | 0.290 | **0.369** | 0.010 |
+| LLM Baseline | - | - | - | - | - | - | - | (全エラー、coverage=0) |
+| CodeQL | - | - | - | - | - | - | - | (未実行) |
+| Security Agent | - | - | - | - | - | - | - | (未実行) |
 
-### アクティブな監査ブランチ（最新）
+### 考察
 
-| ブランチ | ターゲット | 日付 |
-|---------|-----------|------|
-| `preresolve_prysm_fusaka-audit_238d5c07df_*` | OffchainLabs/prysm | 2026-02-22 |
-| `ethereum-fusaka-20260220` | Ethereum クライアント群 | 2026-02-20 |
-| `audit_go-ethereum_fusaka-audit_*` | go-ethereum | 2026-02-06 |
-| `audit_lighthouse_fusaka-audit_*` | Lighthouse | 2026-02-04 |
-| `audit_lodestar_fusaka-audit_*` | Lodestar | 2026-02-04 |
+- **Semgrep**: ルールマッチング方式のため C/C++ の低レベル脆弱性（メモリ安全性）を検出できず全滅
+- **Cppcheck**: 高 recall (86.7%) だが precision が低い (49.9%)。ほぼ全関数を vulnerable と判定する傾向
+- **Flawfinder**: パターンマッチベースで中間的な性能。precision は最も高い (50.8%)
 
----
-
-## 5. 前回セッション（2026-02-21）以降の変更
-
-### 5.1 Docker インフラ修正
-
-- **問題**: セルフホストランナーで Docker が root 所有ファイルを作成 → 次回ジョブの `git checkout` が権限エラーで失敗
-- **修正**: `find -not -writable` を `sudo chown -R` に置換、`--user` フラグ追加
-- **影響ファイル**: `.github/workflows/benchmark-rq2-02-tools.yml`, `Dockerfile`
-
-### 5.2 Phase 01e プロパティ生成の強化
-
-- **Ethereum 特化 STRIDE**: 汎用 STRIDE → Ethereum クライアント固有の脅威カテゴリに変更
-  - ピア/バリデータなりすまし、ブロック/状態改竄、スラッシャブル違反、MEV/タイミングリーク、エクリプス/Blob スパム DoS、フォーク選択操作
-- **実装ベースプロパティ**: 仕様レベルだけでなく、コード実装からもプロパティ生成が可能に
-- **プロパティタイプ**: `invariant`, `threat`, `assumption`, `state_transition`, `optimization_correctness`
-
-### 5.3 RQ1 ベンチマーク結果（Sherlock Ethereum 監査）
+### RQ1 ベンチマーク結果（Sherlock Ethereum 監査）
 
 | 指標 | 値 |
 |------|-----|
-| **Issue Recall** | 0.273 (3/11 issues, Strict matching) |
+| **Issue Recall** | 0.273 (3/11 issues) |
 | **マッチした脆弱性** | #40 Proposer 計算境界 (High), #203 Fiat-Shamir KZG 弱点 (High), #381 署名検証バイパス (Low) |
 | **総 Findings** | 254 items（6 クライアント） |
-| **新規/未マッチ** | 251（潜在的な新規脆弱性） |
 
 ---
 
-## 6. 未完了のタスク・次回やるべきこと
+## 6. 未完了タスク
 
-### 6.1 `invoke_security_agent.sh` の本体実装（優先度: 中）
+### 6.1 RQ2: Security Agent ベンチマーク実行（優先度: 高）
 
-現在プレースホルダー。SPECA パイプラインの「単一ファイル監査モード」が完成したら実装:
+`invoke_security_agent.sh` の本体を実装し、SPECA を PrimeVul データセットで評価する。現在プレースホルダー。
 
-```bash
-uv run python -m scripts.run_phase --phase 03 \
-  --target-file "${CODE_PATH}" \
-  --output "${OUTPUT_PATH}" \
-  --case-id "${CASE_ID}"
-```
+### 6.2 残りのセキュリティ脆弱性修正（優先度: 高）
 
-### 6.2 RQ2 ベンチマーク再実行（優先度: 高）
+`docs/hiro/kijaku.md` の残り 66件。優先度順:
 
-現状: Semgrep 0%, LLM Baseline 全エラー, CodeQL/Security Agent 未完了。CI パイプラインの修正は済んでいるので再実行が必要。
+**P1 — 短期対応（次回推奨）**
 
-### 6.3 MCP セットアップ問題（優先度: 低）
+| ID | 概要 | ファイル |
+|---|---|---|
+| SEC-H01 | Gitトークン漏洩（8ワークフロー） | `.github/workflows/*.yml` |
+| SEC-H02 | TOCTOU レース（MCP設定ファイル） | `scripts/orchestrator/runner.py` |
+| SEC-H03 | レースコンディション（PARTIAL読み取り） | `scripts/orchestrator/resume.py`, `collector.py` |
+| SEC-H04 | sweagent 未ピン留め | `pyproject.toml` |
+| SEC-H05 | ワークフロー権限の過剰付与 | `.github/workflows/*.yml` |
+| BUG-CI01 | Heredoc で BUG_BOUNTY_SCOPE.json 不正JSON | `01e-properties.yml` |
+| BUG-CI02 | git user.name/email 未設定 | `benchmark-rq1-sherlock-eval.yml` |
+| BUG-ORC01 | `sys.exit()` をカスタム例外に | `scripts/orchestrator/base.py` |
+| BUG-ORC03 | 正規表現 大文字/小文字不一致 | `scripts/orchestrator/resume.py` |
+| BUG-SCH01/02 | スキーマと Phase 03 出力の不一致 | `scripts/orchestrator/schemas.py` |
 
-ローカルで `bash scripts/setup_mcp.sh` が `claude` CLI not found で失敗する件。テストやベンチマークには不要。
+**P2 — 中期対応**
+
+- SEC-M01〜M06: Medium セキュリティ脆弱性 6件
+- BUG-ORC02/04/05: オーケストレーターロジックバグ
+- BUG-BEN01〜08: ベンチマーク/評価のバグ
+- BUG-SCH03〜07: スキーマ整合性 + テスト修正
+
+**アプローチ推奨:**
+- SEC-H01（8ワークフローの一括置換）はエージェント並列実行が有効
+- SEC-H02/H03（レースコンディション）はアトミック書き込み実装のため一緒に対応
+- BUG-ORC/SCH 系は相互依存があるためスキーマ修正を先に行うこと
 
 ---
 
-## 7. コーディング規約
+## 7. 設計原則
 
-### 7.1 言語・ランタイム
-
-- **Python**: `>=3.11` 必須（`pyproject.toml`）
-- **パッケージマネージャ**: `uv`（pip/poetry ではない）
-- **実行方法**: 常に `uv run python3 ...`
-
-### 7.2 コードスタイル
-
-- **型ヒント**: `from __future__ import annotations`
-- **データモデル**: `pydantic>=2.0`（`schemas.py`）
-- **非同期**: `asyncio` ベース（orchestrator 全体）
-- **テスト**: `pytest`、`tests/` ディレクトリに配置
-
-### 7.3 ファイル命名規約
-
-| 種類 | パターン | 例 |
-|------|---------|-----|
-| 出力 | `outputs/{phase_id}_PARTIAL_W{worker}B{batch}_{timestamp}.json` | `03_AUDITMAP_PARTIAL_W1B2_20260220.json` |
-| キュー | `outputs/{phase_id}_QUEUE_{worker_id}.json` | `03_QUEUE_w1.json` |
-| ログ | `outputs/logs/{phase_id}_W{worker}B{batch}_{timestamp}.jsonl` | |
-| ベンチマーク | `benchmarks/results/rq2/{dataset}/{tool}_results.json(l)` | `primevul/semgrep_results.json` |
-
-### 7.4 設計原則（CLAUDE.md より）
-
-1. **部分結果はファーストクラス** — バッチ結果は即座に保存。バリデーション失敗で保存をブロックしない
-2. **サーキットブレーカーは共有** — 全ワーカーで1つ。システム障害時に高速停止
-3. **MCP ファーストのコード解決** — Phase 02c は Tree-sitter MCP、Phase 03 は Read/Grep/Glob のみ
-4. **予算管理は ClaudeRunner に組み込み** — `BudgetExceeded` で即停止
-5. **Phase 02c/03 のターゲット一貫性** — `TARGET_INFO.json` を共有
-6. **インラインプロンプト（01e, 02c, 03）** — スキルフォークなしでコンテキストオーバーヘッド削減
+1. **部分結果はファーストクラス** -- バッチ結果は即座に保存。バリデーション失敗で保存をブロックしない
+2. **サーキットブレーカーは共有** -- 全ワーカーで1つ。システム障害時に高速停止
+3. **MCP ファーストのコード解決** -- Phase 02c は Tree-sitter MCP、Phase 03 は Read/Grep/Glob のみ
+4. **予算管理は ClaudeRunner に組み込み** -- `BudgetExceeded` で即停止
+5. **Phase 02c/03 のターゲット一貫性** -- `TARGET_INFO.json` を共有
+6. **インラインプロンプト（01e, 02c, 03, 04）** -- スキルフォークなしでコンテキストオーバーヘッド削減
+7. **ドメイン非依存 STRIDE + CWE Top 25** -- CWE-22/78/89/94/200/502/639/770/862。特定ドメインへのハードコードなし
 
 ---
 
@@ -243,6 +203,9 @@ uv sync
 
 # テスト（全フェーズ実行前に必ず実施）
 uv run python3 -m pytest tests/ -v --tb=short
+
+# セキュリティ関連テストのみ
+uv run python3 -m pytest tests/test_sec_*.py -v
 
 # パイプライン実行
 uv run python3 scripts/run_phase.py --phase 01a
@@ -268,16 +231,26 @@ bash scripts/setup_mcp.sh --verify
 | `FORCE_EXECUTE=1` | レジュームバイパス | `--force` で自動設定 |
 | `CLAUDE_CODE_PERMISSIONS=bypassPermissions` | CI 権限スキップ | CI のみ |
 | `CLAUDE_CODE_MAX_OUTPUT_TOKENS=100000` | CI 出力制限 | CI のみ |
-| `GITHUB_PERSONAL_ACCESS_TOKEN` | GitHub MCP | Phase 02, MCP セットアップ |
+| `GITHUB_PERSONAL_ACCESS_TOKEN` | GitHub MCP | Phase 02c, MCP セットアップ |
 | `ANTHROPIC_API_KEY` | security_agent ベンチマーク | RQ2（security_agent 使用時） |
-| `SA_COMMAND` | security_agent コマンドテンプレート | `run_rq2_local.sh` |
 
 ---
 
-## 10. 既知の問題・注意点
+## 10. ファイル命名規約
+
+| 種類 | パターン | 例 |
+|------|---------|-----|
+| 出力 | `outputs/{phase_id}_PARTIAL_W{worker}B{batch}_{timestamp}.json` | `03_AUDITMAP_PARTIAL_W1B2_20260220.json` |
+| キュー | `outputs/{phase_id}_QUEUE_{worker_id}.json` | `03_QUEUE_w1.json` |
+| ログ | `outputs/logs/{phase_id}_W{worker}B{batch}_{timestamp}.jsonl` | |
+| ベンチマーク | `benchmarks/results/rq2/{dataset}/{tool}_results.json(l)` | `primevul/semgrep_results.json` |
+
+---
+
+## 11. 既知の問題・注意点
 
 1. **`invoke_security_agent.sh`**: 本体未実装。`"error": "not_implemented"` を返すのみ
 2. **Docker 必須**: Semgrep ランナーは Docker コンテナ内実行。Docker なし環境ではスキップされる
 3. **`sweagent` 依存**: `pyproject.toml` に git 依存あり。ネットワーク次第で `uv sync` が遅い/失敗する可能性
-4. **RQ2 結果不完全**: 現在の結果は全ツール 0% recall。CI 修正済みだが再実行が必要
-5. **テスト数の増加**: 178 → 215 に増加（使用量制限検出テスト、深刻度ゲートテスト等が追加）
+4. **LLM Baseline 全エラー**: coverage=0、全 868 サンプルが skipped。再実行が必要
+5. **CodeQL / Security Agent 未実行**: `missing_results` ステータス

@@ -1,520 +1,229 @@
-過去のissiuse
-actions/checkout が EACCES で失敗する問題のメモ #63
-Open
-Open
-actions/checkout が EACCES で失敗する問題のメモ
-#63
-@grandchildrice
-Description
-grandchildrice
-opened 13 hours ago
-現象
-self-hosted runner で 03. Audit Map 実行時、actions/checkout@v4 のクリーンアップで EACCES: permission denied, unlink benchmarks/__pycache__/__init__.cpython-311.pyc が発生しジョブが停止する。
-
-該当箇所: https://github.com/NyxFoundation/security-agent/actions/runs/22278847556/job/64445651870#:~:text=Error%3A%20File,Prompts%20from%20Remote
-
-再現手順
-master ブランチで benchmark-rq2-02-tools.yml（RQ2 step2）を実行。
-同じ runner ワークスペースで 03-audit-map.yml を実行。
-原因
-RQ2 step2 の Semgrep ステップで docker run -v "$PWD":/app ... を root ユーザのまま実行しており、コンテナ内で生成された benchmarks/__pycache__/*.pyc がホスト側で root 所有になる。次のジョブの checkout が削除できず失敗。
-
-影響範囲
-self-hosted runner 共有ワークスペース上のすべてのブランチ。
-
-暫定回避策
-ジョブ前に sudo chown -R $USER:$USER "$RUNNER_WORKSPACE" で所有権を戻してから実行。
-
-恒久対応案
-benchmark-rq2-02-tools.yml の Semgrep 実行ステップに --user $(id -u):$(id -g) を付ける。例:
-
-UIDGID="$(id -u):$(id -g)"
-docker run --rm --user "$UIDGID" -v "$PWD":/app security-agent-benchmark \
-  python3 /app/benchmarks/runners/run_semgrep.py \
-    --dataset "/app/${DATASET_PATH}" \
-    --output "/app/${RESULTS_DIR}/semgrep_results.json" \
-    --timeout "${{ inputs.tool_timeout }}"
-（他の docker run も同様にユーザ指定を推奨）
-
-備考
-エフェメラル runner 運用や定期的なワークスペース掃除でも再発防止可能。
-
-進行状況
-
-
-Step 1: データセット取得の動作確認とキャッシュ整備
-
-Step 2: 静的ツールのベンチマーク実行とキャッシュ保存
-
-Step 3: security-agent のベンチマーク実行
-
-Step 4: 評価と結果の可視化
-
-Step 5: 再実験のフロー
-対象ディレクトリ: benchmarks/rq2/, benchmarks/runners/, benchmarks/datasets/, .github/workflows/benchmark-rq2-*.yml
-
-1. RQ2 ベンチマークの概要
-RQ2（Research Question 2）は、「security-agent が従来の静的解析ツールおよびファジングベースラインと比較して、ラベル付けされた脆弱性データセット上でどの程度の性能を発揮するか」を定量的に評価するベンチマークです。
-
-1.1 評価対象データセット
-データセット	言語	規模	取得元	用途
-PrimeVul	C/C++	数万件のペア	Hugging Face	メインデータセット（デフォルト）
-CVEfixes	C/C++, Java, Python 等	分散OSSのCVEパッチ	Zenodo (v1.0.8)	分散システム特化の補足評価
-Vul4J	Java	数百件のペア	Zenodo	Java特化の補足評価
-各データセットは「脆弱なコード（vulnerable）」と「修正済みコード（clean）」のペアとして整形され、pair_id で紐付けられた JSONL 形式で保存されます。
-
-1.2 評価対象ツール
-ツール名	種別	実行スクリプト	結果ファイル
-semgrep	静的解析	runners/run_semgrep.py	semgrep_results.json
-codeql	静的解析	runners/run_codeql.py	codeql_results.jsonl
-security_agent	LLMエージェント	runners/run_security_agent.py	security_agent_results.jsonl
-llm_baseline	LLMベースライン	runners/run_llm_baseline.py	llm_baseline_results.jsonl
-static_baseline	静的解析（Infer等）	runners/run_static_baseline.py	static_baseline_results.jsonl
-1.3 評価指標
-benchmarks/rq2/evaluate.py が以下の指標を計算します。
-
-指標	説明
-Precision / Recall / F1	標準的な二値分類指標
-Coverage	スコアリングされたサンプル数 / 全サンプル数
-Pairwise Accuracy	ペア単位の正解率（脆弱→True かつ clean→False の割合）
-CWE Coverage	CWEカテゴリごとの再現率
-Unique Detections	security-agent のみが検出した脆弱性
-McNemar Exact Test	ツール間の有意差検定
-Cliff's Delta	効果量（negligible / small / medium / large）
-Bootstrap CI	95% 信頼区間（2000サンプル）
-1.4 キャッシュ設計
-すべての中間成果物は ~/.cache/security-agent/ 以下に保存し、GitHub Actions では actions/upload-artifact / actions/download-artifact でアーティファクトとして管理します。
-
-~/.cache/security-agent/
-└── benchmarks/
-    ├── primevul/
-    │   └── primevul_test_paired.jsonl        # Step 1: データセット
-    ├── cvefixes/
-    │   └── CVEfixes.db                       # Step 1: CVEfixes DB
-    ├── vul4j/
-    │   └── vul4j_export.jsonl                # Step 1: Vul4J エクスポート
-    └── results/
-        └── {dataset}/
-            ├── semgrep_results.json          # Step 2: 静的ツール結果
-            ├── codeql_results.jsonl          # Step 2: 静的ツール結果
-            ├── llm_baseline_results.jsonl    # Step 2: LLMベースライン結果
-            ├── static_baseline_results.jsonl # Step 2: 静的ベースライン結果
-            ├── security_agent_results.jsonl  # Step 3: security-agent結果
-            ├── evaluation_summary.json       # Step 4: 評価サマリー
-            ├── metrics.json                  # Step 4: 詳細メトリクス
-            └── report.md                     # Step 4: 可視化レポート
-2. 現状の実装状況
-2.1 実装済みのコンポーネント
-以下のコンポーネントはコードとして実装されていますが、動作確認は未実施です。
-
-benchmarks/datasets/builders/setup_benchmark.py: PrimeVul のダウンロードとキャッシュ
-benchmarks/datasets/fetch_cvefixes.sh: CVEfixes DB のダウンロードとキャッシュ
-benchmarks/datasets/fetch_vul4j.sh: Vul4J のダウンロードとキャッシュ
-benchmarks/runners/run_semgrep.py: Semgrep の実行（Dockerコンテナ経由）
-benchmarks/runners/run_codeql.py: CodeQL の実行（デフォルトモードとコマンドテンプレートモード）
-benchmarks/runners/run_llm_baseline.py: Claude CLI 経由の LLM ベースライン
-benchmarks/runners/run_static_baseline.py: Infer のデフォルト実行
-benchmarks/rq2/evaluate.py: 全ツール結果の統合評価
-benchmarks/rq2/generate_report.py: Markdown レポート生成
-.github/workflows/benchmark-rq2-01-setup.yml: データセット準備ワークフロー
-.github/workflows/benchmark-rq2-02-tools.yml: ツール実行ワークフロー
-.github/workflows/benchmark-rq2-03-evaluate.yml: 評価ワークフロー
-2.2 未実装・要修正の箇所
-箇所	現状	必要な対応
-run_security_agent.py	--command 未指定時は runner_not_configured エラーを返すのみ	security-agent 本体の呼び出しロジックを実装する
-benchmark-rq2-02-tools.yml の security_agent ステップ	"security_agent is not implemented; skipping." とハードコードされてスキップ	実装後に有効化する
-結果のキャッシュ（GitHub Actions）	Gitブランチへのコミットで管理	actions/upload-artifact / actions/download-artifact に移行する
-evaluate.py の bootstrap_metric_diffs 呼び出し	samples, seed, ci_level 引数が不足している可能性あり	関数シグネチャとの整合性を確認する
-3. 進め方：ステップ別実行手順
-Step 1: データセット取得の動作確認とキャッシュ整備
-3.1.1 動作確認
-まず、PrimeVul データセットの取得スクリプトが正常に動作することを確認します。
-
-# ローカルでの動作確認
-cd /path/to/security-agent
-uv sync --python 3.11
-uv run python benchmarks/datasets/builders/setup_benchmark.py
-正常に完了すると、以下のファイルが生成されます。
-
-benchmarks/data/primevul/primevul_test_paired.jsonl（リポジトリ内）
-~/.cache/security-agent/benchmarks/primevul/primevul_test_paired.jsonl（キャッシュ）
-確認コマンド:
-
-# ファイルが存在し、JSONL形式として正しく読めることを確認
-head -n 1 benchmarks/data/primevul/primevul_test_paired.jsonl | python3 -m json.tool
-wc -l benchmarks/data/primevul/primevul_test_paired.jsonl
-3.1.2 GitHub Workflow への Artifact 保存の追加
-benchmark-rq2-01-setup.yml の末尾に以下のステップを追加します。
-
-      - name: Cache Dataset to Artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: rq2-dataset-${{ inputs.dataset }}-${{ github.run_id }}
-          path: benchmarks/data/${{ inputs.dataset }}/
-          retention-days: 30
-          if-no-files-found: warn
-
-      - name: Cache to ~/.cache
-        run: |
-          CACHE_DIR="${HOME}/.cache/security-agent/benchmarks/${{ inputs.dataset }}"
-          mkdir -p "${CACHE_DIR}"
-          cp -rf benchmarks/data/${{ inputs.dataset }}/. "${CACHE_DIR}/"
-          echo "Cached to ${CACHE_DIR}"
-3.1.3 後続ワークフローでの Artifact ダウンロード
-benchmark-rq2-02-tools.yml の Setup Python (uv) ステップの前に以下を追加します。
-
-      - name: Download Dataset Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: rq2-dataset-${{ inputs.dataset }}-${{ inputs.dataset_run_id }}
-          path: benchmarks/data/${{ inputs.dataset }}/
-        continue-on-error: true  # キャッシュがない場合はGitから取得
-
-      - name: Fallback to ~/.cache
-        run: |
-          CACHE_DIR="${HOME}/.cache/security-agent/benchmarks/${{ inputs.dataset }}"
-          DEST_DIR="benchmarks/data/${{ inputs.dataset }}"
-          if [ ! -f "${DEST_DIR}/"*.jsonl ] && [ -d "${CACHE_DIR}" ]; then
-            echo "Restoring from ~/.cache..."
-            mkdir -p "${DEST_DIR}"
-            cp -rf "${CACHE_DIR}/." "${DEST_DIR}/"
-          fi
-注意: dataset_run_id はワークフロー入力パラメータとして追加し、Step 1 の実行 ID を指定できるようにします。あるいは、actions/cache アクションを使って自動的にキャッシュキーを管理する方法も検討してください。
-
-Step 2: 静的ツールのベンチマーク実行とキャッシュ保存
-3.2.1 Semgrep の動作確認
-Semgrep は Docker コンテナ経由で実行されます。まず Docker イメージをビルドします。
-
-# Dockerイメージのビルド
-docker build -t security-agent-benchmark -f benchmarks/Dockerfile .
-
-# 動作確認（少数サンプルで実行）
-docker run --rm -v "$PWD":/app security-agent-benchmark \
-  python3 /app/benchmarks/runners/run_semgrep.py \
-    --dataset /app/benchmarks/data/primevul/primevul_test_paired.jsonl \
-    --output /app/benchmarks/results/rq2/primevul/semgrep_results.json \
-    --timeout 60
-確認ポイント:
-
-benchmarks/results/rq2/primevul/semgrep_results.json が生成されること
-benchmarks/results/rq2/primevul/semgrep_metadata.json が生成されること
-各レコードに func_id と semgrep_findings が含まれること
-3.2.2 CodeQL の動作確認
-CodeQL CLI がインストールされている環境で実行します。
-
-# デフォルトモード（codeql CLIが必要）
-uv run python benchmarks/runners/run_codeql.py \
-  --dataset benchmarks/data/primevul/primevul_test_paired.jsonl \
-  --output benchmarks/results/rq2/primevul/codeql_results.jsonl \
-  --tmp-dir benchmarks/tmp/codeql \
-  --timeout 120
-3.2.3 LLM ベースラインの動作確認
-# Claude CLIが必要
-uv run python benchmarks/runners/run_llm_baseline.py \
-  --dataset benchmarks/data/primevul/primevul_test_paired.jsonl \
-  --output benchmarks/results/rq2/primevul/llm_baseline_results.jsonl \
-  --tmp-dir benchmarks/tmp/llm_baseline \
-  --timeout 60 \
-  --limit 10  # まず10件でテスト
-3.2.4 結果のキャッシュ保存
-benchmark-rq2-02-tools.yml の末尾に以下を追加します。
-
-      - name: Save Results to Cache
-        if: always()
-        run: |
-          CACHE_DIR="${HOME}/.cache/security-agent/benchmarks/results/${{ inputs.dataset }}"
-          mkdir -p "${CACHE_DIR}"
-          if [ -d "benchmarks/results/rq2/${{ inputs.dataset }}" ]; then
-            cp -rf "benchmarks/results/rq2/${{ inputs.dataset }}/." "${CACHE_DIR}/"
-            echo "Saved results to ${CACHE_DIR}"
-          fi
-
-      - name: Upload Results Artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: rq2-tool-results-${{ inputs.dataset }}-${{ inputs.tools }}-${{ github.run_id }}
-          path: benchmarks/results/rq2/${{ inputs.dataset }}/
-          retention-days: 30
-          if-no-files-found: warn
-Step 3: security-agent のベンチマーク実行
-これは、現在security-agentのトークン消費量問題を解決中なので、一旦スキップでOKです。
-ただし、このステップを実行するためには、脆弱性データセットとともに、対象OSSの仕様書を確認できるURLリンクが必要となります。それを取得する方法についても考えておいてください。
-この後のStep4は、Step3のデータがなくても空の状態で進められるようにしておくとよいでしょう。
-
-3.3.1 run_security_agent.py の実装方針
-現状の run_security_agent.py は --command 引数にコマンドテンプレートを渡すことで動作します。テンプレートには以下のプレースホルダーが使用できます。
-
-プレースホルダー	説明
-{code_path}	解析対象コードファイルのパス
-{output_path}	予測結果を書き込む JSON ファイルのパス
-{case_id}	サンプルの ID
-出力ファイル（{output_path}）には以下の形式の JSON を書き込む必要があります。
-
-{
-  "predicted_vulnerable": true,
-  "confidence": 0.85,
-  "findings": 2,
-  "spec": "Buffer overflow detected in function foo at line 42."
-}
-predicted_vulnerable フィールドが必須で、true / false のブール値を返します。spec フィールドは任意ですが、ユニーク検出例の表示に使用されます。
-
-3.3.2 security-agent 呼び出しスクリプトの作成
-security-agent の監査ロジックを単一ファイルに対して実行するラッパースクリプトを作成します。
-
-# benchmarks/runners/invoke_security_agent.sh の例
-#!/usr/bin/env bash
-set -euo pipefail
-
-CODE_PATH="$1"
-OUTPUT_PATH="$2"
-CASE_ID="$3"
-
-# security-agent の実行（実際のコマンドに置き換える）
-# 例: python -m security_agent.cli audit --file "${CODE_PATH}" --output "${OUTPUT_PATH}"
-# 出力形式: {"predicted_vulnerable": true/false, "confidence": 0.0-1.0}
-
-echo '{"predicted_vulnerable": false, "error": "not_implemented"}' > "${OUTPUT_PATH}"
-このスクリプトを --command 引数に渡します。
-
-uv run python benchmarks/runners/run_security_agent.py \
-  --dataset benchmarks/data/primevul/primevul_test_paired.jsonl \
-  --output benchmarks/results/rq2/primevul/security_agent_results.jsonl \
-  --tmp-dir benchmarks/tmp/security_agent \
-  --command "bash benchmarks/runners/invoke_security_agent.sh {code_path} {output_path} {case_id}" \
-  --shell \
-  --timeout 300 \
-  --limit 10  # まず10件でテスト
-3.3.3 ワークフローへの統合
-benchmark-rq2-02-tools.yml の Resolve Tool Selection ステップを修正し、security_agent を有効化します。
-
-          if echo "$TOOLS" | grep -Eq "security_agent|agent"; then
-            echo "run_security_agent=true" >> $GITHUB_OUTPUT  # falseからtrueに変更
-          else
-            echo "run_security_agent=false" >> $GITHUB_OUTPUT
-          fi
-Security Agent (not implemented) ステップを以下に置き換えます。
-
-      - name: Run Security Agent
-        if: steps.tool_select.outputs.run_security_agent == 'true'
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: |
-          if [ "${{ inputs.force_execute }}" != "true" ] && \
-             [ -f "${RESULTS_DIR}/security_agent_results.jsonl" ]; then
-            echo "Security agent results already exist. Use force_execute to re-run."
-            exit 0
-          fi
-          uv run python benchmarks/runners/run_security_agent.py \
-            --dataset "${DATASET_PATH}" \
-            --output "${RESULTS_DIR}/security_agent_results.jsonl" \
-            --tmp-dir benchmarks/tmp/security_agent \
-            --command "${{ inputs.security_agent_command }}" \
-            --shell \
-            --timeout "${{ inputs.tool_timeout }}"
-また、workflow_dispatch の inputs に security_agent_command を追加します。
-
-      security_agent_command:
-        description: "security-agent command template ({code_path}, {output_path}, {case_id})"
-        required: false
-        type: string
-        default: ""
-Step 4: 評価と結果の可視化
-3.4.1 評価の実行
-benchmark-rq2-03-evaluate.yml を実行します。このワークフローは、前のステップで生成された結果ファイルを基に評価を行います。
-
-# ローカルでの実行例
-uv run python benchmarks/rq2/evaluate.py \
-  --dataset primevul \
-  --dataset-path benchmarks/data/primevul/primevul_test_paired.jsonl
-生成される出力ファイル:
-
-benchmarks/results/rq2/evaluation_summary.json: 全ツールの評価サマリー
-benchmarks/results/rq2/metrics.json: 詳細なメトリクス（CWEカバレッジ、ペアワイズ統計など）
-3.4.2 レポート生成の自動化
-benchmark-rq2-03-evaluate.yml に以下のステップを追加します。
-
-      - name: Generate Report
-        run: |
-          uv run python benchmarks/rq2/generate_report.py \
-            --metrics benchmarks/results/rq2/metrics.json \
-            --output benchmarks/results/rq2/report.md
-
-      - name: Upload Evaluation Artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: rq2-evaluation-${{ inputs.dataset }}-${{ github.run_id }}
-          path: |
-            benchmarks/results/rq2/evaluation_summary.json
-            benchmarks/results/rq2/metrics.json
-            benchmarks/results/rq2/report.md
-          retention-days: 90
-
-      - name: Save Evaluation to ~/.cache
-        if: always()
-        run: |
-          CACHE_DIR="${HOME}/.cache/security-agent/benchmarks/results/${{ inputs.dataset }}"
-          mkdir -p "${CACHE_DIR}"
-          for f in evaluation_summary.json metrics.json report.md; do
-            if [ -f "benchmarks/results/rq2/${f}" ]; then
-              cp "benchmarks/results/rq2/${f}" "${CACHE_DIR}/${f}"
-            fi
-          done
-          echo "Saved evaluation results to ${CACHE_DIR}"
-
-      - name: Print Report Summary
-        run: |
-          echo "## RQ2 Benchmark Report" >> $GITHUB_STEP_SUMMARY
-          cat benchmarks/results/rq2/report.md >> $GITHUB_STEP_SUMMARY
-Step 5: 再実験のフロー
-各ステップは独立して再実行可能です。以下のフローで必要な部分だけを再実験できます。
-
-[Step 1] データセット取得
-    ↓ (キャッシュあり → スキップ可)
-[Step 2] 静的ツール実行 (semgrep, codeql, llm, static)
-    ↓ (force_execute: false → 既存結果を使用)
-[Step 3] security-agent 実行
-    ↓ (force_execute: true → 強制再実行)
-[Step 4] 評価・レポート生成
-    ↓
-[完了] report.md をアーティファクトとして確認
-security-agent のみ再実行する場合:
-
-benchmark-rq2-02-tools.yml を以下のパラメータで実行します。
-
-tools: security_agent
-force_execute: true
-security_agent_command: 新しいコマンドテンプレート
-完了後、benchmark-rq2-03-evaluate.yml を実行して評価を更新します。
-
-キャッシュを活用した部分再実行:
-
-self-hostedランナー上の ~/.cache/security-agent/benchmarks/results/{dataset}/ には、過去の実行結果が保存されています。特定のツールの結果のみを削除して再実行することで、他のツールの結果を再利用しながら効率的に再実験できます。
-
-# security-agent の結果のみ削除して再実行する例（ランナーホストで実行）
-rm ~/.cache/security-agent/benchmarks/results/primevul/security_agent_results.jsonl
-# その後、benchmark-rq2-02-tools.yml を tools: security_agent で実行
-4. GitHub Workflow 全体設計
-4.1 ワークフロー一覧と依存関係
-benchmark-rq2-01-setup.yml
-    │
-    │ (Artifact: rq2-dataset-{dataset}-{run_id})
-    ▼
-benchmark-rq2-02-tools.yml
-    │
-    │ (Artifact: rq2-tool-results-{dataset}-{tools}-{run_id})
-    ▼
-benchmark-rq2-03-evaluate.yml
-    │
-    │ (Artifact: rq2-evaluation-{dataset}-{run_id})
-    ▼
-  report.md (GitHub Step Summary に表示)
-4.2 各ワークフローの修正方針
-benchmark-rq2-01-setup.yml の修正点
-追加: actions/upload-artifact でデータセットをアーティファクトとして保存
-追加: ~/.cache/security-agent/benchmarks/ へのキャッシュ保存ステップ
-変更: Gitブランチへのコミット・プッシュは廃止（アーティファクトに移行）
-benchmark-rq2-02-tools.yml の修正点
-追加: actions/download-artifact でデータセットアーティファクトを取得
-追加: ~/.cache からのフォールバック取得ステップ
-修正: security_agent の実行ステップを有効化
-追加: security_agent_command 入力パラメータ
-追加: 結果を actions/upload-artifact で保存
-追加: ~/.cache/security-agent/benchmarks/results/ へのキャッシュ保存ステップ
-変更: Gitブランチへのコミット・プッシュは廃止
-benchmark-rq2-03-evaluate.yml の修正点
-追加: actions/download-artifact でツール結果アーティファクトを取得
-追加: ~/.cache からのフォールバック取得ステップ
-追加: generate_report.py の実行ステップ
-追加: 評価結果を actions/upload-artifact で保存
-追加: ~/.cache への保存ステップ
-追加: $GITHUB_STEP_SUMMARY へのレポート出力
-変更: Gitブランチへのコミット・プッシュは廃止
-4.3 self-hosted ランナーの要件
-すべてのワークフローは runs-on: self-hosted で実行されます。ランナーホストには以下のツールが必要です。
-
-ツール	用途	インストール方法
-Docker	Semgrep の実行	apt-get install docker.io
-CodeQL CLI	CodeQL の実行	公式ドキュメント
-uv	Python 環境管理	`curl -LsSf https://astral.sh/uv/install.sh
-clang / clang++	CodeQL のビルド	apt-get install clang
-sqlite3	CVEfixes DB の構築	apt-get install sqlite3
-キャッシュを確認・修正したい場合は、ランナーホストに SSH 接続して ~/.cache/security-agent/ 以下を直接操作します。
-
-5. 既知の問題と対処方針
-5.1 evaluate.py の bootstrap_metric_diffs 呼び出し
-benchmarks/rq2/evaluate.py の bootstrap_metric_diffs 呼び出しで、samples, seed, ci_level 引数が不足している可能性があります。benchmarks/metrics/stats.py の関数シグネチャを確認し、必要に応じて修正します。
-
-# stats.py の関数シグネチャ（要確認）
-def bootstrap_metric_diffs(
-    tool_a, tool_b, ground_truth, case_ids,
-    samples: int,    # ← evaluate.py から渡されているか確認
-    seed: int,       # ← evaluate.py から渡されているか確認
-    ci_level: float, # ← evaluate.py から渡されているか確認
-) -> dict: ...
-5.2 PrimeVul の func_hash vs id の不整合
-run_semgrep.py は func_hash をキーとして使用しますが、evaluate.py は id や func_hash など複数のキーを試みます。bench_utils.py の extract_id 関数が func_hash を含む ID_KEYS タプルを参照しているため、基本的には問題ありませんが、Semgrep の結果ファイルの func_id キーが evaluate.py の load_semgrep_results で正しく処理されることを確認してください。
-
-5.3 security_agent の実行時間
-PrimeVul の全件（数万件）に対して security-agent を実行すると、非常に長い時間がかかります。初期実験では --limit オプションで件数を制限し、段階的にスケールアップすることを推奨します。
-
-6. ローカルでの一括実行スクリプト
-デバッグや開発中の動作確認のために、以下のスクリプトを使用できます。
-
-#!/usr/bin/env bash
-# run_rq2_local.sh - RQ2ベンチマークのローカル実行スクリプト
-set -euo pipefail
-
-DATASET="${1:-primevul}"
-TOOLS="${2:-semgrep}"  # semgrep, codeql, llm, static, security_agent, all
-LIMIT="${3:-0}"        # 0 = 全件
-
-echo "=== Step 1: Dataset Setup ==="
-uv run python benchmarks/datasets/builders/setup_benchmark.py
-
-echo "=== Step 2: Run Tools (${TOOLS}) ==="
-DATASET_PATH="benchmarks/data/${DATASET}/${DATASET}_test_paired.jsonl"
-RESULTS_DIR="benchmarks/results/rq2/${DATASET}"
-mkdir -p "${RESULTS_DIR}"
-
-if [[ "${TOOLS}" == "all" || "${TOOLS}" == *"semgrep"* ]]; then
-  docker build -t security-agent-benchmark -f benchmarks/Dockerfile . -q
-  docker run --rm -v "$PWD":/app security-agent-benchmark \
-    python3 /app/benchmarks/runners/run_semgrep.py \
-      --dataset "/app/${DATASET_PATH}" \
-      --output "/app/${RESULTS_DIR}/semgrep_results.json" \
-      --timeout 60
-fi
-
-if [[ "${TOOLS}" == "all" || "${TOOLS}" == *"codeql"* ]]; then
-  uv run python benchmarks/runners/run_codeql.py \
-    --dataset "${DATASET_PATH}" \
-    --output "${RESULTS_DIR}/codeql_results.jsonl" \
-    --tmp-dir benchmarks/tmp/codeql \
-    --timeout 120 \
-    ${LIMIT:+--limit ${LIMIT}}
-fi
-
-echo "=== Step 3: Evaluate ==="
-uv run python benchmarks/rq2/evaluate.py \
-  --dataset "${DATASET}" \
-  --dataset-path "${DATASET_PATH}"
-
-echo "=== Step 4: Generate Report ==="
-uv run python benchmarks/rq2/generate_report.py \
-  --metrics benchmarks/results/rq2/metrics.json \
-  --output benchmarks/results/rq2/report.md
-
-echo "=== Done ==="
-echo "Report: benchmarks/results/rq2/report.md"
-7. 参考リンク
-benchmarks/README.md: RQ1/RQ2 の概要と実行方法
-benchmarks/rq2/evaluate.py: 評価ロジックの実装
-benchmarks/rq2/generate_report.py: レポート生成の実装
-benchmarks/runners/base_runner.py: ランナー共通ヘルパー
-benchmarks/tools/registry.py: ツールレジストリ（結果ファイルのパス解決）
-benchmarks/metrics/classification.py: 分類指標の計算
-benchmarks/metrics/stats.py: 統計検定・ブートストラップ CI
+# ベンチマーク Gap Analysis + ベースライン比較
+
+**分析日:** 2026-03-03
+**対象:** SPECA ベンチマーク (RQ1 / RQ2)
+**目的:** 論文評価として不足している定量化・考察の洗い出し
+
+---
+
+## 1. RQ1 現状データ: Sherlock Ethereum Audit Contest
+
+| 項目 | 値 | 備考 |
+|------|------|------|
+| 監査対象ブランチ | 10 個 | alloy, c-kzg, grandine, lighthouse, lodestar, nethermind, nimbus, prysm, reth, rust-eth-kzg |
+| 検出 findings 数 | 102 | Phase 03 出力 |
+| Ground-truth issues (H/M/L) | 15 | Sherlock contest CSV |
+| Issue Recall | **100% (15/15)** | High=5/5, Medium=2/2, Low=8/8 |
+| Precision (auto) | **66.3%** | auto_tp=17, auto_tp_info=23, auto_tp_other=13 |
+| Precision (conservative) | **52.0%** | 22 件 unknown を FP 扱い |
+| F1 | **0.797** | |
+| Phase 03 全 findings | 647 | phase_comparison.json |
+| Phase 04 レビュー済 | 238/647 (36.8%) | |
+| Phase 04 DISPUTED_FP | 10 件 | |
+| Phase 04 CONFIRMED_VULNERABILITY | 16 件 | |
+| Phase 04 CONFIRMED_POTENTIAL | 10 件 | |
+| Phase 04 PASS_THROUGH | 197 件 | out-of-scope 自動パス |
+| Human label 済 | **0 件** | 22 件 unknown が未ラベルのまま |
+
+**Auto-label 品質:**
+- 分析対象: 81 findings (fp_invalid: 54, tp_info: 27)
+- 信頼できる (keep): 44 件 (54.3%)
+- 要人手レビュー (unknown): 37 件 (45.7%)
+- CROSS client matching: **37.8% keep 率** -- 要改善
+
+---
+
+## 2. RQ2 現状データ: PrimeVul ツール比較
+
+**データセット:** PrimeVul C/C++ (868 サンプル, 435 vulnerable, 433 clean, 386 ペア)
+
+| ツール | Precision | Recall | F1 | FPR | Pairwise Acc |
+|--------|-----------|--------|------|------|-------------|
+| Semgrep | 0.000 | 0.000 | 0.000 | 0.0% | 0/386 (0.0%) |
+| Cppcheck | 0.499 | 0.867 | 0.633 | 87.5% | 1/386 (0.3%) |
+| Flawfinder | 0.508 | 0.290 | 0.369 | 28.2% | 4/386 (1.0%) |
+| Security Agent | -- | -- | -- | -- | **未実行** |
+
+**CWE Coverage (Top 5, Cppcheck/Flawfinder):**
+
+| CWE | 件数 | Cppcheck Recall | Flawfinder Recall |
+|-----|------|-----------------|-------------------|
+| CWE-787 (Buffer Overflow) | 72 | 0.972 | 0.292 |
+| CWE-125 (OOB Read) | 47 | 0.872 | 0.234 |
+| CWE-703 (Improper Check) | 47 | 0.745 | 0.213 |
+| CWE-476 (Null Ptr Deref) | 39 | 0.846 | 0.256 |
+| CWE-416 (Use After Free) | 29 | 0.931 | 0.207 |
+
+**生成済み図表:** fig1 (ツール比較), fig2 (Confusion Matrix), fig3 (CWE Coverage), fig4 (Overview), fig5 (CWE 分布) -- 全図で Security Agent = TBD
+
+---
+
+## 3. 致命的欠落 (論文不成立レベル)
+
+| ID | 問題 | 詳細 | 対応 |
+|----|------|------|------|
+| **C-1** | Security Agent 結果なし | RQ2 の主張するツールの比較データが完全に欠落 | `run_security_agent.py` 実装 + PrimeVul 全件実行 |
+| **C-2** | Semgrep 検出ゼロ | C/C++ 向けルールがほぼ存在しない既知の制限。868 サンプル全件で TP=0, F1=0.000。Docker 権限問題ではなく、Semgrep 自体の C/C++ 対応が根本的に不十分 | 既知の制限として論文に記載。Python/JS との対比で議論 |
+| **C-3** | LLM Baseline 全エラー | API 呼び出し失敗で有効な予測 0 件 | エラー原因調査 + 再実行 |
+| **C-4** | Human label 未実施 | 22 件 unknown が未ラベル。Precision の信頼性が証明できない | 手動レビュー実施 |
+
+---
+
+## 4. 定量化・考察の不足
+
+### 4.1 定量化が不十分
+
+| ID | 問題 | 対応方法 |
+|----|------|----------|
+| Q-1 | 信頼区間 (CI) 未報告 | `stats.py` の `bootstrap_rate()` を RQ1/RQ2 に適用 |
+| Q-2 | 統計的検定なし | C-1 解決後に McNemar / Cliff's delta を計算 |
+| Q-3 | アブレーション未実施 | Phase 04 の 3-gate 各ゲートの個別寄与を分析 |
+| Q-4 | Phase 03→04 差分未分析 | 647→637 (10 件フィルタ) の内訳と recall 影響 |
+| Q-5 | コスト効率分析なし | Phase 03: ~119.6s/item, Phase 04: ~22.0s/item を集計 |
+| Q-6 | RQ1 CWE 別分析なし | findings の CWE 分類を行い分析 |
+| Q-7 | Severity 別詳細なし | 個別マッチの分析テーブル作成 |
+| Q-8 | Pairwise 統計の意味 | Cppcheck 0.3%, Flawfinder 1.0% が示す限界を考察 |
+
+### 4.2 考察が不足
+
+| ID | 問題 | 対応方法 |
+|----|------|----------|
+| D-1 | FP 原因分析 | Cross-client matching 37.8% の原因を論文に統合 |
+| D-2 | PASS_THROUGH 197 件の妥当性 | out-of-scope 判定の検証 |
+| D-3 | サンプルサイズの限界 | Ground-truth 15 件での statistical power 議論 |
+| D-4 | LLM matcher の再現性 | confidence 0.85-0.99 の判定基準の定量的説明 |
+| D-5 | 他ツールとの比較 | SWE-agent, CodeRabbit 等との定性比較 |
+| D-6 | Cross-domain 汎化性 | Ethereum のみ。STRIDE+CWE25 の汎化性の limitation |
+| D-7 | 再現性の保証 | Claude バージョン依存の議論 |
+| D-8 | Phase 02c resolution rate | 一部ブランチで 17.3% と低い影響分析 |
+
+---
+
+## 5. RQ2 ツール別問題と対応
+
+### 5.1 Semgrep: F1=0.000 (既知の制限)
+
+**根本原因:** Semgrep は C/C++ 向けのルールセットがほぼ存在しない。`--config auto` で実行しても、PrimeVul の関数単位スニペットに対して有効なルールが一切発火しなかった。868 サンプル全件で検出ゼロ。
+
+これは Docker 権限やセットアップの問題ではなく、**Semgrep の C/C++ 対応の根本的な制限**である。Semgrep の主戦場は Python/JavaScript/Go 等であり、C/C++ のメモリ安全性やポインタ操作に関するルールは公式・コミュニティともにほぼ提供されていない。
+
+**論文での扱い:** ベースラインの既知の制限として明記する。Semgrep が他言語では有効であることにも言及し、公正な比較とする。
+
+### 5.2 LLM Baseline: 全件エラー
+
+**原因:** Claude CLI の API 呼び出しが全件失敗。`skipped_missing_pred: 868`。
+
+**対応:** 環境変数の競合確認、API キー・レート制限のデバッグが必要。
+
+### 5.3 Security Agent: 未実装
+
+**原因:** `run_security_agent.py` の `--command` 未指定時は `runner_not_configured` を返すのみ。
+
+**対応:** SPECA パイプライン (01a→01b→01e→02c→03→04) を単一ファイルに対して実行するラッパーの実装が必要。PrimeVul 全 868 件に対する実行コスト（時間・トークン）が課題。
+
+### 5.4 CodeQL: 未実行
+
+**原因:** CI 環境での CodeQL CLI セットアップ未完了。
+
+---
+
+## 6. RQ1 マッチ詳細
+
+### 6.1 マッチした 15 件の内訳
+
+| Issue ID | Severity | Confidence | Finding ID | クライアント |
+|----------|----------|------------|------------|-------------|
+| #15 | -- | 0.95 | PROP-6a4369e9-inv-047 | Grandine |
+| #40 | high | 0.95 | PROP-56ad1eb2-inv-018 | Lighthouse |
+| #48 | low | 0.95 | PROP-57888860-inv-051 | rust-eth-kzg |
+| #109 | -- | 0.95 | PROP-6a4369e9-inv-047 | (同上 #15) |
+| #190 | high | 0.95 | PROP-6a4369e9-inv-042 | Prysm |
+| #203 | high | 0.85 | PROP-57888860-inv-001 | c-kzg |
+| #210 | -- | 0.95 | PROP-5a6a79d5-inv-059 | Nethermind |
+| #216 | -- | 0.95 | PROP-6a4369e9-inv-049 | Grandine |
+| #308 | low | 0.95 | PROP-6a4369e9-inv-009 | Grandine |
+| #319 | low | 0.95 | PROP-56ad1eb2-inv-029 | Grandine |
+| #343 | low | 0.95 | PROP-6a4369e9-inv-050 | Lighthouse |
+| #371 | low | 0.99 | PROP-5a6a79d5-inv-036 | Alloy |
+| #376 | low | 0.95 | PROP-6a4369e9-pre-003 | Grandine |
+| #381 | -- | 0.95 | PROP-56ad1eb2-inv-032 | Lodestar |
+| #176 | -- | 0.95 | PROP-5a6a79d5-inv-059 | Nethermind (手動追加) |
+
+注: #176 は LLM matcher が保守的に reject したが手動で追加。マッチング一貫性に課題あり。
+
+### 6.2 Precision 内訳
+
+| ラベル | 件数 | 割合 |
+|--------|------|------|
+| auto_tp (H/M/L match) | 17 | 16.7% |
+| auto_tp_info (info match) | 23 | 22.5% |
+| auto_tp_other (fixed/partial) | 13 | 12.7% |
+| auto_fp_invalid | 27 | 26.5% |
+| auto_unknown | 22 | 21.6% |
+| **合計** | **102** | **100%** |
+
+---
+
+## 7. ベースライン分析: コーディングエージェントの構造的優位性
+
+**分析対象:** PrimeVul (n=868, C/C++ 関数レベル, 72 CWE 種別)
+**ベースライン:** Semgrep v1.153.0, Cppcheck v2.17.1, Flawfinder v2.0.19
+
+### 7.1 Pairwise Accuracy が露呈する「理解の欠如」
+
+386 ペア中、Cppcheck はたった 1 ペアしか正しく区別できていない。パターンマッチでは脆弱性の根本原因を理解していないことを数値的に証明している。Cppcheck が脆弱コードにフラグを立てても、修正後のコードにも同様にフラグを立てる (FPR=87.5%)。
+
+**含意:** 静的解析ツールは「危険な API パターンの存在」を検出するが、「そのパターンがコンテキスト上で安全かどうか」を判定する能力がない。
+
+### 7.2 コーディングエージェントが優位である構造的理由
+
+**理由 1: セマンティック理解 vs パターンマッチング**
+
+静的解析ツールは構文パターンの存在に依存する。LLM エージェントは関数の意図を理解した上で脆弱性を判定し、パッチ前後の意味的差分を認識できる。
+
+CWE 別データがこれを裏付ける。Cppcheck の弱点:
+- CWE-369 (Division by Zero): Recall 64% -- 構文から判定困難
+- CWE-617 (Assertion Failure): Recall 58% -- assert 到達条件はセマンティック分析が必要
+- CWE-362 (Race Condition): Recall 62% -- 並行性の理解が前提
+
+**理由 2: Precision の根本的限界**
+
+Cppcheck の Precision=0.499 は、フラグの半分が誤検出。静的解析は「可能性」を報告するが、実行パス上の到達可能性を判定しない。SPECA の Phase 04 (3-Gate Review) は推論ベースで FP を体系的に除去する。
+
+**理由 3: CWE カバレッジの柔軟性**
+
+72 CWE 種別に対し、Semgrep は 0 CWE 検出、Flawfinder はメモリ安全性系に限定、Cppcheck は論理的脆弱性に弱い。LLM エージェントは STRIDE + CWE Top 25 をプロンプトレベルで指定するため、ルール追加が不要。
+
+**理由 4: 仕様駆動型アプローチ**
+
+| 比較軸 | 静的解析 | SPECA |
+|--------|---------|-------|
+| 入力 | ソースコードのみ | 仕様 + ソースコード |
+| 検出根拠 | 既知パターン照合 | プロパティ違反 |
+| FP 削減 | 情報レベル抑制 | 推論ベース 3-Gate Review |
+| 新規脆弱性 | ルール追加が必要 | モデル知識で対応 |
+
+### 7.3 予想される定量的優位性
+
+1. **Pairwise Accuracy**: 静的解析は 0.3-1.0%。エージェントが 10% 以上でも有意な差
+2. **論理的 CWE**: CWE-362/369/617 で静的解析の Recall は 58-64%。セマンティック理解で上回る可能性
+3. **Precision**: Cppcheck FPR=87.5% は実用不可。Phase 04 が FP を 50% 以上削減できれば大きな差
+4. **Union Coverage**: 3 ツール Union でも独自検出は少ない。ツール結合でも検出不能な脆弱性を見つけられるかが鍵
+
+### 7.4 限界と公正な比較の注意点
+
+1. **コスト**: 静的解析は seconds/sample。LLM は API コスト + latency が桁違い
+2. **再現性**: 静的解析は決定的。LLM は非決定的 (temperature, model version)
+3. **スケーラビリティ**: Cppcheck は数万ファイルを数分。LLM は 868 サンプルでも数時間
+4. **誤検出の性質**: 静的解析の FP は過剰検出 (安全側)。LLM の FP は幻覚 (根拠なき誤報) のリスクあり
+5. **Semgrep の公正性**: C/C++ は Semgrep の主戦場ではない。Python/JS では検出力が大幅に異なる
+
+**推奨:** 論文では「LLM エージェントが静的解析を置き換える」ではなく「**補完する**」という位置づけが適切。
+
+---
+
+## 8. 過去 Issues 参照
+
+- [#63: actions/checkout EACCES 問題](https://github.com/NyxFoundation/security-agent/issues/63) -- Docker root 所有ファイルが原因。`--user $(id -u):$(id -g)` で対応済み
+- RQ2 ベンチマークの詳細手順は `docs/hiro/RQ2_BENCHMARK_GUIDE.md` を参照
+- パイプラインフェーズ: `01a` → `01b` → `01e` → `02c` → `03` → `04` (01c/01d は存在しない)

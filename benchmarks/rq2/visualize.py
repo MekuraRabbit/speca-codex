@@ -67,6 +67,9 @@ def _display_tools(tools: dict) -> list[str]:
 def fig1_tool_comparison(data: dict, output_dir: Path) -> None:
     """Bar chart comparing tool precision, recall, F1 — includes Security Agent placeholder."""
     tools = data.get("tools", {})
+    dataset = data.get("dataset", {})
+    dataset_label = dataset.get("name", "unknown").replace("_", " ").title()
+    sample_count = dataset.get("sample_count", "?")
     display = _display_tools(tools)
 
     tool_names = []
@@ -101,7 +104,7 @@ def fig1_tool_comparison(data: dict, output_dir: Path) -> None:
 
     ax.set_xlabel("Tool")
     ax.set_ylabel("Score")
-    ax.set_title("RQ2: Tool Performance Comparison (PrimeVul, n=868)")
+    ax.set_title(f"RQ2: Tool Performance Comparison ({dataset_label}, n={sample_count})")
     ax.set_xticks(x)
     ax.set_xticklabels(tool_names)
     ax.legend()
@@ -131,6 +134,9 @@ def fig1_tool_comparison(data: dict, output_dir: Path) -> None:
 def fig2_confusion_matrix(data: dict, output_dir: Path) -> None:
     """Stacked bar chart showing confusion matrix breakdown for each tool."""
     tools = data.get("tools", {})
+    dataset = data.get("dataset", {})
+    dataset_label = dataset.get("name", "unknown").replace("_", " ").title()
+    sample_count = dataset.get("sample_count", "?")
     display = _display_tools(tools)
 
     tool_names = []
@@ -177,7 +183,7 @@ def fig2_confusion_matrix(data: dict, output_dir: Path) -> None:
 
     ax.set_xlabel("Tool")
     ax.set_ylabel("Number of Samples")
-    ax.set_title("RQ2: Confusion Matrix Breakdown (n=868)")
+    ax.set_title(f"RQ2: Confusion Matrix Breakdown ({dataset_label}, n={sample_count})")
     ax.set_xticks(x)
     ax.set_xticklabels(tool_names)
     ax.legend(loc="upper right")
@@ -236,7 +242,9 @@ def fig3_cwe_coverage(data: dict, output_dir: Path) -> None:
     ax.set_yticks(y)
     ax.set_yticklabels(cwe_names)
     ax.set_xlabel("Number of Vulnerable Samples")
-    ax.set_title("RQ2: CWE Distribution & Tool Detection Coverage (PrimeVul)")
+    dataset = data.get("dataset", {})
+    dataset_label = dataset.get("name", "unknown").replace("_", " ").title()
+    ax.set_title(f"RQ2: CWE Distribution & Tool Detection Coverage ({dataset_label})")
     ax.legend(loc="lower right")
     ax.invert_yaxis()
     ax.grid(axis="x", alpha=0.3)
@@ -315,7 +323,8 @@ def fig4_tool_status(data: dict, output_dir: Path) -> None:
                 ha="center", va="center", fontsize=14, transform=ax2.transAxes)
         ax2.set_title("Dataset Overview")
 
-    fig.suptitle("RQ2 Benchmark Overview: PrimeVul Dataset", fontsize=14, fontweight="bold")
+    dataset_label = dataset.get("name", "unknown").replace("_", " ").title()
+    fig.suptitle(f"RQ2 Benchmark Overview: {dataset_label} Dataset", fontsize=14, fontweight="bold")
     fig.tight_layout(rect=[0, 0, 1, 0.95])
     fig.savefig(output_dir / "fig4_overview.png", dpi=150)
     plt.close(fig)
@@ -356,7 +365,8 @@ def fig5_cwe_treemap(data: dict, output_dir: Path) -> None:
     ax.set_ylim(-2, rows * 3)
     ax.set_aspect("equal")
     ax.axis("off")
-    ax.set_title("RQ2: CWE Distribution in PrimeVul (Top 20)", fontsize=14, fontweight="bold")
+    dataset_label = data.get("dataset", {}).get("name", "unknown").replace("_", " ").title()
+    ax.set_title(f"RQ2: CWE Distribution in {dataset_label} (Top 20)", fontsize=14, fontweight="bold")
 
     fig.tight_layout()
     fig.savefig(output_dir / "fig5_cwe_distribution.png", dpi=150)
