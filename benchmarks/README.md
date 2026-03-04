@@ -76,91 +76,63 @@ Outputs
 Workflow (GitHub Actions)
 - .github/workflows/benchmark-rq1-sherlock-eval.yml
 
-RQ2: PrimeVul Tool Comparison
+RQ2a: Repository-Level Bug Detection (RepoAudit, ICML 2025)
 
 Method
-- Dataset: PrimeVul test paired JSONL (vulnerable vs clean pairs).
-- Tools: Semgrep, CodeQL, Security Agent runner, optional LLM baseline, optional static baseline.
-- Output: confusion metrics, pairwise correctness, CWE coverage, unique detections.
-- Statistical comparison between Security Agent and baselines.
+- Benchmark: 15 C/C++ OSS projects (avg 251K LoC)
+- Bug types: NPD, MLK, UAF (40 ground truth bugs)
+- Baselines: RepoAudit (Claude 3.5/3.7, DeepSeek R1, o3-mini), Meta Infer, Amazon CodeGuru
+- Comparison: published paper results (v3 camera-ready) vs SPECA new experiment
 
-Core metrics
-- precision / recall / f1 / accuracy / coverage
-- tp / fp / tn / fn, error_count
-- pairwise accuracy on paired cases (vuln vs clean)
-- CWE coverage and missed CWE counts
-- unique detections by the security agent
-- pairwise_stats: McNemar exact test + Cliff's delta effect size and bootstrap CIs for metric diffs
+How to run
+1) Visualize baselines-only:
+   uv run python3 benchmarks/rq2a/visualize.py
 
-How to run (GitHub Actions)
-1) Setup dataset:
-   .github/workflows/benchmark-rq2-01-setup.yml
-2) Run tools:
-   .github/workflows/benchmark-rq2-02-tools.yml
-   - tools: "all" or comma-separated (semgrep, codeql, security_agent, llm, static)
-   - security_agent_command / llm_command / static_command required when selecting those tools
-   - if tools=all, provide the command inputs for all non-automatic tools
-3) Evaluate:
-   .github/workflows/benchmark-rq2-03-evaluate.yml
-
-How to run (local)
-1) Ensure dataset exists at:
-   benchmarks/data/primevul/primevul_test_paired.jsonl
-2) Run tools (examples):
-   uv run python benchmarks/runners/run_semgrep.py
-   uv run python benchmarks/runners/run_codeql.py --dataset ... --output ...
-   uv run python benchmarks/runners/run_security_agent.py --command "..."
-   uv run python benchmarks/runners/run_llm_baseline.py --command "..."
-   uv run python benchmarks/runners/run_static_baseline.py --tool-name infer --command "..."
-3) Evaluate:
-   uv run python benchmarks/rq2/evaluate.py --dataset primevul
-
-Optional report:
-   uv run python benchmarks/rq2/generate_report.py --rq1-summary benchmarks/results/rq1/sherlock_ethereum_audit_contest/evaluation_summary.json
-
-Metadata capture
-- RQ1: pass --metadata /path/to/metadata.json to rq1/cli.py
-- RQ2: set BENCHMARK_METADATA_PATH=/path/to/metadata.json when running rq2/evaluate.py
-- Tool runners: --version-command and --timeout are available for codeql/security_agent/llm/static runners
-
-Additional datasets (distributed OSS + Java)
-- CVEfixes subset (distributed systems OSS):
-  - Requires a local CVEfixes SQLite DB.
-  - Build subset:
-    uv run python benchmarks/datasets/builders/setup_cvefixes_subset.py \
-      --db /path/to/CVEfixes.db \
-      --output benchmarks/data/cvefixes/cvefixes_subset_paired.jsonl
-  - Optional: pass --repos to override the default distributed-OSS list.
-- Vul4J (Java):
-  - Export or prepare a JSONL with before/after code pairs.
-  - Convert:
-    uv run python benchmarks/datasets/builders/setup_vul4j_from_jsonl.py \
-      --input /path/to/vul4j_export.jsonl \
-      --output benchmarks/data/vul4j/vul4j_paired.jsonl
-  - Evaluate:
-    uv run python benchmarks/rq2/evaluate.py --dataset vul4j
-
-Static baselines (paper-backed)
-- C/C++: Infer (TACAS/SV-COMP)
-  Example command template (per-sample):
-    infer run --quiet -- clang -c {code_path} && \
-      python benchmarks/runners/emit_prediction_from_infer.py \
-        --infer-json infer-out/report.json \
-        --output {output_path}
-- Java: SpotBugs (FindBugs successor; FindBugs was published at OOPSLA)
-  Example command template (per-sample):
-    spotbugs -textui -xml:withMessages -output spotbugs.xml {code_path} && \
-      python benchmarks/runners/emit_prediction_from_spotbugs.py \
-        --spotbugs-xml spotbugs.xml \
-        --output {output_path}
-
-Note: the above templates are placeholders; adapt to your tool output by setting
-predicted_vulnerable based on findings count.
+2) Visualize with SPECA results:
+   uv run python3 benchmarks/rq2a/visualize.py --speca-results benchmarks/results/rq2a/speca/speca_summary.json
 
 Outputs
-- benchmarks/results/rq2/metrics.json
-- benchmarks/results/rq2/evaluation_summary.json
+- benchmarks/results/rq2a/figures/*.png (6 figures + 1 LaTeX table)
+- benchmarks/rq2a/published_baselines.yaml (paper data)
+- benchmarks/rq2a/ground_truth_bugs.yaml (40 bugs, 80% with file/function details)
+
+Workflows
+- .github/workflows/rq2a-01-setup-dataset.yml (clone RepoAudit benchmark)
+- .github/workflows/rq2a-02-visualize.yml (auto-generate figures)
+
+RQ2b: Dynamic Testing Comparison (ChatAFL, NDSS 2024)
+
+Method
+- Benchmark: ProFuzzBench 6 text-based protocol implementations
+- Subjects: Live555, ProFTPD, PureFTPD, Kamailio, Exim, forked-daapd
+- Baselines: ChatAFL, AFLNet, NSFuzz (9 zero-day bugs)
+- Comparison: bug-level cross-matching (crash bugs vs spec violations)
+
+How to run
+1) Visualize baselines-only:
+   uv run python3 benchmarks/rq2b/visualize.py
+
+2) Visualize with SPECA results:
+   uv run python3 benchmarks/rq2b/visualize.py --speca-results benchmarks/results/rq2b/speca/speca_rq2b.json
+
+Outputs
+- benchmarks/results/rq2b/figures/*.png (5 figures + 1 LaTeX table)
+- benchmarks/rq2b/published_baselines.yaml (paper data)
+- benchmarks/rq2b/ground_truth_bugs.yaml (9 zero-day bugs)
+
+Workflows
+- .github/workflows/rq2b-01-setup-dataset.yml (clone ProFuzzBench + ChatAFL)
+- .github/workflows/rq2b-02-visualize.yml (auto-generate figures)
+
+Archived: RQ2 PrimeVul (deprecated)
+
+The old function-level PrimeVul benchmark has been archived.
+- Code: benchmarks/archive/rq2_primevul/
+- Results: benchmarks/archive/results_rq2/
+- Workflows: benchmarks/archive/workflows/benchmark-rq2-*.yml
+- Guide: benchmarks/archive/RQ2_BENCHMARK_GUIDE.md
 
 Notes
-- Statistical outputs are intended for CCS/USENIX-style reporting.
-- For fair comparisons, fix tool versions and resource limits, and record configs in the run metadata.
+- All RQs now use repository/project-level benchmarks (not function-level).
+- Baseline results are cited from published papers; only SPECA results are new experiments.
+- Issue #96: https://github.com/NyxFoundation/security-agent/issues/96
