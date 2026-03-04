@@ -1,0 +1,65 @@
+name: "RQ2a Benchmark 02: Visualize Results"
+
+on:
+  workflow_dispatch:
+    inputs:
+      speca_results:
+        description: "Path to SPECA results JSON (optional)"
+        required: false
+        default: ""
+        type: string
+  push:
+    paths:
+      - "benchmarks/rq2a/published_baselines.yaml"
+      - "benchmarks/rq2a/visualize.py"
+
+permissions:
+  contents: write
+
+jobs:
+  visualize:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
+
+      - name: Setup Python (uv)
+        run: uv sync --python 3.11
+
+      - name: Install visualization dependencies
+        run: uv pip install matplotlib pyyaml numpy
+
+      - name: Generate Figures
+        run: |
+          SPECA_ARG=""
+          if [ -n "${{ inputs.speca_results }}" ] && [ -f "${{ inputs.speca_results }}" ]; then
+            SPECA_ARG="--speca-results ${{ inputs.speca_results }}"
+          fi
+          uv run python3 benchmarks/rq2a/visualize.py ${SPECA_ARG}
+
+      - name: Verify Output
+        run: |
+          echo "=== Generated Figures ==="
+          ls -la benchmarks/results/rq2a/figures/
+          COUNT=$(ls benchmarks/results/rq2a/figures/*.png 2>/dev/null | wc -l)
+          echo "Total: ${COUNT} figures"
+          if [ "$COUNT" -lt 5 ]; then
+            echo "ERROR: Expected at least 5 figures"
+            exit 1
+          fi
+
+      - name: Commit Figures
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add benchmarks/results/rq2a/figures/*.png
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore(rq2a): regenerate visualization figures"
+            git push
+          fi

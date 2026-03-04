@@ -22,11 +22,14 @@
 - RQ1 Sherlock Ethereum 評価: Recall 100% (15/15), Precision 66.3%
 - ~~RQ2 PrimeVul ベースライン~~ → アーカイブ済み (`benchmarks/archive/rq2_primevul/`)
 - **RQ2a RepoAudit ベースライン可視化** (5図, `benchmarks/results/rq2a/figures/`)
+- **RQ2b ChatAFL ベースライン可視化** (5図, `benchmarks/results/rq2b/figures/`) ★NEW
+- **GitHub Actions ワークフロー** (rq2a-01/02, rq2b-01/02) ★NEW
 - ベンチマーク課題分析 + 考察 (issiuse.md)
 - SPECA 拡張構想 14 案 (ann.md)
 
 ### 未完了
 - **RQ2a: SPECA を RepoAudit 15 プロジェクトで実行** (最優先)
 - RQ2a: ground_truth_bugs.yaml のバグ詳細を埋める
-- **RQ2b: ChatAFL 比較の具体化** (設計中、変更の可能性あり)
+- **RQ2b: ChatAFL 著者コンタクト** → file/function/line 取得
+- RQ2b: SPECA を 6 プロトコル実装で実行
 - Human label (22 件) の手動レビュー

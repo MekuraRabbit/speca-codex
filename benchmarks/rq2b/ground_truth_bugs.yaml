@@ -1,0 +1,225 @@
+# RQ2b: ChatAFL Zero-Day Bug List (Ground Truth)
+# Source: ChatAFL (NDSS 2024), Table VII
+# Paper: https://www.ndss-symposium.org/ndss-paper/large-language-model-guided-protocol-fuzzing/
+#
+# Total: 9 zero-day vulnerabilities
+#   - ChatAFL found: 9/9 (100%)
+#   - AFLNet found:  3/9 (33%)
+#   - NSFuzz found:  4/9 (44%)
+#   - ChatAFL unique: 5/9 (56%)
+#
+# TODO: Get detailed file/function/line from ChatAFL authors
+#   Contact: ruijie@comp.nus.edu.sg, marcel.boehme@mpi-sp.org
+#
+# Last updated: 2026-03-04
+
+bugs:
+  # --- Live555 (7 bugs) ---
+  - id: CA-001
+    subject: Live555
+    version: "2023.05.10"
+    protocol: RTSP
+    bug_type: "heap-use-after-free"
+    description: "Heap use after free in handling PLAY client requests"
+    security_impact: "Remote code execution"
+    status: "CVE-requested, fixed"
+    detected_by:
+      chatafl: true
+      aflnet: false
+      nsfuzz: false
+      speca: null
+    file: null  # TODO: from authors
+    function: null
+    line: null
+    root_cause: null
+    cve: null
+    rfc_relevant: "RFC 2326 Section 10.5 (PLAY)"
+
+  - id: CA-002
+    subject: Live555
+    version: "2023.05.10"
+    protocol: RTSP
+    bug_type: "heap-use-after-free"
+    description: "Heap use after free in handling SETUP client requests"
+    security_impact: "Remote code execution"
+    status: "CVE-requested, fixed"
+    detected_by:
+      chatafl: true
+      aflnet: false
+      nsfuzz: false
+      speca: null
+    file: null
+    function: null
+    line: null
+    root_cause: null
+    cve: null
+    rfc_relevant: "RFC 2326 Section 10.4 (SETUP)"
+
+  - id: CA-003
+    subject: Live555
+    version: "2023.05.10"
+    protocol: RTSP
+    bug_type: "use-after-return"
+    description: "Use after return in handling DESCRIBE client requests"
+    security_impact: "Remote code execution"
+    status: "CVE-requested"
+    detected_by:
+      chatafl: true
+      aflnet: false
+      nsfuzz: false
+      speca: null
+    file: null
+    function: null
+    line: null
+    root_cause: null
+    cve: null
+    rfc_relevant: "RFC 2326 Section 10.2 (DESCRIBE)"
+
+  - id: CA-004
+    subject: Live555
+    version: "2023.05.10"
+    protocol: RTSP
+    bug_type: "use-after-return"
+    description: "Use after return in handling SETUP client requests"
+    security_impact: "Remote code execution"
+    status: "CVE-requested"
+    detected_by:
+      chatafl: true
+      aflnet: false
+      nsfuzz: false
+      speca: null
+    file: null
+    function: null
+    line: null
+    root_cause: null
+    cve: null
+    rfc_relevant: "RFC 2326 Section 10.4 (SETUP)"
+
+  - id: CA-005
+    subject: Live555
+    version: "2023.05.10"
+    protocol: RTSP
+    bug_type: "heap-buffer-overflow"
+    description: "Heap buffer overflow in handling stream"
+    security_impact: "Remote code execution"
+    status: "CVE-requested"
+    detected_by:
+      chatafl: true
+      aflnet: true
+      nsfuzz: true
+      speca: null
+    file: null
+    function: null
+    line: null
+    root_cause: null
+    cve: null
+    rfc_relevant: null
+
+  - id: CA-006
+    subject: Live555
+    version: "2023.05.10"
+    protocol: RTSP
+    bug_type: "memory-leak"
+    description: "Memory leaks after allocating memory for stream parameters"
+    security_impact: "Memory leakage (DoS)"
+    status: "Reported"
+    detected_by:
+      chatafl: true
+      aflnet: true
+      nsfuzz: true
+      speca: null
+    file: null
+    function: null
+    line: null
+    root_cause: null
+    cve: null
+    rfc_relevant: null
+
+  - id: CA-007
+    subject: Live555
+    version: "2023.05.10"
+    protocol: RTSP
+    bug_type: "heap-use-after-free"
+    description: "Heap use after free in calling RTPInterface::sendDataOverTCP"
+    security_impact: "Remote code execution"
+    status: "CVE-requested"
+    detected_by:
+      chatafl: true
+      aflnet: false
+      nsfuzz: true
+      speca: null
+    file: null
+    function: "RTPInterface::sendDataOverTCP"  # mentioned in paper
+    line: null
+    root_cause: null
+    cve: null
+    rfc_relevant: null
+
+  # --- ProFTPD (1 bug) ---
+  - id: CA-008
+    subject: ProFTPD
+    version: "61e621e"
+    protocol: FTP
+    bug_type: "heap-buffer-overflow"
+    description: "Heap buffer overflow while parsing FTP commands"
+    security_impact: "Remote code execution"
+    status: "CVE-requested, fixed"
+    detected_by:
+      chatafl: true
+      aflnet: false
+      nsfuzz: false
+      speca: null
+    file: null
+    function: null
+    line: null
+    root_cause: null
+    cve: null
+    rfc_relevant: "RFC 959 (FTP command parsing)"
+
+  # --- Kamailio (1 bug) ---
+  - id: CA-009
+    subject: Kamailio
+    version: "a220901"
+    protocol: SIP
+    bug_type: "memory-leak"
+    description: "Memory leaks after allocating memory in parsing config files"
+    security_impact: "Memory leakage (DoS)"
+    status: "Reported"
+    detected_by:
+      chatafl: true
+      aflnet: true
+      nsfuzz: true
+      speca: null
+    file: null
+    function: null
+    line: null
+    root_cause: null
+    cve: null
+    rfc_relevant: "RFC 3261 (SIP)"
+
+# ============================================================
+# Summary Statistics
+# ============================================================
+summary:
+  total_bugs: 9
+  by_subject:
+    Live555: 7
+    ProFTPD: 1
+    Kamailio: 1
+  by_type:
+    heap-use-after-free: 3
+    use-after-return: 2
+    heap-buffer-overflow: 2
+    memory-leak: 2
+  by_impact:
+    remote_code_execution: 7
+    memory_leakage_dos: 2
+  detection_counts:
+    chatafl: 9
+    aflnet: 3
+    nsfuzz: 4
+    chatafl_unique: 5
+  status:
+    cve_requested: 6
+    fixed: 3
+    reported: 3

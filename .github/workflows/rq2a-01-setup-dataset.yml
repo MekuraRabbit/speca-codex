@@ -1,0 +1,101 @@
+name: "RQ2a Benchmark 01: Setup RepoAudit Dataset"
+
+on:
+  workflow_dispatch:
+    inputs:
+      cache_dir:
+        description: "Cache directory for RepoAudit benchmark"
+        required: false
+        default: "~/.cache/security-agent/benchmarks/repoaudit"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  setup-repoaudit:
+    runs-on: self-hosted
+
+    env:
+      CACHE_DIR: ${{ inputs.cache_dir || '~/.cache/security-agent/benchmarks/repoaudit' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Clone RepoAudit (shallow)
+        run: |
+          mkdir -p "${CACHE_DIR}"
+          if [ ! -d "${CACHE_DIR}/RepoAudit" ]; then
+            git clone --depth 1 https://github.com/PurCL/RepoAudit.git "${CACHE_DIR}/RepoAudit"
+          else
+            echo "RepoAudit already cloned, pulling latest..."
+            cd "${CACHE_DIR}/RepoAudit" && git pull
+          fi
+
+      - name: Initialize Benchmark Submodules
+        run: |
+          cd "${CACHE_DIR}/RepoAudit"
+          git submodule update --init --recursive --depth 1
+
+      - name: Extract Project Metadata
+        run: |
+          cd "${CACHE_DIR}/RepoAudit"
+          echo "=== Benchmark Projects ==="
+          ls -la benchmark/ 2>/dev/null || echo "No benchmark/ directory"
+          echo ""
+          echo "=== Project List ==="
+          for dir in benchmark/*/; do
+            if [ -d "$dir" ]; then
+              project=$(basename "$dir")
+              loc=$(find "$dir" -name "*.c" -o -name "*.cpp" -o -name "*.h" | xargs wc -l 2>/dev/null | tail -1 | awk '{print $1}')
+              echo "  ${project}: ${loc:-0} LoC"
+            fi
+          done
+
+      - name: Extract Bug Reports
+        run: |
+          cd "${CACHE_DIR}/RepoAudit"
+          echo "=== Bug Reports ==="
+          if [ -f "BugReport.json" ]; then
+            python3 -c "
+          import json
+          with open('BugReport.json') as f:
+              data = json.load(f)
+          print(f'Total bugs: {len(data)}')
+          for bug in data[:5]:
+              print(f'  {bug.get(\"project\", \"?\")} / {bug.get(\"bug_type\", \"?\")} / {bug.get(\"file\", \"?\")}')
+          if len(data) > 5:
+              print(f'  ... and {len(data) - 5} more')
+          "
+          else
+            echo "BugReport.json not found in repo root"
+            echo "Checking README for bug list links..."
+            grep -i "bug" README.md | head -5
+          fi
+
+      - name: Verify Ground Truth Alignment
+        run: |
+          echo "=== Cross-checking with published_baselines.yaml ==="
+          python3 -c "
+          import yaml
+          with open('benchmarks/rq2a/published_baselines.yaml') as f:
+              data = yaml.safe_load(f)
+          projects = data['projects']
+          total_tp = sum(p['old_tp'] + p['new_tp'][0] for p in projects)
+          total_fp = sum(p['fp'] for p in projects)
+          print(f'Published baselines: {len(projects)} projects, {total_tp} TP, {total_fp} FP')
+          print(f'Expected: 15 projects, 40 TP, 11 FP')
+          assert len(projects) == 15, f'Expected 15 projects, got {len(projects)}'
+          assert total_tp == 40, f'Expected 40 TP, got {total_tp}'
+          assert total_fp == 11, f'Expected 11 FP, got {total_fp}'
+          print('✓ All checks passed')
+          "
+
+      - name: Summary
+        run: |
+          echo "=== Setup Complete ==="
+          echo "RepoAudit cloned to: ${CACHE_DIR}/RepoAudit"
+          echo "Next: Run SPECA on 15 benchmark projects"

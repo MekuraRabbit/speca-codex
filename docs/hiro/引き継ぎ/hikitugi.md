@@ -142,13 +142,26 @@ Critical 4件を修正済み（PR マージ済み）。
 
 可視化済み: `benchmarks/results/rq2a/figures/` (5図)
 
-### RQ2b: ChatAFL ベースライン（手直し中）
+### RQ2b: ChatAFL ベースライン（ドラフト作成済み、手直し中）
 
 ChatAFL (NDSS 2024) の ProFuzzBench 対象プロトコル実装に対して、
 SPECA の仕様チェックとファジングの相補性を示す。
 → バグ単位の突合せ比較（同一メトリクスでの直接比較は不可）
 
-**状態:** 設計中。後で変更の可能性あり。
+| データ | 出典 |
+|--------|------|
+| State transitions (Table III) | 6 subjects × 3 tools |
+| States covered (Table IV) | 6 subjects × 3 tools |
+| Branch coverage (Table V) | 6 subjects × 3 tools |
+| Zero-day bugs (Table VII) | 9 bugs |
+
+対象 6 subjects: Live555 (RTSP), ProFTPD (FTP), PureFTPD (FTP), Kamailio (SIP), Exim (SMTP), forked-daapd (DAAP)
+
+Zero-day: ChatAFL 9/9, AFLNet 3/9, NSFuzz 4/9, ChatAFL unique 5/9
+
+可視化済み: `benchmarks/results/rq2b/figures/` (5図)
+
+**状態:** ドラフト作成済み。変更の可能性あり。著者コンタクト未実施。
 
 ### 旧 RQ2（PrimeVul）→ アーカイブ
 
@@ -178,9 +191,16 @@ RepoAudit 15 プロジェクトに対して SPECA を実行し、`ground_truth_b
 3. 結果を `benchmarks/results/rq2a/speca/speca_summary.json` に保存
 4. `uv run python3 benchmarks/rq2a/visualize.py --speca-results ...` で再生成
 
-### 6.2 RQ2b: ChatAFL 比較の具体化（優先度: 中）
+### 6.2 RQ2b: ChatAFL 比較（優先度: 中）
 
-設計中。ChatAFL 著者へのコンタクトが必要。
+ドラフト作成済み（`benchmarks/rq2b/`）。変更の可能性あり。
+
+手順:
+1. ChatAFL 著者にコンタクト → file/function/line 詳細を取得
+   - 宛先: ruijie@comp.nus.edu.sg, marcel.boehme@mpi-sp.org
+2. `benchmarks/rq2b/ground_truth_bugs.yaml` の詳細フィールドを埋める
+3. SPECA を 6 プロトコル実装で実行 (RFC 文書を入力)
+4. `uv run python3 benchmarks/rq2b/visualize.py --speca-results ...` で再生成
 
 ### 6.3 残りのセキュリティ脆弱性修正（優先度: 高）
 

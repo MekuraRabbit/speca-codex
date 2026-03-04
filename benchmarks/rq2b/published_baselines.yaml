@@ -1,0 +1,157 @@
+# RQ2b: ChatAFL ProFuzzBench — Published Baselines
+# Source: ChatAFL (NDSS 2024), "Large Language Model guided Protocol Fuzzing"
+# Paper: https://www.ndss-symposium.org/ndss-paper/large-language-model-guided-protocol-fuzzing/
+# GitHub: https://github.com/ChatAFLndss/ChatAFL
+# DOI: 10.5281/zenodo.10115151
+#
+# All numbers from paper (10 runs × 24 hours each).
+# LLM: GPT-3.5-turbo (temp 0.5 grammar/seeds, 1.5 plateau)
+#
+# Last updated: 2026-03-04
+
+metadata:
+  paper: "Large Language Model guided Protocol Fuzzing"
+  venue: "NDSS 2024"
+  authors:
+    - "Ruijie Meng"
+    - "Martin Mirchev"
+    - "Marcel Böhme"
+    - "Abhik Roychoudhury"
+  affiliations: ["NUS", "MPI-SP"]
+  llm_model: "gpt-3.5-turbo"
+  runs: 10
+  duration_hours: 24
+  benchmark: "ProFuzzBench (text-based subset)"
+
+# ============================================================
+# Subject Programs (Table II)
+# ============================================================
+
+subjects:
+  - id: live555
+    name: Live555
+    protocol: RTSP
+    loc: 57000
+    github_stars: 631
+    version: "31284aa"
+    rfc: "RFC 2326 (RTSP 1.0)"
+
+  - id: proftpd
+    name: ProFTPD
+    protocol: FTP
+    loc: 242000
+    github_stars: 445
+    version: "61e621e"
+    rfc: "RFC 959 (FTP)"
+
+  - id: pureftpd
+    name: PureFTPD
+    protocol: FTP
+    loc: 29000
+    github_stars: 572
+    version: "10122d9"
+    rfc: "RFC 959 (FTP)"
+
+  - id: kamailio
+    name: Kamailio
+    protocol: SIP
+    loc: 939000
+    github_stars: 1915
+    version: "a220901"
+    rfc: "RFC 3261 (SIP)"
+
+  - id: exim
+    name: Exim
+    protocol: SMTP
+    loc: 118000
+    github_stars: 662
+    version: "d6a5a05"
+    rfc: "RFC 5321 (SMTP)"
+
+  - id: forked_daapd
+    name: forked-daapd
+    protocol: DAAP
+    loc: 79000
+    github_stars: 1718
+    version: "2ca10d9"
+    rfc: null  # DAAP is Apple proprietary, no RFC
+
+# ============================================================
+# State Transitions (Table III, average of 10 runs × 24h)
+# ============================================================
+
+state_transitions:
+  Live555:    { ChatAFL: 160.00, AFLNet: 83.80, NSFuzz: 90.20 }
+  ProFTPD:    { ChatAFL: 246.70, AFLNet: 172.60, NSFuzz: 181.20 }
+  PureFTPD:   { ChatAFL: 281.80, AFLNet: 216.90, NSFuzz: 206.10 }
+  Kamailio:   { ChatAFL: 130.00, AFLNet: 99.90, NSFuzz: 105.30 }
+  Exim:       { ChatAFL: 108.40, AFLNet: 62.70, NSFuzz: 69.50 }
+  forked-daapd: { ChatAFL: 25.40, AFLNet: 21.40, NSFuzz: 20.10 }
+  _averages:
+    improv_vs_aflnet_pct: 47.60
+    improv_vs_nsfuzz_pct: 42.69
+
+# ============================================================
+# States Covered (Table IV, average of 10 runs × 24h)
+# ============================================================
+
+states_covered:
+  Live555:    { ChatAFL: 14.20, AFLNet: 10.00, NSFuzz: 11.70, total_reachable: 15 }
+  ProFTPD:    { ChatAFL: 28.70, AFLNet: 22.60, NSFuzz: 24.30, total_reachable: 30 }
+  PureFTPD:   { ChatAFL: 27.90, AFLNet: 25.50, NSFuzz: 24.00, total_reachable: 30 }
+  Kamailio:   { ChatAFL: 17.00, AFLNet: 14.00, NSFuzz: 15.10, total_reachable: 23 }
+  Exim:       { ChatAFL: 19.50, AFLNet: 14.10, NSFuzz: 14.40, total_reachable: 23 }
+  forked-daapd: { ChatAFL: 12.10, AFLNet: 8.70, NSFuzz: 8.00, total_reachable: 13 }
+  _averages:
+    improv_vs_aflnet_pct: 29.55
+    improv_vs_nsfuzz_pct: 25.75
+
+# ============================================================
+# Branch Coverage (Table V, average of 10 runs × 24h)
+# ============================================================
+
+branch_coverage:
+  Live555:    { ChatAFL: 2928.40, AFLNet: 2860.20, NSFuzz: 2807.60 }
+  ProFTPD:    { ChatAFL: 5143.30, AFLNet: 4763.00, NSFuzz: 4421.80 }
+  PureFTPD:   { ChatAFL: 1134.30, AFLNet: 1056.30, NSFuzz: 1041.10 }
+  Kamailio:   { ChatAFL: 10064.00, AFLNet: 9404.10, NSFuzz: 9758.70 }
+  Exim:       { ChatAFL: 3789.40, AFLNet: 3647.60, NSFuzz: 3564.30 }
+  forked-daapd: { ChatAFL: 2364.80, AFLNet: 2227.10, NSFuzz: 2331.30 }
+  _averages:
+    improv_vs_aflnet_pct: 5.81
+    improv_vs_nsfuzz_pct: 6.74
+
+# ============================================================
+# Aggregate Comparison
+# ============================================================
+
+tools:
+  chatafl:
+    display_name: "ChatAFL (GPT-3.5-turbo)"
+    zero_day_bugs: 9
+    unique_bugs: 5  # found only by ChatAFL
+    avg_state_transition_improv_vs_aflnet: "+47.6%"
+    avg_states_improv_vs_aflnet: "+29.6%"
+    avg_branch_coverage_improv_vs_aflnet: "+5.8%"
+    source: "Tables III-V, VII"
+
+  aflnet:
+    display_name: "AFLNet"
+    zero_day_bugs: 3
+    unique_bugs: 0
+    source: "Tables III-V, VII"
+
+  nsfuzz:
+    display_name: "NSFuzz"
+    zero_day_bugs: 4
+    unique_bugs: 0
+    source: "Tables III-V, VII"
+
+  # SPECA — to be filled after experiment
+  speca:
+    display_name: "SPECA"
+    spec_violations: null
+    matching_zero_days: null
+    unique_findings: null
+    notes: "Pending SPECA execution on 6 protocol implementations"
+    source: "This study"

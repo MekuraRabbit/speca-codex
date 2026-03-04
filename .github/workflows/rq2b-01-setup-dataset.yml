@@ -1,0 +1,85 @@
+name: "RQ2b Benchmark 01: Setup ProFuzzBench Dataset"
+
+on:
+  workflow_dispatch:
+    inputs:
+      cache_dir:
+        description: "Cache directory for ProFuzzBench"
+        required: false
+        default: "~/.cache/security-agent/benchmarks/profuzzbench"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  setup-profuzzbench:
+    runs-on: self-hosted
+
+    env:
+      CACHE_DIR: ${{ inputs.cache_dir || '~/.cache/security-agent/benchmarks/profuzzbench' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Clone ProFuzzBench
+        run: |
+          mkdir -p "${CACHE_DIR}"
+          if [ ! -d "${CACHE_DIR}/profuzzbench" ]; then
+            git clone --depth 1 https://github.com/profuzzbench/profuzzbench.git "${CACHE_DIR}/profuzzbench"
+          else
+            echo "ProFuzzBench already cloned"
+          fi
+
+      - name: Clone ChatAFL
+        run: |
+          if [ ! -d "${CACHE_DIR}/ChatAFL" ]; then
+            git clone --depth 1 https://github.com/ChatAFLndss/ChatAFL.git "${CACHE_DIR}/ChatAFL"
+          else
+            echo "ChatAFL already cloned"
+          fi
+
+      - name: List ChatAFL Subjects
+        run: |
+          echo "=== ChatAFL 6 Text-Based Protocol Subjects ==="
+          echo "1. Live555 (RTSP)  - RFC 2326"
+          echo "2. ProFTPD (FTP)   - RFC 959"
+          echo "3. PureFTPD (FTP)  - RFC 959"
+          echo "4. Kamailio (SIP)  - RFC 3261"
+          echo "5. Exim (SMTP)     - RFC 5321"
+          echo "6. forked-daapd (DAAP) - Apple proprietary"
+          echo ""
+          echo "=== ProFuzzBench Subject Directories ==="
+          ls -la "${CACHE_DIR}/profuzzbench/subjects/" 2>/dev/null || echo "subjects/ not found"
+
+      - name: Verify Subject Availability
+        run: |
+          echo "=== Checking ProFuzzBench for ChatAFL subjects ==="
+          for subject in live555 proftpd pure-ftpd kamailio exim forked-daapd; do
+            if [ -d "${CACHE_DIR}/profuzzbench/subjects/${subject}" ] || \
+               find "${CACHE_DIR}/profuzzbench/subjects" -maxdepth 2 -name "*${subject}*" -type d 2>/dev/null | grep -q .; then
+              echo "  ✓ ${subject}"
+            else
+              echo "  ? ${subject} (may need different path)"
+            fi
+          done
+
+      - name: Collect RFC References
+        run: |
+          echo "=== RFC Documents Needed for SPECA ==="
+          echo "RFC 2326 - RTSP 1.0 (Live555)"
+          echo "RFC 959  - FTP (ProFTPD, PureFTPD)"
+          echo "RFC 3261 - SIP (Kamailio)"
+          echo "RFC 5321 - SMTP (Exim)"
+          echo ""
+          echo "SPECA will use these RFC documents as specification input."
+
+      - name: Summary
+        run: |
+          echo "=== Setup Complete ==="
+          echo "ProFuzzBench: ${CACHE_DIR}/profuzzbench"
+          echo "ChatAFL: ${CACHE_DIR}/ChatAFL"
+          echo "Next: Run SPECA on 6 protocol implementations with RFC specs"
