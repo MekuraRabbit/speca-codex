@@ -8,7 +8,7 @@
 |----------|------|------|
 | [issiuse.md](issiuse.md) | 分析 | ベンチマーク定量化の課題一覧・ベースライン考察 |
 | [ann.md](ann.md) | 構想 | SPECA 拡張アイデア 14 案 (ブレスト) |
-| [RQ2_BENCHMARK_GUIDE.md](RQ2_BENCHMARK_GUIDE.md) | 手順書 | RQ2 ベンチマーク実行ガイド |
+| ~~RQ2_BENCHMARK_GUIDE.md~~ | アーカイブ | 旧 PrimeVul ガイド → `benchmarks/archive/` に移動 |
 | [LOCAL_VERIFICATION_GUIDE.md](LOCAL_VERIFICATION_GUIDE.md) | 手順書 | ローカル環境でのパイプライン検証 |
 | [WEB_APP_DESIGN.md](WEB_APP_DESIGN.md) | 設計案 | 結果可視化 Web アプリの設計提案 (未実装) |
 | [mobile-setup.md](mobile-setup.md) | セットアップ | スマホから Claude Code SSH 接続ガイド |
