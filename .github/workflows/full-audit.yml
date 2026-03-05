@@ -11,14 +11,16 @@ on:
         description: 'Target repository (owner/repo)'
         required: true
         type: string
-      target_ref_type:
-        description: 'Target ref selection'
-        required: true
-        type: choice
-        options:
-          - latest_default_branch
-          - fusaka-audit
-        default: latest_default_branch
+      target_ref:
+        description: 'Target ref: branch name or commit hash (leave empty for default branch)'
+        required: false
+        type: string
+        default: ''
+      contract_addresses:
+        description: 'In-scope contract addresses (one per line or comma-separated, leave empty for auto-extract)'
+        required: false
+        type: string
+        default: ''
       spec_urls:
         description: 'Override: Specification URLs (comma-separated, leave empty for auto-extract)'
         required: false
@@ -94,17 +96,30 @@ jobs:
 
       - name: "Step 0a: Extract Bug Bounty Scope"
         run: |
+          CONTRACT_ADDRS="${{ inputs.contract_addresses }}"
+          ADDR_CONTEXT=""
+          if [ -n "${CONTRACT_ADDRS}" ]; then
+            ADDR_CONTEXT="Additional in-scope contract addresses provided by user: ${CONTRACT_ADDRS}"
+          fi
+
           claude --print "
           Read the bug bounty program page at ${{ inputs.bug_bounty_url }} and create outputs/BUG_BOUNTY_SCOPE.json with:
           {
             \"program_url\": \"${{ inputs.bug_bounty_url }}\",
             \"program_name\": \"<name>\",
-            \"in_scope_assets\": [\"<assets>\"],
+            \"in_scope_assets\": [\"<assets - include repos, contract addresses, and file paths>\"],
+            \"in_scope_contracts\": [{\"address\": \"0x...\", \"network\": \"ethereum|base|...\", \"name\": \"<if available>\"}],
             \"out_of_scope\": [\"<excluded>\"],
             \"severity_ratings\": \"<if available>\",
             \"reward_range\": \"<if available>\",
             \"notes\": \"<special rules>\"
           }
+          IMPORTANT: Many bug bounty programs (e.g., Sherlock, Immunefi) define scope using:
+          - Specific repository URLs with commit hashes
+          - Smart contract addresses on various networks (Ethereum, Base, Arbitrum, etc.)
+          - Specific file paths within repositories
+          Extract ALL of these. For contract addresses, include the network and contract name if available.
+          ${ADDR_CONTEXT}
           Also extract specification URLs and keywords for Phase 01a discovery.
           Write them to outputs/EXTRACTED_INPUTS.json:
           {
@@ -119,6 +134,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ inputs.target_repo }}
+          ref: ${{ inputs.target_ref || '' }}
           fetch-depth: 0
           path: target_workspace
           persist-credentials: false
@@ -128,14 +144,16 @@ jobs:
         run: |
           set -euo pipefail
           DEFAULT_BRANCH="$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo main)"
+          TARGET_REF="${{ inputs.target_ref }}"
+          REF_LABEL="${TARGET_REF:-${DEFAULT_BRANCH}}"
           COMMIT="$(git rev-parse HEAD)"
           COMMIT_SHORT="$(git rev-parse --short HEAD)"
 
           cat > ../outputs/TARGET_INFO.json <<JSON
           {
             "target_repo": "${{ inputs.target_repo }}",
-            "target_ref_type": "${{ inputs.target_ref_type }}",
-            "target_ref_label": "${DEFAULT_BRANCH}",
+            "target_ref": "${REF_LABEL}",
+            "target_ref_label": "${REF_LABEL}",
             "target_commit": "${COMMIT}",
             "target_commit_short": "${COMMIT_SHORT}"
           }

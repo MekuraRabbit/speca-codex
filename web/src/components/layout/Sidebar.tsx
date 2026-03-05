@@ -3,6 +3,7 @@ import { ja } from '@/i18n/ja';
 import styles from './Sidebar.module.css';
 
 const NAV_ITEMS = [
+  { to: '/audit', label: ja.nav_audit_wizard },
   { to: '/', label: ja.nav_dashboard },
   { to: '/phase/01a', label: ja.nav_phase_01a },
   { to: '/phase/01b', label: ja.nav_phase_01b },

@@ -185,7 +185,7 @@ export interface Phase04Data {
 // --- Supporting ---
 export interface TargetInfo {
   target_repo: string;
-  target_ref_type: string;
+  target_ref: string;
   target_ref_label: string;
   target_commit: string;
   target_commit_short: string;
