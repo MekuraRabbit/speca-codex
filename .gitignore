@@ -235,3 +235,7 @@ outputs/.mcp_configs/
 
 # Serena runtime state (modified by MCP server at runtime, not suitable for tracking)
 .serena/project.yml
+
+# Web client
+web/node_modules/
+web/dist/

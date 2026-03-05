@@ -1,0 +1,52 @@
+.indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.label {
+  font-size: var(--font-size-sm);
+}
+
+.completed .dot {
+  background-color: var(--color-status-completed);
+}
+.completed .label {
+  color: var(--color-status-completed);
+}
+
+.in_progress .dot {
+  background-color: var(--color-status-running);
+}
+.in_progress .label {
+  color: var(--color-status-running);
+}
+
+.pending .dot {
+  background-color: var(--color-status-pending);
+}
+.pending .label {
+  color: var(--color-status-pending);
+}
+
+.failed .dot {
+  background-color: var(--color-status-failed);
+}
+.failed .label {
+  color: var(--color-status-failed);
+}
+
+.queued .dot {
+  background-color: var(--color-status-pending);
+}
+.queued .label {
+  color: var(--color-status-pending);
+}

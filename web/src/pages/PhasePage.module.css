@@ -1,0 +1,22 @@
+.content {
+  padding: var(--space-lg);
+  max-width: var(--max-content-width);
+}
+
+.desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-lg);
+}
+
+.empty,
+.loading,
+.error {
+  padding: var(--space-2xl);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.error {
+  color: var(--color-status-failed);
+}
