@@ -1,7 +1,7 @@
 # 引き継ぎ資料 — SPECA セキュリティエージェント
 
 > 次回セッション開始時にこのファイルを読んで状況を把握してください。
-> 最終更新: 2026-03-04
+> 最終更新: 2026-03-06
 
 ---
 
@@ -178,9 +178,92 @@ Zero-day: ChatAFL 9/9, AFLNet 3/9, NSFuzz 4/9, ChatAFL unique 5/9
 
 ---
 
-## 6. 未完了タスク
+## 6. Web クライアント & 監査自動化 (PR #100)
 
-### 6.1 RQ2a: SPECA 実験実行（優先度: 高）
+> **PR**: https://github.com/NyxFoundation/security-agent/pull/100
+> **ブランチ**: `webclient` (base: `master`)
+> **状態**: Open, レビュー待ち
+> **変更規模**: 67 files, +8,128 / -122 行
+
+### 6.1 概要
+
+GitHub Actions UI の課題（検索・ナビゲーションの煩雑さ、日本語 UI 不在）を解決する専用 Web クライアントと、Bug Bounty URL を入力するだけで全パイプラインを実行する監査自動化ワークフローを追加。
+
+### 6.2 Web クライアント (`web/`)
+
+Vite + React 19 + TypeScript SPA。全 UI 日本語、ダークテーマ、CSS Modules。
+
+| ページ | パス | 説明 |
+|--------|------|------|
+| ダッシュボード | `/` | パイプライン概要、6フェーズフロー図、ブランチセレクタ |
+| フェーズ詳細 | `/phase/:id` | PARTIAL_*.json テーブル (検索・ソート・フィルタ) |
+| プロパティ追跡 | `/property/:id` | 01e→02c→03→04 横断表示 |
+| 監査ウィザード | `/audit` | 4ステップ (入力→確認→実行中→完了) |
+| 設定 | `/settings` | PAT管理・リポジトリ設定・レート制限 |
+
+**データフロー**: ブラウザから GitHub REST API 直接アクセス。PAT は localStorage 保存（サーバー送信なし）。`outputs/` 内の PARTIAL_*.json をブラウザ側で集約・重複排除。
+
+### 6.3 監査ウィザード (`web/src/pages/AuditWizardPage.tsx`)
+
+- **Step 1 入力**: Bug Bounty URL, Target Repo, Target Ref (任意テキスト), Contract Addresses (アドバンスオプション), Spec URLs, Keywords, Workers, Max Concurrent
+- **Step 2 確認**: 入力内容確認 → 「この内容で実行」ボタン
+- **Step 3 実行中**: `workflow_dispatch` API → 10秒間隔ポーリング + 経過時間表示
+- **Step 4 完了**: 成功/失敗 + GitHub Actions リンク + ダッシュボードリンク
+
+**Sherlock/Immunefi 対応**: `target_ref` でコミットハッシュ指定可能。`contract_addresses` でスマートコントラクトアドレス一覧入力可能。
+
+### 6.4 Full Audit ワークフロー (`.github/workflows/full-audit.yml`)
+
+- **名前**: `hiro Full Audit Pipeline`（hiro プレフィックス必須）
+- **トリガー**: `workflow_dispatch` のみ、`self-hosted` ランナー
+- **入力**: bug_bounty_url, target_repo, target_ref, contract_addresses, spec_urls, keywords, workers, max_concurrent
+- **ステップ**:
+  - 0a: Bug Bounty スコープ抽出 (Claude --print で Sherlock/Immunefi 形式に対応)
+  - 0b: ターゲットリポジトリ checkout（`ref` パラメータでコミット指定対応）
+  - 0c: TARGET_INFO.json 生成
+  - 0d: 入力解決 (手動 or 自動抽出)
+  - Phase 01a → 01b → 01e → 02c → 03 → 04（各フェーズ後に commit & push）
+- **結果ブランチ**: `audit/{target-name}/{YYYYMMDD-HHMMSS}`
+
+### 6.5 既存パイプラインへの影響
+
+**影響なし**: `scripts/orchestrator/`, `scripts/run_phase.py`, `schemas.py` は未変更。Web 側の `pipeline.ts` で `target_ref_type` → `target_ref` リネームのみ。
+
+### 6.6 削除されたワークフロー
+
+- `claude.yml` — @claude メンション bot（Claude GitHub App 用、パイプライン無関係）
+- `claude-code-review.yml` — PR 自動レビュー（同上）
+
+### 6.7 既知の課題
+
+1. **PR スクリーンショット**: プライベートリポジトリのため画像埋め込み不可。リンク形式に変更済み。直接埋め込みするには GitHub UI からドラッグ&ドロップで貼り直す必要あり
+2. **ウィザード完了→ダッシュボード遷移**: `run.head_branch` はディスパッチ元 (`master`) を返す可能性あり。ワークフロー内部で作成する `audit/...` ブランチとは異なる場合がある
+3. **デプロイ先未決定**: GitHub Pages / Vercel / etc.
+4. **テスト未追加**: Web クライアント側のテストはなし
+
+### 6.8 主要ファイル一覧
+
+```
+web/
+├── src/
+│   ├── pages/AuditWizardPage.tsx      # 監査ウィザード本体
+│   ├── pages/AuditWizardPage.module.css
+│   ├── lib/github-client.ts           # dispatch, polling, API ラッパー
+│   ├── lib/aggregator.ts              # PARTIAL マージ
+│   ├── i18n/ja.ts                     # 全日本語ラベル
+│   ├── types/pipeline.ts              # schemas.py の TS 版
+│   ├── router.tsx                     # ルート定義
+│   └── components/layout/Sidebar.tsx  # ナビゲーション
+├── docs/screenshots/                  # PR 用スクリーンショット (5枚)
+.github/workflows/full-audit.yml      # hiro Full Audit Pipeline
+automation/AUDIT_PLAYBOOK.md           # CLI 版監査手順書
+```
+
+---
+
+## 7. 未完了タスク
+
+### 7.1 RQ2a: SPECA 実験実行（優先度: 高）
 
 RepoAudit 15 プロジェクトに対して SPECA を実行し、`ground_truth_bugs.yaml` の `speca` フィールドを埋める。
 可視化は baselines-only で完成済み。SPECA 結果を `--speca-results` で渡せば自動でグラフに追加される。
@@ -191,7 +274,7 @@ RepoAudit 15 プロジェクトに対して SPECA を実行し、`ground_truth_b
 3. 結果を `benchmarks/results/rq2a/speca/speca_summary.json` に保存
 4. `uv run python3 benchmarks/rq2a/visualize.py --speca-results ...` で再生成
 
-### 6.2 RQ2b: ChatAFL 比較（優先度: 中）
+### 7.2 RQ2b: ChatAFL 比較（優先度: 中）
 
 ドラフト作成済み（`benchmarks/rq2b/`）。変更の可能性あり。
 
@@ -202,7 +285,7 @@ RepoAudit 15 プロジェクトに対して SPECA を実行し、`ground_truth_b
 3. SPECA を 6 プロトコル実装で実行 (RFC 文書を入力)
 4. `uv run python3 benchmarks/rq2b/visualize.py --speca-results ...` で再生成
 
-### 6.3 残りのセキュリティ脆弱性修正（優先度: 高）
+### 7.3 残りのセキュリティ脆弱性修正（優先度: 高）
 
 `docs/hiro/kijaku.md` の残り 66件。優先度順:
 
@@ -235,7 +318,7 @@ RepoAudit 15 プロジェクトに対して SPECA を実行し、`ground_truth_b
 
 ---
 
-## 7. 設計原則
+## 8. 設計原則
 
 1. **部分結果はファーストクラス** -- バッチ結果は即座に保存。バリデーション失敗で保存をブロックしない
 2. **サーキットブレーカーは共有** -- 全ワーカーで1つ。システム障害時に高速停止
@@ -247,7 +330,7 @@ RepoAudit 15 プロジェクトに対して SPECA を実行し、`ground_truth_b
 
 ---
 
-## 8. よく使うコマンド
+## 9. よく使うコマンド
 
 ```bash
 # 環境セットアップ
@@ -275,7 +358,7 @@ bash scripts/setup_mcp.sh --verify
 
 ---
 
-## 9. 環境変数
+## 10. 環境変数
 
 | 変数 | 用途 | 必須場面 |
 |------|------|---------|
@@ -288,7 +371,7 @@ bash scripts/setup_mcp.sh --verify
 
 ---
 
-## 10. ファイル命名規約
+## 11. ファイル命名規約
 
 | 種類 | パターン | 例 |
 |------|---------|-----|
@@ -299,7 +382,7 @@ bash scripts/setup_mcp.sh --verify
 
 ---
 
-## 11. 既知の問題・注意点
+## 12. 既知の問題・注意点
 
 1. **RQ2a ground_truth_bugs.yaml**: 80% 記入済み (32/40)。残り 8件は RepoAudit 新規発見バグで公開情報なし
 2. **RQ2b ドラフト作成済み**: ChatAFL 著者へのコンタクトが必要 (file/function/line 詳細)。変更の可能性あり
