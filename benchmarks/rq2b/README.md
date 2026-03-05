@@ -73,6 +73,48 @@ uv run python3 benchmarks/rq2b/visualize.py --speca-results benchmarks/results/r
    - **パターン B:** SPECA バグ → ChatAFL では未検出か (相補性)
    - **パターン C:** 両者が見つけたバグの重複 → ベン図で可視化
 
+## データソース
+
+### 論文
+
+- **ChatAFL: A Protocol-Aware Fuzzer with Large Language Models**
+- 会議: NDSS 2024
+- DOI: https://doi.org/10.14722/ndss.2024.24688
+- PDF: https://www.ndss-symposium.org/wp-content/uploads/2024-688-paper.pdf
+- GitHub (ChatAFL): https://github.com/ChatAFLndss/ChatAFL
+- GitHub (ProFuzzBench): https://github.com/profuzzbench/profuzzbench
+
+### ベースライン数値の出典
+
+| データ | 出典 (ChatAFL NDSS 2024 PDF) |
+|--------|------------------------------|
+| State transitions (24h 平均) | Table III |
+| States covered (24h 平均) | Table IV |
+| Branch coverage (24h 平均) | Table V |
+| Zero-day bugs 9件の詳細 | Table VII |
+| ChatAFL vs AFLNet/NSFuzz 改善率 | Section V-C |
+
+> **注意:** Issue #96 では Table V が bugs と記載されていたが、実際は Table VII が zero-day bugs。Table V は branch coverage。
+
+### 対象プロトコルの出典
+
+- 6 subjects は ChatAFL 論文 Section V-A (Table II) の text-based protocols のみ
+- Issue #96 では 9 protocols と記載されていたが、binary protocols (DTLS, DNS, SIP-binary) はテキストベースの SPECA と直接比較不可のため除外
+
+### Zero-Day Bugs の出典
+
+| データ | ソース | ステータス |
+|--------|--------|-----------|
+| Bug ID, subject, type, detected_by | Table VII (NDSS 2024 PDF) | ✅ 転記済 |
+| CA-007 function name (`RTPInterface::sendDataOverTCP`) | 論文本文 Section V-D | ✅ 転記済 |
+| file, function, line (全9件) | 著者コンタクト待ち | 🔲 未取得 |
+| CVE ID | 著者コンタクト待ち | 🔲 未取得 |
+
+### 著者コンタクト先
+
+- Ruijie Meng: ruijie@comp.nus.edu.sg（筆頭著者）
+- Marcel Böhme: marcel.boehme@mpi-sp.org（シニア著者）
+
 ## TODO
 
 - [ ] ChatAFL 著者にコンタクト (file/function/line 詳細取得)
