@@ -239,3 +239,4 @@ outputs/.mcp_configs/
 # Web client
 web/node_modules/
 web/dist/
+!web/src/lib/

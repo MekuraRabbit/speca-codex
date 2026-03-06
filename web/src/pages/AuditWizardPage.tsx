@@ -3,12 +3,13 @@ import { ja } from '@/i18n/ja';
 import { Header } from '@/components/layout/Header';
 import { useGitHubConfig } from '@/hooks/useGitHub';
 import {
-  dispatchWorkflow,
-  fetchLatestDispatchRun,
+  dispatchPhaseWorkflow,
+  fetchLatestPhaseRun,
   fetchWorkflowRunById,
   GitHubApiError,
-  type WorkflowDispatchInputs,
+  PHASE_WORKFLOWS,
   type WorkflowRun,
+  type PhaseId,
 } from '@/lib/github-client';
 import styles from './AuditWizardPage.module.css';
 
@@ -19,6 +20,15 @@ const STEPS: { key: WizardStep; label: string }[] = [
   { key: 'confirm', label: ja.wizard_step_confirm },
   { key: 'running', label: ja.wizard_step_running },
   { key: 'done', label: ja.wizard_step_done },
+];
+
+const PHASE_OPTIONS: { id: PhaseId; label: string; desc: string }[] = [
+  { id: '01a', label: ja.phase_01a_name, desc: ja.phase_01a_desc },
+  { id: '01b', label: ja.phase_01b_name, desc: ja.phase_01b_desc },
+  { id: '01e', label: ja.phase_01e_name, desc: ja.phase_01e_desc },
+  { id: '02c', label: ja.phase_02c_name, desc: ja.phase_02c_desc },
+  { id: '03', label: ja.phase_03_name, desc: ja.phase_03_desc },
+  { id: '04', label: ja.phase_04_name, desc: ja.phase_04_desc },
 ];
 
 function StepIndicator({ current }: { current: WizardStep }) {
@@ -58,18 +68,401 @@ function formatElapsed(seconds: number): string {
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
+// --- Phase-specific input helpers ---
+
+/** For 01a-01e, dispatch on master and pass branch as input.
+ *  For 02c-04, dispatch ON the branch (ref = branch). */
+function getDispatchRef(phaseId: PhaseId, phaseBranch: string): string {
+  if (['02c', '03', '04'].includes(phaseId)) return phaseBranch;
+  return 'master';
+}
+
+function buildPhaseInputs(
+  phaseId: PhaseId,
+  state: PhaseFormState,
+): Record<string, string> {
+  const common: Record<string, string> = {};
+  if (state.workers !== 4) common.workers = String(state.workers);
+  if (state.maxConcurrent !== 64) common.max_concurrent = String(state.maxConcurrent);
+
+  switch (phaseId) {
+    case '01a':
+      return {
+        keywords: state.keywords,
+        spec_urls: state.specUrls,
+        branch: state.branch,
+        append_mode: String(state.appendMode),
+      };
+    case '01b':
+      return {
+        branch: state.branch,
+        ...common,
+        force_execute: String(state.forceExecute),
+      };
+    case '01e':
+      return {
+        branch: state.branch,
+        ...common,
+        force_execute: String(state.forceExecute),
+      };
+    case '02c':
+      return {
+        target_repo: state.targetRepo02c,
+        target_ref_type: state.targetRefType,
+        audit_scope: state.auditScope,
+        ...common,
+        force_execute: String(state.forceExecute),
+      };
+    case '03':
+      return common;
+    case '04':
+      return common;
+  }
+}
+
+interface PhaseFormState {
+  branch: string;
+  keywords: string;
+  specUrls: string;
+  appendMode: boolean;
+  targetRepo02c: string;
+  targetRefType: string;
+  auditScope: string;
+  forceExecute: boolean;
+  workers: number;
+  maxConcurrent: number;
+}
+
+const INITIAL_PHASE_FORM: PhaseFormState = {
+  branch: '',
+  keywords: '',
+  specUrls: '',
+  appendMode: false,
+  targetRepo02c: '',
+  targetRefType: 'latest_default_branch',
+  auditScope: 'auto',
+  forceExecute: false,
+  workers: 4,
+  maxConcurrent: 64,
+};
+
+function canSubmitPhase(phaseId: PhaseId, state: PhaseFormState): boolean {
+  switch (phaseId) {
+    case '01a':
+      return state.keywords.trim() !== '' && state.specUrls.trim() !== '';
+    case '01b':
+    case '01e':
+      return state.branch.trim() !== '';
+    case '02c':
+      return state.targetRepo02c.trim() !== '';
+    case '03':
+    case '04':
+      return state.branch.trim() !== '';
+  }
+}
+
+// --- Phase-specific input forms ---
+
+function Phase01aInputs({
+  state,
+  onChange,
+}: {
+  state: PhaseFormState;
+  onChange: (s: Partial<PhaseFormState>) => void;
+}) {
+  return (
+    <>
+      <div className={styles.field}>
+        <label className={styles.label}>{ja.wizard_phase_branch}</label>
+        <p className={styles.desc}>{ja.wizard_phase_branch_desc}</p>
+        <input
+          type="text"
+          className={styles.input}
+          value={state.branch}
+          onChange={(e) => onChange({ branch: e.target.value })}
+          placeholder={ja.wizard_phase_branch_placeholder}
+        />
+      </div>
+      <div className={styles.field}>
+        <label className={styles.label}>{ja.wizard_phase_01a_keywords}</label>
+        <input
+          type="text"
+          className={styles.input}
+          value={state.keywords}
+          onChange={(e) => onChange({ keywords: e.target.value })}
+          placeholder={ja.wizard_phase_01a_keywords_placeholder}
+        />
+      </div>
+      <div className={styles.field}>
+        <label className={styles.label}>{ja.wizard_phase_01a_spec_urls}</label>
+        <input
+          type="text"
+          className={styles.input}
+          value={state.specUrls}
+          onChange={(e) => onChange({ specUrls: e.target.value })}
+          placeholder={ja.wizard_phase_01a_spec_urls_placeholder}
+        />
+      </div>
+      <div className={styles.checkField}>
+        <label>
+          <input
+            type="checkbox"
+            checked={state.appendMode}
+            onChange={(e) => onChange({ appendMode: e.target.checked })}
+          />
+          <span>{ja.wizard_phase_01a_append_mode}</span>
+        </label>
+      </div>
+    </>
+  );
+}
+
+function PhaseBranchInputs({
+  state,
+  onChange,
+}: {
+  state: PhaseFormState;
+  onChange: (s: Partial<PhaseFormState>) => void;
+}) {
+  return (
+    <>
+      <div className={styles.field}>
+        <label className={styles.label}>{ja.wizard_phase_branch}</label>
+        <p className={styles.desc}>{ja.wizard_phase_branch_desc}</p>
+        <input
+          type="text"
+          className={styles.input}
+          value={state.branch}
+          onChange={(e) => onChange({ branch: e.target.value })}
+          placeholder={ja.wizard_phase_branch_placeholder}
+        />
+      </div>
+      <div className={styles.checkField}>
+        <label>
+          <input
+            type="checkbox"
+            checked={state.forceExecute}
+            onChange={(e) => onChange({ forceExecute: e.target.checked })}
+          />
+          <span>{ja.wizard_phase_force_execute}</span>
+        </label>
+      </div>
+    </>
+  );
+}
+
+function Phase02cInputs({
+  state,
+  onChange,
+}: {
+  state: PhaseFormState;
+  onChange: (s: Partial<PhaseFormState>) => void;
+}) {
+  return (
+    <>
+      <div className={styles.field}>
+        <label className={styles.label}>{ja.wizard_phase_02c_target_repo}</label>
+        <input
+          type="text"
+          className={styles.input}
+          value={state.targetRepo02c}
+          onChange={(e) => onChange({ targetRepo02c: e.target.value })}
+          placeholder={ja.wizard_phase_02c_target_repo_placeholder}
+        />
+      </div>
+      <div className={styles.field}>
+        <label className={styles.label}>{ja.wizard_phase_02c_target_ref_type}</label>
+        <select
+          className={styles.select}
+          value={state.targetRefType}
+          onChange={(e) => onChange({ targetRefType: e.target.value })}
+        >
+          <option value="latest_default_branch">{ja.wizard_phase_02c_target_ref_latest}</option>
+          <option value="fusaka-audit">{ja.wizard_phase_02c_target_ref_fusaka}</option>
+        </select>
+      </div>
+      <div className={styles.field}>
+        <label className={styles.label}>{ja.wizard_phase_02c_audit_scope}</label>
+        <select
+          className={styles.select}
+          value={state.auditScope}
+          onChange={(e) => onChange({ auditScope: e.target.value })}
+        >
+          <option value="auto">auto</option>
+          <option value="el">el</option>
+          <option value="cl">cl</option>
+          <option value="both">both</option>
+        </select>
+      </div>
+      <div className={styles.checkField}>
+        <label>
+          <input
+            type="checkbox"
+            checked={state.forceExecute}
+            onChange={(e) => onChange({ forceExecute: e.target.checked })}
+          />
+          <span>{ja.wizard_phase_force_execute}</span>
+        </label>
+      </div>
+    </>
+  );
+}
+
+function PhaseSpecificInputs({
+  phaseId,
+  state,
+  onChange,
+}: {
+  phaseId: PhaseId;
+  state: PhaseFormState;
+  onChange: (s: Partial<PhaseFormState>) => void;
+}) {
+  switch (phaseId) {
+    case '01a':
+      return <Phase01aInputs state={state} onChange={onChange} />;
+    case '01b':
+    case '01e':
+      return <PhaseBranchInputs state={state} onChange={onChange} />;
+    case '02c':
+      return <Phase02cInputs state={state} onChange={onChange} />;
+    case '03':
+    case '04':
+      return (
+        <div className={styles.field}>
+          <label className={styles.label}>{ja.wizard_phase_branch}</label>
+          <p className={styles.desc}>{ja.wizard_phase_branch_desc}</p>
+          <input
+            type="text"
+            className={styles.input}
+            value={state.branch}
+            onChange={(e) => onChange({ branch: e.target.value })}
+            placeholder={ja.wizard_phase_branch_placeholder}
+          />
+        </div>
+      );
+  }
+}
+
+// --- Confirm card ---
+
+function PhaseConfirmContent({
+  phaseId,
+  state,
+}: {
+  phaseId: PhaseId;
+  state: PhaseFormState;
+}) {
+  const phaseOption = PHASE_OPTIONS.find((p) => p.id === phaseId)!;
+  const dispatchRef = getDispatchRef(phaseId, state.branch);
+
+  return (
+    <div className={styles.confirmCard}>
+      <div className={styles.confirmRow}>
+        <span className={styles.confirmLabel}>{ja.wizard_phase_select}</span>
+        <span className={`${styles.confirmValue} ${styles.confirmCode}`}>
+          {phaseId} - {phaseOption.label}
+        </span>
+      </div>
+      <div className={styles.confirmRow}>
+        <span className={styles.confirmLabel}>Dispatch Ref</span>
+        <span className={`${styles.confirmValue} ${styles.confirmCode}`}>
+          {dispatchRef || 'master'}
+        </span>
+      </div>
+      {phaseId === '01a' && (
+        <>
+          {state.branch && (
+            <div className={styles.confirmRow}>
+              <span className={styles.confirmLabel}>{ja.wizard_phase_branch}</span>
+              <span className={`${styles.confirmValue} ${styles.confirmCode}`}>
+                {state.branch}
+              </span>
+            </div>
+          )}
+          <div className={styles.confirmRow}>
+            <span className={styles.confirmLabel}>{ja.wizard_phase_01a_keywords}</span>
+            <span className={styles.confirmValue}>{state.keywords}</span>
+          </div>
+          <div className={styles.confirmRow}>
+            <span className={styles.confirmLabel}>{ja.wizard_phase_01a_spec_urls}</span>
+            <span className={styles.confirmValue}>{state.specUrls}</span>
+          </div>
+          {state.appendMode && (
+            <div className={styles.confirmRow}>
+              <span className={styles.confirmLabel}>{ja.wizard_phase_01a_append_mode}</span>
+              <span className={styles.confirmValue}>{ja.yes}</span>
+            </div>
+          )}
+        </>
+      )}
+      {(phaseId === '01b' || phaseId === '01e') && (
+        <>
+          <div className={styles.confirmRow}>
+            <span className={styles.confirmLabel}>{ja.wizard_phase_branch}</span>
+            <span className={`${styles.confirmValue} ${styles.confirmCode}`}>
+              {state.branch}
+            </span>
+          </div>
+          {state.forceExecute && (
+            <div className={styles.confirmRow}>
+              <span className={styles.confirmLabel}>{ja.wizard_phase_force_execute}</span>
+              <span className={styles.confirmValue}>{ja.yes}</span>
+            </div>
+          )}
+        </>
+      )}
+      {phaseId === '02c' && (
+        <>
+          <div className={styles.confirmRow}>
+            <span className={styles.confirmLabel}>{ja.wizard_phase_02c_target_repo}</span>
+            <span className={`${styles.confirmValue} ${styles.confirmCode}`}>
+              {state.targetRepo02c}
+            </span>
+          </div>
+          <div className={styles.confirmRow}>
+            <span className={styles.confirmLabel}>{ja.wizard_phase_02c_target_ref_type}</span>
+            <span className={styles.confirmValue}>{state.targetRefType}</span>
+          </div>
+          <div className={styles.confirmRow}>
+            <span className={styles.confirmLabel}>{ja.wizard_phase_02c_audit_scope}</span>
+            <span className={styles.confirmValue}>{state.auditScope}</span>
+          </div>
+        </>
+      )}
+      {(phaseId === '03' || phaseId === '04') && (
+        <div className={styles.confirmRow}>
+          <span className={styles.confirmLabel}>{ja.wizard_phase_branch}</span>
+          <span className={`${styles.confirmValue} ${styles.confirmCode}`}>
+            {state.branch}
+          </span>
+        </div>
+      )}
+      <div className={styles.confirmRow}>
+        <span className={styles.confirmLabel}>{ja.wizard_workers}</span>
+        <span className={styles.confirmValue}>{state.workers}</span>
+      </div>
+      <div className={styles.confirmRow}>
+        <span className={styles.confirmLabel}>{ja.wizard_max_concurrent}</span>
+        <span className={styles.confirmValue}>{state.maxConcurrent}</span>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Main component
+// ============================================================
+
 export function AuditWizardPage() {
   const { branch, setBranch } = useGitHubConfig();
 
-  // Form state
-  const [bugBountyUrl, setBugBountyUrl] = useState('');
-  const [targetRepo, setTargetRepo] = useState('');
-  const [targetRef, setTargetRef] = useState('');
-  const [contractAddresses, setContractAddresses] = useState('');
-  const [specUrls, setSpecUrls] = useState('');
-  const [keywords, setKeywords] = useState('');
-  const [workers, setWorkers] = useState(4);
-  const [maxConcurrent, setMaxConcurrent] = useState(64);
+  // Phase state
+  const [selectedPhase, setSelectedPhase] = useState<PhaseId>('01a');
+  const [phaseForm, setPhaseForm] = useState<PhaseFormState>(INITIAL_PHASE_FORM);
+
+  const updatePhaseForm = useCallback((partial: Partial<PhaseFormState>) => {
+    setPhaseForm((prev) => ({ ...prev, ...partial }));
+  }, []);
 
   // Wizard state
   const [step, setStep] = useState<WizardStep>('input');
@@ -81,18 +474,7 @@ export function AuditWizardPage() {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const elapsedRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const canProceed = bugBountyUrl.trim() !== '' && targetRepo.trim() !== '';
-
-  const inputs: WorkflowDispatchInputs = {
-    bug_bounty_url: bugBountyUrl.trim(),
-    target_repo: targetRepo.trim(),
-    target_ref: targetRef.trim() || undefined,
-    contract_addresses: contractAddresses.trim() || undefined,
-    spec_urls: specUrls.trim() || undefined,
-    keywords: keywords.trim() || undefined,
-    workers,
-    max_concurrent: maxConcurrent,
-  };
+  const canProceed = canSubmitPhase(selectedPhase, phaseForm);
 
   const stopPolling = useCallback(() => {
     if (pollRef.current) {
@@ -115,13 +497,14 @@ export function AuditWizardPage() {
     setElapsed(0);
     dispatchTime.current = Date.now();
 
-    // Start elapsed timer
     elapsedRef.current = setInterval(() => {
       setElapsed(Math.floor((Date.now() - dispatchTime.current) / 1000));
     }, 1000);
 
     try {
-      await dispatchWorkflow('master', inputs);
+      const ref = getDispatchRef(selectedPhase, phaseForm.branch);
+      const inputs = buildPhaseInputs(selectedPhase, phaseForm);
+      await dispatchPhaseWorkflow(selectedPhase, ref, inputs);
     } catch (err) {
       stopPolling();
       if (err instanceof GitHubApiError && err.status === 403) {
@@ -137,17 +520,17 @@ export function AuditWizardPage() {
 
     // Poll for the run
     let foundRunId: number | null = null;
+    const workflowName = PHASE_WORKFLOWS[selectedPhase].workflowName;
 
     pollRef.current = setInterval(async () => {
       try {
         if (!foundRunId) {
-          // Find the run created after dispatch
-          const latestRun = await fetchLatestDispatchRun();
+          const latestRun = await fetchLatestPhaseRun(selectedPhase);
           if (latestRun) {
             const createdAt = new Date(latestRun.created_at).getTime();
             if (
               createdAt >= dispatchTime.current - 30000 &&
-              latestRun.name.includes('Full Audit')
+              latestRun.name === workflowName
             ) {
               foundRunId = latestRun.id;
               setRunId(latestRun.id);
@@ -155,7 +538,6 @@ export function AuditWizardPage() {
             }
           }
         } else {
-          // Poll the specific run
           const updatedRun = await fetchWorkflowRunById(foundRunId);
           setRun(updatedRun);
           if (updatedRun.status === 'completed') {
@@ -164,7 +546,7 @@ export function AuditWizardPage() {
           }
         }
       } catch {
-        // Ignore polling errors, keep trying
+        // Ignore polling errors
       }
     }, 10000);
   };
@@ -172,12 +554,7 @@ export function AuditWizardPage() {
   const handleReset = () => {
     stopPolling();
     setStep('input');
-    setBugBountyUrl('');
-    setTargetRepo('');
-    setTargetRef('');
-    setContractAddresses('');
-    setSpecUrls('');
-    setKeywords('');
+    setPhaseForm(INITIAL_PHASE_FORM);
     setError(null);
     setRunId(null);
     setRun(null);
@@ -196,104 +573,68 @@ export function AuditWizardPage() {
         {step === 'input' && (
           <>
             <div className={styles.field}>
-              <label className={styles.label}>{ja.wizard_bug_bounty_url}</label>
-              <p className={styles.desc}>{ja.wizard_bug_bounty_url_desc}</p>
-              <input
-                type="url"
-                className={styles.input}
-                value={bugBountyUrl}
-                onChange={(e) => setBugBountyUrl(e.target.value)}
-                placeholder={ja.wizard_bug_bounty_url_placeholder}
-              />
+              <label className={styles.label}>{ja.wizard_phase_select}</label>
+              <select
+                className={styles.select}
+                value={selectedPhase}
+                onChange={(e) => {
+                  setSelectedPhase(e.target.value as PhaseId);
+                  setPhaseForm(INITIAL_PHASE_FORM);
+                }}
+              >
+                {PHASE_OPTIONS.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.id} - {p.label}
+                  </option>
+                ))}
+              </select>
+              <p className={styles.desc}>
+                {PHASE_OPTIONS.find((p) => p.id === selectedPhase)?.desc}
+              </p>
             </div>
 
-            <div className={styles.field}>
-              <label className={styles.label}>{ja.wizard_target_repo}</label>
-              <p className={styles.desc}>{ja.wizard_target_repo_desc}</p>
-              <input
-                type="text"
-                className={styles.input}
-                value={targetRepo}
-                onChange={(e) => setTargetRepo(e.target.value)}
-                placeholder={ja.wizard_target_repo_placeholder}
-              />
-            </div>
+            <PhaseSpecificInputs
+              phaseId={selectedPhase}
+              state={phaseForm}
+              onChange={updatePhaseForm}
+            />
 
-            <details className={styles.advancedToggle}>
-              <summary>{ja.wizard_advanced}</summary>
-              <div className={styles.advancedContent}>
-                <div className={styles.field}>
-                  <label className={styles.label}>{ja.wizard_target_ref}</label>
-                  <p className={styles.desc}>{ja.wizard_target_ref_desc}</p>
-                  <input
-                    type="text"
-                    className={styles.input}
-                    value={targetRef}
-                    onChange={(e) => setTargetRef(e.target.value)}
-                    placeholder={ja.wizard_target_ref_placeholder}
-                  />
-                </div>
-
-                <div className={styles.field}>
-                  <label className={styles.label}>{ja.wizard_contract_addresses}</label>
-                  <p className={styles.desc}>{ja.wizard_contract_addresses_desc}</p>
-                  <textarea
-                    className={styles.textarea}
-                    value={contractAddresses}
-                    onChange={(e) => setContractAddresses(e.target.value)}
-                    placeholder={ja.wizard_contract_addresses_placeholder}
-                    rows={4}
-                  />
-                </div>
-
-                <div className={styles.field}>
-                  <label className={styles.label}>{ja.wizard_spec_urls}</label>
-                  <input
-                    type="text"
-                    className={styles.input}
-                    value={specUrls}
-                    onChange={(e) => setSpecUrls(e.target.value)}
-                    placeholder="https://..."
-                  />
-                </div>
-
-                <div className={styles.field}>
-                  <label className={styles.label}>{ja.wizard_keywords}</label>
-                  <input
-                    type="text"
-                    className={styles.input}
-                    value={keywords}
-                    onChange={(e) => setKeywords(e.target.value)}
-                    placeholder="geth,ethereum,EIP,..."
-                  />
-                </div>
-
-                <div className={styles.row}>
-                  <div className={styles.field}>
-                    <label className={styles.label}>{ja.wizard_workers}</label>
-                    <input
-                      type="number"
-                      className={styles.input}
-                      value={workers}
-                      onChange={(e) => setWorkers(Number(e.target.value))}
-                      min={1}
-                      max={16}
-                    />
-                  </div>
-                  <div className={styles.field}>
-                    <label className={styles.label}>{ja.wizard_max_concurrent}</label>
-                    <input
-                      type="number"
-                      className={styles.input}
-                      value={maxConcurrent}
-                      onChange={(e) => setMaxConcurrent(Number(e.target.value))}
-                      min={1}
-                      max={256}
-                    />
+            {/* Workers / max_concurrent for phases that support them */}
+            {selectedPhase !== '01a' && (
+              <details className={styles.advancedToggle}>
+                <summary>{ja.wizard_advanced}</summary>
+                <div className={styles.advancedContent}>
+                  <div className={styles.row}>
+                    <div className={styles.field}>
+                      <label className={styles.label}>{ja.wizard_workers}</label>
+                      <input
+                        type="number"
+                        className={styles.input}
+                        value={phaseForm.workers}
+                        onChange={(e) =>
+                          updatePhaseForm({ workers: Number(e.target.value) })
+                        }
+                        min={1}
+                        max={16}
+                      />
+                    </div>
+                    <div className={styles.field}>
+                      <label className={styles.label}>{ja.wizard_max_concurrent}</label>
+                      <input
+                        type="number"
+                        className={styles.input}
+                        value={phaseForm.maxConcurrent}
+                        onChange={(e) =>
+                          updatePhaseForm({ maxConcurrent: Number(e.target.value) })
+                        }
+                        min={1}
+                        max={256}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            </details>
+              </details>
+            )}
 
             <div className={styles.actions}>
               <button
@@ -313,55 +654,11 @@ export function AuditWizardPage() {
         {/* Step 2: Confirm */}
         {step === 'confirm' && (
           <>
-            <h2 className={styles.sectionTitle}>{ja.wizard_confirm_title}</h2>
-            <div className={styles.confirmCard}>
-              <div className={styles.confirmRow}>
-                <span className={styles.confirmLabel}>{ja.wizard_bug_bounty_url}</span>
-                <span className={styles.confirmValue}>{inputs.bug_bounty_url}</span>
-              </div>
-              <div className={styles.confirmRow}>
-                <span className={styles.confirmLabel}>{ja.wizard_target_repo}</span>
-                <span className={`${styles.confirmValue} ${styles.confirmCode}`}>
-                  {inputs.target_repo}
-                </span>
-              </div>
-              {inputs.target_ref && (
-                <div className={styles.confirmRow}>
-                  <span className={styles.confirmLabel}>{ja.wizard_target_ref}</span>
-                  <span className={`${styles.confirmValue} ${styles.confirmCode}`}>
-                    {inputs.target_ref}
-                  </span>
-                </div>
-              )}
-              {inputs.contract_addresses && (
-                <div className={styles.confirmRow}>
-                  <span className={styles.confirmLabel}>{ja.wizard_contract_addresses}</span>
-                  <span className={styles.confirmValue} style={{ whiteSpace: 'pre-wrap', fontFamily: 'var(--font-mono)', fontSize: 'var(--font-size-sm)' }}>
-                    {inputs.contract_addresses}
-                  </span>
-                </div>
-              )}
-              {inputs.spec_urls && (
-                <div className={styles.confirmRow}>
-                  <span className={styles.confirmLabel}>{ja.wizard_spec_urls}</span>
-                  <span className={styles.confirmValue}>{inputs.spec_urls}</span>
-                </div>
-              )}
-              {inputs.keywords && (
-                <div className={styles.confirmRow}>
-                  <span className={styles.confirmLabel}>{ja.wizard_keywords}</span>
-                  <span className={styles.confirmValue}>{inputs.keywords}</span>
-                </div>
-              )}
-              <div className={styles.confirmRow}>
-                <span className={styles.confirmLabel}>{ja.wizard_workers}</span>
-                <span className={styles.confirmValue}>{inputs.workers}</span>
-              </div>
-              <div className={styles.confirmRow}>
-                <span className={styles.confirmLabel}>{ja.wizard_max_concurrent}</span>
-                <span className={styles.confirmValue}>{inputs.max_concurrent}</span>
-              </div>
-            </div>
+            <h2 className={styles.sectionTitle}>
+              {ja.wizard_phase_confirm_title}
+            </h2>
+
+            <PhaseConfirmContent phaseId={selectedPhase} state={phaseForm} />
 
             <div className={styles.actions}>
               <button
@@ -382,7 +679,7 @@ export function AuditWizardPage() {
           <div className={styles.progressCard}>
             <div className={styles.spinner} />
             <div className={styles.progressStatus}>
-              {!runId ? ja.wizard_waiting_run : ja.wizard_polling}
+              {!runId ? ja.wizard_phase_dispatching : ja.wizard_polling}
             </div>
             {run && (
               <div className={styles.progressSub}>
@@ -415,8 +712,8 @@ export function AuditWizardPage() {
           >
             <div className={styles.doneTitle}>
               {run.conclusion === 'success'
-                ? ja.wizard_run_completed
-                : ja.wizard_run_failed}
+                ? ja.wizard_phase_completed
+                : ja.wizard_phase_failed}
             </div>
             <div className={styles.progressSub}>
               {ja.wizard_elapsed}: {formatElapsed(elapsed)}
