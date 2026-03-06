@@ -3,21 +3,17 @@ import { ja } from '@/i18n/ja';
 import { Header } from '@/components/layout/Header';
 import { useGitHubConfig } from '@/hooks/useGitHub';
 import {
-  dispatchWorkflow,
   dispatchPhaseWorkflow,
-  fetchLatestDispatchRun,
   fetchLatestPhaseRun,
   fetchWorkflowRunById,
   GitHubApiError,
   PHASE_WORKFLOWS,
-  type WorkflowDispatchInputs,
   type WorkflowRun,
   type PhaseId,
 } from '@/lib/github-client';
 import styles from './AuditWizardPage.module.css';
 
 type WizardStep = 'input' | 'confirm' | 'running' | 'done';
-type ExecutionMode = 'full' | 'phase';
 
 const STEPS: { key: WizardStep; label: string }[] = [
   { key: 'input', label: ja.wizard_step_input },
@@ -76,8 +72,7 @@ function formatElapsed(seconds: number): string {
 
 /** For 01a-01e, dispatch on master and pass branch as input.
  *  For 02c-04, dispatch ON the branch (ref = branch). */
-function getDispatchRef(mode: ExecutionMode, phaseId: PhaseId, phaseBranch: string): string {
-  if (mode === 'full') return 'master';
+function getDispatchRef(phaseId: PhaseId, phaseBranch: string): string {
   if (['02c', '03', '04'].includes(phaseId)) return phaseBranch;
   return 'master';
 }
@@ -332,7 +327,6 @@ function PhaseSpecificInputs({
       return <Phase02cInputs state={state} onChange={onChange} />;
     case '03':
     case '04':
-      // 03 and 04 only need branch (dispatch ref) + workers
       return (
         <div className={styles.field}>
           <label className={styles.label}>{ja.wizard_phase_branch}</label>
@@ -349,7 +343,7 @@ function PhaseSpecificInputs({
   }
 }
 
-// --- Confirm card for phase mode ---
+// --- Confirm card ---
 
 function PhaseConfirmContent({
   phaseId,
@@ -359,7 +353,7 @@ function PhaseConfirmContent({
   state: PhaseFormState;
 }) {
   const phaseOption = PHASE_OPTIONS.find((p) => p.id === phaseId)!;
-  const dispatchRef = getDispatchRef('phase', phaseId, state.branch);
+  const dispatchRef = getDispatchRef(phaseId, state.branch);
 
   return (
     <div className={styles.confirmCard}>
@@ -435,6 +429,14 @@ function PhaseConfirmContent({
           </div>
         </>
       )}
+      {(phaseId === '03' || phaseId === '04') && (
+        <div className={styles.confirmRow}>
+          <span className={styles.confirmLabel}>{ja.wizard_phase_branch}</span>
+          <span className={`${styles.confirmValue} ${styles.confirmCode}`}>
+            {state.branch}
+          </span>
+        </div>
+      )}
       <div className={styles.confirmRow}>
         <span className={styles.confirmLabel}>{ja.wizard_workers}</span>
         <span className={styles.confirmValue}>{state.workers}</span>
@@ -454,20 +456,7 @@ function PhaseConfirmContent({
 export function AuditWizardPage() {
   const { branch, setBranch } = useGitHubConfig();
 
-  // Execution mode
-  const [mode, setMode] = useState<ExecutionMode>('full');
-
-  // Full-pipeline form state
-  const [bugBountyUrl, setBugBountyUrl] = useState('');
-  const [targetRepo, setTargetRepo] = useState('');
-  const [targetRef, setTargetRef] = useState('');
-  const [contractAddresses, setContractAddresses] = useState('');
-  const [specUrls, setSpecUrls] = useState('');
-  const [keywords, setKeywords] = useState('');
-  const [workers, setWorkers] = useState(4);
-  const [maxConcurrent, setMaxConcurrent] = useState(64);
-
-  // Phase mode state
+  // Phase state
   const [selectedPhase, setSelectedPhase] = useState<PhaseId>('01a');
   const [phaseForm, setPhaseForm] = useState<PhaseFormState>(INITIAL_PHASE_FORM);
 
@@ -485,20 +474,7 @@ export function AuditWizardPage() {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const elapsedRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const canProceedFull = bugBountyUrl.trim() !== '' && targetRepo.trim() !== '';
-  const canProceedPhase = canSubmitPhase(selectedPhase, phaseForm);
-  const canProceed = mode === 'full' ? canProceedFull : canProceedPhase;
-
-  const fullInputs: WorkflowDispatchInputs = {
-    bug_bounty_url: bugBountyUrl.trim(),
-    target_repo: targetRepo.trim(),
-    target_ref: targetRef.trim() || undefined,
-    contract_addresses: contractAddresses.trim() || undefined,
-    spec_urls: specUrls.trim() || undefined,
-    keywords: keywords.trim() || undefined,
-    workers,
-    max_concurrent: maxConcurrent,
-  };
+  const canProceed = canSubmitPhase(selectedPhase, phaseForm);
 
   const stopPolling = useCallback(() => {
     if (pollRef.current) {
@@ -526,13 +502,9 @@ export function AuditWizardPage() {
     }, 1000);
 
     try {
-      if (mode === 'full') {
-        await dispatchWorkflow('master', fullInputs);
-      } else {
-        const ref = getDispatchRef('phase', selectedPhase, phaseForm.branch);
-        const inputs = buildPhaseInputs(selectedPhase, phaseForm);
-        await dispatchPhaseWorkflow(selectedPhase, ref, inputs);
-      }
+      const ref = getDispatchRef(selectedPhase, phaseForm.branch);
+      const inputs = buildPhaseInputs(selectedPhase, phaseForm);
+      await dispatchPhaseWorkflow(selectedPhase, ref, inputs);
     } catch (err) {
       stopPolling();
       if (err instanceof GitHubApiError && err.status === 403) {
@@ -548,18 +520,12 @@ export function AuditWizardPage() {
 
     // Poll for the run
     let foundRunId: number | null = null;
-    const workflowName =
-      mode === 'full'
-        ? 'hiro Full Audit Pipeline'
-        : PHASE_WORKFLOWS[selectedPhase].workflowName;
+    const workflowName = PHASE_WORKFLOWS[selectedPhase].workflowName;
 
     pollRef.current = setInterval(async () => {
       try {
         if (!foundRunId) {
-          const latestRun =
-            mode === 'full'
-              ? await fetchLatestDispatchRun()
-              : await fetchLatestPhaseRun(selectedPhase);
+          const latestRun = await fetchLatestPhaseRun(selectedPhase);
           if (latestRun) {
             const createdAt = new Date(latestRun.created_at).getTime();
             if (
@@ -588,12 +554,6 @@ export function AuditWizardPage() {
   const handleReset = () => {
     stopPolling();
     setStep('input');
-    setBugBountyUrl('');
-    setTargetRepo('');
-    setTargetRef('');
-    setContractAddresses('');
-    setSpecUrls('');
-    setKeywords('');
     setPhaseForm(INITIAL_PHASE_FORM);
     setError(null);
     setRunId(null);
@@ -612,196 +572,68 @@ export function AuditWizardPage() {
         {/* Step 1: Input */}
         {step === 'input' && (
           <>
-            {/* Mode selector */}
-            <div className={styles.modeSelector}>
-              <button
-                className={`${styles.modeButton} ${mode === 'full' ? styles.modeActive : ''}`}
-                onClick={() => setMode('full')}
+            <div className={styles.field}>
+              <label className={styles.label}>{ja.wizard_phase_select}</label>
+              <select
+                className={styles.select}
+                value={selectedPhase}
+                onChange={(e) => {
+                  setSelectedPhase(e.target.value as PhaseId);
+                  setPhaseForm(INITIAL_PHASE_FORM);
+                }}
               >
-                <span className={styles.modeButtonLabel}>{ja.wizard_mode_full}</span>
-                <span className={styles.modeButtonDesc}>{ja.wizard_mode_full_desc}</span>
-              </button>
-              <button
-                className={`${styles.modeButton} ${mode === 'phase' ? styles.modeActive : ''}`}
-                onClick={() => setMode('phase')}
-              >
-                <span className={styles.modeButtonLabel}>{ja.wizard_mode_phase}</span>
-                <span className={styles.modeButtonDesc}>{ja.wizard_mode_phase_desc}</span>
-              </button>
+                {PHASE_OPTIONS.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.id} - {p.label}
+                  </option>
+                ))}
+              </select>
+              <p className={styles.desc}>
+                {PHASE_OPTIONS.find((p) => p.id === selectedPhase)?.desc}
+              </p>
             </div>
 
-            {/* Full pipeline mode */}
-            {mode === 'full' && (
-              <>
-                <div className={styles.field}>
-                  <label className={styles.label}>{ja.wizard_bug_bounty_url}</label>
-                  <p className={styles.desc}>{ja.wizard_bug_bounty_url_desc}</p>
-                  <input
-                    type="url"
-                    className={styles.input}
-                    value={bugBountyUrl}
-                    onChange={(e) => setBugBountyUrl(e.target.value)}
-                    placeholder={ja.wizard_bug_bounty_url_placeholder}
-                  />
-                </div>
+            <PhaseSpecificInputs
+              phaseId={selectedPhase}
+              state={phaseForm}
+              onChange={updatePhaseForm}
+            />
 
-                <div className={styles.field}>
-                  <label className={styles.label}>{ja.wizard_target_repo}</label>
-                  <p className={styles.desc}>{ja.wizard_target_repo_desc}</p>
-                  <input
-                    type="text"
-                    className={styles.input}
-                    value={targetRepo}
-                    onChange={(e) => setTargetRepo(e.target.value)}
-                    placeholder={ja.wizard_target_repo_placeholder}
-                  />
-                </div>
-
-                <details className={styles.advancedToggle}>
-                  <summary>{ja.wizard_advanced}</summary>
-                  <div className={styles.advancedContent}>
+            {/* Workers / max_concurrent for phases that support them */}
+            {selectedPhase !== '01a' && (
+              <details className={styles.advancedToggle}>
+                <summary>{ja.wizard_advanced}</summary>
+                <div className={styles.advancedContent}>
+                  <div className={styles.row}>
                     <div className={styles.field}>
-                      <label className={styles.label}>{ja.wizard_target_ref}</label>
-                      <p className={styles.desc}>{ja.wizard_target_ref_desc}</p>
+                      <label className={styles.label}>{ja.wizard_workers}</label>
                       <input
-                        type="text"
+                        type="number"
                         className={styles.input}
-                        value={targetRef}
-                        onChange={(e) => setTargetRef(e.target.value)}
-                        placeholder={ja.wizard_target_ref_placeholder}
+                        value={phaseForm.workers}
+                        onChange={(e) =>
+                          updatePhaseForm({ workers: Number(e.target.value) })
+                        }
+                        min={1}
+                        max={16}
                       />
                     </div>
-
                     <div className={styles.field}>
-                      <label className={styles.label}>{ja.wizard_contract_addresses}</label>
-                      <p className={styles.desc}>{ja.wizard_contract_addresses_desc}</p>
-                      <textarea
-                        className={styles.textarea}
-                        value={contractAddresses}
-                        onChange={(e) => setContractAddresses(e.target.value)}
-                        placeholder={ja.wizard_contract_addresses_placeholder}
-                        rows={4}
-                      />
-                    </div>
-
-                    <div className={styles.field}>
-                      <label className={styles.label}>{ja.wizard_spec_urls}</label>
+                      <label className={styles.label}>{ja.wizard_max_concurrent}</label>
                       <input
-                        type="text"
+                        type="number"
                         className={styles.input}
-                        value={specUrls}
-                        onChange={(e) => setSpecUrls(e.target.value)}
-                        placeholder="https://..."
+                        value={phaseForm.maxConcurrent}
+                        onChange={(e) =>
+                          updatePhaseForm({ maxConcurrent: Number(e.target.value) })
+                        }
+                        min={1}
+                        max={256}
                       />
-                    </div>
-
-                    <div className={styles.field}>
-                      <label className={styles.label}>{ja.wizard_keywords}</label>
-                      <input
-                        type="text"
-                        className={styles.input}
-                        value={keywords}
-                        onChange={(e) => setKeywords(e.target.value)}
-                        placeholder="geth,ethereum,EIP,..."
-                      />
-                    </div>
-
-                    <div className={styles.row}>
-                      <div className={styles.field}>
-                        <label className={styles.label}>{ja.wizard_workers}</label>
-                        <input
-                          type="number"
-                          className={styles.input}
-                          value={workers}
-                          onChange={(e) => setWorkers(Number(e.target.value))}
-                          min={1}
-                          max={16}
-                        />
-                      </div>
-                      <div className={styles.field}>
-                        <label className={styles.label}>{ja.wizard_max_concurrent}</label>
-                        <input
-                          type="number"
-                          className={styles.input}
-                          value={maxConcurrent}
-                          onChange={(e) => setMaxConcurrent(Number(e.target.value))}
-                          min={1}
-                          max={256}
-                        />
-                      </div>
                     </div>
                   </div>
-                </details>
-              </>
-            )}
-
-            {/* Individual phase mode */}
-            {mode === 'phase' && (
-              <>
-                <div className={styles.field}>
-                  <label className={styles.label}>{ja.wizard_phase_select}</label>
-                  <select
-                    className={styles.select}
-                    value={selectedPhase}
-                    onChange={(e) => {
-                      setSelectedPhase(e.target.value as PhaseId);
-                      setPhaseForm(INITIAL_PHASE_FORM);
-                    }}
-                  >
-                    {PHASE_OPTIONS.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.id} - {p.label}
-                      </option>
-                    ))}
-                  </select>
-                  <p className={styles.desc}>
-                    {PHASE_OPTIONS.find((p) => p.id === selectedPhase)?.desc}
-                  </p>
                 </div>
-
-                <PhaseSpecificInputs
-                  phaseId={selectedPhase}
-                  state={phaseForm}
-                  onChange={updatePhaseForm}
-                />
-
-                {/* Workers / max_concurrent for phases that support them */}
-                {selectedPhase !== '01a' && (
-                  <details className={styles.advancedToggle}>
-                    <summary>{ja.wizard_advanced}</summary>
-                    <div className={styles.advancedContent}>
-                      <div className={styles.row}>
-                        <div className={styles.field}>
-                          <label className={styles.label}>{ja.wizard_workers}</label>
-                          <input
-                            type="number"
-                            className={styles.input}
-                            value={phaseForm.workers}
-                            onChange={(e) =>
-                              updatePhaseForm({ workers: Number(e.target.value) })
-                            }
-                            min={1}
-                            max={16}
-                          />
-                        </div>
-                        <div className={styles.field}>
-                          <label className={styles.label}>{ja.wizard_max_concurrent}</label>
-                          <input
-                            type="number"
-                            className={styles.input}
-                            value={phaseForm.maxConcurrent}
-                            onChange={(e) =>
-                              updatePhaseForm({ maxConcurrent: Number(e.target.value) })
-                            }
-                            min={1}
-                            max={256}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </details>
-                )}
-              </>
+              </details>
             )}
 
             <div className={styles.actions}>
@@ -823,70 +655,10 @@ export function AuditWizardPage() {
         {step === 'confirm' && (
           <>
             <h2 className={styles.sectionTitle}>
-              {mode === 'full'
-                ? ja.wizard_confirm_title
-                : ja.wizard_phase_confirm_title}
+              {ja.wizard_phase_confirm_title}
             </h2>
 
-            {mode === 'full' ? (
-              <div className={styles.confirmCard}>
-                <div className={styles.confirmRow}>
-                  <span className={styles.confirmLabel}>{ja.wizard_bug_bounty_url}</span>
-                  <span className={styles.confirmValue}>{fullInputs.bug_bounty_url}</span>
-                </div>
-                <div className={styles.confirmRow}>
-                  <span className={styles.confirmLabel}>{ja.wizard_target_repo}</span>
-                  <span className={`${styles.confirmValue} ${styles.confirmCode}`}>
-                    {fullInputs.target_repo}
-                  </span>
-                </div>
-                {fullInputs.target_ref && (
-                  <div className={styles.confirmRow}>
-                    <span className={styles.confirmLabel}>{ja.wizard_target_ref}</span>
-                    <span className={`${styles.confirmValue} ${styles.confirmCode}`}>
-                      {fullInputs.target_ref}
-                    </span>
-                  </div>
-                )}
-                {fullInputs.contract_addresses && (
-                  <div className={styles.confirmRow}>
-                    <span className={styles.confirmLabel}>{ja.wizard_contract_addresses}</span>
-                    <span
-                      className={styles.confirmValue}
-                      style={{
-                        whiteSpace: 'pre-wrap',
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: 'var(--font-size-sm)',
-                      }}
-                    >
-                      {fullInputs.contract_addresses}
-                    </span>
-                  </div>
-                )}
-                {fullInputs.spec_urls && (
-                  <div className={styles.confirmRow}>
-                    <span className={styles.confirmLabel}>{ja.wizard_spec_urls}</span>
-                    <span className={styles.confirmValue}>{fullInputs.spec_urls}</span>
-                  </div>
-                )}
-                {fullInputs.keywords && (
-                  <div className={styles.confirmRow}>
-                    <span className={styles.confirmLabel}>{ja.wizard_keywords}</span>
-                    <span className={styles.confirmValue}>{fullInputs.keywords}</span>
-                  </div>
-                )}
-                <div className={styles.confirmRow}>
-                  <span className={styles.confirmLabel}>{ja.wizard_workers}</span>
-                  <span className={styles.confirmValue}>{fullInputs.workers}</span>
-                </div>
-                <div className={styles.confirmRow}>
-                  <span className={styles.confirmLabel}>{ja.wizard_max_concurrent}</span>
-                  <span className={styles.confirmValue}>{fullInputs.max_concurrent}</span>
-                </div>
-              </div>
-            ) : (
-              <PhaseConfirmContent phaseId={selectedPhase} state={phaseForm} />
-            )}
+            <PhaseConfirmContent phaseId={selectedPhase} state={phaseForm} />
 
             <div className={styles.actions}>
               <button
@@ -907,11 +679,7 @@ export function AuditWizardPage() {
           <div className={styles.progressCard}>
             <div className={styles.spinner} />
             <div className={styles.progressStatus}>
-              {!runId
-                ? mode === 'full'
-                  ? ja.wizard_waiting_run
-                  : ja.wizard_phase_dispatching
-                : ja.wizard_polling}
+              {!runId ? ja.wizard_phase_dispatching : ja.wizard_polling}
             </div>
             {run && (
               <div className={styles.progressSub}>
@@ -944,12 +712,8 @@ export function AuditWizardPage() {
           >
             <div className={styles.doneTitle}>
               {run.conclusion === 'success'
-                ? mode === 'full'
-                  ? ja.wizard_run_completed
-                  : ja.wizard_phase_completed
-                : mode === 'full'
-                  ? ja.wizard_run_failed
-                  : ja.wizard_phase_failed}
+                ? ja.wizard_phase_completed
+                : ja.wizard_phase_failed}
             </div>
             <div className={styles.progressSub}>
               {ja.wizard_elapsed}: {formatElapsed(elapsed)}

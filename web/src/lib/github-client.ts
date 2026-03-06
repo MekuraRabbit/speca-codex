@@ -87,17 +87,6 @@ export async function fetchJsonFile<T>(
 
 // --- Workflow Dispatch ---
 
-export interface WorkflowDispatchInputs {
-  bug_bounty_url: string;
-  target_repo: string;
-  target_ref?: string;
-  contract_addresses?: string;
-  spec_urls?: string;
-  keywords?: string;
-  workers?: number;
-  max_concurrent?: number;
-}
-
 export interface WorkflowRun {
   id: number;
   name: string;
@@ -107,53 +96,6 @@ export interface WorkflowRun {
   head_branch: string;
   created_at: string;
   updated_at: string;
-}
-
-export async function dispatchWorkflow(
-  ref: string,
-  inputs: WorkflowDispatchInputs,
-): Promise<void> {
-  const token = getToken();
-  if (!token) {
-    throw new GitHubApiError(401, 'GitHub token が設定されていません');
-  }
-
-  const repo = getRepo();
-  const url = `${API_BASE}/repos/${repo}/actions/workflows/full-audit.yml/dispatches`;
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github.v3+json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      ref,
-      inputs: {
-        bug_bounty_url: inputs.bug_bounty_url,
-        target_repo: inputs.target_repo,
-        target_ref: inputs.target_ref ?? '',
-        contract_addresses: inputs.contract_addresses ?? '',
-        spec_urls: inputs.spec_urls ?? '',
-        keywords: inputs.keywords ?? '',
-        workers: String(inputs.workers ?? 4),
-        max_concurrent: String(inputs.max_concurrent ?? 64),
-      },
-    }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    throw new GitHubApiError(res.status, `Workflow dispatch failed ${res.status}: ${body}`);
-  }
-}
-
-export async function fetchLatestDispatchRun(): Promise<WorkflowRun | null> {
-  const data = await githubFetch<{ workflow_runs: WorkflowRun[] }>(
-    `/actions/runs?event=workflow_dispatch&per_page=5`,
-  );
-  return data.workflow_runs?.[0] ?? null;
 }
 
 export async function fetchWorkflowRunById(runId: number): Promise<WorkflowRun> {
