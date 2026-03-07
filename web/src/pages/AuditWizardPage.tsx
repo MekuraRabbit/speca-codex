@@ -3,14 +3,12 @@ import { ja } from '@/i18n/ja';
 import { Header } from '@/components/layout/Header';
 import { useGitHubConfig } from '@/hooks/useGitHub';
 import {
-  dispatchPhaseWorkflow,
-  fetchLatestPhaseRun,
-  fetchWorkflowRunById,
-  GitHubApiError,
-  PHASE_WORKFLOWS,
-  type WorkflowRun,
+  dispatchPhase,
+  cancelRun,
+  subscribeToProgress,
   type PhaseId,
-} from '@/lib/github-client';
+  type ProgressEvent,
+} from '@/lib/api-client';
 import styles from './AuditWizardPage.module.css';
 
 type WizardStep = 'input' | 'confirm' | 'running' | 'done';
@@ -68,60 +66,9 @@ function formatElapsed(seconds: number): string {
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
-// --- Phase-specific input helpers ---
-
-/** For 01a-01e, dispatch on master and pass branch as input.
- *  For 02c-04, dispatch ON the branch (ref = branch). */
-function getDispatchRef(phaseId: PhaseId, phaseBranch: string): string {
-  if (['02c', '03', '04'].includes(phaseId)) return phaseBranch;
-  return 'master';
-}
-
-function buildPhaseInputs(
-  phaseId: PhaseId,
-  state: PhaseFormState,
-): Record<string, string> {
-  const common: Record<string, string> = {};
-  if (state.workers !== 4) common.workers = String(state.workers);
-  if (state.maxConcurrent !== 64) common.max_concurrent = String(state.maxConcurrent);
-
-  switch (phaseId) {
-    case '01a':
-      return {
-        keywords: state.keywords,
-        spec_urls: state.specUrls,
-        branch: state.branch,
-        append_mode: String(state.appendMode),
-      };
-    case '01b':
-      return {
-        branch: state.branch,
-        ...common,
-        force_execute: String(state.forceExecute),
-      };
-    case '01e':
-      return {
-        branch: state.branch,
-        ...common,
-        force_execute: String(state.forceExecute),
-      };
-    case '02c':
-      return {
-        target_repo: state.targetRepo02c,
-        target_ref_type: state.targetRefType,
-        audit_scope: state.auditScope,
-        ...common,
-        force_execute: String(state.forceExecute),
-      };
-    case '03':
-      return common;
-    case '04':
-      return common;
-  }
-}
+// --- Phase-specific types ---
 
 interface PhaseFormState {
-  branch: string;
   keywords: string;
   specUrls: string;
   appendMode: boolean;
@@ -131,10 +78,10 @@ interface PhaseFormState {
   forceExecute: boolean;
   workers: number;
   maxConcurrent: number;
+  minSeverity: string;
 }
 
 const INITIAL_PHASE_FORM: PhaseFormState = {
-  branch: '',
   keywords: '',
   specUrls: '',
   appendMode: false,
@@ -143,21 +90,39 @@ const INITIAL_PHASE_FORM: PhaseFormState = {
   auditScope: 'auto',
   forceExecute: false,
   workers: 4,
-  maxConcurrent: 64,
+  maxConcurrent: 8,
+  minSeverity: '',
+};
+
+interface ProgressState {
+  totalItems: number;
+  completedItems: number;
+  failedBatches: number;
+  costUsd: number;
+  budgetPct: number;
+  totalResults: number;
+}
+
+const INITIAL_PROGRESS: ProgressState = {
+  totalItems: 0,
+  completedItems: 0,
+  failedBatches: 0,
+  costUsd: 0,
+  budgetPct: 0,
+  totalResults: 0,
 };
 
 function canSubmitPhase(phaseId: PhaseId, state: PhaseFormState): boolean {
   switch (phaseId) {
     case '01a':
       return state.keywords.trim() !== '' && state.specUrls.trim() !== '';
-    case '01b':
-    case '01e':
-      return state.branch.trim() !== '';
     case '02c':
       return state.targetRepo02c.trim() !== '';
+    case '01b':
+    case '01e':
     case '03':
     case '04':
-      return state.branch.trim() !== '';
+      return true;
   }
 }
 
@@ -172,17 +137,6 @@ function Phase01aInputs({
 }) {
   return (
     <>
-      <div className={styles.field}>
-        <label className={styles.label}>{ja.wizard_phase_branch}</label>
-        <p className={styles.desc}>{ja.wizard_phase_branch_desc}</p>
-        <input
-          type="text"
-          className={styles.input}
-          value={state.branch}
-          onChange={(e) => onChange({ branch: e.target.value })}
-          placeholder={ja.wizard_phase_branch_placeholder}
-        />
-      </div>
       <div className={styles.field}>
         <label className={styles.label}>{ja.wizard_phase_01a_keywords}</label>
         <input
@@ -211,40 +165,6 @@ function Phase01aInputs({
             onChange={(e) => onChange({ appendMode: e.target.checked })}
           />
           <span>{ja.wizard_phase_01a_append_mode}</span>
-        </label>
-      </div>
-    </>
-  );
-}
-
-function PhaseBranchInputs({
-  state,
-  onChange,
-}: {
-  state: PhaseFormState;
-  onChange: (s: Partial<PhaseFormState>) => void;
-}) {
-  return (
-    <>
-      <div className={styles.field}>
-        <label className={styles.label}>{ja.wizard_phase_branch}</label>
-        <p className={styles.desc}>{ja.wizard_phase_branch_desc}</p>
-        <input
-          type="text"
-          className={styles.input}
-          value={state.branch}
-          onChange={(e) => onChange({ branch: e.target.value })}
-          placeholder={ja.wizard_phase_branch_placeholder}
-        />
-      </div>
-      <div className={styles.checkField}>
-        <label>
-          <input
-            type="checkbox"
-            checked={state.forceExecute}
-            onChange={(e) => onChange({ forceExecute: e.target.checked })}
-          />
-          <span>{ja.wizard_phase_force_execute}</span>
         </label>
       </div>
     </>
@@ -308,6 +228,27 @@ function Phase02cInputs({
   );
 }
 
+function PhaseCommonInputs({
+  state,
+  onChange,
+}: {
+  state: PhaseFormState;
+  onChange: (s: Partial<PhaseFormState>) => void;
+}) {
+  return (
+    <div className={styles.checkField}>
+      <label>
+        <input
+          type="checkbox"
+          checked={state.forceExecute}
+          onChange={(e) => onChange({ forceExecute: e.target.checked })}
+        />
+        <span>{ja.wizard_phase_force_execute}</span>
+      </label>
+    </div>
+  );
+}
+
 function PhaseSpecificInputs({
   phaseId,
   state,
@@ -320,26 +261,13 @@ function PhaseSpecificInputs({
   switch (phaseId) {
     case '01a':
       return <Phase01aInputs state={state} onChange={onChange} />;
-    case '01b':
-    case '01e':
-      return <PhaseBranchInputs state={state} onChange={onChange} />;
     case '02c':
       return <Phase02cInputs state={state} onChange={onChange} />;
+    case '01b':
+    case '01e':
     case '03':
     case '04':
-      return (
-        <div className={styles.field}>
-          <label className={styles.label}>{ja.wizard_phase_branch}</label>
-          <p className={styles.desc}>{ja.wizard_phase_branch_desc}</p>
-          <input
-            type="text"
-            className={styles.input}
-            value={state.branch}
-            onChange={(e) => onChange({ branch: e.target.value })}
-            placeholder={ja.wizard_phase_branch_placeholder}
-          />
-        </div>
-      );
+      return <PhaseCommonInputs state={state} onChange={onChange} />;
   }
 }
 
@@ -353,7 +281,6 @@ function PhaseConfirmContent({
   state: PhaseFormState;
 }) {
   const phaseOption = PHASE_OPTIONS.find((p) => p.id === phaseId)!;
-  const dispatchRef = getDispatchRef(phaseId, state.branch);
 
   return (
     <div className={styles.confirmCard}>
@@ -363,22 +290,8 @@ function PhaseConfirmContent({
           {phaseId} - {phaseOption.label}
         </span>
       </div>
-      <div className={styles.confirmRow}>
-        <span className={styles.confirmLabel}>Dispatch Ref</span>
-        <span className={`${styles.confirmValue} ${styles.confirmCode}`}>
-          {dispatchRef || 'master'}
-        </span>
-      </div>
       {phaseId === '01a' && (
         <>
-          {state.branch && (
-            <div className={styles.confirmRow}>
-              <span className={styles.confirmLabel}>{ja.wizard_phase_branch}</span>
-              <span className={`${styles.confirmValue} ${styles.confirmCode}`}>
-                {state.branch}
-              </span>
-            </div>
-          )}
           <div className={styles.confirmRow}>
             <span className={styles.confirmLabel}>{ja.wizard_phase_01a_keywords}</span>
             <span className={styles.confirmValue}>{state.keywords}</span>
@@ -390,22 +303,6 @@ function PhaseConfirmContent({
           {state.appendMode && (
             <div className={styles.confirmRow}>
               <span className={styles.confirmLabel}>{ja.wizard_phase_01a_append_mode}</span>
-              <span className={styles.confirmValue}>{ja.yes}</span>
-            </div>
-          )}
-        </>
-      )}
-      {(phaseId === '01b' || phaseId === '01e') && (
-        <>
-          <div className={styles.confirmRow}>
-            <span className={styles.confirmLabel}>{ja.wizard_phase_branch}</span>
-            <span className={`${styles.confirmValue} ${styles.confirmCode}`}>
-              {state.branch}
-            </span>
-          </div>
-          {state.forceExecute && (
-            <div className={styles.confirmRow}>
-              <span className={styles.confirmLabel}>{ja.wizard_phase_force_execute}</span>
               <span className={styles.confirmValue}>{ja.yes}</span>
             </div>
           )}
@@ -429,12 +326,10 @@ function PhaseConfirmContent({
           </div>
         </>
       )}
-      {(phaseId === '03' || phaseId === '04') && (
+      {state.forceExecute && (
         <div className={styles.confirmRow}>
-          <span className={styles.confirmLabel}>{ja.wizard_phase_branch}</span>
-          <span className={`${styles.confirmValue} ${styles.confirmCode}`}>
-            {state.branch}
-          </span>
+          <span className={styles.confirmLabel}>{ja.wizard_phase_force_execute}</span>
+          <span className={styles.confirmValue}>{ja.yes}</span>
         </div>
       )}
       <div className={styles.confirmRow}>
@@ -467,34 +362,88 @@ export function AuditWizardPage() {
   // Wizard state
   const [step, setStep] = useState<WizardStep>('input');
   const [error, setError] = useState<string | null>(null);
-  const [runId, setRunId] = useState<number | null>(null);
-  const [run, setRun] = useState<WorkflowRun | null>(null);
+  const [runId, setRunId] = useState<string | null>(null);
+  const [progress, setProgress] = useState<ProgressState>(INITIAL_PROGRESS);
   const [elapsed, setElapsed] = useState(0);
+  const [runStatus, setRunStatus] = useState<string>('');
   const dispatchTime = useRef<number>(0);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const elapsedRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const unsubRef = useRef<(() => void) | null>(null);
 
   const canProceed = canSubmitPhase(selectedPhase, phaseForm);
 
-  const stopPolling = useCallback(() => {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
+  const cleanup = useCallback(() => {
     if (elapsedRef.current) {
       clearInterval(elapsedRef.current);
       elapsedRef.current = null;
     }
+    if (unsubRef.current) {
+      unsubRef.current();
+      unsubRef.current = null;
+    }
   }, []);
 
   useEffect(() => {
-    return () => stopPolling();
-  }, [stopPolling]);
+    return () => cleanup();
+  }, [cleanup]);
+
+  const handleSSEEvent = useCallback((event: ProgressEvent) => {
+    const d = event.data;
+    switch (event.type) {
+      case 'phase_start':
+        setRunStatus(String(d.phase_id ?? ''));
+        break;
+      case 'items_loaded':
+        setProgress((p) => ({
+          ...p,
+          totalItems: Number(d.total_items ?? p.totalItems),
+        }));
+        break;
+      case 'batch_complete':
+        setProgress((p) => ({
+          ...p,
+          completedItems: Number(d.completed ?? p.completedItems),
+          totalResults: Number(d.results_count ?? 0) + p.totalResults,
+        }));
+        break;
+      case 'batch_failed':
+        setProgress((p) => ({
+          ...p,
+          failedBatches: p.failedBatches + 1,
+          completedItems: Number(d.completed ?? p.completedItems),
+        }));
+        break;
+      case 'cost_update':
+        setProgress((p) => ({
+          ...p,
+          costUsd: Number(d.total_cost_usd ?? p.costUsd),
+          budgetPct: Number(d.budget_utilization_pct ?? p.budgetPct),
+        }));
+        break;
+      case 'phase_complete':
+        setProgress((p) => ({
+          ...p,
+          totalResults: Number(d.total_results ?? p.totalResults),
+        }));
+        cleanup();
+        setStep('done');
+        setRunStatus('completed');
+        break;
+      case 'phase_error':
+        cleanup();
+        setError(String(d.error ?? ja.wizard_dispatch_error));
+        setStep('done');
+        setRunStatus('failed');
+        break;
+    }
+  }, [cleanup]);
 
   const handleExecute = async () => {
     setStep('running');
     setError(null);
     setElapsed(0);
+    setProgress(INITIAL_PROGRESS);
+    setRunStatus('dispatching');
     dispatchTime.current = Date.now();
 
     elapsedRef.current = setInterval(() => {
@@ -502,64 +451,73 @@ export function AuditWizardPage() {
     }, 1000);
 
     try {
-      const ref = getDispatchRef(selectedPhase, phaseForm.branch);
-      const inputs = buildPhaseInputs(selectedPhase, phaseForm);
-      await dispatchPhaseWorkflow(selectedPhase, ref, inputs);
+      const res = await dispatchPhase({
+        phase_id: selectedPhase,
+        workers: phaseForm.workers,
+        max_concurrent: phaseForm.maxConcurrent,
+        force: phaseForm.forceExecute,
+        keywords: selectedPhase === '01a' ? phaseForm.keywords : undefined,
+        spec_urls: selectedPhase === '01a' ? phaseForm.specUrls : undefined,
+        target_repo: selectedPhase === '02c' ? phaseForm.targetRepo02c : undefined,
+        target_ref_type: selectedPhase === '02c' ? phaseForm.targetRefType : undefined,
+        audit_scope: selectedPhase === '02c' ? phaseForm.auditScope : undefined,
+        min_severity: phaseForm.minSeverity || undefined,
+      });
+
+      setRunId(res.run_id);
+      setRunStatus('running');
+
+      // Subscribe to SSE progress
+      unsubRef.current = subscribeToProgress(
+        res.run_id,
+        handleSSEEvent,
+        () => {
+          // SSE done
+          cleanup();
+          setStep('done');
+        },
+        (err) => {
+          cleanup();
+          setError(err.message);
+          setStep('done');
+          setRunStatus('failed');
+        },
+      );
     } catch (err) {
-      stopPolling();
-      if (err instanceof GitHubApiError && err.status === 403) {
-        setError(ja.wizard_token_scope_error);
-      } else {
-        setError(
-          err instanceof Error ? err.message : ja.wizard_dispatch_error,
-        );
-      }
+      cleanup();
+      setError(err instanceof Error ? err.message : ja.wizard_dispatch_error);
       setStep('input');
-      return;
     }
+  };
 
-    // Poll for the run
-    let foundRunId: number | null = null;
-    const workflowName = PHASE_WORKFLOWS[selectedPhase].workflowName;
-
-    pollRef.current = setInterval(async () => {
+  const handleCancel = async () => {
+    if (runId) {
       try {
-        if (!foundRunId) {
-          const latestRun = await fetchLatestPhaseRun(selectedPhase);
-          if (latestRun) {
-            const createdAt = new Date(latestRun.created_at).getTime();
-            if (
-              createdAt >= dispatchTime.current - 30000 &&
-              latestRun.name === workflowName
-            ) {
-              foundRunId = latestRun.id;
-              setRunId(latestRun.id);
-              setRun(latestRun);
-            }
-          }
-        } else {
-          const updatedRun = await fetchWorkflowRunById(foundRunId);
-          setRun(updatedRun);
-          if (updatedRun.status === 'completed') {
-            stopPolling();
-            setStep('done');
-          }
-        }
+        await cancelRun(runId);
       } catch {
-        // Ignore polling errors
+        // Ignore cancel errors
       }
-    }, 10000);
+    }
+    cleanup();
+    setStep('done');
+    setRunStatus('cancelled');
   };
 
   const handleReset = () => {
-    stopPolling();
+    cleanup();
     setStep('input');
     setPhaseForm(INITIAL_PHASE_FORM);
     setError(null);
     setRunId(null);
-    setRun(null);
+    setProgress(INITIAL_PROGRESS);
     setElapsed(0);
+    setRunStatus('');
   };
+
+  const progressPct =
+    progress.totalItems > 0
+      ? Math.round((progress.completedItems / progress.totalItems) * 100)
+      : 0;
 
   return (
     <div>
@@ -679,66 +637,91 @@ export function AuditWizardPage() {
           <div className={styles.progressCard}>
             <div className={styles.spinner} />
             <div className={styles.progressStatus}>
-              {!runId ? ja.wizard_phase_dispatching : ja.wizard_polling}
+              {runStatus === 'dispatching'
+                ? ja.wizard_phase_dispatching
+                : ja.wizard_polling}
             </div>
-            {run && (
-              <div className={styles.progressSub}>
-                {ja.wizard_run_status}: {run.status}
-                {run.conclusion && ` (${run.conclusion})`}
+
+            {progress.totalItems > 0 && (
+              <div className={styles.progressBarWrap}>
+                <div className={styles.progressBarTrack}>
+                  <div
+                    className={styles.progressBarFill}
+                    style={{ width: `${progressPct}%` }}
+                  />
+                </div>
+                <div className={styles.progressBarLabel}>
+                  {ja.wizard_batch_progress}: {progress.completedItems}/{progress.totalItems} ({progressPct}%)
+                </div>
               </div>
             )}
+
+            {progress.costUsd > 0 && (
+              <div className={styles.progressSub}>
+                {ja.wizard_cost_display}: ${progress.costUsd.toFixed(2)}
+              </div>
+            )}
+
+            {progress.failedBatches > 0 && (
+              <div className={styles.progressSub}>
+                {ja.wizard_batches} ({ja.status_failed}): {progress.failedBatches}
+              </div>
+            )}
+
             <div className={styles.progressSub}>
               {ja.wizard_elapsed}: {formatElapsed(elapsed)}
             </div>
-            {run && (
-              <a
-                className={styles.runLink}
-                href={run.html_url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {ja.wizard_view_actions}
-              </a>
-            )}
+
+            <div className={styles.actions} style={{ justifyContent: 'center' }}>
+              <button className={styles.secondaryButton} onClick={handleCancel}>
+                {ja.wizard_cancel}
+              </button>
+            </div>
           </div>
         )}
 
         {/* Step 4: Done */}
-        {step === 'done' && run && (
+        {step === 'done' && (
           <div
             className={`${styles.doneCard} ${
-              run.conclusion !== 'success' ? styles.failed : ''
+              runStatus === 'failed' || runStatus === 'cancelled' ? styles.failed : ''
             }`}
           >
             <div className={styles.doneTitle}>
-              {run.conclusion === 'success'
+              {runStatus === 'completed'
                 ? ja.wizard_phase_completed
-                : ja.wizard_phase_failed}
+                : runStatus === 'cancelled'
+                  ? ja.wizard_cancel
+                  : ja.wizard_phase_failed}
             </div>
+
+            {progress.totalResults > 0 && (
+              <div className={styles.progressSub}>
+                {ja.dashboard_total_findings}: {progress.totalResults}
+              </div>
+            )}
+
+            {progress.costUsd > 0 && (
+              <div className={styles.progressSub}>
+                {ja.wizard_cost_display}: ${progress.costUsd.toFixed(2)}
+              </div>
+            )}
+
             <div className={styles.progressSub}>
               {ja.wizard_elapsed}: {formatElapsed(elapsed)}
             </div>
+
             <div className={styles.doneActions}>
-              {run.conclusion === 'success' && run.head_branch && (
+              {runStatus === 'completed' && (
                 <button
                   className={styles.primaryButton}
                   onClick={() => {
-                    setBranch(run.head_branch);
                     window.location.href = '/';
                   }}
                 >
                   {ja.wizard_view_dashboard}
                 </button>
               )}
-              <a
-                className={styles.secondaryButton}
-                href={run.html_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ textDecoration: 'none' }}
-              >
-                {ja.wizard_view_actions}
-              </a>
               <button className={styles.secondaryButton} onClick={handleReset}>
                 {ja.wizard_start_new}
               </button>
