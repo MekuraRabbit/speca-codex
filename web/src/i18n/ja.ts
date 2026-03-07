@@ -180,9 +180,14 @@ export const ja = {
   wizard_phase_02c_audit_scope: '監査スコープ',
   wizard_phase_force_execute: '強制再実行 (resume をスキップ)',
   wizard_phase_confirm_title: '以下の内容でフェーズを実行します',
-  wizard_phase_dispatching: 'フェーズワークフローを起動中...',
+  wizard_phase_dispatching: 'フェーズを起動中...',
   wizard_phase_completed: 'フェーズが完了しました',
   wizard_phase_failed: 'フェーズが失敗しました',
+  wizard_batch_progress: 'バッチ進捗',
+  wizard_cost_display: 'コスト',
+  wizard_items_loaded: 'アイテム読込完了',
+  wizard_batches: 'バッチ',
+  wizard_cancel: 'キャンセル',
 
   // Misc
   items_count: '件',
