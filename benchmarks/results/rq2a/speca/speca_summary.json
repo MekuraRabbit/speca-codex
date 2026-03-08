@@ -1,0 +1,67 @@
+{
+  "tp": 1,
+  "fp": 6,
+  "precision": 14.29,
+  "recall": 2.5,
+  "f1": 4.26,
+  "total_ground_truth": 40,
+  "total_positive_findings": 7,
+  "total_cost": null,
+  "bug_type_breakdown": {
+    "UAF": 1
+  },
+  "per_project": {
+    "U1": 1
+  },
+  "detected_bugs": [
+    "RA-U1-O1"
+  ],
+  "missed_bugs": [
+    "RA-M1-N1",
+    "RA-M1-N2",
+    "RA-M1-O1",
+    "RA-M2-N1",
+    "RA-M2-N2",
+    "RA-M2-N3",
+    "RA-M2-N4",
+    "RA-M2-N5",
+    "RA-M2-N6",
+    "RA-M2-O1",
+    "RA-M3-O1",
+    "RA-M4-O1",
+    "RA-M5-O1",
+    "RA-N1-N1",
+    "RA-N1-N2",
+    "RA-N1-N3",
+    "RA-N1-O1",
+    "RA-N2-N1",
+    "RA-N2-O1",
+    "RA-N2-O2",
+    "RA-N2-O3",
+    "RA-N2-O4",
+    "RA-N2-O5",
+    "RA-N2-O6",
+    "RA-N2-O7",
+    "RA-N3-N1",
+    "RA-N3-O1",
+    "RA-N4-O1",
+    "RA-N5-N1",
+    "RA-N5-N2",
+    "RA-N5-N3",
+    "RA-N5-N4",
+    "RA-N5-N5",
+    "RA-N5-O1",
+    "RA-U2-O1",
+    "RA-U3-O1",
+    "RA-U4-O1",
+    "RA-U5-N1",
+    "RA-U5-O1"
+  ],
+  "matches": {
+    "RA-U1-O1": {
+      "finding_id": "PROP-U1-uaf-059",
+      "confidence": 0.95
+    }
+  },
+  "llm_model": "haiku"
+}

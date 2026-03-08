@@ -222,8 +222,8 @@ tools:
   # SPECA — to be filled after experiment
   speca:
     display_name: "SPECA"
-    tp: null
-    fp: null
-    precision: null
-    notes: "Pending SPECA execution on 15 benchmark projects"
+    tp: 1
+    fp: 6
+    precision: 14.29
+    notes: "SPECA automated evaluation"
     source: "This study"

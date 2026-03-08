@@ -38,7 +38,7 @@ bugs:
       repoaudit_claude35: true
       meta_infer: false  # N1 failed to build
       amazon_codeguru: false
-      speca: null
+      speca: false
 
   # New bugs from PRs 248, 249, 250
   - id: RA-N1-N1
@@ -52,7 +52,7 @@ bugs:
     description: "NULL from field2json() when repeated=false is dereferenced via parse_msg caller without null check"
     inter_procedural: true
     reference: https://github.com/baidu/sofa-pbrpc/pull/248
-    detected_by: { repoaudit_claude35: true, speca: null }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   - id: RA-N1-N2
     project: sofa-pbrpc
@@ -65,7 +65,7 @@ bugs:
     description: "NULL from parse_msg() propagated to field2json() and dereferenced at line 207 without check"
     inter_procedural: true
     reference: https://github.com/baidu/sofa-pbrpc/pull/249
-    detected_by: { repoaudit_claude35: true, speca: null }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   - id: RA-N1-N3
     project: sofa-pbrpc
@@ -78,7 +78,7 @@ bugs:
     description: "Multi-level chain: NULL from nested parse_msg() flows through field2json() back to parse_msg() caller"
     inter_procedural: true
     reference: https://github.com/baidu/sofa-pbrpc/pull/250
-    detected_by: { repoaudit_claude35: true, speca: null }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   # --- ImageMagick/MagickCore (N2): 7 Old, 1 New, 0 FP, 4 Intra, 4 Inter ---
   # Old bug source: static/bug/old/NPD/C_MagickCore.json
@@ -94,7 +94,7 @@ bugs:
     inter_procedural: false
     reproducible: true
     reference: https://github.com/ImageMagick/ImageMagick/tree/6e167ed083e252cb318b4db3316854be80de1693/MagickCore/threshold.c#L2075
-    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: null }
+    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: false }
 
   - id: RA-N2-O2
     project: ImageMagick/MagickCore
@@ -107,7 +107,7 @@ bugs:
     inter_procedural: true
     reproducible: true
     reference: https://github.com/ImageMagick/ImageMagick/tree/6e167ed083e252cb318b4db3316854be80de1693/MagickCore/morphology.c#L2336
-    detected_by: { repoaudit_claude35: true, speca: null }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   - id: RA-N2-O3
     project: ImageMagick/MagickCore
@@ -120,7 +120,7 @@ bugs:
     inter_procedural: true
     reproducible: true
     reference: https://github.com/ImageMagick/ImageMagick/tree/6e167ed083e252cb318b4db3316854be80de1693/MagickCore/morphology.c#L2424
-    detected_by: { repoaudit_claude35: true, speca: null }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   - id: RA-N2-O4
     project: ImageMagick/MagickCore
@@ -133,7 +133,7 @@ bugs:
     inter_procedural: true
     reproducible: true
     reference: https://github.com/ImageMagick/ImageMagick/tree/6e167ed083e252cb318b4db3316854be80de1693/MagickCore/morphology.c#L2387
-    detected_by: { repoaudit_claude35: true, speca: null }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   - id: RA-N2-O5
     project: ImageMagick/MagickCore
@@ -146,7 +146,7 @@ bugs:
     inter_procedural: false
     reproducible: true
     reference: https://github.com/ImageMagick/ImageMagick/tree/6e167ed083e252cb318b4db3316854be80de1693/MagickCore/statistic.c#L506
-    detected_by: { repoaudit_claude35: true, speca: null }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   - id: RA-N2-O6
     project: ImageMagick/MagickCore
@@ -159,7 +159,7 @@ bugs:
     inter_procedural: false
     reproducible: true
     reference: https://github.com/ImageMagick/ImageMagick/tree/6e167ed083e252cb318b4db3316854be80de1693/MagickCore/effect.c#L3800
-    detected_by: { repoaudit_claude35: true, speca: null }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   - id: RA-N2-O7
     project: ImageMagick/MagickCore
@@ -172,7 +172,7 @@ bugs:
     inter_procedural: false
     reproducible: true
     reference: https://github.com/ImageMagick/ImageMagick/tree/6e167ed083e252cb318b4db3316854be80de1693/MagickCore/fx.c#L322
-    detected_by: { repoaudit_claude35: true, speca: null }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   - id: RA-N2-N1
     project: ImageMagick/MagickCore
@@ -185,7 +185,7 @@ bugs:
     description: "NULL pointer from failed AcquireRandomInfoThreadSet() passed to DestroyRandomInfoThreadSet(), dereferenced in for loop without NULL guard. Renamed to DestroyRandomInfoTLS in latest."
     inter_procedural: true  # N2 has 4 inter total; 3 old inter + 1 new inter = 4
     uncertain: true  # Inferred from C_MagickCore.json entries 7/9; no PR/issue link available
-    detected_by: { repoaudit_claude35: true, speca: null }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   # --- coturn/src/server (N3): 1 Old, 1 New, 3 FP, 1 Intra, 1 Inter ---
   # Old bug source: static/bug/old/NPD/C_coturn_server.md (Case 2, reproducible)
@@ -199,7 +199,7 @@ bugs:
     description: "NULL value from parameter 'a' reaches dereference location without validation"
     inter_procedural: true  # involves parameter from caller
     reproducible: true
-    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: null }
+    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: false }
 
   - id: RA-N3-N1
     project: coturn/src/server
@@ -212,7 +212,7 @@ bugs:
     description: "realloc failure leaves extra_list as NULL, subsequent array access dereferences NULL pointer"
     inter_procedural: false  # N3 total: 1 intra + 1 inter = 2
     reference: https://repoaudit-home.github.io/static/bug/old/NPD/C_coturn_server.md
-    detected_by: { repoaudit_claude35: true, speca: null }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   # --- libfreenect (N4): 1 Old, 0 New, 1 FP, 0 Intra, 1 Inter ---
   # Old bug source: static/bug/old/NPD/C_libfreenect.md
@@ -226,7 +226,7 @@ bugs:
     description: "freenect_init() returns with NULL ctx, passed to freenect_select_subdevices() which dereferences it"
     inter_procedural: true
     reproducible: true
-    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: null }
+    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: false }
 
   # --- openldap (N5): 1 Old, 5 New, 1 FP, 0 Intra, 6 Inter ---
   # Old bug source: static/bug/old/NPD/C_openldap.md (Case 1, reproducible)
@@ -240,7 +240,7 @@ bugs:
     description: "ber_strdup_x() returns NULL, propagates through ldif_open_url() to ldap_pvt_hex_unescape() where dereferenced in loop"
     inter_procedural: true
     reproducible: true
-    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: null }
+    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: false }
 
   # New bugs: ITS#10309 "Handle potential null pointers returned by ber_strdup" (8 bugs, Fixed)
   # Plus additional NPD reports. 5 new total, 4 still in latest.
@@ -255,7 +255,7 @@ bugs:
     description: "Unchecked NULL return from ber_strdup in client tools"
     inter_procedural: true
     reference: https://bugs.openldap.org/show_bug.cgi?id=10309
-    detected_by: { repoaudit_claude35: true, speca: null }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   - id: RA-N5-N2
     project: openldap
@@ -268,7 +268,7 @@ bugs:
     description: "NULL from ber_strdup() at fetch.c:71 flows to strchr dereference without NULL check"
     inter_procedural: true
     reference: https://repoaudit-home.github.io/static/bug/old/NPD/C_openldap.md
-    detected_by: { repoaudit_claude35: true, speca: null }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   - id: RA-N5-N3
     project: openldap
@@ -282,7 +282,7 @@ bugs:
     inter_procedural: true
     reference: https://repoaudit-home.github.io/static/bug/old/NPD/C_openldap.md
     # scan_dir expanded to include clients/tools/
-    detected_by: { repoaudit_claude35: true, speca: null }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   - id: RA-N5-N4
     project: openldap
@@ -296,7 +296,7 @@ bugs:
     inter_procedural: true
     reference: https://repoaudit-home.github.io/static/bug/old/NPD/C_openldap.md
     # scan_dir expanded to include clients/tools/
-    detected_by: { repoaudit_claude35: true, speca: null }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   - id: RA-N5-N5
     project: openldap
@@ -310,7 +310,7 @@ bugs:
     inter_procedural: true
     reference: https://bugs.openldap.org/show_bug.cgi?id=10309
     # scan_dir expanded to include clients/tools/
-    detected_by: { repoaudit_claude35: true, speca: null }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   # ============================================================
   # MLK -- Memory Leak (5 Old + 8 New = 13 TP)
@@ -328,7 +328,7 @@ bugs:
     description: "Dynamically allocated 'size_t* state = new size_t[L+1]' not freed on early return at line 12"
     inter_procedural: false
     reproducible: true
-    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: null }
+    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: false }
 
   - id: RA-M1-N1
     project: libsass
@@ -341,7 +341,7 @@ bugs:
     description: "Dynamically allocated 'size_t* state = new size_t[L+1]' not freed on early return"
     inter_procedural: false
     reference: https://repoaudit-home.github.io/static/bug/old/ML/C++_libsass.md
-    detected_by: { repoaudit_claude35: true, speca: null }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   - id: RA-M1-N2
     project: libsass
@@ -354,7 +354,7 @@ bugs:
     description: "Import entry and source file not deleted before exception throw, causing leak on recovery"
     inter_procedural: true
     reference: https://github.com/sass/libsass/pull/3192
-    detected_by: { repoaudit_claude35: true, speca: null }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   # --- memcached (M2): 1 Old, 6 New, 2 FP, 4 Intra, 3 Inter ---
   # Old bug source: static/bug/old/ML/C_memcached.md (Case 2 - server_sockets, reproducible)
@@ -369,7 +369,7 @@ bugs:
     description: "strdup() allocated pointer 'list' not freed on early return when invalid IPv6 address detected"
     inter_procedural: false
     reproducible: true
-    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: null }
+    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: false }
 
   # New bugs from PRs: 1209, 1208, 1214, 1215, 1216, 1217
   - id: RA-M2-N1
@@ -383,7 +383,7 @@ bugs:
     description: "subopts_orig allocated via strdup() never freed before function returns"
     inter_procedural: false
     reference: https://github.com/memcached/memcached/pull/1209
-    detected_by: { repoaudit_claude35: true, speca: null }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   - id: RA-M2-N2
     project: memcached
@@ -396,7 +396,7 @@ bugs:
     description: "temp_portnumber_filename from malloc() not freed when portnumber_file is NULL"
     inter_procedural: false
     reference: https://github.com/memcached/memcached/pull/1208
-    detected_by: { repoaudit_claude35: true, speca: null }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   - id: RA-M2-N3
     project: memcached
@@ -409,7 +409,7 @@ bugs:
     description: "st.page_data from calloc() passed to extstore_get_page_data but never freed before return"
     inter_procedural: true
     reference: https://github.com/memcached/memcached/pull/1214
-    detected_by: { repoaudit_claude35: true, speca: null }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   - id: RA-M2-N4
     project: memcached
@@ -422,7 +422,7 @@ bugs:
     description: "flist, db, db->buf, db->fname not freed in error handling branches"
     inter_procedural: true
     reference: https://github.com/memcached/memcached/pull/1215
-    detected_by: { repoaudit_claude35: true, speca: null }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   - id: RA-M2-N5
     project: memcached
@@ -435,7 +435,7 @@ bugs:
     description: "getline() allocated 'line' not freed in RESTART_NOTAG and EOF error branches"
     inter_procedural: true
     reference: https://github.com/memcached/memcached/pull/1216
-    detected_by: { repoaudit_claude35: true, speca: null }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   - id: RA-M2-N6
     project: memcached
@@ -448,7 +448,7 @@ bugs:
     description: "iter from calloc() not freed when mutex_trylock fails and function returns NULL"
     inter_procedural: false
     reference: https://github.com/memcached/memcached/pull/1217
-    detected_by: { repoaudit_claude35: true, speca: null }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   # --- linux/driver/net (M3): 1 Old, 0 New, 0 FP, 1 Intra, 0 Inter ---
   # Old bug source: static/bug/old/ML/C_net_4cd8371.json
@@ -464,7 +464,7 @@ bugs:
     inter_procedural: false
     reproducible: true
     reference: https://github.com/torvalds/linux/tree/4cd8371a234d051f9c9557fcbb1f8c523b1c0d10/drivers/net/ethernet/netronome/nfp/nfpcore/nfp_cppcore.c#L800
-    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: null }
+    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: false }
 
   # --- linux/sound (M4): 1 Old, 0 New, 0 FP, 1 Intra, 0 Inter ---
   # Old bug source: static/bug/old/ML/C_sound_1c4f29e.json
@@ -480,7 +480,7 @@ bugs:
     inter_procedural: false
     reproducible: true
     reference: https://github.com/torvalds/linux/tree/1c4f29ec878bbf1cc0a1eb54ae7da5ff98e19641/sound/soc/qcom/qdsp6/q6apm.c#L66
-    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: null }
+    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: false }
 
   # --- linux/mm (M5): 1 Old, 0 New, 0 FP, 1 Intra, 0 Inter ---
   # Old bug source: static/bug/old/ML/C_mm_73b73ba.json
@@ -496,7 +496,7 @@ bugs:
     inter_procedural: false
     reproducible: true
     reference: https://github.com/torvalds/linux/tree/73b73bac90d97400e29e585c678c4d0ebfd2680d/mm/damon/reclaim.c#L434
-    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: null }
+    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: false }
 
   # ============================================================
   # UAF -- Use-After-Free (5 Old + 1 New = 6 TP)
@@ -514,7 +514,7 @@ bugs:
     description: "Pointer c freed via redisFree(c) at line 46, then dereferenced at line 49 to access connection_type"
     inter_procedural: false
     reproducible: true
-    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: null }
+    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: true }
 
   # --- linux/drivers/peci (U2): 1 Old, 0 New, 0 FP, 1 Intra, 0 Inter ---
   # Old bug source: static/bug/old/UAF/C_peci_e79b548.json
@@ -532,7 +532,7 @@ bugs:
     reproducible: true
     cve: CVE-2022-48670
     reference: https://github.com/torvalds/linux/tree/e79b548b7202bb3accdfe64f113129a4340bc2f9/drivers/peci/cpu.c#L191
-    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: null }
+    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: false }
 
   # --- shadowsocks-libev (U3): 1 Old, 0 New, 0 FP, 1 Intra, 0 Inter ---
   # Old bug source: static/bug/old/UAF/C_shadowsocks-libev.md
@@ -546,7 +546,7 @@ bugs:
     description: "remote freed via close_and_free_remote(), then setsockopt(remote->fd, ...) dereferences freed pointer"
     inter_procedural: false
     reproducible: true
-    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: null }
+    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: false }
 
   # --- wabt-tool (U4): 1 Old, 0 New, 0 FP, 1 Intra, 0 Inter ---
   # Old bug source: static/bug/old/UAF/C++_wabt_tools.md
@@ -560,7 +560,7 @@ bugs:
     description: "data freed with delete[] at line 227, then freed again at line 47 (double-free)"
     inter_procedural: false
     reproducible: true
-    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: null }
+    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: false }
 
   # --- icu/icu4c/source/i18n (U5): 1 Old, 1 New, 1 FP, 1 Intra, 1 Inter ---
   # Old bug source: static/bug/old/UAF/C++_i18n.md (Case 1, double-free in zonemeta.cpp)
@@ -574,7 +574,7 @@ bugs:
     description: "entry freed by deleteOlsonToMetaMappingEntry then freed again by uprv_free (double-free)"
     inter_procedural: false
     reproducible: true
-    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: null }
+    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: false }
 
   - id: RA-U5-N1
     project: icu/icu4c/source/i18n
@@ -587,4 +587,4 @@ bugs:
     description: "Use-after-free: alias 'regions' pointing to same memory as 'p' freed again after partial deallocation"
     inter_procedural: true  # U5 total: 1 intra + 1 inter = 2
     reference: https://repoaudit-home.github.io/static/bug/old/UAF/C++_i18n.md
-    detected_by: { repoaudit_claude35: true, speca: null }
+    detected_by: { repoaudit_claude35: true, speca: false }
