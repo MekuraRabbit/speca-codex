@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-034",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/listpack.c::lpInsert::L595-731",
+      "proof_trace": "The sole explicit free in listpack.c is lpFree (L216-218), which calls lp_free once with no subsequent use. lpInsert, the only function that calls lp_realloc, correctly saves a byte offset (poff = p-lp, L617) before any reallocation and recomputes dst = lp + poff after each realloc branch (L661, L678), ensuring the old (potentially freed) allocation is never dereferenced; the two branches are mutually exclusive so no double-realloc occurs. No other function performs allocation or free, so no use-after-free or double-free paths exist within listpack.c.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-034"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 33,
+    "item_count": 1,
+    "timestamp": 1772952378,
+    "processed_ids": [
+      "PROP-U1-uaf-034"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-015",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/config.c::loadServerConfigFromString::L172-849",
+      "proof_trace": "Every zfree() call on a server config pointer (logfile, acl_filename, masteruser, masterauth, rdb_filename, cluster_announce_ip, slave_announce_ip, etc.) is immediately followed on the very next line by a new assignment, leaving no window for a dangling dereference. Error paths\u2014loaderr calls exit(1) and badfmt only sends an error reply\u2014neither accesses any freed pointer. Local SDS allocations (v, copy, aclop) are freed exactly once, before any subsequent access to those variables.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-015"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 14,
+    "item_count": 1,
+    "timestamp": 1772952503,
+    "processed_ids": [
+      "PROP-U1-uaf-015"
+    ]
+  }
+}

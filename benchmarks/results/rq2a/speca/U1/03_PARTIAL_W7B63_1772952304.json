@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-064",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/release.c::redisBuildId::L48-52",
+      "proof_trace": "release.c contains zero free() calls (Grep confirmed no matches). All three functions operate exclusively on compile-time macro string literals (REDIS_GIT_SHA1, REDIS_GIT_DIRTY, REDIS_VERSION, REDIS_BUILD_ID) stored in static memory; no heap allocation occurs anywhere in the file. The universal quantification forall free(p) is over an empty set, making the property vacuously and provably true.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-064"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 63,
+    "item_count": 1,
+    "timestamp": 1772952304,
+    "processed_ids": [
+      "PROP-U1-uaf-064"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-032",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/latency.c::latencyResetEvent::L135-151",
+      "proof_trace": "The only dictDelete call on dict entries is in latencyResetEvent, which uses dictGetSafeIterator; dictNext explicitly saves iter->nextEntry = iter->entry->next before returning each entry (dict.c:590), so the caller may safely delete the returned entry. After dictDelete(server.latency_events, event) at L145, the freed pointer `event` is not accessed again in the loop body. All sds/sparkline allocations are freed exactly once at their single use site.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-032"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 31,
+    "item_count": 1,
+    "timestamp": 1772952380,
+    "processed_ids": [
+      "PROP-U1-uaf-032"
+    ]
+  }
+}

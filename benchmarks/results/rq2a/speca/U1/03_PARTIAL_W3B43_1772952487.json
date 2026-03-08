@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-044",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/modules/hellodict.c::cmd_SET::L48-55",
+      "proof_trace": "All pointers in hellodict.c are safe: (1) key bytes passed to RedisModule_DictSet are copied by raxGenericInsert into tree node storage, so argv[1] needs no retention; (2) the value pointer argv[2] is protected by RedisModule_RetainString(NULL, argv[2]) at L53 before the callback returns, preventing deallocation while the dict holds it; (3) the iterator key pointer from DictNextC (cmd_KEYRANGE L93) is consumed via ReplyWithStringBuffer within the same loop iteration before the next DictNextC advance, and is not dereferenced after DictIteratorStop at L103. No explicit free() calls exist in hellodict.c.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-044"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 43,
+    "item_count": 1,
+    "timestamp": 1772952487,
+    "processed_ids": [
+      "PROP-U1-uaf-044"
+    ]
+  }
+}

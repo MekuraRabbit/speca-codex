@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-026",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/geohash.c::geohash.c::L1-295",
+      "proof_trace": "The property is vacuously satisfied: geohash.c contains zero free(), zfree(), malloc(), or zmalloc() calls across all 295 lines, confirmed by full read and grep. All local variables are stack-allocated (e.g., GeoHashRange r[2], GeoHashArea area); pointer parameters are caller-owned and never freed within this file. No macros in geohash.h expand to any allocation or deallocation primitives.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-026"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 25,
+    "item_count": 1,
+    "timestamp": 1772952300,
+    "processed_ids": [
+      "PROP-U1-uaf-026"
+    ]
+  }
+}

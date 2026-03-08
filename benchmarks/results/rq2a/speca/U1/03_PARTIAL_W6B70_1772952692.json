@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-071",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/sentinel.c::releaseInstanceLink::L1002-1031",
+      "proof_trace": "The async callback model guards against UAF via two paths: (1) for shared links (refcount>1), releaseInstanceLink rebinds all pending callbacks with privdata==ri to sentinelDiscardReplyCallback before ri is freed; (2) for unshared links (refcount==1), instanceLinkCloseConnection sets c->data=NULL before redisAsyncFree, so all reply callbacks exit early at the '!link' guard. Additionally, sentinelResetMasterAndChangeAddress copies the promoted slave's IP via createSentinelAddr() as its very first action, before sentinelResetMaster frees the slaves dict (including the promoted slave), preventing any dangling pointer dereference. The single-threaded event loop eliminates concurrency races, and dictGetSafeIterator is used wherever dict entries are deleted during iteration.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-071"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 70,
+    "item_count": 1,
+    "timestamp": 1772952692,
+    "processed_ids": [
+      "PROP-U1-uaf-071"
+    ]
+  }
+}

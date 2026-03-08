@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-033",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/lazyfree.c::dbAsyncDelete::L54-91",
+      "proof_trace": "All functions in lazyfree.c follow a strict acquire-before-handoff pattern: pointers are captured locally, sizes/lengths are read before handoff, then objects are passed to bioCreateBackgroundJob and never dereferenced again by the calling thread. Background thread functions (lazyfreeFreeObjectFromBioThread, lazyfreeFreeDatabaseFromBioThread, lazyfreeFreeSlotsMapFromBioThread) save counts into local integers before calling release functions, so no post-free dereferences occur. No double-free paths exist since each object takes exactly one code path\u2014either background BIO job or synchronous decrRefCount/dictRelease/raxFree.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-033"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 32,
+    "item_count": 1,
+    "timestamp": 1772952397,
+    "processed_ids": [
+      "PROP-U1-uaf-033"
+    ]
+  }
+}

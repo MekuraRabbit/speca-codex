@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-038",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/lzf_c.c::lzf_compress::L99-290",
+      "proof_trace": "lzf_c.c contains a single function, lzf_compress, which performs zero dynamic memory allocation and zero free() calls (confirmed by grep). All pointers (ip, op, ref, hslot) operate on caller-supplied buffers or a stack-allocated htab array; the universal quantifier in the assertion ranges over the empty set, making the property vacuously true.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-038"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 37,
+    "item_count": 1,
+    "timestamp": 1772952301,
+    "processed_ids": [
+      "PROP-U1-uaf-038"
+    ]
+  }
+}

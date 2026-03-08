@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-003",
+      "classification": "potential-vulnerability",
+      "code_path": "src/ae.c::aeProcessEvents::L418-459",
+      "proof_trace": "In `aeProcessEvents`, `fe = &eventLoop->events[fired[j].fd]` is pinned at L418 before invoking `fe->rfileProc()` at L443. A readable callback (`readQueryFromClient`) can process `CONFIG SET maxclients`, which calls `aeResizeSetSize` \u2192 `zrealloc(eventLoop->events, ...)`, freeing the old events array and updating `eventLoop->events` to the new allocation. After the callback returns, L448-459 read `fe->mask`, compare `fe->wfileProc`, and call `fe->wfileProc(...)` through the now-stale pointer into freed memory; the code comment at L437-441 acknowledges callbacks may modify events but only guards the mask-cleared case, not a realloc-induced invalidation of `fe`.",
+      "attack_scenario": "An authenticated Redis client (default Redis has no requirepass) builds up a pending write buffer to activate AE_WRITABLE on its fd, then sends `CONFIG SET maxclients <large_value>` pipelined in the same request; when `epoll_wait` returns AE_READABLE|AE_WRITABLE for that fd in one fired entry (confirmed in ae_epoll.c:118-128), the CONFIG SET processing triggers `zrealloc(eventLoop->events)`, leaving `fe` dangling; subsequent `fe->wfileProc(eventLoop,fd,fe->clientData,mask)` at L450 dereferences stale memory, enabling potential control-flow hijack if the freed region is reclaimed with attacker-influenced data.",
+      "checklist_id": "PROP-U1-uaf-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1772952563,
+    "processed_ids": [
+      "PROP-U1-uaf-003"
+    ]
+  }
+}

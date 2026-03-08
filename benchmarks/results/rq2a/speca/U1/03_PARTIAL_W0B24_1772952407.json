@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-025",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/geo.c::georadiusGeneric::L564-672",
+      "proof_trace": "Every `gp->member` sds is either transferred to `addReplyBulkSds` (which calls `sdsfree` internally via `addReplySds`, networking.c:330) or to `zslInsert` (ownership transfer), and `gp->member` is immediately set to NULL in both paths (geo.c L619, L655) before `geoArrayFree` is called. `geoArrayFree` then calls `sdsfree(NULL)` on consumed slots\u2014confirmed safe by sds.c:166\u2014and `sdsfree(valid_ptr)` on any unclaimed members. `zfree(NULL)` in `geoArrayFree` is also a no-op (zmalloc.c:196). No stale geoPoint pointers survive a `geoArrayAppend` realloc.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-025"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 24,
+    "item_count": 1,
+    "timestamp": 1772952407,
+    "processed_ids": [
+      "PROP-U1-uaf-025"
+    ]
+  }
+}

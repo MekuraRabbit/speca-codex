@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-082",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/t_list.c::lremCommand::L490-531",
+      "proof_trace": "All decrRefCount calls in t_list.c occur at the pointer's last use: post-call lines access only stack-allocated or separately-tracked variables. Iterator lifecycles are correctly paired (init\u2192use\u2192listTypeReleaseIterator) with no double-release, and quicklistDelEntry properly nulls iter->zi and updates iter->current on node deletion, making delete-during-iteration in lremCommand safe. Every dbDelete call occurs after the final dereference of the associated object pointer (o, sobj, or subject), with no subsequent use in any code path.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-082"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 81,
+    "item_count": 1,
+    "timestamp": 1772952526,
+    "processed_ids": [
+      "PROP-U1-uaf-082"
+    ]
+  }
+}

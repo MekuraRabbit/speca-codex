@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-089",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/zipmap.c::zipmapResize::L202-206",
+      "proof_trace": "The only implicit free in zipmap.c occurs inside zipmapResize via zrealloc (L203). All three callers in zipmapSet correctly save p-zm offsets before each resize and re-derive p from the new zm afterward (L237-239, L257-261); the expand and shrink resize paths are mutually exclusive because the expand path sets freelen=reqlen making empty=0, preventing the shrink path. In zipmapDel, p is not dereferenced after the single resize at L287. No zfree is called anywhere in the file, eliminating double-free.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-089"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 88,
+    "item_count": 1,
+    "timestamp": 1772952516,
+    "processed_ids": [
+      "PROP-U1-uaf-089"
+    ]
+  }
+}

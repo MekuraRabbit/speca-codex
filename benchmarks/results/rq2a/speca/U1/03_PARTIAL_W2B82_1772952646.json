@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-083",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/t_set.c::spopWithCountCommand::L402-551",
+      "proof_trace": "All SDS pointers obtained from HT iterators/random accessors (which point into dict-owned memory) are read and copied via addReplyBulkCBuffer/createStringObject before any setTypeRemove/dictDelete call that would free the original key; temporary sdsdup copies are freed exactly once after use. In setTypeConvert, the intset pointer is freed only after the iterator loop completes and setTypeReleaseIterator is called, and in spopWithCountCommand CASE 3 the iterator over the old set is released (L537) before dbOverwrite frees the old set object (L540).",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-083"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 82,
+    "item_count": 1,
+    "timestamp": 1772952646,
+    "processed_ids": [
+      "PROP-U1-uaf-083"
+    ]
+  }
+}

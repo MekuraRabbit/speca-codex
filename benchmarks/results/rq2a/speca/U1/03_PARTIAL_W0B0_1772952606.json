@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-001",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/acl.c::ACLLoadFromFile::L1265-1269",
+      "proof_trace": "All free() calls in acl.c are safe: ACLResetSubcommands nulls u->allowed_subcommands after zfree (L563), ACLResetSubcommandsForCommand nulls the per-command slot after zfree (L546), and ACLFreeUserAndKillClients reassigns c->user to DefaultUser before ACLFreeUser(u) (L240-245). The only theoretical window\u2014Users[\"default\"] referencing freed memory between ACLFreeUser(new) at L1268 and raxInsert at L1269 in ACLLoadFromFile\u2014is unexploitable because Redis processes commands single-threadedly and no signal handler or callback accesses the Users rax between those two consecutive lines. Memory leaks exist in ACLSetUser for duplicate >password (L701-706) and ~pattern (L722-726) cases, but these are CWE-401 leaks, not use-after-free violations.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 0,
+    "item_count": 1,
+    "timestamp": 1772952606,
+    "processed_ids": [
+      "PROP-U1-uaf-001"
+    ]
+  }
+}

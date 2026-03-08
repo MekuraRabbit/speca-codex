@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-067",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/rio.h::rioWrite::L93-104",
+      "proof_trace": "The inline functions in rio.h (rioWrite, rioRead, rioTell, rioFlush) never free any pointer; all function pointers they invoke are set from static const structures (rioBufferIO, rioFileIO, rioFdsetIO) with process lifetime. The only freeing of rio-owned heap data is rioFreeFdset (rio.c:280-284), which has exactly one call site (rdb.c:2371) immediately followed by exitFromChild \u2014 no rio accessor can be invoked after the free.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-067"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 66,
+    "item_count": 1,
+    "timestamp": 1772952430,
+    "processed_ids": [
+      "PROP-U1-uaf-067"
+    ]
+  }
+}

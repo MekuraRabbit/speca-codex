@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-028",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/gopher.c::addReplyGopherItem::L35-45",
+      "proof_trace": "Both freed pointers are safe: `item` in `addReplyGopherItem` is freed at L44 via `sdsfree` after `addReplyProto` returns, with no subsequent use; C argument evaluation guarantees `sdslen(item)` is computed before the free. In `processGopherRequest`, `keyname` is freed at L73 via `decrRefCount` as the final statement \u2014 no dereference follows. No double-free paths exist in either function.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-028"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 27,
+    "item_count": 1,
+    "timestamp": 1772952331,
+    "processed_ids": [
+      "PROP-U1-uaf-028"
+    ]
+  }
+}

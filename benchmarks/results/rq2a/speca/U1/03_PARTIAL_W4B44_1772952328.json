@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-045",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/modules/hellotimer.c::timerHandler::L41-45",
+      "proof_trace": "In `timerHandler`, `data` is used (printf, L43) strictly before `RedisModule_Free(data)` (L44) with no subsequent access. The Redis module timer system fires each timer exactly once \u2014 `moduleTimerHandler` (module.c:4254-4257) removes the timer from the radix tree immediately after the callback returns, preventing re-invocation. Each loop iteration in `TimerCommand_RedisCommand` allocates a fresh `buf`, so no two timers share a pointer and no double-free is possible.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-045"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 44,
+    "item_count": 1,
+    "timestamp": 1772952328,
+    "processed_ids": [
+      "PROP-U1-uaf-045"
+    ]
+  }
+}

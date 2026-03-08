@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-023",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/evict.c::evictionPoolPopulate::L230-256",
+      "proof_trace": "All three free sites in evict.c are safe: (1) L236 sdsfree(pool[0].key) is guarded by pool[0].key != pool[0].cached and the freed pointer is immediately overwritten by memmove then reassigned; (2) L514-516 sdsfree(pool[k].key) is guarded by key != cached and pool[k].key is set to NULL immediately after, preventing double-free; (3) L579 decrRefCount(keyobj) is the final use of keyobj, which is not referenced in any subsequent code. No pointer is used after being freed and no double-free path exists.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-023"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 22,
+    "item_count": 1,
+    "timestamp": 1772952481,
+    "processed_ids": [
+      "PROP-U1-uaf-023"
+    ]
+  }
+}

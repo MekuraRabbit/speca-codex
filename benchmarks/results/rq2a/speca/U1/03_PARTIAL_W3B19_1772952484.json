@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-020",
+      "classification": "potential-vulnerability",
+      "code_path": "src/defrag.c::activeDefragSdsListAndDict::L355-362",
+      "proof_trace": "In `activeDefragSdsListAndDict` at L358, `dictGetHash(d, sdsele)` is called after `activeDefragSds(sdsele)` already freed the underlying allocation, making `sdsele` a dangling pointer; `dictGetHash` calls `d->type->hashFunction(sdsele)` which reads bytes of freed memory (confirmed UAF read). The correct pattern (used in `defragKey` L778) hashes the *new* pointer (`de->key` = `newsds`), not the old one; if the wrong hash is produced, `replaceSateliteDictKeyPtrAndOrDefragDictEntry` silently fails, leaving `repl_scriptcache_dict` with a stale freed key pointer that will be dereferenced on the next replication script-cache lookup.",
+      "attack_scenario": "An attacker floods Redis with SCRIPT LOAD commands to populate `repl_scriptcache_fifo`/`repl_scriptcache_dict` and induce heap fragmentation sufficient to trigger `activeDefragCycle` \u2192 `defragOtherGlobals` \u2192 `activeDefragSdsListAndDict`; when a script key sds is defragged and the freed-memory hash diverges from the true hash, the dict retains the stale pointer, and the next replication script-cache check (e.g., `EVALSHA` on a replica) dereferences the freed/reused memory.",
+      "checklist_id": "PROP-U1-uaf-020"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 19,
+    "item_count": 1,
+    "timestamp": 1772952484,
+    "processed_ids": [
+      "PROP-U1-uaf-020"
+    ]
+  }
+}

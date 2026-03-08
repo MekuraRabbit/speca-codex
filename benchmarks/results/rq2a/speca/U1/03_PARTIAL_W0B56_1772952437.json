@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-057",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/rax.c::raxRemove::L1020-1216",
+      "proof_trace": "All rax_free call-sites in rax.c follow a strict discipline: required values (next-child pointer, key data) are extracted before freeing, and the local variable is either immediately reassigned or the function returns. The single instance where a freed pointer value is used after rax_free \u2014 raxRemoveChild(h, child) at L1062 after child is freed at L1052 \u2014 only compares the freed pointer's address against stored child pointers in the parent; it never dereferences child. Redis's single-threaded execution model ensures no allocator reuse can occur in the narrow window between L1052 and L1062, making this technically-UB comparison safe in practice. No double-free paths exist.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-057"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 56,
+    "item_count": 1,
+    "timestamp": 1772952437,
+    "processed_ids": [
+      "PROP-U1-uaf-057"
+    ]
+  }
+}

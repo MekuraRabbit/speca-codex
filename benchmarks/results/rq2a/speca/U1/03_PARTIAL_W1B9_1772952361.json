@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-010",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/bio.c::bioProcessBackgroundJobs::L145-216",
+      "proof_trace": "The only allocation in bio.c is `zmalloc(sizeof(*job))` at L132; it is freed via `zfree(job)` at L205 strictly after all fields (arg1/arg2/arg3) have been dispatched to processing functions at L196-201. After the free, `job` is never dereferenced \u2014 only the pre-obtained `ln` (a separate listNode pointer) is used at L210 for `listDelNode`. Single-consumer-per-type design ensures no double-free is possible.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-010"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 9,
+    "item_count": 1,
+    "timestamp": 1772952361,
+    "processed_ids": [
+      "PROP-U1-uaf-010"
+    ]
+  }
+}

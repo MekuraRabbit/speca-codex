@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-029",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/help.h::commandHelp[]::L30-1166",
+      "proof_trace": "help.h is an auto-generated, purely static data file containing only compile-time string literals in commandGroups[] and commandHelp[] arrays \u2014 there are no functions, no malloc(), and no free() calls anywhere in the file. The UAF assertion (forall free(p) in help.h) quantifies over an empty domain, making it vacuously true. Confirmed via grep: no caller in the codebase frees any pointer originating from the static arrays in help.h.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-029"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 28,
+    "item_count": 1,
+    "timestamp": 1772952329,
+    "processed_ids": [
+      "PROP-U1-uaf-029"
+    ]
+  }
+}

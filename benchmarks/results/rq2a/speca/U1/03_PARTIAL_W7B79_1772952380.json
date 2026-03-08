@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-080",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/syncio.c::syncWrite::L49-79",
+      "proof_trace": "The entire syncio.c file (146 lines, 3 functions) contains zero free() calls and zero heap allocations (confirmed via Grep). All three functions \u2014 syncWrite, syncRead, syncReadLine \u2014 operate exclusively on caller-provided buffers passed as pointer parameters; they only read from or write to those pointers but never free them. The UAF/double-free invariant holds vacuously over the empty set of free() calls in this file.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-080"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 79,
+    "item_count": 1,
+    "timestamp": 1772952380,
+    "processed_ids": [
+      "PROP-U1-uaf-080"
+    ]
+  }
+}

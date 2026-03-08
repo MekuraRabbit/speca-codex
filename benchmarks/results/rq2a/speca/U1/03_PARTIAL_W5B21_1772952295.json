@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-022",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/endianconv.c::memrev16::L49-55",
+      "proof_trace": "endianconv.c contains zero calls to free() and zero dynamic memory allocations; all functions operate on caller-provided pointers (which they byte-swap but never own or deallocate) or stack-local variables. The use-after-free/double-free property is vacuously satisfied because the universal quantifier over free() calls has no instances in this file.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-022"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 21,
+    "item_count": 1,
+    "timestamp": 1772952295,
+    "processed_ids": [
+      "PROP-U1-uaf-022"
+    ]
+  }
+}

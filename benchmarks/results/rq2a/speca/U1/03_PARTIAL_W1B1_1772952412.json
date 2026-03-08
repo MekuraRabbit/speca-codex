@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-002",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/adlist.c::listDup::L250-279",
+      "proof_trace": "All free operations in adlist.c follow correct ordering: listEmpty() saves next before zfree(current); listDelNode() only accesses list->len after zfree(node); listRelease() returns immediately after zfree(list). A theoretical double-free exists in listDup() error path (copy->free called on shared pointers when copy->dup==NULL), but zmalloc() calls abort() on OOM (never returns NULL, per zmalloc.c L101), making the error path dead code. Additionally, all callers of listDup (networking.c, acl.c) set both dup and free methods, so no shared-pointer double-free is possible in practice.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 1,
+    "item_count": 1,
+    "timestamp": 1772952412,
+    "processed_ids": [
+      "PROP-U1-uaf-002"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-013",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/childinfo.c::closeChildInfoPipe::L49-58",
+      "proof_trace": "childinfo.c contains zero heap allocation (malloc/calloc/zmalloc) and zero free() calls, confirmed by full-file grep; the universal quantifier 'forall free(p) in childinfo.c' holds vacuously over an empty set. All data in the file is either an embedded global struct (server.child_info_data) or integer file descriptors (server.child_info_pipe[2]); after closeChildInfoPipe() sets both fds to -1, sendChildInfo() and receiveChildInfo() each guard reuse with an immediate -1 sentinel check before any fd operation.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-013"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 12,
+    "item_count": 1,
+    "timestamp": 1772952336,
+    "processed_ids": [
+      "PROP-U1-uaf-013"
+    ]
+  }
+}

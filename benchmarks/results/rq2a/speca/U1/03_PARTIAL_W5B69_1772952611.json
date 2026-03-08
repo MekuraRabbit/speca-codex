@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-070",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/sds.h::sdslen::L87-102",
+      "proof_trace": "The six inline functions in sds.h (sdslen, sdsavail, sdssetlen, sdsinclen, sdsalloc, sdssetalloc) are pure accessors/mutators that contain zero free operations and thus cannot internally exhibit UAF. The sds.c free operations (sdsfree, sdsMakeRoomFor's internal s_free, sdsRemoveFreeSpace) all correctly access memory before freeing and update pointers before returning new allocations. Additionally, s_malloc/s_realloc map to zmalloc/zrealloc which call abort() on OOM (zmalloc.c:89-93), making all NULL-return paths in sds.c dead code at runtime.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-070"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 69,
+    "item_count": 1,
+    "timestamp": 1772952611,
+    "processed_ids": [
+      "PROP-U1-uaf-070"
+    ]
+  }
+}

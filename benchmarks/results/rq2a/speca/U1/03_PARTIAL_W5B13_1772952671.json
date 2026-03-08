@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-014",
+      "classification": "potential-vulnerability",
+      "code_path": "src/cluster.c::clusterReadHandler::L2141-2202",
+      "proof_trace": "In clusterReadHandler, after clusterProcessPacket returns 1 (link assumed valid), lines 2195-2196 access link->rcvbuf and write to link. However, clusterProcessGossipSection (called at line 1999 inside clusterProcessPacket) can call freeClusterLink(node->link) when a gossip entry targets link->node \u2014 which is the same struct \u2014 if that node has PFAIL/FAIL set and the gossip reports a different IP/port. freeClusterLink frees both link->rcvbuf and link itself (zfree), but clusterProcessPacket still returns 1 because no return-value signaling exists from clusterProcessGossipSection, causing clusterReadHandler to read/write freed memory at lines 2195-2196.",
+      "attack_scenario": "A malicious cluster node in PFAIL state (link still active during the timeout/2-to-timeout window, or after reconnect before PONG clears PFAIL) sends a crafted PING message whose gossip section includes the sender's own node ID with a different IP/port; this triggers freeClusterLink on the in-flight link inside clusterProcessGossipSection, after which clusterReadHandler performs a use-after-free and double-free on the released link and its rcvbuf.",
+      "checklist_id": "PROP-U1-uaf-014"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 13,
+    "item_count": 1,
+    "timestamp": 1772952671,
+    "processed_ids": [
+      "PROP-U1-uaf-014"
+    ]
+  }
+}

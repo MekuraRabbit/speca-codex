@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-090",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/zmalloc.c::zfree::L190-206",
+      "proof_trace": "Every free site in zmalloc.c reads all required metadata (size, oldsize) before the free call, and no freed pointer is accessed after its free/realloc call \u2014 zfree pre-reads zmalloc_size(ptr) at L198 before free(ptr) at L199; zrealloc pre-reads zmalloc_size(ptr) at L153 then uses only newptr after realloc at L154; zlibc_free and zfree_no_tcache follow the same pattern. POSIX guarantees realloc does not free the original pointer on failure, so no UAF exists even in the OOM-handler-returns path (which would be a null-ptr-deref, not UAF). No double-free pattern is present: each function path reaches exactly one free/dallocx/realloc call.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-090"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 89,
+    "item_count": 1,
+    "timestamp": 1772952512,
+    "processed_ids": [
+      "PROP-U1-uaf-090"
+    ]
+  }
+}

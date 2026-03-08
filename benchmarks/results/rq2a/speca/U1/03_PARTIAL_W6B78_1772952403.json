@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-079",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/sparkline.c::freeSparklineSequence::L81-88",
+      "proof_trace": "All free operations in sparkline.c are correct: freeSparklineSequence frees each sample label (unique zstrdup copies, no aliasing) then seq->samples then seq with no subsequent accesses; sparklineRenderRange frees the local chars buffer only after the rendering loop exits and never accesses it again; zrealloc in sparklineSequenceAddSample frees the old samples buffer internally and the new pointer is immediately stored back. No pointer is dereferenced after being freed, and no double-free path exists.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-079"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 78,
+    "item_count": 1,
+    "timestamp": 1772952403,
+    "processed_ids": [
+      "PROP-U1-uaf-079"
+    ]
+  }
+}

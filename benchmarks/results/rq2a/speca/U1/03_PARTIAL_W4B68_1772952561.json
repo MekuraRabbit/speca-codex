@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-069",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/sds.c::sdsfree::L165-168",
+      "proof_trace": "All 9 s_free call sites in sds.c follow the same safe pattern: the freed pointer is either a temporary compound expression (sdsfree L167), immediately reassigned to a fresh allocation (sdsMakeRoomFor L240, sdsRemoveFreeSpace L279, sdscatvprintf L540), or the last use before function return (sdscatvprintf L551). Cleanup paths in sdssplitlen, sdsfreesplitres, and sdssplitargs free each element exactly once via non-overlapping index iteration, with no subsequent dereference. The proof holds on all code paths.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-069"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 68,
+    "item_count": 1,
+    "timestamp": 1772952561,
+    "processed_ids": [
+      "PROP-U1-uaf-069"
+    ]
+  }
+}

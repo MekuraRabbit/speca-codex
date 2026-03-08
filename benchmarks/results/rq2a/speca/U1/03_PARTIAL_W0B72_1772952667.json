@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-073",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/networking.c::processInputBufferAndReplicate::L1606-1619",
+      "proof_trace": "The codebase enforces no-UAF via five mechanisms: robj reference counting, CLIENT_PROTECTED flag deferring to freeClientAsync, server.current_client sentinel nulled by unlinkClient and checked in processCommand (L3367), replicationCacheMaster caching (not freeing) master clients on disconnect, and ACLFreeUserAndKillClients resetting c->user before freeing the user struct. The only structural gap\u2014processInputBufferAndReplicate accessing c->reploff and c->pending_querybuf after processInputBuffer without a current_client NULL check\u2014does not produce a UAF because the master client is cached (memory remains valid) rather than freed when its connection drops. No code path produces a dereference of actually freed memory.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-073"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 72,
+    "item_count": 1,
+    "timestamp": 1772952667,
+    "processed_ids": [
+      "PROP-U1-uaf-073"
+    ]
+  }
+}

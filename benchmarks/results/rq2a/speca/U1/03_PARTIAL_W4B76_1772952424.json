@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-077",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/slowlog.c::slowlogFreeEntry::L100-110",
+      "proof_trace": "All allocations in slowlogFreeEntry are freed in strict dependency order: per-argv decrRefCount loop completes before zfree(se->argv), then peerid/cname freed while se is still valid, then zfree(se) last \u2014 no pointer is accessed after its free. slowlogFreeEntry is only invoked once per node via listDelNode (which unlinks the node first), preventing double-free. Shared-refcount argv objects are stored without incrRefCount but decrRefCount is a no-op for them, and they are permanently alive; Redis's single-threaded event loop prevents concurrent modification of the slowlog during SLOWLOG GET iteration.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-077"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 76,
+    "item_count": 1,
+    "timestamp": 1772952424,
+    "processed_ids": [
+      "PROP-U1-uaf-077"
+    ]
+  }
+}

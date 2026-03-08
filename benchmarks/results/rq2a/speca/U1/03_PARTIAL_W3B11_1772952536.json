@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-012",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/blocked.c::handleClientsBlockedOnKeys::L246-472",
+      "proof_trace": "Three interlocking mechanisms prevent UAF: (1) in the list path, `dstkey` is protected by `incrRefCount(dstkey)` at L299 before `unblockClient(receiver)` at L300 frees `receiver->bpop.target`; (2) in the stream path, all `receiver->bpop.*` data is copied to stack variables (L421: `streamID start = *gt`, L432: `noack`, L451: `xread_count`, L449: `xread_group` into `pi`) before `unblockClient(receiver)` at L459 \u2014 an explicit comment at L455-458 documents this invariant; (3) `unblockClientWaitingData` immediately nullifies every freed bpop pointer, preventing double-free and stale access.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-012"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 11,
+    "item_count": 1,
+    "timestamp": 1772952536,
+    "processed_ids": [
+      "PROP-U1-uaf-012"
+    ]
+  }
+}

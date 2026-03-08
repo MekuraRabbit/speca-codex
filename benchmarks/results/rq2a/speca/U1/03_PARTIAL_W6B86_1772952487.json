@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-087",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/util.c::getAbsolutePath::L627-670",
+      "proof_trace": "The only heap-allocating function in util.c is getAbsolutePath, which uses SDS library wrappers exclusively. relpath is freed exactly once per execution path (either returned to caller at L633, freed on getcwd failure at L637, or freed at L668 after its last use in sdscatsds); abspath ownership is transferred to the caller on return. All other functions in util.c use stack-only storage \u2014 no malloc/free calls exist outside getAbsolutePath.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-087"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 86,
+    "item_count": 1,
+    "timestamp": 1772952487,
+    "processed_ids": [
+      "PROP-U1-uaf-087"
+    ]
+  }
+}

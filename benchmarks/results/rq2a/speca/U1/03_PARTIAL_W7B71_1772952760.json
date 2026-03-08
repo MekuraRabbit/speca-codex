@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-072",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/server.c::call::L3141-3260",
+      "proof_trace": "The property holds through three complementary mechanisms: (1) all command procs that close the current client use `freeClientAsync` (deferred, sets CLIENT_CLOSE_ASAP) rather than direct `freeClient`, so `c` is never freed synchronously during `call()`; (2) the one re-entrant path (Lua timeout) uses `protectClient`/`unprotectClient` to defer any `freeClient` call while the event loop is re-entered; (3) the `freeMemoryIfNeeded` path in `processCommand` is guarded by `if (server.current_client == NULL) return C_ERR` (L3367) before `call()` is reached, and `processInputBuffer` checks `server.current_client == NULL` (L1589) after `processCommand` returns.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-072"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 71,
+    "item_count": 1,
+    "timestamp": 1772952760,
+    "processed_ids": [
+      "PROP-U1-uaf-072"
+    ]
+  }
+}

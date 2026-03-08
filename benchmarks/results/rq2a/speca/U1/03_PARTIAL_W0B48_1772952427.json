@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-049",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/multi.c::freeClientMultiState::L42-54",
+      "proof_trace": "All free operations in multi.c are sound: freeClientMultiState is always followed by initClientMultiState (via discardTransaction) which nulls c->mstate.commands, or is called from freeClient/freeFakeClient where the client struct is immediately discarded \u2014 in both cases no dangling pointer is reachable. The unwatchAllKeys iterator uses the documented safe listDelNode-during-iteration pattern (adlist.c:listNext pre-fetches iter->next before returning the current node, and the list's free callback is NULL so zfree(wk) on the value remains valid). execCommand restores c->argv = orig_argv (L185) before calling discardTransaction (L188), so c->argv never points into freed mstate on any code path including the handle_monitor label.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-049"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 48,
+    "item_count": 1,
+    "timestamp": 1772952427,
+    "processed_ids": [
+      "PROP-U1-uaf-049"
+    ]
+  }
+}

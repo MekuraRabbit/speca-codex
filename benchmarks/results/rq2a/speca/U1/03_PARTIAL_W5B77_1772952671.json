@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-078",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/sort.c::sortCommand::L189-590",
+      "proof_trace": "sort.c uses Redis reference counting consistently across all code paths. `lookupKeyByPattern` frees `keyobj` and `fieldobj` exactly once on both the success path (L125-126) and the noobj path (L130-131), with `fieldlen>0 iff fieldobj!=NULL` ensuring equivalence. `sortCommand` protects `sortval` with `incrRefCount` before any mutation, and the cmpobj-aliasing case (when sortby=\"#\" and alpha=true) is safe: `lookupKeyByPattern` increments refcount once and `getDecodedObject` increments it again, with two matching cleanup decrements at L581 and L587 \u2014 the object is freed only at the last decrement with no subsequent access.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-078"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 77,
+    "item_count": 1,
+    "timestamp": 1772952671,
+    "processed_ids": [
+      "PROP-U1-uaf-078"
+    ]
+  }
+}

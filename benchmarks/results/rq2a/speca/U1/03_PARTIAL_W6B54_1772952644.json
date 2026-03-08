@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-055",
+      "classification": "potential-vulnerability",
+      "code_path": "src/quicklist.c::quicklistRotate::L1282-1313",
+      "proof_trace": "In quicklistRotate, when the quicklist has exactly one node (len==1), ziplistGet sets value = p+entry.headersize \u2014 a pointer into node->zl. quicklistPushHead then calls __ziplistInsert, which invokes ziplistResize (zrealloc) on the same buffer at L790 of ziplist.c, potentially freeing and relocating it; the subsequent memcpy(p, s, slen) at L833 reads from s==value, which is now a dangling pointer. The code explicitly re-fetches p for the single-node case (L1307-1309) but fails to re-fetch or copy value before the realloc, leaving a use-after-free read on any non-integer-encoded string element. Reachability is uncertain: quicklistRotate has no callers in the server command handlers (t_list.c, server.c) in this codebase version, only appearing in internal test code.",
+      "attack_scenario": "If quicklistRotate is exposed via a command or module, an attacker who pushes non-integer string elements into a Redis list small enough to fit in a single quicklist node and triggers rotation (e.g., via RPOPLPUSH to self or a future LROTATE command) can cause the server to read from freed ziplist memory, potentially corrupting the head element written into the list.",
+      "checklist_id": "PROP-U1-uaf-055"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 54,
+    "item_count": 1,
+    "timestamp": 1772952644,
+    "processed_ids": [
+      "PROP-U1-uaf-055"
+    ]
+  }
+}

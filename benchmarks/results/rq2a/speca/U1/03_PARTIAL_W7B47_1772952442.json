@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-048",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/modules/testmodule.c::TestStringAppend::L81-90",
+      "proof_trace": "The two explicit FreeString calls (TestStringAppend L88, TestStringAppendAM L102) are each followed by an immediate return with no further use of the freed pointer. String pointers derived via StringPtrLen/CallReplyStringPtr (TestMatchReply L44, TestAssertStringReply L321-322, TestNotifications L197/207/217) are fully consumed within the same scope before any reassignment of the underlying object. Memory leaks exist (e.g., mystr in TestMatchReply is never freed) but are distinct from use-after-free.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-048"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 47,
+    "item_count": 1,
+    "timestamp": 1772952442,
+    "processed_ids": [
+      "PROP-U1-uaf-048"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-066",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/rio.c::rioFreeFdset::L280-284",
+      "proof_trace": "The only `free` calls in rio.c are in `rioFreeFdset` (L281-283), which frees `fds`, `state`, and `buf` sequentially then returns immediately without further pointer access. SDS mutations in `rioFdsetWrite` (L178) and `rioBufferWrite` (L62) always assign `sdscatlen`'s return value back to the struct member before any subsequent dereference, so no stale pointer is ever accessed. No double-free is possible since each field is freed exactly once in `rioFreeFdset` and no other function in the file calls free.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-066"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 65,
+    "item_count": 1,
+    "timestamp": 1772952387,
+    "processed_ids": [
+      "PROP-U1-uaf-066"
+    ]
+  }
+}

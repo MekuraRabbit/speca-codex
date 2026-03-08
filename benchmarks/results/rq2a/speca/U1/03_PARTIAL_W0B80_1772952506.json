@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-081",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/t_hash.c::hashTypeSet::L202-275",
+      "proof_trace": "All free operations in t_hash.c are followed by either immediate pointer replacement or are guarded against re-use: the HASH_SET_TAKE_FIELD/TAKE_VALUE paths null the caller's pointer before the cleanup check (L254, L260, L245), the old HT value freed at L242 is immediately overwritten at L244/L247, the old ziplist freed at L492 is only freed after the iterator is released and all data is already copied into the new dict via sdsnewlen/sdsfromlonglong (no raw ziplist pointer escapes), and both callers of hashTypeReleaseIterator do not access hi after the call. No pointer is dereferenced after being freed and no double-free path exists.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-081"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 80,
+    "item_count": 1,
+    "timestamp": 1772952506,
+    "processed_ids": [
+      "PROP-U1-uaf-081"
+    ]
+  }
+}

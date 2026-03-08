@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-019",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/debug.c::debugCommand::L300-683",
+      "proof_trace": "All sdsfree/decrRefCount/zfree call sites in debug.c (L80, L110, L136, L144, L208, L211, L224, L294, L349, L493, L506, L517, L530, L733, L1179, L1186, L1201, L1331-1332) are preceded by the last use of the freed pointer in each code path \u2014 use-before-free ordering is consistently maintained. No double-free patterns exist: each pointer is freed exactly once after a single ownership path. The logCurrentClient OOB read (argv[1] with argc==1 at L1194) is a CWE-125 crash-handler defect, not a UAF, and is only reachable after the server has already faulted.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-019"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 18,
+    "item_count": 1,
+    "timestamp": 1772952556,
+    "processed_ids": [
+      "PROP-U1-uaf-019"
+    ]
+  }
+}

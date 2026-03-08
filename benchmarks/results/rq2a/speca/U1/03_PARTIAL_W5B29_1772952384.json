@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-030",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/hyperloglog.c::hllSparseToDense::L584-636",
+      "proof_trace": "Every free in hyperloglog.c is safe: in hllSparseToDense, all reads from the old sparse sds (via local pointers sparse/p/end/oldhdr) complete before sdsfree(o->ptr) at L633, and the error-path sdsfree(dense) at L628 has no subsequent use. In hllSparseSet, local pointers to o->ptr are not referenced at the promote: label after hllSparseToDense resets o->ptr. All callers (pfaddCommand L1203, pfmergeCommand L1359+L1365, pfdebugCommand L1514) consistently re-read hdr = o->ptr after any call that may trigger promotion, ensuring no stale pointer dereference.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-030"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 29,
+    "item_count": 1,
+    "timestamp": 1772952384,
+    "processed_ids": [
+      "PROP-U1-uaf-030"
+    ]
+  }
+}

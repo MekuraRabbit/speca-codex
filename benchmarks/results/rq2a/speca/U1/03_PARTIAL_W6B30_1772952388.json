@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-031",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/intset.c::intsetResize::L105-109",
+      "proof_trace": "All three callers of the static `intsetResize` (intsetUpgradeAndAdd L165, intsetAdd L224, intsetRemove L247) immediately reassign `is` from the return value, so the old pointer is never dereferenced after zrealloc may free it. No explicit zfree() calls exist in intset.c, and zrealloc's OOM handler unconditionally aborts the process, preventing any NULL-pointer continuation. Double-free is impossible because every caller captures the new pointer and never retains the old one.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-031"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 30,
+    "item_count": 1,
+    "timestamp": 1772952388,
+    "processed_ids": [
+      "PROP-U1-uaf-031"
+    ]
+  }
+}

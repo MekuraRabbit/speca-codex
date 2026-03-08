@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-086",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/t_zset.c::zslFreeNode::L100-103",
+      "proof_trace": "The file enforces a strict SDS-ownership convention: the skiplist node is the sole owner of each `ele` SDS string, while the dict stores the same pointer with a NULL key destructor (`zsetDictType` and `setAccumulatorDictType` both confirmed NULL). All range-deletion loops save `next` before `zslFreeNode`; `zslUpdateScore` sets `x->ele = NULL` before freeing the old node; `zsetConvert` and `genericZpopCommand` use `sdsdup` or read before free. No pointer is accessed after its `zslFreeNode`/`sdsfree` call on any reachable path; one memory leak in `genericZrangebylexCommand::L2908-2909` (early return without `zslFreeLexRange`) is a resource leak, not a UAF or double-free.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-086"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 85,
+    "item_count": 1,
+    "timestamp": 1772952668,
+    "processed_ids": [
+      "PROP-U1-uaf-086"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-059",
+      "classification": "vulnerability",
+      "code_path": "src/redis-benchmark.c::getRedisConfig::L282-291",
+      "proof_trace": "In the `fail:` path of `getRedisConfig`, line 284 calls `redisFree(c)` which frees the `redisContext` struct, but lines 287-290 immediately dereference fields of the freed context (`c->connection_type`, `c->tcp.host`, `c->tcp.port`, `c->unix_sock.path`) to print an error message. Every error branch (connection failure, CONFIG GET returns REDIS_REPLY_ERROR, non-array reply) reaches this UAF since `c` is always non-NULL at that point. The `freeClient` post-free use of `c` in `listSearchKey` (L315,318) is not a dereference \u2014 adlist uses pointer-value comparison only \u2014 so that pattern is benign.",
+      "attack_scenario": "A Redis server configured with ACL restrictions (`aclsetuser default reset`) will reject `CONFIG GET` with a NOPERM error reply, triggering `goto fail` in `getRedisConfig`; `redisFree(c)` frees the context, and the subsequent `c->connection_type` read accesses freed heap memory, causing a crash or potential heap-data disclosure if an attacker controls the server response timing.",
+      "checklist_id": "PROP-U1-uaf-059"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 58,
+    "item_count": 1,
+    "timestamp": 1772952462,
+    "processed_ids": [
+      "PROP-U1-uaf-059"
+    ]
+  }
+}

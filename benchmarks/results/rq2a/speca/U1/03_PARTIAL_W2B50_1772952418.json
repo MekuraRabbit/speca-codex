@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-051",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/notify.c::notifyKeyspaceEvent::L97-138",
+      "proof_trace": "All three functions in notify.c manage memory correctly: keyspaceEventsStringToFlags has no allocation/deallocation; keyspaceEventsFlagsToString only allocates an sds returned to the caller without internal free; notifyKeyspaceEvent frees chanobj via decrRefCount at lines 123 and 135, after which the chan/chanobj variables are only written (never read), and eventobj is freed at line 137 as the last statement. A subtlety in pubsubPublishMessage (getDecodedObject increments refcount, then decrRefCount inside pubsub decrements it back) leaves chanobj->refcount==1 on return, so decrRefCount in notify.c frees it exactly once with no subsequent access.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-051"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 50,
+    "item_count": 1,
+    "timestamp": 1772952418,
+    "processed_ids": [
+      "PROP-U1-uaf-051"
+    ]
+  }
+}

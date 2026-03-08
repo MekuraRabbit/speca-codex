@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-085",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/t_string.c::incrbyfloatCommand::L399-431",
+      "proof_trace": "The sole explicit decrRefCount(aux) at L429 is safe: rewriteClientCommandArgument (networking.c:2200) calls incrRefCount(newval) before setting c->argv[i], bringing aux refcount to 2 before the decrement returns it to 1\u2014aux remains alive. All tryObjectEncoding call-sites atomically reassign c->argv[N] = tryObjectEncoding(c->argv[N]), so any internally-freed original pointer is never reachable afterward. dbOverwrite and dbUnshareStringValue correctly free old objects internally, and callers use only the newly returned objects for all subsequent access.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-085"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 84,
+    "item_count": 1,
+    "timestamp": 1772952577,
+    "processed_ids": [
+      "PROP-U1-uaf-085"
+    ]
+  }
+}

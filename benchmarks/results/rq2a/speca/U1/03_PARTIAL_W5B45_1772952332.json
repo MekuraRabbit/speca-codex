@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-046",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/modules/hellotype.c::HelloTypeReleaseObject::L89-98",
+      "proof_trace": "The sole free site is HelloTypeReleaseObject, which saves `next = cur->next` before `RedisModule_Free(cur)` on every iteration, then frees the object wrapper last \u2014 no pointer is dereferenced after being freed. Each node and the object are freed exactly once; Redis's module framework invokes HelloTypeFree exactly once per key lifetime, precluding any double-free. No other function in the file calls RedisModule_Free on these pointers.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-046"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 45,
+    "item_count": 1,
+    "timestamp": 1772952332,
+    "processed_ids": [
+      "PROP-U1-uaf-046"
+    ]
+  }
+}

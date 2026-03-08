@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-052",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/object.c::decrRefCount::L353-370",
+      "proof_trace": "The property holds because reference counting is the sole free mechanism: `decrRefCount` frees only when `refcount == 1` and panics on `refcount <= 0` (preventing double-free). In `tryObjectEncoding`, both `decrRefCount(o)` calls (L454, L474) are immediately followed by `return` with no subsequent access to the freed pointer; the EMBSTR path copies `s` into `emb` before `decrRefCount` frees it. All callers reassign via `argv[n] = tryObjectEncoding(argv[n])`, eliminating any stale references.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-052"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 51,
+    "item_count": 1,
+    "timestamp": 1772952408,
+    "processed_ids": [
+      "PROP-U1-uaf-052"
+    ]
+  }
+}

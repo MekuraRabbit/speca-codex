@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-065",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/replication.c::replicationAbortSyncTransfer::L1922-1927",
+      "proof_trace": "The property holds. Dangling pointers exist (server.repl_transfer_tmpfile is freed in replicationAbortSyncTransfer/L1927 and readSyncBulkPayload/L1291 without being NULL'd), but they are inaccessible: the socket fd event handler is deleted by undoConnectWithMaster() before the free, state machine moves to REPL_STATE_CONNECT where no code path can reach tmpfile until syncWithMaster() overwrites it at L1865. All other freed pointers (repl_backlog, cached_master, server.master, replpreamble) are NULL'd immediately after free. The freeClientAsync double-call scenario in replicationResurrectCachedMaster is prevented by the CLIENT_CLOSE_ASAP guard (networking.c:1044). List iterations that call freeClient only free the list node, not the pointed-to client struct, so post-deletion slave dereferences are safe.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-065"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 64,
+    "item_count": 1,
+    "timestamp": 1772952689,
+    "processed_ids": [
+      "PROP-U1-uaf-065"
+    ]
+  }
+}

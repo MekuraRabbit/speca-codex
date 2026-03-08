@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-042",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/modules/helloblock.c::HelloBlock_ThreadMain::L64-75",
+      "proof_trace": "All free operations in helloblock.c are terminal: in HelloBlock_ThreadMain, `bc` and `delay` are captured as local copies before `targ` is freed (L66-68), and `r` is transferred to the framework which invokes HelloBlock_FreeData exactly once. In HelloKeys_ThreadMain, `reply` sub-elements (cr_cursor, cr_keys, ele) are fully consumed before FreeCallReply(reply) at L168, and the loop's continuation condition reads `cursor`, a copied long long integer. No freed pointer is subsequently dereferenced, and no pointer is freed more than once.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-042"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 41,
+    "item_count": 1,
+    "timestamp": 1772952362,
+    "processed_ids": [
+      "PROP-U1-uaf-042"
+    ]
+  }
+}

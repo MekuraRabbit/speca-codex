@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-060",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/redis-check-aof.c::process::L100-142",
+      "proof_trace": "The file has exactly one allocation site (readString line 85: zmalloc) and two free sites (process line 125: normal-path zfree; process line 130: cleanup-block zfree) that are mutually exclusive per allocation \u2014 a for-loop body completes without break (line 125 reached) XOR the loop exits early via break (i < argc, line 130 reached). readString always sets *target = NULL before any allocation attempt, so callers always receive a defined value. After each zfree at line 125, str is immediately overwritten by the next readString call (which resets *target = NULL as its first statement), and after any while-loop exit, str is never referenced again (lines 135\u2013141 use only pos/error/multi/feof).",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-060"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 59,
+    "item_count": 1,
+    "timestamp": 1772952448,
+    "processed_ids": [
+      "PROP-U1-uaf-060"
+    ]
+  }
+}
