@@ -267,6 +267,11 @@ def fig4_per_project(data: dict, speca: dict | None):
         # CodeGuru: 0 TP everywhere
         matrix[i, 2] = 0
 
+    # Fill SPECA column from per_project data
+    if speca and "per_project" in speca:
+        for i, p in enumerate(projects):
+            matrix[i, n_tools - 1] = speca["per_project"].get(p["id"], 0)
+
     fig, ax = plt.subplots(figsize=(8, 10))
     im = ax.imshow(matrix, cmap="YlOrRd", aspect="auto", vmin=0, vmax=max(8, matrix.max()))
 
