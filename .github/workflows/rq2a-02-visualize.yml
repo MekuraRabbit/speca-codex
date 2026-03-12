@@ -8,11 +8,6 @@ on:
         required: false
         default: ""
         type: string
-  push:
-    paths:
-      - "benchmarks/rq2a/published_baselines.yaml"
-      - "benchmarks/rq2a/ground_truth_bugs.yaml"
-      - "benchmarks/rq2a/visualize.py"
 
 permissions:
   contents: write
