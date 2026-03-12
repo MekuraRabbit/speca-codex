@@ -1,20 +1,20 @@
 {
-  "tp": 24,
+  "tp": 28,
   "fp": 0,
-  "gt_tp": 24,
+  "gt_tp": 28,
   "new_tp": 0,
   "human_reviewed": 0,
-  "unreviewed": 5,
+  "unreviewed": 15,
   "precision": 100.0,
-  "recall": 66.67,
-  "f1": 80.0,
+  "recall": 77.78,
+  "f1": 87.5,
   "total_ground_truth": 36,
   "total_ground_truth_incl_disputed": 40,
-  "total_positive_findings": 26,
+  "total_positive_findings": 40,
   "total_cost": null,
   "bug_type_breakdown": {
     "NPD": 20,
-    "MLK": 4
+    "MLK": 8
   },
   "per_project": {
     "N1": 4,
@@ -22,13 +22,21 @@
     "N3": 2,
     "N4": 1,
     "N5": 5,
-    "M2": 4
+    "M1": 1,
+    "M2": 4,
+    "M3": 1,
+    "M4": 1,
+    "M5": 1
   },
   "detected_bugs": [
+    "RA-M1-N1",
     "RA-M2-N3",
     "RA-M2-N4",
     "RA-M2-N5",
     "RA-M2-N6",
+    "RA-M3-O1",
+    "RA-M4-O1",
+    "RA-M5-O1",
     "RA-N1-N1",
     "RA-N1-N2",
     "RA-N1-N3",
@@ -51,12 +59,8 @@
     "RA-N5-O1"
   ],
   "missed_bugs": [
-    "RA-M1-N1",
     "RA-M1-N2",
     "RA-M1-O1",
-    "RA-M3-O1",
-    "RA-M4-O1",
-    "RA-M5-O1",
     "RA-U1-O1",
     "RA-U2-O1",
     "RA-U3-O1",
@@ -161,6 +165,10 @@
       "finding_id": "PROP-N5-npd-017",
       "confidence": 0.65
     },
+    "RA-M1-N1": {
+      "finding_id": "PROP-M1-mlk-012",
+      "confidence": 0.95
+    },
     "RA-M2-N3": {
       "finding_id": "PROP-M2b-mlk-013",
       "confidence": 1.0
@@ -176,6 +184,18 @@
     "RA-M2-N6": {
       "finding_id": "PROP-M2b-mlk-016",
       "confidence": 0.98
+    },
+    "RA-M3-O1": {
+      "finding_id": "PROP-M3-mlk-011",
+      "confidence": 1.0
+    },
+    "RA-M4-O1": {
+      "finding_id": "PROP-M4-mlk-011",
+      "confidence": 0.98
+    },
+    "RA-M5-O1": {
+      "finding_id": "PROP-M5-mlk-011",
+      "confidence": 0.99
     }
   },
   "new_tp_findings": [],

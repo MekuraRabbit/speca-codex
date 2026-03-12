@@ -348,7 +348,7 @@ bugs:
     description: "Dynamically allocated 'size_t* state = new size_t[L+1]' not freed on early return"
     inter_procedural: false
     reference: https://repoaudit-home.github.io/static/bug/old/ML/C++_libsass.md
-    detected_by: { repoaudit_claude35: true, speca: false }
+    detected_by: { repoaudit_claude35: true, speca: true }
 
   - id: RA-M1-N2
     project: libsass
@@ -483,7 +483,7 @@ bugs:
     inter_procedural: false
     reproducible: true
     reference: https://github.com/torvalds/linux/tree/4cd8371a234d051f9c9557fcbb1f8c523b1c0d10/drivers/net/ethernet/netronome/nfp/nfpcore/nfp_cppcore.c#L800
-    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: false }
+    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: true }
 
   # --- linux/sound (M4): 1 Old, 0 New, 0 FP, 1 Intra, 0 Inter ---
   # Old bug source: static/bug/old/ML/C_sound_1c4f29e.json
@@ -499,7 +499,7 @@ bugs:
     inter_procedural: false
     reproducible: true
     reference: https://github.com/torvalds/linux/tree/1c4f29ec878bbf1cc0a1eb54ae7da5ff98e19641/sound/soc/qcom/qdsp6/q6apm.c#L66
-    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: false }
+    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: true }
 
   # --- linux/mm (M5): 1 Old, 0 New, 0 FP, 1 Intra, 0 Inter ---
   # Old bug source: static/bug/old/ML/C_mm_73b73ba.json
@@ -515,7 +515,7 @@ bugs:
     inter_procedural: false
     reproducible: true
     reference: https://github.com/torvalds/linux/tree/73b73bac90d97400e29e585c678c4d0ebfd2680d/mm/damon/reclaim.c#L434
-    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: false }
+    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: true }
 
   # ============================================================
   # UAF -- Use-After-Free (5 Old + 1 New = 6 TP)
