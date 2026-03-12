@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2-mlk-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "testapp.c::shutdown_memcached_server::L647-665",
+      "proof_trace": "shutdown_memcached_server contains no heap allocations: the only local variable is a stack buffer (char buffer[1024]), and the socket fd (sock) is properly closed at line 657 before return. connect_server internally allocates addrinfo via getaddrinfo and frees it with freeaddrinfo(ai) at line 469 before returning \u2014 no allocation escapes the callee.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M2-mlk-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1773307512,
+    "processed_ids": [
+      "PROP-M2-mlk-003"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2-mlk-011",
+      "classification": "not-a-vulnerability",
+      "code_path": "memcached.c::server_sockets::L4621-4681",
+      "proof_trace": "The proof technically fails: `list` (strdup'd at L4629) is not freed on the early returns at L4647 (invalid IPv6) and L4665 (invalid port). However, both call sites (L5746-5748, L5761-5763) immediately call `exit(EX_OSERR)` when `server_sockets` returns non-zero, so the process terminates and the OS reclaims all memory. `settings.inter` is set from the `-l` CLI argument at startup only \u2014 it is not network-attacker-controlled at runtime.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M2-mlk-011"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 10,
+    "item_count": 1,
+    "timestamp": 1773307478,
+    "processed_ids": [
+      "PROP-M2-mlk-011"
+    ]
+  }
+}

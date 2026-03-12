@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2-mlk-009",
+      "classification": "not-a-vulnerability",
+      "code_path": "assoc.c::assoc_init::L63-76",
+      "proof_trace": "assoc_init() contains exactly one allocation: calloc() at line 67. The only error path is when calloc returns NULL \u2014 at that point no memory was allocated so there is nothing to free. The function correctly calls exit(EXIT_FAILURE), terminating the process. No successful allocation is ever left unreleased on any code path.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M2-mlk-009"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 8,
+    "item_count": 1,
+    "timestamp": 1773307480,
+    "processed_ids": [
+      "PROP-M2-mlk-009"
+    ]
+  }
+}

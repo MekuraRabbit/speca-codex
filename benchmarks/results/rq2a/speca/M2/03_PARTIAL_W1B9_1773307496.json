@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2-mlk-010",
+      "classification": "not-a-vulnerability",
+      "code_path": "cache.c::cache_alloc::L71-104",
+      "proof_trace": "The only allocation in cache_alloc is malloc(cache->bufsize) at line 79. On constructor failure, free(ret) is called with the original malloc pointer before returning NULL (lines 85-86). On malloc failure, ret/object is NULL so no free is needed. On success, object is returned to the caller transferring ownership. All paths are correctly handled with no leaks.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M2-mlk-010"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 9,
+    "item_count": 1,
+    "timestamp": 1773307496,
+    "processed_ids": [
+      "PROP-M2-mlk-010"
+    ]
+  }
+}

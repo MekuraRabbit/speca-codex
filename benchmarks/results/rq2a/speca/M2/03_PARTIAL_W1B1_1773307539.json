@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2-mlk-002",
+      "classification": "vulnerability",
+      "code_path": "memcached.c::do_add_delta::L3271-3273",
+      "proof_trace": "`do_add_delta` calls `do_item_get` at L3265 which calls `refcount_incr`, acquiring a reference that must be released via `do_item_remove` on every non-NULL path. The early-exit path at L3271-3272 (`it->nbytes <= 2 \u2192 return NON_NUMERIC`) is the sole path missing this release; every other non-NULL return path (CAS mismatch L3276, strtoull fail L3283, alloc fail L3324, else branch L3341, success L3348) correctly calls `do_item_remove(it)`. The `refcount` field is `unsigned short` (16-bit), so 65535 leaked increments wrap it to 0, enabling a subsequent use-after-free or permanent item pinning that prevents LRU eviction.",
+      "attack_scenario": "Attacker stores a key with a 1-2 byte value (e.g., `set k 0 0 2\\r\\n\\r\\n`) then sends repeated `incr k 1` (or binary INCR) commands; each call leaks one refcount unit, permanently pinning the item so it cannot be evicted and exhausting memcached memory (DoS), or wrapping the 16-bit refcount to 0 after 65535 requests to enable use-after-free.",
+      "checklist_id": "PROP-M2-mlk-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 1,
+    "item_count": 1,
+    "timestamp": 1773307539,
+    "processed_ids": [
+      "PROP-M2-mlk-002"
+    ]
+  }
+}

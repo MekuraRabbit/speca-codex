@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2-mlk-005",
+      "classification": "not-a-vulnerability",
+      "code_path": "cache.c::cache_free::L106-147",
+      "proof_trace": "In production builds (NDEBUG), all paths in cache_free properly dispose of ptr: pool store (L129), pool-expand + store (L137), or destructor + free (L142) \u2014 the property holds fully. The two debug-only (#ifndef NDEBUG) paths that raise SIGABRT and return without freeing ptr (L115, L123) are intentional: they detect heap corruption, signal a crash, and deliberately abandon the corrupted pointer rather than touch it again. testapp.c::cache_redzone_test (L150-178) explicitly exercises both paths with SIG_IGN and accepts the abandoned allocation as correct behavior.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M2-mlk-005"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 4,
+    "item_count": 1,
+    "timestamp": 1773307550,
+    "processed_ids": [
+      "PROP-M2-mlk-005"
+    ]
+  }
+}

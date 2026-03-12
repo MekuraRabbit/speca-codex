@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2-mlk-007",
+      "classification": "not-a-vulnerability",
+      "code_path": "testapp.c::stop_memcached_server::L638-645",
+      "proof_trace": "stop_memcached_server() contains zero heap allocations \u2014 it only calls close(sock) and kill(server_pid, SIGTERM), operating on global variables of type int and pid_t respectively. The property's universal quantifier ranges over an empty set, making it vacuously satisfied.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M2-mlk-007"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 6,
+    "item_count": 1,
+    "timestamp": 1773307447,
+    "processed_ids": [
+      "PROP-M2-mlk-007"
+    ]
+  }
+}
