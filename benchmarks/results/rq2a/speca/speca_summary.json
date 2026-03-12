@@ -7,7 +7,7 @@
   "unreviewed": 0,
   "precision": 100.0,
   "recall": 13.51,
-  "f1": 23.81,
+  "f1": 23.8,
   "total_ground_truth": 37,
   "total_ground_truth_incl_disputed": 40,
   "total_positive_findings": 5,

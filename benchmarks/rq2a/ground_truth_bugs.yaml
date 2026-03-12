@@ -411,7 +411,7 @@ bugs:
     description: "temp_portnumber_filename from malloc() not freed when portnumber_file is NULL"
     inter_procedural: false
     reference: https://github.com/memcached/memcached/pull/1208
-    detected_by: { repoaudit_claude35: true, speca: true }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   - id: RA-M2-N3
     project: memcached
