@@ -608,12 +608,13 @@ def evaluate(results_dir: Path, output_path: Path, reparse: bool = False,
     new_tp = len(human_reviewed_tp_pids)
     tp = gt_tp + new_tp
 
-    # FP = human-FP + unreviewed-unmatched (LLM couldn't match to GT either)
+    # Unreviewed findings that LLM couldn't match to GT either
     unreviewed_unmatched_pids = [
         f.get("property_id", "") for f in still_unreviewed
         if f.get("property_id", "") not in fp_matches
     ]
-    fp = len(human_reviewed_fp_pids) + len(unreviewed_unmatched_pids)
+    # FP = human-FP only; unreviewed stays separate (not counted as FP)
+    fp = len(human_reviewed_fp_pids)
 
     per_project: dict[str, int] = defaultdict(int)
     bug_type_tp: dict[str, int] = defaultdict(int)
