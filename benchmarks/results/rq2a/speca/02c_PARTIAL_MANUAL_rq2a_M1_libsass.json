@@ -683,20 +683,21 @@
     },
     {
       "property_id": "PROP-M1-mlk-013",
-      "text": "Each throw-site in register_resource() must free import entry and source before throwing",
+      "text": "Each throw-site in register_resource() must explicitly free the Sass_Import_Entry and SourceFile before throwing, because the C API callers (sass_compile_data_context, sass_compile_file_context) catch exceptions and may recover without destroying the Context — destructor-based cleanup is insufficient when the exception is caught",
       "type": "invariant",
-      "assertion": "forall throw-site T in register_resource: forall alloc A live at T: A is explicitly freed before T",
+      "assertion": "forall throw-site T in register_resource: (sass_delete_import(import_stack.back()) AND delete source) must execute before T, not deferred to ~Context()",
       "severity": "MEDIUM",
       "covers": "FN-M1-GT03",
       "reachability": {
-        "classification": "internal",
+        "classification": "external-reachable",
         "entry_points": [
-          "ProgramEntry"
+          "ProgramEntry",
+          "CallbackHandler"
         ],
-        "attacker_controlled": false,
+        "attacker_controlled": true,
         "bug_bounty_scope": "in-scope"
       },
-      "exploitability": "local-attack",
+      "exploitability": "external-attack",
       "bug_bounty_eligible": true,
       "code_scope": {
         "locations": [
@@ -705,10 +706,20 @@
             "symbol": "register_resource",
             "line_range": {
               "start": 238,
-              "end": 238
+              "end": 315
             },
             "role": "primary",
-            "note": "GT: RA-M1-N2 — import entry and source file leak on exception"
+            "note": "GT: RA-M1-N2 — throw at L296 skips cleanup at L303-311; import entry and source leak if exception caught by C API caller"
+          },
+          {
+            "file": "src/sass_context.cpp",
+            "symbol": "sass_compile_data_context",
+            "line_range": {
+              "start": 300,
+              "end": 370
+            },
+            "role": "caller",
+            "note": "C API entry point that catches exceptions from register_resource — Context survives, leaked allocations persist"
           }
         ],
         "resolution_status": "resolved",
@@ -718,20 +729,21 @@
     },
     {
       "property_id": "PROP-M1-mlk-014",
-      "text": "No aliased ownership between import_stack and resources at throw-sites in register_resource()",
+      "text": "At the throw-site in register_resource(), import_stack.back()->source and resources[idx].contents alias the same allocation — if the exception is caught and Context survives, the destructor will double-free via resources[] then import_stack[] cleanup, or leak if only one path frees",
       "type": "invariant",
-      "assertion": "forall throw-site T in register_resource: forall alloc A live at T: A has exactly one cleanup owner (no aliased pointers)",
+      "assertion": "forall throw-site T in register_resource: sass_import_take_source/srcmap must nullify import pointers before T, otherwise aliased pointers cause double-free or leak on recovery",
       "severity": "MEDIUM",
       "covers": "FN-M1-GT03",
       "reachability": {
-        "classification": "internal",
+        "classification": "external-reachable",
         "entry_points": [
-          "ProgramEntry"
+          "ProgramEntry",
+          "CallbackHandler"
         ],
-        "attacker_controlled": false,
+        "attacker_controlled": true,
         "bug_bounty_scope": "in-scope"
       },
-      "exploitability": "local-attack",
+      "exploitability": "external-attack",
       "bug_bounty_eligible": true,
       "code_scope": {
         "locations": [
@@ -740,10 +752,20 @@
             "symbol": "register_resource",
             "line_range": {
               "start": 238,
-              "end": 238
+              "end": 315
             },
             "role": "primary",
-            "note": "GT: RA-M1-N2 — import entry and source file leak on exception"
+            "note": "GT: RA-M1-N2 — L270 sass_make_import copies res.contents/srcmap pointers into import; both import_stack and resources own same memory at throw L296"
+          },
+          {
+            "file": "src/context.cpp",
+            "symbol": "~Context",
+            "line_range": {
+              "start": 117,
+              "end": 136
+            },
+            "role": "related",
+            "note": "Destructor frees resources[i].contents then calls sass_import_take_source on same pointer — aliased ownership"
           }
         ],
         "resolution_status": "resolved",
