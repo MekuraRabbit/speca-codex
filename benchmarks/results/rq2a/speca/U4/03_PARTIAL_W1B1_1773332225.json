@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U4-uaf-002",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/tools/wasm-link.cc::LinkerInputBinary::~LinkerInputBinary::L112-114",
+      "proof_trace": "LinkerInputBinary::data is freed exactly once in the destructor body (delete[] data, L113) and all accesses to binary->data occur during perform_link() while ctx->inputs holds all unique_ptr<LinkerInputBinary> alive. Section::data.data_segments is freed at most once in ~Section() (guarded by section_code==Data check, L91-93); ~DataSegment() is trivially generated and never dereferences the DataSegment::data alias into binary->data. All other raw pointer aliases (StringSlice::start, FunctionImport::foreign_binary, Section::binary) have strictly shorter lifetimes than the data they point to, verified across all call sites.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U4-uaf-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 1,
+    "item_count": 1,
+    "timestamp": 1773332225,
+    "processed_ids": [
+      "PROP-U4-uaf-002"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U4-uaf-004",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/tools/wasm-link.cc::write_section_payload::L211-219",
+      "proof_trace": "write_section_payload accesses sec->binary->data, where sec->binary is a raw back-pointer set to the owning LinkerInputBinary at parse time (binary-reader-linker.cc:184). All LinkerInputBinary objects are owned by ctx->inputs (vector<unique_ptr<LinkerInputBinary>>) in the stack-allocated Context, and ctx->inputs is never modified during perform_link/write_binary, so no binary is freed before write_section_payload executes. The ~LinkerInputBinary destructor (which calls delete[] data) only runs when ProgramMain's stack frame unwinds after perform_link has returned, guaranteeing no UAF or double-free.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U4-uaf-004"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 3,
+    "item_count": 1,
+    "timestamp": 1773332060,
+    "processed_ids": [
+      "PROP-U4-uaf-004"
+    ]
+  }
+}

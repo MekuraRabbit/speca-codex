@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U4-uaf-007",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/tools/wasm-objdump.cc::dump_file::L76-132",
+      "proof_trace": "The sole deallocation is `delete[] data` at the `done:` label (L130), immediately followed by `return result` with no further use of `data`. All reader objects that hold a copy of the `data` pointer are stack-local within `read_binary_objdump` switch-case blocks and are fully destroyed before any of those calls return, so no live reference to `data` exists when `delete[]` executes. `ObjdumpState` accumulates only `std::string` copies and integer relocation records \u2014 no raw pointers into the file buffer \u2014 and no global stores a pointer to the per-file allocation.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U4-uaf-007"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 6,
+    "item_count": 1,
+    "timestamp": 1773332112,
+    "processed_ids": [
+      "PROP-U4-uaf-007"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U4-uaf-009",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/tools/wasm2wast.cc::ProgramMain::L98-137",
+      "proof_trace": "The only heap allocation in ProgramMain() is `char* data` returned by read_file(); it is freed exactly once at line 134 (delete[] data) after all uses complete. All BinaryReaderIR callbacks convert string_view pointers (which point into the data buffer) to owned std::string copies via .to_string(), and OnDataSegmentData uses memcpy into a std::vector \u2014 so Module holds no raw pointers into data and its destructor cannot access the freed buffer.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U4-uaf-009"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 8,
+    "item_count": 1,
+    "timestamp": 1773332114,
+    "processed_ids": [
+      "PROP-U4-uaf-009"
+    ]
+  }
+}

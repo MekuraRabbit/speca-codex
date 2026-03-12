@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U4-uaf-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/tools/wasm-interp.cc::putback_char::L536-541",
+      "proof_trace": "putback_char contains no pointer dereferences to heap-allocated memory; it only manipulates value-type struct members (json_offset: size_t, loc/prev_loc: Location, has_prev_loc: bool). The only heap pointer in Context (json_data) is never accessed in this function \u2014 only read_char dereferences it. destroy_context (which frees json_data) is called after parse_commands returns, so json_data cannot be freed while putback_char executes.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U4-uaf-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1773332018,
+    "processed_ids": [
+      "PROP-U4-uaf-003"
+    ]
+  }
+}

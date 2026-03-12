@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U4-uaf-005",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/tools/wasm-interp.cc::ProgramMain::L1492-1505",
+      "proof_trace": "ProgramMain() itself performs no allocations; its callees manage memory correctly: in read_module (L297-318), the raw wasm data buffer is freed at L316 only after read_binary_interpreter returns (which invokes EndModule internally via read_binary, completing the only memcpy from DataSegmentInfo.src_data before any free); in destroy_context (L1467), json_data is freed only after parse_commands fully completes, and parse_string copies all JSON string data into std::string objects char-by-char so no persistent string_view into json_data survives. No pointer is dereferenced after its free, and each allocation has exactly one corresponding delete[].",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U4-uaf-005"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 4,
+    "item_count": 1,
+    "timestamp": 1773332242,
+    "processed_ids": [
+      "PROP-U4-uaf-005"
+    ]
+  }
+}

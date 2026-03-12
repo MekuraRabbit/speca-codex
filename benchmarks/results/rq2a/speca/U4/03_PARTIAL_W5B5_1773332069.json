@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U4-uaf-006",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/tools/wasm-link.cc::ProgramMain::L795-824",
+      "proof_trace": "All dynamic allocations in ProgramMain are governed by RAII: `data` (from read_file) is immediately transferred to LinkerInputBinary whose destructor calls `delete[] data` exactly once; each LinkerInputBinary* is immediately wrapped in a unique_ptr via context.inputs.emplace_back, and context.inputs is never shrunk after populate. Raw pointer `b` is used at L817 after emplace_back(b) but before the unique_ptr is destroyed \u2014 the object is alive and the access is safe. Error paths either exit(1) via WABT_FATAL or return early allowing context's destructor to clean up.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U4-uaf-006"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 5,
+    "item_count": 1,
+    "timestamp": 1773332069,
+    "processed_ids": [
+      "PROP-U4-uaf-006"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U4-uaf-001",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/tools/wasm-interp.cc::destroy_context::L1466-1468",
+      "proof_trace": "destroy_context is a one-liner that calls delete[] ctx->json_data and immediately returns; no subsequent access to the freed pointer exists within the function. The sole call site (read_and_run_spec_json:1488) returns immediately afterward, and parse_string copies characters into std::string values (not raw pointers into json_data), leaving no dangling references.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U4-uaf-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 0,
+    "item_count": 1,
+    "timestamp": 1773332083,
+    "processed_ids": [
+      "PROP-U4-uaf-001"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U4-uaf-008",
+      "classification": "vulnerability",
+      "code_path": "src/tools/wasm-opcodecnt.cc::ProgramMain::L217-265",
+      "proof_trace": "`data` is declared uninitialized (`char* data;` at L221); `read_file` only writes `*out_data` on success (common.cc:115) and returns `Result::Error` on all failure paths without setting it. When `read_file` fails, the error block at L224-228 calls `delete[] data` on the uninitialized pointer but has no `return`, so execution falls through to the unconditional `delete[] data` at L263, producing a double-delete of an uninitialized pointer (undefined behavior / heap corruption).",
+      "attack_scenario": "An attacker or user provides a non-existent or unreadable filename; `read_file` returns Error without initializing `data`; `delete[] data` at L227 operates on garbage, then falls through to `delete[] data` at L263 operating on the same garbage value, triggering heap corruption or a crash.",
+      "checklist_id": "PROP-U4-uaf-008"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 7,
+    "item_count": 1,
+    "timestamp": 1773332015,
+    "processed_ids": [
+      "PROP-U4-uaf-008"
+    ]
+  }
+}
