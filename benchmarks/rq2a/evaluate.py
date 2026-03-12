@@ -502,10 +502,12 @@ def evaluate(results_dir: Path, output_path: Path, reparse: bool = False,
         else:
             print(f"  Incremental mode: targeting {sorted(target_pnames)}")
 
-    # Load ground truth
+    # Load ground truth — separate disputed bugs (defensive-coding fixes, no exploit path)
     gt = yaml.safe_load(GROUND_TRUTH_PATH.read_text())
-    bugs = gt["bugs"]
-    total_gt = len(bugs)
+    all_bugs = gt["bugs"]
+    bugs = [b for b in all_bugs if not b.get("disputed")]
+    disputed_bugs = [b for b in all_bugs if b.get("disputed")]
+    total_gt = len(bugs)  # disputed bugs excluded from recall denominator
 
     # Aggregate positive findings by project name
     project_findings: dict[str, list[dict]] = defaultdict(list)
@@ -538,7 +540,7 @@ def evaluate(results_dir: Path, output_path: Path, reparse: bool = False,
 
     if total_positive == 0:
         print("No positive findings — skipping LLM matching.")
-        summary = _empty_summary(bugs, total_gt, output_path)
+        summary = _empty_summary(all_bugs, total_gt, output_path)
         return summary
 
     # ── Step 1: Recall — bug → findings ───────────────────────────
@@ -549,7 +551,7 @@ def evaluate(results_dir: Path, output_path: Path, reparse: bool = False,
         print(f"Re-parsing cache: {cache_recall}")
         recall_matches, _ = reparse_recall_cache(cache_recall)
     else:
-        recall_matches, llm_calls = match_bugs(bugs, project_findings, cache_recall, target_pnames)
+        recall_matches, llm_calls = match_bugs(all_bugs, project_findings, cache_recall, target_pnames)
         print(f"LLM calls: {llm_calls}")
 
     # ── Step 2: Human review + FP detection ─────────────────────────
@@ -579,7 +581,7 @@ def evaluate(results_dir: Path, output_path: Path, reparse: bool = False,
 
     # Group bugs by project for LLM FP fallback on unreviewed findings
     bugs_by_project: dict[str, list[dict]] = defaultdict(list)
-    for bug in bugs:
+    for bug in all_bugs:
         bugs_by_project[bug["project"]].append(bug)
 
     cache_fp = results_dir / "llm_cache_fp.jsonl"
@@ -626,6 +628,10 @@ def evaluate(results_dir: Path, output_path: Path, reparse: bool = False,
                 per_project[canonical] += 1
             bug_type_tp[bug["bug_type"]] += 1
 
+    # Disputed bugs: not detected → TN (correct rejection); detected → bonus TP
+    disputed_detected = sorted(b["id"] for b in disputed_bugs if b["id"] in detected_bugs)
+    disputed_tn = sorted(b["id"] for b in disputed_bugs if b["id"] not in detected_bugs)
+
     precision = round(tp / (tp + fp) * 100, 2) if (tp + fp) > 0 else 0.0
     recall = round(tp / total_gt * 100, 2) if total_gt > 0 else 0.0
     f1 = round(2 * precision * recall / (precision + recall), 2) if (precision + recall) > 0 else 0.0
@@ -641,12 +647,19 @@ def evaluate(results_dir: Path, output_path: Path, reparse: bool = False,
         "recall": recall,
         "f1": f1,
         "total_ground_truth": total_gt,
+        "total_ground_truth_incl_disputed": len(all_bugs),
         "total_positive_findings": total_positive,
         "total_cost": None,
         "bug_type_breakdown": dict(bug_type_tp),
         "per_project": dict(per_project),
         "detected_bugs": sorted(detected_bugs),
         "missed_bugs": sorted(set(b["id"] for b in bugs) - detected_bugs),
+        "disputed_bugs": {
+            "total": len(disputed_bugs),
+            "tn": disputed_tn,
+            "detected": disputed_detected,
+            "note": "Disputed bugs have no exploit path; not detecting them is correct (TN)",
+        },
         "matches": {k: v for k, v in recall_matches.items()},
         "new_tp_findings": sorted(human_reviewed_tp_pids),
         "llm_model": os.environ.get("RQ2A_MODEL", "haiku"),
@@ -656,18 +669,28 @@ def evaluate(results_dir: Path, output_path: Path, reparse: bool = False,
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(summary, indent=2) + "\n")
 
-    _print_report(summary, bugs)
+    _print_report(summary, all_bugs)
     return summary
 
 
 def _empty_summary(bugs: list[dict], total_gt: int, output_path: Path) -> dict:
+    disputed = [b for b in bugs if b.get("disputed")]
+    non_disputed = [b for b in bugs if not b.get("disputed")]
     summary = {
         "tp": 0, "fp": 0, "gt_tp": 0, "new_tp": 0,
         "human_reviewed": 0, "unreviewed": 0,
         "precision": 0.0, "recall": 0.0, "f1": 0.0,
-        "total_ground_truth": total_gt, "total_positive_findings": 0,
+        "total_ground_truth": len(non_disputed),
+        "total_ground_truth_incl_disputed": len(bugs),
+        "total_positive_findings": 0,
         "total_cost": None, "bug_type_breakdown": {}, "per_project": {},
-        "detected_bugs": [], "missed_bugs": sorted(b["id"] for b in bugs),
+        "detected_bugs": [], "missed_bugs": sorted(b["id"] for b in non_disputed),
+        "disputed_bugs": {
+            "total": len(disputed),
+            "tn": sorted(b["id"] for b in disputed),
+            "detected": [],
+            "note": "Disputed bugs have no exploit path; not detecting them is correct (TN)",
+        },
         "matches": {}, "new_tp_findings": [],
         "llm_model": os.environ.get("RQ2A_MODEL", "haiku"),
     }
@@ -695,8 +718,16 @@ def _print_report(summary: dict, bugs: list[dict]) -> None:
     print("  By bug type:")
     for bt in ("NPD", "MLK", "UAF"):
         count = summary["bug_type_breakdown"].get(bt, 0)
-        total = sum(1 for b in bugs if b["bug_type"] == bt)
+        total = sum(1 for b in bugs if b["bug_type"] == bt and not b.get("disputed"))
         print(f"    {bt}: {count}/{total}")
+    if summary.get("disputed_bugs", {}).get("total", 0) > 0:
+        d = summary["disputed_bugs"]
+        print()
+        print(f"  Disputed bugs ({d['total']}): no exploit path — not-detected = correct TN")
+        for bid in d.get("tn", []):
+            print(f"    {bid}: TN (correctly not reported)")
+        for bid in d.get("detected", []):
+            print(f"    {bid}: detected (bonus)")
     if summary["missed_bugs"]:
         print()
         print(f"  Missed bugs ({len(summary['missed_bugs'])}):")

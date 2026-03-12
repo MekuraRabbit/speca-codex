@@ -1044,7 +1044,17 @@
               "end": 1397
             },
             "role": "primary",
-            "note": "GT: RA-N5-N3 \u2014 NULL dereference via passwd.bv_val"
+            "note": "ber_strdup(pw) call site at L1397. DISTINCT from L1476 call site — audit THIS location specifically"
+          },
+          {
+            "file": "clients/tools/common.c",
+            "symbol": "tool_bind",
+            "line_range": {
+              "start": 1476,
+              "end": 1477
+            },
+            "role": "related",
+            "note": "Second ber_strdup(pw) at L1476 — same pattern but NOT the target of this property"
           },
           {
             "file": "libraries/liblber/memory.c",

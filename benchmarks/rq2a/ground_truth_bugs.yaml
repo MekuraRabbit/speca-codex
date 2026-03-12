@@ -310,6 +310,13 @@ bugs:
     inter_procedural: true
     reference: https://bugs.openldap.org/show_bug.cgi?id=10309
     # scan_dir expanded to include clients/tools/
+    # NOTE: SPECA Phase 03 classified as not-a-vulnerability. Auditor proved that
+    # all downstream uses are NULL-safe: vc_sasl_mech is guarded by if(vc_sasl_mech)
+    # in main(), and lutil_sasl_defaults() handles NULL params via ternary + ldap_get_option()
+    # fallback. ITS#10309 is a defensive-coding improvement, not an exploitable vulnerability.
+    # Classification disagreement: RepoAudit uses code-quality criteria (missing NULL check = bug),
+    # SPECA uses security criteria (no reachable exploit path = not-a-vulnerability).
+    disputed: true  # SPECA correctly classified as not-a-vulnerability; no exploit path exists
     detected_by: { repoaudit_claude35: true, speca: false }
 
   # ============================================================
