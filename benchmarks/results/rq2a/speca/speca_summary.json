@@ -71,28 +71,28 @@
   },
   "matches": {
     "RA-N5-O1": {
-      "finding_id": "PROP-N5-npd-014",
-      "confidence": 0.9
+      "finding_id": "PROP-N5-npd-015",
+      "confidence": 0.95
     },
     "RA-N5-N1": {
-      "finding_id": "PROP-N5-npd-017",
+      "finding_id": "PROP-N5-npd-014",
       "confidence": 0.95
     },
     "RA-N5-N2": {
-      "finding_id": "PROP-N5-npd-015",
-      "confidence": 0.9
+      "finding_id": "PROP-N5-npd-013",
+      "confidence": 0.95
     },
     "RA-N5-N3": {
       "finding_id": "PROP-N5-npd-016",
-      "confidence": 0.95
+      "confidence": 0.9
     },
     "RA-N5-N4": {
       "finding_id": "PROP-N5-npd-017",
-      "confidence": 0.85
+      "confidence": 0.95
     },
     "RA-N5-N5": {
       "finding_id": "PROP-N5-npd-017",
-      "confidence": 0.85
+      "confidence": 0.65
     }
   },
   "new_tp_findings": [],
