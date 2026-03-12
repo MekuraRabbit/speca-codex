@@ -351,7 +351,11 @@ GROUND_TRUTH_PATH = SCRIPT_DIR / "ground_truth_bugs.yaml"
 
 
 def fig6_bug_detection_matrix(data: dict, speca: dict | None):
-    """Heatmap: individual bugs × tools detection matrix (Issue #96 spec)."""
+    """Heatmap: individual bugs × tools detection matrix (Issue #96 spec).
+
+    Disputed bugs (no exploit path) are shown with a distinct "TN" marker
+    when not detected by SPECA, indicating correct rejection rather than a miss.
+    """
     if not GROUND_TRUTH_PATH.exists():
         print("  [SKIP] rq2a_bug_detection_matrix.png (no ground_truth_bugs.yaml)")
         return
@@ -368,11 +372,17 @@ def fig6_bug_detection_matrix(data: dict, speca: dict | None):
 
     n_bugs = len(bugs)
     n_tools = len(tool_names)
+    # Matrix values: 0=miss, 0.15=disputed TN, 0.5=unknown, 1=detected
     matrix = np.zeros((n_bugs, n_tools))
 
+    disputed_rows = set()
     bug_labels = []
     for i, bug in enumerate(bugs):
+        is_disputed = bug.get("disputed", False)
         label = f"{bug['id']} ({bug['bug_type']})"
+        if is_disputed:
+            label += " †"
+            disputed_rows.add(i)
         bug_labels.append(label)
         det = bug.get("detected_by", {})
         for j, key in enumerate(tool_keys):
@@ -380,14 +390,18 @@ def fig6_bug_detection_matrix(data: dict, speca: dict | None):
             if val is True:
                 matrix[i, j] = 1
             elif val is False:
-                matrix[i, j] = 0
+                # Disputed + not detected by SPECA → TN (distinct from miss)
+                if is_disputed and key == "speca":
+                    matrix[i, j] = 0.15
+                else:
+                    matrix[i, j] = 0
             else:
                 matrix[i, j] = 0.5  # unknown/null
 
     fig, ax = plt.subplots(figsize=(8, 14))
 
-    cmap = plt.cm.colors.ListedColormap(["#F0F0F0", "#DDDDDD", "#4C72B0"])
-    bounds = [0, 0.25, 0.75, 1.0]
+    cmap = plt.cm.colors.ListedColormap(["#F0F0F0", "#E8F5E9", "#DDDDDD", "#4C72B0"])
+    bounds = [0, 0.1, 0.3, 0.75, 1.0]
     norm = plt.cm.colors.BoundaryNorm(bounds, cmap.N)
     im = ax.imshow(matrix, cmap=cmap, norm=norm, aspect="auto")
 
@@ -400,22 +414,37 @@ def fig6_bug_detection_matrix(data: dict, speca: dict | None):
         for j in range(n_tools):
             val = matrix[i, j]
             if val == 1:
-                symbol, color = "✓", "white"
+                symbol, color = "\u2713", "white"
+            elif val == 0.15:
+                symbol, color = "TN", "#2E7D32"
             elif val == 0:
-                symbol, color = "✗", "#AAAAAA"
+                symbol, color = "\u2717", "#AAAAAA"
             else:
                 symbol, color = "?", "#888888"
             ax.text(j, i, symbol, ha="center", va="center", fontsize=9,
                     color=color, fontweight="bold")
 
-    ax.set_title("RQ2a: Bug Detection Matrix\n(40 Ground Truth Bugs × Tools)")
+    n_disputed = len(disputed_rows)
+    title_note = f"({n_bugs} Ground Truth Bugs \u00d7 Tools"
+    if n_disputed > 0:
+        title_note += f", {n_disputed} disputed\u2020"
+    title_note += ")"
+    ax.set_title(f"RQ2a: Bug Detection Matrix\n{title_note}")
 
     # Legend
     found = mpatches.Patch(color="#4C72B0", label="Detected")
     missed = mpatches.Patch(color="#F0F0F0", label="Not detected")
+    disputed_tn = mpatches.Patch(color="#E8F5E9", label="Disputed TN\u2020")
     unknown = mpatches.Patch(color="#DDDDDD", label="Unknown")
-    ax.legend(handles=[found, missed, unknown], loc="upper right",
-              bbox_to_anchor=(1.0, -0.02), ncol=3, fontsize=8)
+    ax.legend(handles=[found, missed, disputed_tn, unknown], loc="upper right",
+              bbox_to_anchor=(1.0, -0.02), ncol=4, fontsize=8)
+
+    # Footnote
+    if n_disputed > 0:
+        fig.text(0.5, 0.01,
+                 "\u2020 Disputed: no exploit path exists; not detecting = correct TN "
+                 "(defensive-coding fix, not exploitable vulnerability)",
+                 ha="center", fontsize=7, style="italic", color="#555555")
 
     out = FIGURES_DIR / "rq2a_bug_detection_matrix.png"
     fig.savefig(out, bbox_inches="tight")

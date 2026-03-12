@@ -1,13 +1,13 @@
 {
-  "tp": 6,
+  "tp": 5,
   "fp": 1,
-  "gt_tp": 6,
+  "gt_tp": 5,
   "new_tp": 0,
   "human_reviewed": 0,
   "unreviewed": 1,
-  "precision": 85.71,
-  "recall": 15.38,
-  "f1": 26.08,
+  "precision": 83.33,
+  "recall": 12.82,
+  "f1": 22.22,
   "total_ground_truth": 39,
   "total_ground_truth_incl_disputed": 40,
   "total_positive_findings": 6,
@@ -23,7 +23,6 @@
     "RA-N5-N2",
     "RA-N5-N3",
     "RA-N5-N4",
-    "RA-N5-N5",
     "RA-N5-O1"
   ],
   "missed_bugs": [
@@ -73,7 +72,7 @@
   "matches": {
     "RA-N5-O1": {
       "finding_id": "PROP-N5-npd-014",
-      "confidence": 0.85
+      "confidence": 0.9
     },
     "RA-N5-N1": {
       "finding_id": "PROP-N5-npd-017",
@@ -85,7 +84,7 @@
     },
     "RA-N5-N3": {
       "finding_id": "PROP-N5-npd-016",
-      "confidence": 0.9
+      "confidence": 0.95
     },
     "RA-N5-N4": {
       "finding_id": "PROP-N5-npd-017",
@@ -93,7 +92,7 @@
     },
     "RA-N5-N5": {
       "finding_id": "PROP-N5-npd-017",
-      "confidence": 0.95
+      "confidence": 0.85
     }
   },
   "new_tp_findings": [],

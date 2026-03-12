@@ -602,7 +602,8 @@ def evaluate(results_dir: Path, output_path: Path, reparse: bool = False,
             recall_matches[bug_id] = {"finding_id": pid, "confidence": info.get("confidence", 0.0)}
 
     # ── Compute metrics ───────────────────────────────────────────
-    detected_bugs = set(recall_matches.keys())
+    disputed_ids = {b["id"] for b in disputed_bugs}
+    detected_bugs = set(recall_matches.keys()) - disputed_ids  # exclude disputed from TP
     gt_tp = len(detected_bugs)
     new_tp = len(human_reviewed_tp_pids)
     tp = gt_tp + new_tp
@@ -628,9 +629,10 @@ def evaluate(results_dir: Path, output_path: Path, reparse: bool = False,
                 per_project[canonical] += 1
             bug_type_tp[bug["bug_type"]] += 1
 
-    # Disputed bugs: not detected → TN (correct rejection); detected → bonus TP
-    disputed_detected = sorted(b["id"] for b in disputed_bugs if b["id"] in detected_bugs)
-    disputed_tn = sorted(b["id"] for b in disputed_bugs if b["id"] not in detected_bugs)
+    # Disputed bugs: not detected → TN (correct rejection); detected → noted separately
+    all_detected = set(recall_matches.keys())  # includes disputed
+    disputed_detected = sorted(b["id"] for b in disputed_bugs if b["id"] in all_detected)
+    disputed_tn = sorted(b["id"] for b in disputed_bugs if b["id"] not in all_detected)
 
     precision = round(tp / (tp + fp) * 100, 2) if (tp + fp) > 0 else 0.0
     recall = round(tp / total_gt * 100, 2) if total_gt > 0 else 0.0

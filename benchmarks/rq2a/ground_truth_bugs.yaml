@@ -317,7 +317,7 @@ bugs:
     # Classification disagreement: RepoAudit uses code-quality criteria (missing NULL check = bug),
     # SPECA uses security criteria (no reachable exploit path = not-a-vulnerability).
     disputed: true  # SPECA correctly classified as not-a-vulnerability; no exploit path exists
-    detected_by: { repoaudit_claude35: true, speca: true }
+    detected_by: { repoaudit_claude35: true, speca: false }
 
   # ============================================================
   # MLK -- Memory Leak (5 Old + 8 New = 13 TP)
