@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-005",
+      "classification": "not-a-vulnerability",
+      "code_path": "memcached.c::do_add_delta::L2227-2338",
+      "proof_trace": "Every error-exit in do_add_delta (NON_NUMERIC, DELTA_ITEM_CAS_MISMATCH, EOM, DELTA_ITEM_NOT_FOUND) calls do_item_remove(it) before returning; the new_it allocation is released on failure (do_item_remove+return EOM) and on success (do_item_remove(new_it)); the it_ret output pointer is set only on the OK path, so callers in proto_text.c (process_arithmetic_command, process_marithmetic_command) never receive a dangling reference on error. The process_marithmetic_command error label (L1989-1994) performs if(it!=NULL) do_item_remove(it) covering all goto-error paths including mid-loop jumps, and the vivify item_alloc path is also covered by do_item_remove at L1959 on the normal exit.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M2b-mlk-005"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 4,
+    "item_count": 1,
+    "timestamp": 1773314322,
+    "processed_ids": [
+      "PROP-M2b-mlk-005"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-017",
+      "classification": "not-a-vulnerability",
+      "code_path": "memcached.c::main::L6083-6141",
+      "proof_trace": "The free at L6139-6140 is a sibling `if (temp_portnumber_filename)` check that is independent of the `if (portnumber_file)` block at L6135-6138; it executes unconditionally when temp is non-NULL regardless of whether portnumber_file is NULL. On the normal continuation path (fopen fails, server_sockets succeed), temp_portnumber_filename is correctly freed at L6140. The only paths that skip the free are exit() calls at L6113/L6132, which terminate the process and allow the OS to reclaim memory.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M2b-mlk-017"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 12,
+    "item_count": 1,
+    "timestamp": 1773314153,
+    "processed_ids": [
+      "PROP-M2b-mlk-017"
+    ]
+  }
+}

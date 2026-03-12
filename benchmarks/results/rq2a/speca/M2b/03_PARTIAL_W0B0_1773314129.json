@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-001",
+      "classification": "not-a-vulnerability",
+      "code_path": "cache.c::cache_destroy::L56-65",
+      "proof_trace": "cache_destroy() makes zero allocations itself, so the universal quantifier in the assertion has an empty domain and is vacuously satisfied. All memory it manages (slab items via STAILQ while-loop, cache->name, and the cache struct) is freed unconditionally with no early-exit paths, no return statements, and no conditional branches in the function body. Items given to callers via cache_alloc are excluded by documented API contract (cache.h:L66-67).",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M2b-mlk-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 0,
+    "item_count": 1,
+    "timestamp": 1773314129,
+    "processed_ids": [
+      "PROP-M2b-mlk-001"
+    ]
+  }
+}

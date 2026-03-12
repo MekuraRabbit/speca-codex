@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-014",
+      "classification": "vulnerability",
+      "code_path": "proxy_config.c::proxy_init_startfiles::L407-446",
+      "proof_trace": "Two error return paths leak heap memory: at L421 (when `db = calloc(...)` returns NULL), `flist` is returned without being freed; at L428 (when `db->buf == NULL || db->fname == NULL`), both `flist` and `db` are returned without being freed. The sole `free(flist)` call is on the success path at L444 only, and no cleanup block exists before any error return.",
+      "attack_scenario": "An attacker or low-memory condition that triggers `calloc`/`strdup` failure during proxy startup causes `flist` (and `db`) to leak; repeated restarts or OOM conditions at initialization will accumulate leaked memory, and the missing free before error return is a confirmed bug with no intentional design justification.",
+      "checklist_id": "PROP-M2b-mlk-014"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 14,
+    "item_count": 1,
+    "timestamp": 1773314169,
+    "processed_ids": [
+      "PROP-M2b-mlk-014"
+    ]
+  }
+}

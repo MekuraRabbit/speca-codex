@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-013",
+      "classification": "vulnerability",
+      "code_path": "extstore.c::_evict_page::L429-463",
+      "proof_trace": "calloc allocates st.page_data at line 432 but there is no free(st.page_data) on any return path (the function has a single exit at line 463). Neither extstore_get_page_data nor extstore_evict_page have access to this pointer. Every call leaks page_count * sizeof(extstore_page_data) bytes of heap memory.",
+      "attack_scenario": "An attacker sends repeated write requests that exhaust writable pages, causing extstore_write (lines 605, 620) to call _evict_page on each attempt. Each call leaks ~page_count*40 bytes; sustained traffic produces unbounded heap growth leading to OOM and service crash.",
+      "checklist_id": "PROP-M2b-mlk-013"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 13,
+    "item_count": 1,
+    "timestamp": 1773314115,
+    "processed_ids": [
+      "PROP-M2b-mlk-013"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-016",
+      "classification": "vulnerability",
+      "code_path": "assoc.c::assoc_get_iterator::L304-315",
+      "proof_trace": "When calloc succeeds but mutex_trylock fails (returns non-zero, i.e. lock held during hash expansion), the else branch at L313 executes `return NULL` without calling free(iter). The caller receives NULL and has no reference to the allocation, making it permanently unreachable. No other mechanism frees iter on this path.",
+      "attack_scenario": "The LRU crawler thread calls assoc_get_iterator() periodically; if hash table expansion holds maintenance_lock, mutex_trylock fails and ~32 bytes leak per invocation. Repeated crawler cycles during sustained hash expansion lead to unbounded heap growth and eventual memory exhaustion.",
+      "checklist_id": "PROP-M2b-mlk-016"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 16,
+    "item_count": 1,
+    "timestamp": 1773314117,
+    "processed_ids": [
+      "PROP-M2b-mlk-016"
+    ]
+  }
+}

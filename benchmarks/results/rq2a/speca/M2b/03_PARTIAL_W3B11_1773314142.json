@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-012",
+      "classification": "not-a-vulnerability",
+      "code_path": "memcached.c::main::L5179-5611",
+      "proof_trace": "subopts_orig is leaked on ~20 early return-1 error paths inside case 'o' (e.g., L5195, 5222, 5256, 5272, 5286, 5329, 5390) before the free() at L5611. However, every such return-1 path is a startup-argument-validation error that causes the process to exit immediately; the OS reclaims all memory on exit, so no memory is durably lost. Additionally, command-line argument parsing is controlled solely by the server operator, not by external network attackers, making the property's external-reachable/attacker-controlled classification incorrect.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M2b-mlk-012"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 11,
+    "item_count": 1,
+    "timestamp": 1773314142,
+    "processed_ids": [
+      "PROP-M2b-mlk-012"
+    ]
+  }
+}

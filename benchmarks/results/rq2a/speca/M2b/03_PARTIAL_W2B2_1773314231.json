@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "memcached.c::do_add_delta::L2227-2338",
+      "proof_trace": "Every early-exit path calls `do_item_remove(it)` before returning (lines 2249, 2254, 2261, 2308, 2324-2326); the else-branch conditional `if (it->refcount==1)` always fires because branch-2 (`refcount>1`) already failed and `do_item_get` guarantees refcount\u22651. The `new_it` allocation (line 2306) is released via `do_item_remove(new_it)` at line 2317 after `item_replace`. The success path (lines 2329-2336) either transfers ownership through `it_ret` or calls `do_item_remove(it)`.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M2b-mlk-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1773314231,
+    "processed_ids": [
+      "PROP-M2b-mlk-003"
+    ]
+  }
+}

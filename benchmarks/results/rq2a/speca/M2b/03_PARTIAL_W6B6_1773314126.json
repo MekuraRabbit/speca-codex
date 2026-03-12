@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-007",
+      "classification": "not-a-vulnerability",
+      "code_path": "proxy_tls.c::mcp_tls_handshake::L129-156",
+      "proof_trace": "SSL_is_init_finished is an OpenSSL library macro called at line 130 inside mcp_tls_handshake(); it is not defined in proxy_tls.c and performs no memory allocations. mcp_tls_handshake() itself contains zero allocation calls (no malloc/calloc/SSL_new/BIO_new) on any code path, so the property assertion is vacuously true \u2014 there are no allocations to free.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M2b-mlk-007"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 6,
+    "item_count": 1,
+    "timestamp": 1773314126,
+    "processed_ids": [
+      "PROP-M2b-mlk-007"
+    ]
+  }
+}

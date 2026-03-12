@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-010",
+      "classification": "not-a-vulnerability",
+      "code_path": "memcached.c::flag_enabled_disabled::L3969-3971",
+      "proof_trace": "flag_enabled_disabled() is a 3-line function that returns one of two string literals (\"enabled\" / \"disabled\") via a ternary expression; it contains zero dynamic allocations (no malloc/calloc/realloc/strdup). The universal quantification in the property assertion has an empty domain, so the property is vacuously satisfied. All call sites pass the result directly to printf as a %s argument, requiring no ownership transfer or deallocation.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M2b-mlk-010"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 9,
+    "item_count": 1,
+    "timestamp": 1773314095,
+    "processed_ids": [
+      "PROP-M2b-mlk-010"
+    ]
+  }
+}

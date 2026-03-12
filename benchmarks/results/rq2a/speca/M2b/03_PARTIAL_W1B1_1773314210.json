@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-002",
+      "classification": "not-a-vulnerability",
+      "code_path": "crawler.c::lru_crawler_close_client::L131-137",
+      "proof_trace": "lru_crawler_close_client is a 5-line linear function with no branches and no allocations of its own. On its single path it transfers ownership of c->c via sidethread_conn_close (which calls redispatch_conn, returning the conn to its worker thread for teardown) and frees c->buf directly. All four call sites in lru_crawler_write are guarded by an early-return null check (L381), so c->c is always valid when the function executes.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M2b-mlk-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 1,
+    "item_count": 1,
+    "timestamp": 1773314210,
+    "processed_ids": [
+      "PROP-M2b-mlk-002"
+    ]
+  }
+}

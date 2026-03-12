@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-015",
+      "classification": "potential-vulnerability",
+      "code_path": "restart.c::restart_get_kv::L141-211",
+      "proof_trace": "In the RESTART_NOTAG branch (L173-175), getline() has already allocated `line` (getline returned != -1), but `return RESTART_NOTAG` is reached without any `free(line)` call \u2014 the pointer is neither stored in `c->line` nor explicitly freed, confirming a heap leak. The EOF branch (L205-208) is not a practical leak for clean EOF since `line` starts as NULL and getline makes no allocation; it is only a theoretical concern on mid-stream read errors.",
+      "attack_scenario": "A callback registered via restart_register calls restart_get_kv in a while(== RESTART_OK) loop; if the metadata file contains a T-line whose tag is not registered (e.g., written by a different server version), restart_get_kv returns RESTART_NOTAG and leaks the getline-allocated line buffer \u2014 the loop exits without abort, accumulating heap memory that is never reclaimed during the check phase.",
+      "checklist_id": "PROP-M2b-mlk-015"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 15,
+    "item_count": 1,
+    "timestamp": 1773314229,
+    "processed_ids": [
+      "PROP-M2b-mlk-015"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-004",
+      "classification": "not-a-vulnerability",
+      "code_path": "thread.c::add_delta::L945-957 / memcached.c::do_add_delta::L2227-2338",
+      "proof_trace": "The add_delta wrapper in thread.c has no heap allocations; do_add_delta in memcached.c frees `it` (do_item_get) on every early-return path via do_item_remove, and frees `new_it` (do_item_alloc) via do_item_remove before fall-through. In complete_incr_bin (proto_bin.c:319-335), item_alloc allocates `it` and item_remove(it) at line 335 is positioned after the store_item if/else block but within the `if (it != NULL)` guard, correctly releasing the allocation on both success and failure paths.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M2b-mlk-004"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 3,
+    "item_count": 1,
+    "timestamp": 1773314233,
+    "processed_ids": [
+      "PROP-M2b-mlk-004"
+    ]
+  }
+}

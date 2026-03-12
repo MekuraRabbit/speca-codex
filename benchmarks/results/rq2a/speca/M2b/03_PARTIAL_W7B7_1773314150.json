@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-008",
+      "classification": "not-a-vulnerability",
+      "code_path": "cache.c::do_cache_free::L114-139",
+      "proof_trace": "In production builds (NDEBUG defined), all paths in do_cache_free either call free(ptr) or insert ptr into the freelist via STAILQ_INSERT_HEAD \u2014 no allocation escapes. In debug builds, two early-return paths (L121, L128) skip freeing ptr, but only after raise(SIGABRT), which terminates the process under default POSIX behavior; these paths are intentional memory-corruption-detection abort paths, not reachable production code.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M2b-mlk-008"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 7,
+    "item_count": 1,
+    "timestamp": 1773314150,
+    "processed_ids": [
+      "PROP-M2b-mlk-008"
+    ]
+  }
+}
