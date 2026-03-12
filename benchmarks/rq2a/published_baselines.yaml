@@ -222,8 +222,8 @@ tools:
   # SPECA — to be filled after experiment
   speca:
     display_name: "SPECA"
-    tp: 30
-    fp: 3
-    precision: 90.91
+    tp: 31
+    fp: 2
+    precision: 93.94
     notes: "SPECA automated evaluation"
     source: "This study"
