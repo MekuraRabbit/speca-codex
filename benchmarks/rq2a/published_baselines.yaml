@@ -222,7 +222,7 @@ tools:
   # SPECA — to be filled after experiment
   speca:
     display_name: "SPECA"
-    tp: 21
+    tp: 24
     fp: 0
     precision: 100.0
     notes: "SPECA automated evaluation"

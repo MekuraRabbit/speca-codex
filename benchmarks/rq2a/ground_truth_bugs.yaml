@@ -199,7 +199,7 @@ bugs:
     description: "NULL value from parameter 'a' reaches dereference location without validation"
     inter_procedural: true  # involves parameter from caller
     reproducible: true
-    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: false }
+    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: true }
 
   - id: RA-N3-N1
     project: coturn/src/server
@@ -212,7 +212,7 @@ bugs:
     description: "realloc failure leaves extra_list as NULL, subsequent array access dereferences NULL pointer"
     inter_procedural: false  # N3 total: 1 intra + 1 inter = 2
     reference: https://repoaudit-home.github.io/static/bug/old/NPD/C_coturn_server.md
-    detected_by: { repoaudit_claude35: true, speca: false }
+    detected_by: { repoaudit_claude35: true, speca: true }
 
   # --- libfreenect (N4): 1 Old, 0 New, 1 FP, 0 Intra, 1 Inter ---
   # Old bug source: static/bug/old/NPD/C_libfreenect.md
@@ -226,7 +226,7 @@ bugs:
     description: "freenect_init() returns with NULL ctx, passed to freenect_select_subdevices() which dereferences it"
     inter_procedural: true
     reproducible: true
-    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: false }
+    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: true }
 
   # --- openldap (N5): 1 Old, 5 New, 1 FP, 0 Intra, 6 Inter ---
   # Old bug source: static/bug/old/NPD/C_openldap.md (Case 1, reproducible)
