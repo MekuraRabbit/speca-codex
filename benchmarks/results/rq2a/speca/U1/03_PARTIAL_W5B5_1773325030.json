@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-006",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/redis-benchmark.c::freeRedisConfig::L293-297",
+      "proof_trace": "Within freeRedisConfig, cfg->save and cfg->appendonly are each null-checked then freed (lines 294-295) and never accessed again; cfg itself is freed last via zfree(cfg) at line 296 with no subsequent use. All three call sites (lines 940, 1587, 1718) guard with an explicit != NULL check before invoking the function, and the two main-function call sites (1587, 1718) are on mutually exclusive code paths (custom-command branch returns at 1588), ruling out double-free.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-006"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 5,
+    "item_count": 1,
+    "timestamp": 1773325030,
+    "processed_ids": [
+      "PROP-U1-uaf-006"
+    ]
+  }
+}

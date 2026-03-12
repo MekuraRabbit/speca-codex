@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-011",
+      "classification": "vulnerability",
+      "code_path": "src/redis-benchmark.c::getRedisConfig::L282-291",
+      "proof_trace": "In the `fail:` block, `redisFree(c)` frees the redisContext pointer at L284; lines L287-290 then dereference `c->connection_type`, `c->tcp.host`, `c->tcp.port`, and `c->unix_sock.path` from the now-freed pointer \u2014 a direct use-after-free. No enforcement mechanism prevents this: the error-logging code was placed after the cleanup without guarding against the freed pointer.",
+      "attack_scenario": "Point redis-benchmark at an adversarial or unreachable Redis server; the resulting connection error triggers `goto fail` at L255, which frees `c` then dereferences it at L287-290, enabling heap use-after-free that can cause crash or heap corruption depending on allocator behavior.",
+      "checklist_id": "PROP-U1-uaf-011"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 10,
+    "item_count": 1,
+    "timestamp": 1773325002,
+    "processed_ids": [
+      "PROP-U1-uaf-011"
+    ]
+  }
+}

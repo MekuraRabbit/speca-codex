@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-007",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/redis-cli.c::freeHintsCallback::L718-720",
+      "proof_trace": "freeHintsCallback is a trivial two-line function: it calls sdsfree(ptr) then returns immediately \u2014 no code executes after the free, ruling out UAF. Double-free is impossible because the hint pointer is stack-local in linenoise's refreshShowHints and freed exactly once under a single `if (hint)` guard. sdsfree itself is NULL-safe (deps/hiredis/sds.c:156), providing an additional safety layer.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-007"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 6,
+    "item_count": 1,
+    "timestamp": 1773325023,
+    "processed_ids": [
+      "PROP-U1-uaf-007"
+    ]
+  }
+}

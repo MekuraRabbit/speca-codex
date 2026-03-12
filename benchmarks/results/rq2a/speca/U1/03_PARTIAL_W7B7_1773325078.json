@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-008",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/config.c::rewriteConfigReleaseState::L2103-2108",
+      "proof_trace": "The function performs a strict 4-step linear teardown: (1) sdsfreesplitres frees state->lines[], (2) dictRelease frees option_to_line whose keys are sdsdup()-independent copies and whose values are integer line-numbers cast to void* (not heap pointers), (3) dictRelease frees rewritten whose keys are sdsnew()-independent copies, (4) zfree(state). No pointer is shared between the three freed data structures, every replaced state->lines[i] is overwritten before teardown (in rewriteConfigRemoveOrphaned and rewriteConfigRewriteLine), and the sole caller at line 2339 immediately returns after the call with no post-release access.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-008"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 7,
+    "item_count": 1,
+    "timestamp": 1773325078,
+    "processed_ids": [
+      "PROP-U1-uaf-008"
+    ]
+  }
+}

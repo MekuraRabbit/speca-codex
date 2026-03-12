@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-001",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/config.c::rewriteConfigClientoutputbufferlimitOption::L2012-2038",
+      "proof_trace": "The only heap-allocated pointer in the function is `line` (SDS), whose ownership is fully transferred to `rewriteConfigRewriteLine` on every call \u2014 that function either frees it (sdsfree at L1794) or stores it permanently in `state->lines` (L1808/L1816). The caller never accesses `line` after the call. All other pointers (`option`, `typename`) are static string literals that are never freed.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 0,
+    "item_count": 1,
+    "timestamp": 1773325014,
+    "processed_ids": [
+      "PROP-U1-uaf-001"
+    ]
+  }
+}

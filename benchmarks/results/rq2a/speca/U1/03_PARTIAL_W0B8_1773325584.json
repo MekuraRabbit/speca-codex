@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-009",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/networking.c::processInputBufferAndReplicate::L1606-1619",
+      "proof_trace": "In the non-master branch, no pointer is dereferenced after processInputBuffer returns. In the master branch, if freeClient(c) is called during processInputBuffer, the freeClient guard at L954-963 redirects to replicationCacheMaster(c) which calls unlinkClient (setting the sentinel to NULL) but preserves c as server.cached_master via zfree-free caching, so c is never actually freed. The CLIENT_BLOCKED exception to caching cannot be triggered mid-loop because processInputBuffer breaks at L1525 before any command executes when CLIENT_BLOCKED is already set.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-009"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 8,
+    "item_count": 1,
+    "timestamp": 1773325584,
+    "processed_ids": [
+      "PROP-U1-uaf-009"
+    ]
+  }
+}

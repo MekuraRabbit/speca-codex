@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-004",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/networking.c::processInputBuffer::L1516-1600",
+      "proof_trace": "The property is enforced by the server.current_client null-sentinel protocol: (1) server.current_client = c is set at entry; (2) unlinkClient() clears it to NULL if c is freed; (3) processCommand() returns C_ERR (not C_OK) at line 3367 when server.current_client becomes NULL after freeMemoryIfNeededAndSafe(), preventing execution of the c-dereferencing block at lines 1574-1584; (4) the post-loop guard at line 1594 uses short-circuit &&, so c->querybuf is never accessed when current_client is NULL. For externally-reachable normal clients, c is not in server.slaves, so flushSlavesOutputBuffers() cannot free it and no UAF path exists.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-004"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 3,
+    "item_count": 1,
+    "timestamp": 1773325324,
+    "processed_ids": [
+      "PROP-U1-uaf-004"
+    ]
+  }
+}

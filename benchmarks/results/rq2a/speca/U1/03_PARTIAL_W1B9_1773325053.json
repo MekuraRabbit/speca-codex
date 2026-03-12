@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-010",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/sentinel.c::sentinelDiscardReplyCallback::L2354-2360",
+      "proof_trace": "The property holds. `instanceLinkCloseConnection` (L989) sets `c->data = NULL` before calling `redisAsyncFree(c)` (L991) on every code path, so when pending callbacks are flushed by `__redisAsyncFree`, `sentinelDiscardReplyCallback` reads `link = c->data == NULL` and the `if (link)` guard prevents any dereference. When `refcount > 0`, callbacks are rebound but the `instanceLink` remains live (not freed), so `c->data` still points to a valid object.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-010"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 9,
+    "item_count": 1,
+    "timestamp": 1773325053,
+    "processed_ids": [
+      "PROP-U1-uaf-010"
+    ]
+  }
+}

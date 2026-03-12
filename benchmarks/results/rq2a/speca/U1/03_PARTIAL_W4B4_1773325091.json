@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-005",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/rax.c::raxRecursiveFree::L1221-1236",
+      "proof_trace": "raxRecursiveFree performs depth-first traversal: all child pointers are read from node `n` while `n` is still alive (loop L1225-1230), free_callback(raxGetData(n)) is called before rax_free(n) at L1232-1234, and rax->numnodes-- accesses the live rax struct (not a freed node). Each node is visited exactly once (tree structure has no shared-node cycles), so no double-free occurs. raxFreeWithCallback frees the rax struct only after raxRecursiveFree returns, with no post-free dereferences.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-005"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 4,
+    "item_count": 1,
+    "timestamp": 1773325091,
+    "processed_ids": [
+      "PROP-U1-uaf-005"
+    ]
+  }
+}
