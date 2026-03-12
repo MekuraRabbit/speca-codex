@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U5-uaf-001",
+      "classification": "vulnerability",
+      "code_path": "icu4c/source/i18n/zonemeta.cpp::createMetazoneMappings::L680-686",
+      "proof_trace": "In the error path at L682-686 of createMetazoneMappings, when the UVector constructor sets a failure status, line 684 calls deleteOlsonToMetaMappingEntry(entry) which internally calls uprv_free(entry), then line 685 immediately calls uprv_free(entry) again \u2014 a confirmed double-free. The entry has not yet been inserted into mzMappings (addElement at L690 is unreached), so no other path would free it.",
+      "attack_scenario": "An attacker who can induce memory pressure causing the UVector internal allocation to fail will trigger this error path via getMetazoneID \u2192 getMetazoneMappings \u2192 createMetazoneMappings, achieving a double-free that enables heap corruption and potential arbitrary code execution.",
+      "checklist_id": "PROP-U5-uaf-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 0,
+    "item_count": 1,
+    "timestamp": 1773332013,
+    "processed_ids": [
+      "PROP-U5-uaf-001"
+    ]
+  }
+}

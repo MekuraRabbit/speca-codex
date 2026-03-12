@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U5-uaf-011",
+      "classification": "vulnerability",
+      "code_path": "icu4c/source/i18n/tznames_impl.cpp::TZDBNames::createInstance::L1550-1562",
+      "proof_trace": "At L1557, `uprv_free(p)` is called where `p` is a `char**` traversal pointer initialized to `regions`; on the first iteration this frees the `regions` array itself, and `uprv_free(regions)` at L1559 double-frees the same block. Subsequent iterations call `uprv_free` on interior (non-heap-start) addresses of the already-freed block, corrupting heap metadata. The destructor (~TZDBNames, L1466\u20131470) uses the correct `uprv_free(*p)` (dereference) pattern, confirming L1557 is a typo where `*p` was written as `p`.",
+      "attack_scenario": "An attacker who can supply or trigger loading of a timezone resource bundle containing `parseRegions` entries where `ures_getStringByIndex` returns failure (malformed resource data) sets `regionError=TRUE`, triggering the double-free path via any ICU timezone/date formatting API (e.g., `TZDBTimeZoneNames::getMetaZoneNames` \u2192 `TZDBNames::createInstance`), leading to heap corruption and potential code execution.",
+      "checklist_id": "PROP-U5-uaf-011"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 10,
+    "item_count": 1,
+    "timestamp": 1773332009,
+    "processed_ids": [
+      "PROP-U5-uaf-011"
+    ]
+  }
+}

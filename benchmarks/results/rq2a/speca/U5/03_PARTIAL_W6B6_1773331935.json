@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U5-uaf-007",
+      "classification": "not-a-vulnerability",
+      "code_path": "icu4c/source/i18n/remtrans.cpp::RemoveTransliterator_create::L27-31",
+      "proof_trace": "RemoveTransliterator_create is a 3-line factory function containing a single statement: `return new RemoveTransliterator();`. There are zero free/delete operations in this function, so the UAF assertion trivially holds \u2014 the set of freed pointers is empty, making use-after-free and double-free impossible here.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U5-uaf-007"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 6,
+    "item_count": 1,
+    "timestamp": 1773331935,
+    "processed_ids": [
+      "PROP-U5-uaf-007"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U5-uaf-008",
+      "classification": "not-a-vulnerability",
+      "code_path": "icu4c/source/i18n/collationfastlatin.cpp::lookupUTF8Unsafe::L820-837",
+      "proof_trace": "lookupUTF8Unsafe is a pure table-lookup function that contains zero memory allocation or deallocation calls; a grep for free/delete/malloc/new across the entire file returns no matches. The function only reads from caller-provided const pointers (table, s8) and an integer index reference, so the UAF precondition (free(p)) is never satisfied, making the property vacuously hold.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U5-uaf-008"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 7,
+    "item_count": 1,
+    "timestamp": 1773331997,
+    "processed_ids": [
+      "PROP-U5-uaf-008"
+    ]
+  }
+}

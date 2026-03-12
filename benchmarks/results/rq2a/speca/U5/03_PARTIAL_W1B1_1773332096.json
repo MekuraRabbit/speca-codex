@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U5-uaf-002",
+      "classification": "not-a-vulnerability",
+      "code_path": "icu4c/source/i18n/collationroot.cpp::uprv_collation_root_cleanup::L40-44",
+      "proof_trace": "Within uprv_collation_root_cleanup(), SharedObject::clearPtr(rootSingleton) calls ptr->removeRef() (potentially deleting the object) and then sets ptr = NULL \u2014 this second step writes to the pointer variable (rootSingleton) only, not through the freed pointer, so no use-after-free occurs. The NULL guard inside clearPtr prevents double-free; initOnce.reset() on L42 operates on an entirely separate static global and never touches rootSingleton. All three phases confirm no UAF or double-free within the function body.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U5-uaf-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 1,
+    "item_count": 1,
+    "timestamp": 1773332096,
+    "processed_ids": [
+      "PROP-U5-uaf-002"
+    ]
+  }
+}

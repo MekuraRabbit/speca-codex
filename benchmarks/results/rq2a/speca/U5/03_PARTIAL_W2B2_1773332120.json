@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U5-uaf-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "icu4c/source/i18n/region.cpp::region_cleanup::L48-53",
+      "proof_trace": "region_cleanup() delegates entirely to cleanupRegionData() (L325-344), which frees each allocation exactly once in correct dependency order: availableRegions UVectors (containing deep-copied UnicodeStrings), regionAliases (key deleter frees UnicodeString* keys; no value deleter since Region* are owned by regionIDMap), numericCodeMap (no deleters; Region* owned by regionIDMap), then regionIDMap (value deleter deleteRegion frees each Region* once, including its containedRegions and preferredValues UVectors of independent copies). No pointer is accessed after being freed; no pointer is freed more than once.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U5-uaf-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1773332120,
+    "processed_ids": [
+      "PROP-U5-uaf-003"
+    ]
+  }
+}
