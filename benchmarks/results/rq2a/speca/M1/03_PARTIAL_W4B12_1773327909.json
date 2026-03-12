@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-013",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/context.cpp::register_resource::L238-316",
+      "proof_trace": "The property's premise is false: exceptions thrown at L295 are caught inside sass_parse_block (sass_context.cpp:L199), not by the C API caller. sass_compile_context unconditionally calls sass_delete_compiler(compiler) at L323 (outside its own try-catch), which calls delete cpp_ctx \u2192 Context::~Context(). The destructor correctly handles the dual-ownership of the contents pointer (resources[idx].contents == import_stack.back()->source) by freeing via the resources loop first and then using sass_import_take_source to zero the import entry's pointer before sass_delete_import, preventing any double-free.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M1-mlk-013"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 12,
+    "item_count": 1,
+    "timestamp": 1773327909,
+    "processed_ids": [
+      "PROP-M1-mlk-013"
+    ]
+  }
+}

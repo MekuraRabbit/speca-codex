@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-006",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/sass_values.cpp::sass_make_error::L170-178",
+      "proof_trace": "All allocations in sass_make_error are correctly managed on every reachable path: if calloc fails, v is never allocated and NULL is returned; if msg is NULL, v is allocated then immediately freed via the guard at L176 before returning NULL; on success, both v and v->error.message are returned to the caller and freed by sass_delete_value (L221-223, L230). The guard at L176 that appears to handle sass_copy_c_string failure is dead code in practice because sass_alloc_memory (sass.cpp:40-43) calls exit(EXIT_FAILURE) on OOM rather than returning NULL, so sass_copy_c_string can never return NULL.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M1-mlk-006"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 5,
+    "item_count": 1,
+    "timestamp": 1773327624,
+    "processed_ids": [
+      "PROP-M1-mlk-006"
+    ]
+  }
+}

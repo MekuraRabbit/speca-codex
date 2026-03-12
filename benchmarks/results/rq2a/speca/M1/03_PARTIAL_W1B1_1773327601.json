@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-002",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/emitter.cpp::Emitter::add_close_mapping::L54-55",
+      "proof_trace": "Emitter::add_close_mapping is a single-line delegate to SourceMap::add_close_mapping, which calls std::vector::push_back on a Mapping struct containing only size_t value fields \u2014 no raw new/malloc allocations exist in either function. All memory is RAII-managed by std::vector<Mapping> inside SourceMap; there are no explicit error paths requiring manual cleanup because there is nothing to manually free.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M1-mlk-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 1,
+    "item_count": 1,
+    "timestamp": 1773327601,
+    "processed_ids": [
+      "PROP-M1-mlk-002"
+    ]
+  }
+}

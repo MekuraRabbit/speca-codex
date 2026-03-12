@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-004",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/source_map.cpp::add_close_mapping::L181-184",
+      "proof_trace": "The function body is a single `push_back` expression using exclusively value types: `node->pstate()` returns `ParserState` by value (ADD_PROPERTY macro generates a value-return accessor), `Position::operator+(Offset)` returns `Position` by value (position.cpp:157-160), and `Mapping` is a plain struct with two `Position` members and no heap allocation. No `new` or `malloc` is called anywhere in this function or its call chain, so the set of explicit allocations is empty and the leak-freedom assertion holds vacuously.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M1-mlk-004"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 3,
+    "item_count": 1,
+    "timestamp": 1773327641,
+    "processed_ids": [
+      "PROP-M1-mlk-004"
+    ]
+  }
+}

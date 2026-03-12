@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-012",
+      "classification": "vulnerability",
+      "code_path": "src/permutate.hpp::permutateAlt::L75-131",
+      "proof_trace": "permutateAlt() allocates `state = new size_t[L]` at L79, but the early return at L84 (`if (in[i].size() == 0) return {}`) exits without calling `delete[] state`, causing a heap memory leak. The normal exit path at L129-130 correctly calls `delete[] state`, but this guard is bypassed on the early return. No RAII wrapper or exception-safe mechanism protects the allocation.",
+      "attack_scenario": "An attacker supplies crafted CSS input containing a parent-selector reference that resolves to an empty selector group; permutateAlt is called from resolve_parent_refs (ast_selectors.cpp:980) and the early return at L84 fires, leaking the `state` array on each invocation \u2014 repeated requests accumulate unbounded heap allocations leading to memory exhaustion (DoS).",
+      "checklist_id": "PROP-M1-mlk-012"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 11,
+    "item_count": 1,
+    "timestamp": 1773327588,
+    "processed_ids": [
+      "PROP-M1-mlk-012"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-011",
+      "classification": "vulnerability",
+      "code_path": "src/permutate.hpp::permutate::L27-32",
+      "proof_trace": "`size_t* state = new size_t[L+1]` is allocated at line 27, but the early return at line 32 (`if (in[i].size() == 0) return {}`) exits without calling `delete[] state`, leaking L+1 size_t values per call. The only `delete[] state` is at line 67 on the normal exit path; no RAII or try/finally guards the raw pointer. The same defect exists in `permutateAlt()` at line 84.",
+      "attack_scenario": "An attacker supplies SCSS input containing `@extend` rules or nested selectors that produce an empty selector group; libsass passes this through `extendCompound`/`weaveParents` into `permutate()`, triggering the early return and leaking heap memory on every such parse. In a server-side context (e.g., node-sass behind a web endpoint), repeated requests accumulate leaks leading to memory exhaustion.",
+      "checklist_id": "PROP-M1-mlk-011"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 10,
+    "item_count": 1,
+    "timestamp": 1773327646,
+    "processed_ids": [
+      "PROP-M1-mlk-011"
+    ]
+  }
+}

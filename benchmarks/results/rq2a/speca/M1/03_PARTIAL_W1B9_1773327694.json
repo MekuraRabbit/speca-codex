@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-010",
+      "classification": "potential-vulnerability",
+      "code_path": "src/c2ast.cpp::c2ast::L34-48",
+      "proof_trace": "In c2ast(), the SASS_LIST branch (L34) allocates `List* l` and the SASS_MAP branch (L42) allocates `Map* m` as raw pointers with no RAII wrapper; both branches recursively call c2ast() on nested elements. If a nested element carries SASS_ERROR or SASS_WARNING, error() throws InvalidSyntax with no catch in c2ast(), leaking `l` or `m`. No Memory_Manager arena or smart-pointer wrapping covers these allocations on the exception path.",
+      "attack_scenario": "A custom C function returns a SASS_LIST whose first element has tag SASS_ERROR; c2ast() allocates List* then throws on the first recursive call, leaking the allocation. Repeated invocations in a long-running process (e.g., a server-side SASS renderer) exhaust heap memory causing denial of service.",
+      "checklist_id": "PROP-M1-mlk-010"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 9,
+    "item_count": 1,
+    "timestamp": 1773327694,
+    "processed_ids": [
+      "PROP-M1-mlk-010"
+    ]
+  }
+}

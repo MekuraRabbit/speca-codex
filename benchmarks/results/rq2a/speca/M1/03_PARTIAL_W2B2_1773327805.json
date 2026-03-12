@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/parser.cpp::Parser::parse_definition::L384-398",
+      "proof_trace": "All allocations in parse_definition are held by RAII smart pointers (Parameters_Obj = SharedImpl<Parameters>, Block_Obj = SharedImpl<Block>), which are stack-local variables whose destructors call decRefCount() during C++ exception unwinding, freeing heap objects when refcount reaches 0. The only SASS_MEMORY_NEW call in parse_definition itself is the final return statement (only reached on the success path), so there is no raw pointer that could escape on an error path. The block_stack member in parse_css_block retains a transient reference on exception paths, but this is freed when the Parser is destroyed and is not a true memory leak.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M1-mlk-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1773327805,
+    "processed_ids": [
+      "PROP-M1-mlk-003"
+    ]
+  }
+}
