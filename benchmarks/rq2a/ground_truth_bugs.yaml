@@ -282,7 +282,7 @@ bugs:
     inter_procedural: true
     reference: https://repoaudit-home.github.io/static/bug/old/NPD/C_openldap.md
     # scan_dir expanded to include clients/tools/
-    detected_by: { repoaudit_claude35: true, speca: false }
+    detected_by: { repoaudit_claude35: true, speca: true }
 
   - id: RA-N5-N4
     project: openldap
@@ -317,7 +317,7 @@ bugs:
     # Classification disagreement: RepoAudit uses code-quality criteria (missing NULL check = bug),
     # SPECA uses security criteria (no reachable exploit path = not-a-vulnerability).
     disputed: true  # SPECA correctly classified as not-a-vulnerability; no exploit path exists
-    detected_by: { repoaudit_claude35: true, speca: false }
+    detected_by: { repoaudit_claude35: true, speca: true }
 
   # ============================================================
   # MLK -- Memory Leak (5 Old + 8 New = 13 TP)

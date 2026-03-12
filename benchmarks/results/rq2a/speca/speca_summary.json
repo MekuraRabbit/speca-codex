@@ -1,32 +1,29 @@
 {
-  "tp": 8,
-  "fp": 0,
-  "gt_tp": 8,
+  "tp": 6,
+  "fp": 1,
+  "gt_tp": 6,
   "new_tp": 0,
   "human_reviewed": 0,
-  "unreviewed": 0,
-  "precision": 100.0,
-  "recall": 20.51,
-  "f1": 34.04,
+  "unreviewed": 1,
+  "precision": 85.71,
+  "recall": 15.38,
+  "f1": 26.08,
   "total_ground_truth": 39,
   "total_ground_truth_incl_disputed": 40,
-  "total_positive_findings": 5,
+  "total_positive_findings": 6,
   "total_cost": null,
   "bug_type_breakdown": {
-    "NPD": 8
+    "NPD": 5
   },
   "per_project": {
-    "N1": 4,
-    "N5": 4
+    "N5": 5
   },
   "detected_bugs": [
-    "RA-N1-N1",
-    "RA-N1-N2",
-    "RA-N1-N3",
-    "RA-N1-O1",
     "RA-N5-N1",
     "RA-N5-N2",
+    "RA-N5-N3",
     "RA-N5-N4",
+    "RA-N5-N5",
     "RA-N5-O1"
   ],
   "missed_bugs": [
@@ -43,6 +40,10 @@
     "RA-M3-O1",
     "RA-M4-O1",
     "RA-M5-O1",
+    "RA-N1-N1",
+    "RA-N1-N2",
+    "RA-N1-N3",
+    "RA-N1-O1",
     "RA-N2-N1",
     "RA-N2-O1",
     "RA-N2-O2",
@@ -54,7 +55,6 @@
     "RA-N3-N1",
     "RA-N3-O1",
     "RA-N4-O1",
-    "RA-N5-N3",
     "RA-U1-O1",
     "RA-U2-O1",
     "RA-U3-O1",
@@ -64,42 +64,34 @@
   ],
   "disputed_bugs": {
     "total": 1,
-    "tn": [
+    "tn": [],
+    "detected": [
       "RA-N5-N5"
     ],
-    "detected": [],
     "note": "Disputed bugs have no exploit path; not detecting them is correct (TN)"
   },
   "matches": {
-    "RA-N1-O1": {
-      "finding_id": "PROP-N1-npd-033",
-      "confidence": 0.95
-    },
-    "RA-N1-N1": {
-      "finding_id": "PROP-N1-npd-033",
-      "confidence": 0.95
-    },
-    "RA-N1-N2": {
-      "finding_id": "PROP-N1-npd-033",
-      "confidence": 0.98
-    },
-    "RA-N1-N3": {
-      "finding_id": "PROP-N1-npd-033",
-      "confidence": 0.99
-    },
     "RA-N5-O1": {
-      "finding_id": "PROP-N5-npd-013",
-      "confidence": 0.95
+      "finding_id": "PROP-N5-npd-014",
+      "confidence": 0.85
     },
     "RA-N5-N1": {
-      "finding_id": "PROP-N5-npd-016",
+      "finding_id": "PROP-N5-npd-017",
       "confidence": 0.95
     },
     "RA-N5-N2": {
-      "finding_id": "PROP-N5-npd-014",
-      "confidence": 0.98
+      "finding_id": "PROP-N5-npd-015",
+      "confidence": 0.9
+    },
+    "RA-N5-N3": {
+      "finding_id": "PROP-N5-npd-016",
+      "confidence": 0.9
     },
     "RA-N5-N4": {
+      "finding_id": "PROP-N5-npd-017",
+      "confidence": 0.85
+    },
+    "RA-N5-N5": {
       "finding_id": "PROP-N5-npd-017",
       "confidence": 0.95
     }
