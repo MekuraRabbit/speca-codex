@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-010",
+      "classification": "potential-vulnerability",
+      "code_path": "src/c2ast.cpp::c2ast::L34-48",
+      "proof_trace": "sass_value_get_tag() itself (sass_values.cpp:17) makes zero allocations \u2014 it is a trivial getter. However, in c2ast() (the function calling it), SASS_LIST and SASS_MAP cases allocate via raw SASS_MEMORY_NEW into unguarded raw pointers (List* l, Map* m). If any recursive c2ast() call throws \u2014 triggered when a list/map element has tag SASS_ERROR or SASS_WARNING (which calls error() unconditionally) \u2014 the containing List* or Map* object is leaked because no try/catch or RAII wrapper guards the allocation. Smart pointer aliases List_Obj/Map_Obj exist but are not used at these sites.",
+      "attack_scenario": "A custom C function registered via the libsass plugin API returns a SASS_LIST or SASS_MAP value containing a nested SASS_ERROR element; the top-level check in eval.cpp:1103-1112 passes because the outer tag is SASS_LIST, c2ast() allocates the List container, then throws on the nested error element, leaking the container and any already-appended child nodes each call.",
+      "checklist_id": "PROP-M1-mlk-010"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 9,
+    "item_count": 1,
+    "timestamp": 1773320060,
+    "processed_ids": [
+      "PROP-M1-mlk-010"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-011",
+      "classification": "vulnerability",
+      "code_path": "src/permutate.hpp::permutate::L27-32",
+      "proof_trace": "`size_t* state = new size_t[L + 1]` is allocated at line 27, but the early return `return {}` at line 32 (triggered when any inner vector is empty) exits before the sole `delete[] state` at line 67. No RAII wrapper or smart pointer is used, so the allocation leaks on this path. The caller in `extender.cpp:614` only guards against an empty outer vector, leaving the inner-vector-empty path reachable.",
+      "attack_scenario": "An attacker crafts a Sass/SCSS file whose `@extend` or selector rules cause `extender.cpp:permutate(extendedNotExpanded)` to be called with an inner vector that is empty; each such request leaks `(L+1) * sizeof(size_t)` bytes, enabling memory exhaustion in server-side libsass deployments that process user-supplied stylesheets.",
+      "checklist_id": "PROP-M1-mlk-011"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 10,
+    "item_count": 1,
+    "timestamp": 1773319858,
+    "processed_ids": [
+      "PROP-M1-mlk-011"
+    ]
+  }
+}

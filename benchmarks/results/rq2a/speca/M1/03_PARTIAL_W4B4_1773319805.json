@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-005",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/sass_functions.cpp::sass_import_get_error_column::L202-202",
+      "proof_trace": "The function sass_import_get_error_column is a trivial one-liner that only reads and returns entry->column \u2014 it contains zero allocations (no malloc, calloc, strdup, or sass_copy_c_string calls). The universal quantifier over allocations is vacuously satisfied: there are no allocations to track or free.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M1-mlk-005"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 4,
+    "item_count": 1,
+    "timestamp": 1773319805,
+    "processed_ids": [
+      "PROP-M1-mlk-005"
+    ]
+  }
+}
