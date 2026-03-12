@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-018",
+      "classification": "not-a-vulnerability",
+      "code_path": "clients/tools/ldapvc.c::handle_private_option::L92-269",
+      "proof_trace": "All five ber_strdup() results (mech/realm/authcid/authzid/secprops) are used exclusively through NULL-safe paths: vc_sasl_mech is only accessed via boolean guards or inside an `if (vc_sasl_mech)` block; realm/authcid are passed to lutil_sasl_defaults() which handles NULL gracefully (sasl.c:80-84); vc_sasl_authzid and vc_sasl_secprops are never referenced downstream after assignment. OOM causes silent authentication fallback, not a dereference crash.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N5-npd-018"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 17,
+    "item_count": 1,
+    "timestamp": 1773303425,
+    "processed_ids": [
+      "PROP-N5-npd-018"
+    ]
+  }
+}

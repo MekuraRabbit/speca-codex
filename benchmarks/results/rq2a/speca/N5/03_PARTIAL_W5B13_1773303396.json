@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-014",
+      "classification": "vulnerability",
+      "code_path": "libraries/libldap/fetch.c::ldif_open_url::L71-82",
+      "proof_trace": "ber_strdup() at line 71 returns NULL on allocation failure (confirmed in ber_strdup_x: memory.c:643, p is returned as NULL when ber_memalloc_x fails). No NULL check exists before the result is used: ldap_pvt_hex_unescape(p) at line 80 is unconditionally called and immediately dereferences p in `for (ptr = s; *s != '\\0'` (url.c:1625), causing a NULL pointer dereference. fopen(NULL, \"rb\") at line 82 also crashes. Every other allocation in the same function (e.g., ber_memrealloc at line 119) checks for NULL, confirming this is an oversight.",
+      "attack_scenario": "An attacker floods the OpenLDAP server with large requests to induce memory exhaustion, then sends an LDAP modify/add operation containing an attribute value in LDIF URL format (`attribute:< file:///path`) that triggers ldif_parse_line \u2192 ldif_fetch_url \u2192 ldif_open_url; under OOM ber_strdup returns NULL, ldap_pvt_hex_unescape(NULL) dereferences it, crashing the slapd process (DoS).",
+      "checklist_id": "PROP-N5-npd-014"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 13,
+    "item_count": 1,
+    "timestamp": 1773303396,
+    "processed_ids": [
+      "PROP-N5-npd-014"
+    ]
+  }
+}

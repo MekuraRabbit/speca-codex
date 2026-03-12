@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-017",
+      "classification": "potential-vulnerability",
+      "code_path": "clients/tools/common.c::tool_args::L982-990",
+      "proof_trace": "At line 982, `passwd.bv_val = ber_strdup(optarg)` is called without a NULL check; `ber_strdup` returns NULL when `ber_memalloc` fails (OOM). The result is immediately passed to `strlen(passwd.bv_val)` at line 990, causing a NULL dereference (SIGSEGV). No guard exists on any code path between the allocation and the `strlen` call.",
+      "attack_scenario": "An attacker who can induce memory exhaustion on the host (e.g., via ulimit manipulation or OS-level memory pressure) and cause a victim to run an LDAP client tool with `-w password` would trigger the NULL dereference crash, denying service to the client process.",
+      "checklist_id": "PROP-N5-npd-017"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 16,
+    "item_count": 1,
+    "timestamp": 1773303394,
+    "processed_ids": [
+      "PROP-N5-npd-017"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-007",
+      "classification": "not-a-vulnerability",
+      "code_path": "libraries/libldap/os-ip.c::ldap_is_write_ready::L1120-1146",
+      "proof_trace": "ldap_is_write_ready() is declared and implemented as returning int (ldap-int.h:757, os-ip.c:L1120), not a pointer; an integer return value cannot be NULL nor dereferenced. The sole caller (result.c:354) uses the return value as a boolean condition in an if-statement with no pointer dereference. The property's premise \u2014 that callers must NULL-check the return value before dereferencing \u2014 is factually incorrect about this function's return type.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N5-npd-007"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 6,
+    "item_count": 1,
+    "timestamp": 1773303380,
+    "processed_ids": [
+      "PROP-N5-npd-007"
+    ]
+  }
+}

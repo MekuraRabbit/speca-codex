@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-010",
+      "classification": "potential-vulnerability",
+      "code_path": "libraries/libldap/test.c::print_search_entry::L740-807",
+      "proof_trace": "print_search_entry is declared `static void` (line 740-741), so the literal property assertion\u2014callers must NULL-check its return value\u2014is vacuously satisfied since there is no return value to dereference. However, within the function, ldap_get_dn(ld, e) at line 754 provably returns NULL when ber_scanf returns LBER_ERROR (getdn.c:100-102), and the result is immediately passed to printf(\"\\tDN: %s\\n\", dn) at line 755 and ldap_dn2ufn(dn) at line 757 without any NULL check, constituting undefined behavior.",
+      "attack_scenario": "A malicious LDAP server returns a search entry response with an invalid DN BER encoding; ber_scanf in ldap_get_dn returns LBER_ERROR and NULL is returned, then passed directly to printf with %s, causing undefined behavior (crash or memory disclosure) in the LDAP client.",
+      "checklist_id": "PROP-N5-npd-010"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 9,
+    "item_count": 1,
+    "timestamp": 1773303451,
+    "processed_ids": [
+      "PROP-N5-npd-010"
+    ]
+  }
+}

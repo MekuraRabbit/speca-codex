@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-012",
+      "classification": "not-a-vulnerability",
+      "code_path": "libraries/libldap/thr_nt.c::ldap_pvt_thread_key_setdata::L239-242",
+      "proof_trace": "The property's premise is incorrect: `ldap_pvt_thread_key_setdata` is declared and implemented as returning `int` (0=success, 1=failure via `TlsSetValue(key,data)==0`), not a pointer \u2014 confirmed in the header `ldap_pvt_thread.h:167` (`LDAP_F(int)`) and all platform variants. Dereferencing an `int` return value as a null pointer is not possible; the property's assertion `r != NULL before deref(r)` is inapplicable to this type. The single caller (`tpool.c:966`) discards the return value (an ignored error code pattern, not a null-pointer hazard).",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N5-npd-012"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 11,
+    "item_count": 1,
+    "timestamp": 1773303349,
+    "processed_ids": [
+      "PROP-N5-npd-012"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-005",
+      "classification": "not-a-vulnerability",
+      "code_path": "libraries/libldap/add.c::ldap_build_add_req::L89-176",
+      "proof_trace": "Both callers of ldap_build_add_req() \u2014 ldap_add_ext (libraries/libldap/add.c:224) and asyncmeta_back_add_start (servers/slapd/back-asyncmeta/add.c:143) \u2014 immediately guard the return value with `if (!ber)` before any dereference, handling the NULL case via early return or goto. Grep confirms no other call sites exist in the codebase.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N5-npd-005"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 4,
+    "item_count": 1,
+    "timestamp": 1773303352,
+    "processed_ids": [
+      "PROP-N5-npd-005"
+    ]
+  }
+}

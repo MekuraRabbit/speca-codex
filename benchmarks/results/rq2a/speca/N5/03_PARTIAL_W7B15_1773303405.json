@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-016",
+      "classification": "potential-vulnerability",
+      "code_path": "clients/tools/common.c::tool_bind::L1476-1477",
+      "proof_trace": "ber_strdup(pw) at L1476 returns NULL when ber_memalloc_x fails (confirmed: memory.c:643 returns p only if alloc succeeds). The result is assigned directly to passwd.bv_val with no NULL check, and strlen(passwd.bv_val) is called immediately at L1477, producing a NULL pointer dereference on OOM. No downstream guard exists \u2014 the proof of safety fails at L1477.",
+      "attack_scenario": "An attacker or OOM condition during interactive password entry (tool invoked with -W flag) causes ber_strdup to return NULL; strlen(passwd.bv_val) at L1477 then dereferences NULL, crashing the LDAP client tool with SIGSEGV.",
+      "checklist_id": "PROP-N5-npd-016"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 15,
+    "item_count": 1,
+    "timestamp": 1773303405,
+    "processed_ids": [
+      "PROP-N5-npd-016"
+    ]
+  }
+}

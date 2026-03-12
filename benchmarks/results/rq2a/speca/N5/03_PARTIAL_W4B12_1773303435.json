@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-013",
+      "classification": "potential-vulnerability",
+      "code_path": "libraries/libldap/fetch.c::ldif_open_url::L41-93",
+      "proof_trace": "ber_strdup() (wrapping ber_strdup_x) at line 71 can return NULL on allocation failure, but the result is used without a NULL check at line 80 (ldap_pvt_hex_unescape(p)) and line 82 (fopen(p, \"rb\")), both of which dereference the pointer unconditionally. Proof fails: no enforcement mechanism guards against the NULL case.",
+      "attack_scenario": "An attacker that can cause memory pressure while a client processes LDIF data containing a file:// URL reference (via ldif_parse_line \u2192 ldif_fetch_url \u2192 ldif_open_url) can trigger a NULL dereference crash (DoS) when ber_strdup fails and the NULL pointer is passed to ldap_pvt_hex_unescape or fopen.",
+      "checklist_id": "PROP-N5-npd-013"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 12,
+    "item_count": 1,
+    "timestamp": 1773303435,
+    "processed_ids": [
+      "PROP-N5-npd-013"
+    ]
+  }
+}

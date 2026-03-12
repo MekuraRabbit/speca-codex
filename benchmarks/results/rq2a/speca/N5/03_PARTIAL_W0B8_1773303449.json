@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-009",
+      "classification": "not-a-vulnerability",
+      "code_path": "libraries/librewrite/session.c::rewrite_session_init::L74-144",
+      "proof_trace": "All four callers of rewrite_session_init() either NULL-check the return value before dereference (session.c:215 inside rewrite_session_var_set_f) or explicitly discard it via (void) cast / by not storing it (rwm.c:405, conn.c:668, rewrite.c:60), so no dereference of a potentially-NULL return ever occurs. Downstream functions that look up sessions via rewrite_session_find() all NULL-check that result before any pointer dereference, providing a second layer of defense.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N5-npd-009"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 8,
+    "item_count": 1,
+    "timestamp": 1773303449,
+    "processed_ids": [
+      "PROP-N5-npd-009"
+    ]
+  }
+}

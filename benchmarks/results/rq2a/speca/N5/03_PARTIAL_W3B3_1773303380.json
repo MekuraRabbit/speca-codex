@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-004",
+      "classification": "not-a-vulnerability",
+      "code_path": "clients/tools/ldapsearch.c::print_entry::L1932-2039",
+      "proof_trace": "print_entry is declared and defined as `static void` (forward declaration L180, definition L1932) \u2014 it returns no value. The property's premise that callers must NULL-check the return value is factually incorrect: the function returns void, so there is no return value r to dereference. The sole caller at L1808 does not capture any return value, consistent with the void signature.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N5-npd-004"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 3,
+    "item_count": 1,
+    "timestamp": 1773303380,
+    "processed_ids": [
+      "PROP-N5-npd-004"
+    ]
+  }
+}
