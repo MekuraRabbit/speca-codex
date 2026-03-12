@@ -38,7 +38,7 @@ bugs:
       repoaudit_claude35: true
       meta_infer: false  # N1 failed to build
       amazon_codeguru: false
-      speca: false
+      speca: true
 
   # New bugs from PRs 248, 249, 250
   - id: RA-N1-N1
@@ -52,7 +52,7 @@ bugs:
     description: "NULL from field2json() when repeated=false is dereferenced via parse_msg caller without null check"
     inter_procedural: true
     reference: https://github.com/baidu/sofa-pbrpc/pull/248
-    detected_by: { repoaudit_claude35: true, speca: false }
+    detected_by: { repoaudit_claude35: true, speca: true }
 
   - id: RA-N1-N2
     project: sofa-pbrpc
@@ -65,7 +65,7 @@ bugs:
     description: "NULL from parse_msg() propagated to field2json() and dereferenced at line 207 without check"
     inter_procedural: true
     reference: https://github.com/baidu/sofa-pbrpc/pull/249
-    detected_by: { repoaudit_claude35: true, speca: false }
+    detected_by: { repoaudit_claude35: true, speca: true }
 
   - id: RA-N1-N3
     project: sofa-pbrpc
@@ -78,7 +78,7 @@ bugs:
     description: "Multi-level chain: NULL from nested parse_msg() flows through field2json() back to parse_msg() caller"
     inter_procedural: true
     reference: https://github.com/baidu/sofa-pbrpc/pull/250
-    detected_by: { repoaudit_claude35: true, speca: false }
+    detected_by: { repoaudit_claude35: true, speca: true }
 
   # --- ImageMagick/MagickCore (N2): 7 Old, 1 New, 0 FP, 4 Intra, 4 Inter ---
   # Old bug source: static/bug/old/NPD/C_MagickCore.json
@@ -240,7 +240,7 @@ bugs:
     description: "ber_strdup_x() returns NULL, propagates through ldif_open_url() to ldap_pvt_hex_unescape() where dereferenced in loop"
     inter_procedural: true
     reproducible: true
-    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: false }
+    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: true }
 
   # New bugs: ITS#10309 "Handle potential null pointers returned by ber_strdup" (8 bugs, Fixed)
   # Plus additional NPD reports. 5 new total, 4 still in latest.
@@ -268,7 +268,7 @@ bugs:
     description: "NULL from ber_strdup() at fetch.c:71 flows to strchr dereference without NULL check"
     inter_procedural: true
     reference: https://repoaudit-home.github.io/static/bug/old/NPD/C_openldap.md
-    detected_by: { repoaudit_claude35: true, speca: false }
+    detected_by: { repoaudit_claude35: true, speca: true }
 
   - id: RA-N5-N3
     project: openldap
@@ -310,7 +310,7 @@ bugs:
     inter_procedural: true
     reference: https://bugs.openldap.org/show_bug.cgi?id=10309
     # scan_dir expanded to include clients/tools/
-    detected_by: { repoaudit_claude35: true, speca: false }
+    detected_by: { repoaudit_claude35: true, speca: true }
 
   # ============================================================
   # MLK -- Memory Leak (5 Old + 8 New = 13 TP)
@@ -514,7 +514,7 @@ bugs:
     description: "Pointer c freed via redisFree(c) at line 46, then dereferenced at line 49 to access connection_type"
     inter_procedural: false
     reproducible: true
-    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: true }
+    detected_by: { repoaudit_claude35: true, meta_infer: null, amazon_codeguru: false, speca: false }
 
   # --- linux/drivers/peci (U2): 1 Old, 0 New, 0 FP, 1 Intra, 0 Inter ---
   # Old bug source: static/bug/old/UAF/C_peci_e79b548.json
