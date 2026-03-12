@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U2-uaf-004",
+      "classification": "vulnerability",
+      "code_path": "drivers/peci/device.c::peci_device_destroy::L205-213",
+      "proof_trace": "After `device_unregister(&device->dev)` returns, the device's kobject refcount can reach zero synchronously: `device_initialize` sets refcount=1, `bus_add_device` increments to 2 via `klist_devices_get`, then `device_del` drops it to 1 via `klist_release`\u2192`put_device`, and `device_unregister`'s own `put_device` drops it to 0, triggering `peci_device_release`\u2192`kfree(device)`. The subsequent `device->deleted = true` at L210 writes to already-freed memory, constituting a use-after-free.",
+      "attack_scenario": "An attacker with sysfs write access (or triggering controller removal) causes `peci_device_destroy` to be called; when no active bus iterators exist (the common case), `device_unregister` synchronously frees the `peci_device` allocation, and the `device->deleted = true` store corrupts whatever kernel object has been allocated at that address by the SLUB allocator.",
+      "checklist_id": "PROP-U2-uaf-004"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 3,
+    "item_count": 1,
+    "timestamp": 1773332112,
+    "processed_ids": [
+      "PROP-U2-uaf-004"
+    ]
+  }
+}

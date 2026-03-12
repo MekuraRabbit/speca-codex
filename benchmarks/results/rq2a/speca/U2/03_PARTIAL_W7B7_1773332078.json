@@ -4,7 +4,7 @@
       "property_id": "PROP-U2-uaf-008",
       "classification": "not-a-vulnerability",
       "code_path": "drivers/peci/core.c::peci_controller_dev_release::L19-26",
-      "proof_trace": "The function accesses controller fields (mutex_destroy L23, ida_free L24) strictly before calling kfree(controller) at L25, which is the terminal statement; the function returns immediately after with zero further accesses. No pointer is ever dereferenced after being freed, and there is only one kfree call so no double-free is possible.",
+      "proof_trace": "Within `peci_controller_dev_release`, all accesses to `controller` (mutex_destroy L23, ida_free L24) strictly precede `kfree(controller)` at L25, and the function immediately terminates at L26 with no subsequent dereference of `controller` or `dev`. The kernel refcount mechanism ensures this release callback fires exactly once, ruling out double-free.",
       "attack_scenario": "",
       "checklist_id": "PROP-U2-uaf-008"
     }
@@ -14,7 +14,7 @@
     "worker_id": 7,
     "batch_index": 7,
     "item_count": 1,
-    "timestamp": 1773327705,
+    "timestamp": 1773332078,
     "processed_ids": [
       "PROP-U2-uaf-008"
     ]

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U2-uaf-001",
+      "classification": "not-a-vulnerability",
+      "code_path": "drivers/peci/controller/peci-aspeed.c::aspeed_peci_clk_release::L491-494",
+      "proof_trace": "aspeed_peci_clk_release is a 2-line devm cleanup callback that calls clk_disable_unprepare(data) once and returns immediately; clk_disable_unprepare does not free its argument (it only manages runtime enable/prepare state), so no pointer is freed in this function. After the single call to clk_disable_unprepare, data is never referenced again, and the devm framework guarantees the callback is invoked exactly once \u2014 ruling out both use-after-free and double-free.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U2-uaf-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 0,
+    "item_count": 1,
+    "timestamp": 1773331951,
+    "processed_ids": [
+      "PROP-U2-uaf-001"
+    ]
+  }
+}

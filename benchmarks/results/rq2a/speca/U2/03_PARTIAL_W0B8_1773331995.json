@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U2-uaf-009",
+      "classification": "not-a-vulnerability",
+      "code_path": "drivers/peci/device.c::peci_device_release::L242-247",
+      "proof_trace": "`peci_device_release()` is a 2-line function: it computes `device` via `container_of` (pure pointer arithmetic, no dereference) and immediately calls `kfree(device)`, after which the function returns with no further access to `device` or `dev`. Double-free is prevented by the Linux kobject `kref` mechanism, which guarantees the `.release` callback fires exactly once when the last reference drops to zero.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U2-uaf-009"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 8,
+    "item_count": 1,
+    "timestamp": 1773331995,
+    "processed_ids": [
+      "PROP-U2-uaf-009"
+    ]
+  }
+}

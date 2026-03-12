@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U2-uaf-010",
+      "classification": "not-a-vulnerability",
+      "code_path": "drivers/peci/controller/peci-aspeed.c::devm_aspeed_peci_reset_control_deassert::L480-489",
+      "proof_trace": "The function neither allocates nor frees any pointers \u2014 `dev` and `rst` are incoming parameters only. `reset_control_deassert(rst)` asserts hardware state without freeing `rst`, and `devm_add_action_or_reset` registers `rst` as cleanup data rather than consuming it. Devres LIFO ordering guarantees the registered callback (`aspeed_peci_reset_control_release`, which calls `reset_control_assert(rst)`) fires before the earlier `devm_reset_control_get` entry releases `rst`, so no use-after-free is possible at teardown.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U2-uaf-010"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 9,
+    "item_count": 1,
+    "timestamp": 1773331974,
+    "processed_ids": [
+      "PROP-U2-uaf-010"
+    ]
+  }
+}

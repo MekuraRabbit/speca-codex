@@ -4,7 +4,7 @@
       "property_id": "PROP-U2-uaf-007",
       "classification": "not-a-vulnerability",
       "code_path": "drivers/peci/controller/peci-aspeed.c::aspeed_peci_reset_control_release::L475-478",
-      "proof_trace": "The function body is a single call `reset_control_assert(data)` \u2014 no pointer is freed anywhere inside it. The `data` argument (`rst`) is obtained from `devm_reset_control_get` registered before this devm action, so Linux's LIFO devm cleanup order guarantees `rst` is still allocated when this callback fires. No use-after-free or double-free path exists.",
+      "proof_trace": "The function receives `data` (a `struct reset_control *`) registered via `devm_add_action_or_reset` at L488, which is called after `devm_reset_control_get` at L537. The devm framework cleans up in LIFO order, so the action callback fires before `reset_control_put` frees `rst`, guaranteeing the pointer is valid. `reset_control_assert` does not free the pointer, so no double-free is possible.",
       "attack_scenario": "",
       "checklist_id": "PROP-U2-uaf-007"
     }
@@ -14,7 +14,7 @@
     "worker_id": 6,
     "batch_index": 6,
     "item_count": 1,
-    "timestamp": 1773327671,
+    "timestamp": 1773331961,
     "processed_ids": [
       "PROP-U2-uaf-007"
     ]

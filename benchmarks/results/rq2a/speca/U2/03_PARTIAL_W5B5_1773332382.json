@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U2-uaf-006",
+      "classification": "potential-vulnerability",
+      "code_path": "drivers/peci/device.c::peci_device_destroy::L205-213",
+      "proof_trace": "In peci_device_destroy (called from remove_store), device_unregister(&device->dev) at L209 calls put_device which, when the device has only its initial kref=1 (no driver bound, no iteration reference), synchronously calls peci_device_release \u2192 kfree(device). The subsequent device->deleted = true at L210 is then a write-after-free. Within remove_store itself no pointer is used after peci_device_destroy returns, but the UAF occurs inside that callee on the path originating from remove_store.",
+      "attack_scenario": "A privileged user writes '1' to /sys/bus/peci/devices/<addr>/remove when the peci_device has no driver bound (kref=1); device_unregister frees the device struct, and the subsequent device->deleted = true writes a freed heap byte, enabling heap-corruption primitives.",
+      "checklist_id": "PROP-U2-uaf-006"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 5,
+    "item_count": 1,
+    "timestamp": 1773332382,
+    "processed_ids": [
+      "PROP-U2-uaf-006"
+    ]
+  }
+}

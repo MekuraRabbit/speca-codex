@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U2-uaf-002",
+      "classification": "not-a-vulnerability",
+      "code_path": "drivers/peci/core.c::peci_bus_device_remove::L195-202",
+      "proof_trace": "peci_bus_device_remove contains zero free/kfree/put_device calls, so the property's universal quantifier ('forall free(p) in peci_bus_device_remove') has an empty domain and is vacuously satisfied. Every pointer used (dev, device, driver) is guaranteed valid by the Linux bus framework: dev holds an active reference during the .remove callback, and dev->driver is only cleared after the callback returns by __device_release_driver.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U2-uaf-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 1,
+    "item_count": 1,
+    "timestamp": 1773332049,
+    "processed_ids": [
+      "PROP-U2-uaf-002"
+    ]
+  }
+}

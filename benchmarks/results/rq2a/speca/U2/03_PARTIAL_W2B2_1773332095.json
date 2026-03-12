@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U2-uaf-003",
+      "classification": "vulnerability",
+      "code_path": "drivers/peci/cpu.c::adev_release::L187-195",
+      "proof_trace": "adev_release (L187) is registered as adev->dev.release (L216), meaning it is called by the device model when the kobject refcount reaches 0. Calling auxiliary_device_uninit(adev) at L191 invokes put_device(&adev->dev) on a device whose refcount is already 0, triggering a refcount_t underflow (use-after-free warning) and a recursive release path. kfree(adev->name) at L193 and kfree(adev) at L194 then operate on memory that is in a corrupted or already-freed state, constituting UAF and double-free. The error path in devm_adev_add (L251) is equally affected: auxiliary_device_uninit called on add-failure drops the init ref, fires adev_release, which calls auxiliary_device_uninit again.",
+      "attack_scenario": "An admin-level trigger such as sysfs unbind, PECI device hot-unplug, or driver unload invokes devm cleanup, which calls unregister_adev -> auxiliary_device_delete(adev); auxiliary_device_delete drops the init reference, refcount hits 0, adev_release executes, calls auxiliary_device_uninit/put_device a second time causing refcount underflow and freeing the kobject, then kfree(adev->name) and kfree(adev) operate on freed memory\u2014exploitable for kernel heap corruption.",
+      "checklist_id": "PROP-U2-uaf-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1773332095,
+    "processed_ids": [
+      "PROP-U2-uaf-003"
+    ]
+  }
+}
