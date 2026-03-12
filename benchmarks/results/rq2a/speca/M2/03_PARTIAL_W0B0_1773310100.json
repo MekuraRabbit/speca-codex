@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2-mlk-011",
+      "classification": "not-a-vulnerability",
+      "code_path": "memcached.c::server_sockets::L4621-4681",
+      "proof_trace": "The `list` pointer allocated by `strdup` at line 4629 is indeed not freed on the early-return paths at lines 4647 and 4665. However, `server_sockets()` is called only during startup in `main()`, and both call sites (lines 5746, 5761) call `exit(EX_OSERR)` immediately when the function returns non-zero \u2014 the OS reclaims all memory on process exit. Additionally, `settings.inter` is set exclusively from the command-line `-l` option (`optarg`), not from any network or runtime input, so no external attacker can trigger these paths.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M2-mlk-011"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 0,
+    "item_count": 1,
+    "timestamp": 1773310100,
+    "processed_ids": [
+      "PROP-M2-mlk-011"
+    ]
+  }
+}
