@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-017",
+      "classification": "potential-vulnerability",
+      "code_path": "clients/tools/common.c::tool_args::L982-990",
+      "proof_trace": "Two call sites in tool_args() assign ber_strdup() directly into passwd.bv_val and immediately call strlen(passwd.bv_val) with no intervening NULL check (L982\u2192L990, L1476\u2192L1477). ber_strdup returns NULL when ber_memalloc_x fails (OOM), making both strlen calls a confirmed NULL dereference path. No other enforcement mechanism exists in the function to guard these uses.",
+      "attack_scenario": "If the system is under memory pressure when a user runs any OpenLDAP client tool with -w or interactive password prompt (-W), ber_strdup() returns NULL and strlen(passwd.bv_val) dereferences it, crashing the client process. An attacker who can cause memory exhaustion on the client host (e.g., through a co-located process or resource-limit manipulation) can reliably crash any LDAP tool invocation that uses password authentication.",
+      "checklist_id": "PROP-N5-npd-017"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 16,
+    "item_count": 1,
+    "timestamp": 1773300346,
+    "processed_ids": [
+      "PROP-N5-npd-017"
+    ]
+  }
+}

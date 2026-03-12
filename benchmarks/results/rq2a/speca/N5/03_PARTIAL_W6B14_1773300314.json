@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-015",
+      "classification": "potential-vulnerability",
+      "code_path": "libraries/libldap/fetch.c::ldif_open_url::L71-80",
+      "proof_trace": "ber_strdup() at fetch.c:71 returns NULL on malloc failure; no NULL check exists before ldap_pvt_hex_unescape(p) is called at fetch.c:80. ldap_pvt_hex_unescape immediately dereferences its argument via `*s` in the for-loop at url.c:1625, causing a NULL pointer dereference (SIGSEGV).",
+      "attack_scenario": "Under memory pressure, an attacker sends a `file://...` URL via LDIF `include:` directives or the URL-fetch API; if ber_strdup fails due to OOM, ldap_pvt_hex_unescape(NULL) crashes the LDAP server process (DoS).",
+      "checklist_id": "PROP-N5-npd-015"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 14,
+    "item_count": 1,
+    "timestamp": 1773300314,
+    "processed_ids": [
+      "PROP-N5-npd-015"
+    ]
+  }
+}

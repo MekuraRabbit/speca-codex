@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-011",
+      "classification": "not-a-vulnerability",
+      "code_path": "libraries/libldap/thr_debug.c::add_thread_info::L552-579",
+      "proof_trace": "add_thread_info() is declared static void (no return value), so the property's premise \u2014 that callers must NULL-check its return value \u2014 is factually incorrect. The sole call site (line 800) correctly invokes it as a void statement with no return value captured or dereferenced. No NPD risk exists from return-value handling.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N5-npd-011"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 10,
+    "item_count": 1,
+    "timestamp": 1773300273,
+    "processed_ids": [
+      "PROP-N5-npd-011"
+    ]
+  }
+}

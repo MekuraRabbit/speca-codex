@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "clients/tools/common.c::print_psearch::L2103-2157",
+      "proof_trace": "print_psearch() is declared 'static int' (returns int, not a pointer), so its return value cannot be NULL-dereferenced. The sole caller (line 2729) uses '(void)tool_ctrl_response[j].func(ld, ctrls[i])' \u2014 an explicit discard that is the standard pattern for all entries in the table. The property's core premise (NULL-check before dereference of return value) is inapplicable to an integer return type.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N5-npd-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1773300267,
+    "processed_ids": [
+      "PROP-N5-npd-003"
+    ]
+  }
+}
