@@ -4,7 +4,7 @@
       "property_id": "PROP-M1-mlk-007",
       "classification": "not-a-vulnerability",
       "code_path": "src/sass_functions.cpp::sass_import_get_error_line::L201-201",
-      "proof_trace": "sass_import_get_error_line is a trivial one-liner (`return entry->line;`) that performs zero heap allocations. The property's universal quantifier over allocations is vacuously satisfied \u2014 there is nothing to free.",
+      "proof_trace": "sass_import_get_error_line() is a trivial one-line getter that returns entry->line (a size_t field) with zero allocations. The property assertion forall alloc(p) in this function is vacuously satisfied because no malloc, calloc, sass_copy_c_string, or any allocating call exists in the function body.",
       "attack_scenario": "",
       "checklist_id": "PROP-M1-mlk-007"
     }
@@ -14,7 +14,7 @@
     "worker_id": 6,
     "batch_index": 6,
     "item_count": 1,
-    "timestamp": 1773319815,
+    "timestamp": 1773325000,
     "processed_ids": [
       "PROP-M1-mlk-007"
     ]

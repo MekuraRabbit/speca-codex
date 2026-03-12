@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-004",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/source_map.cpp::SourceMap::add_close_mapping::L181-184",
+      "proof_trace": "add_close_mapping() contains a single statement: mappings.push_back(Mapping(node->pstate() + node->pstate().offset, current_position)). Every type involved (ParserState, Position, Offset, Mapping) is a pure value type composed entirely of size_t fields and non-owning const char* pointers \u2014 zero explicit heap allocations occur. The std::vector::push_back may internally reallocate, but this is fully RAII-managed; a std::bad_alloc propagates cleanly with no leak. The property's antecedent is vacuously satisfied: no allocations exist, so no memory leak is possible.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M1-mlk-004"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 3,
+    "item_count": 1,
+    "timestamp": 1773325060,
+    "processed_ids": [
+      "PROP-M1-mlk-004"
+    ]
+  }
+}

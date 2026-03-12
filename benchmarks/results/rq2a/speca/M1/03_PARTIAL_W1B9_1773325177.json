@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-010",
+      "classification": "potential-vulnerability",
+      "code_path": "src/c2ast.cpp::c2ast::L34-48",
+      "proof_trace": "In the SASS_LIST and SASS_MAP cases, `c2ast()` allocates `l`/`m` as raw pointers (refcount=0, no RAII wrapper) before entering a recursive loop that calls `c2ast()` on nested elements. If any nested element has tag SASS_ERROR or SASS_WARNING, the recursive call invokes `error()` which throws `Exception::InvalidSyntax` (error_handling.cpp:230). On unwind, the raw `l`/`m` pointer has no destructor to call, and the allocated List/Map object (plus any already-appended children) is permanently leaked. The `eval.cpp` caller checks only the top-level return tag for SASS_ERROR/WARNING before dispatching to `c2ast()`; nested error elements in lists/maps are not filtered.",
+      "attack_scenario": "A C-registered Sass function returns a SASS_LIST containing a SASS_ERROR element; when libsass evaluates a Sass file that calls this function, `c2ast()` allocates the List object, begins populating it, then throws on the nested error element, leaking the partially-constructed List and all appended children. Repeated invocation (e.g., a Sass loop calling the function) causes unbounded memory growth.",
+      "checklist_id": "PROP-M1-mlk-010"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 9,
+    "item_count": 1,
+    "timestamp": 1773325177,
+    "processed_ids": [
+      "PROP-M1-mlk-010"
+    ]
+  }
+}

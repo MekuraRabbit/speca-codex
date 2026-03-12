@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-008",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/sass_functions.cpp::sass_import_get_error_message::L203-203",
+      "proof_trace": "sass_import_get_error_message is a trivial one-liner getter (return entry->error) with zero allocations \u2014 the property's universal quantifier is over an empty set and is vacuously satisfied. The error string is allocated in sass_import_set_error via sass_copy_c_string and freed unconditionally in sass_delete_import, so ownership is correctly managed outside this function.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M1-mlk-008"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 7,
+    "item_count": 1,
+    "timestamp": 1773325009,
+    "processed_ids": [
+      "PROP-M1-mlk-008"
+    ]
+  }
+}

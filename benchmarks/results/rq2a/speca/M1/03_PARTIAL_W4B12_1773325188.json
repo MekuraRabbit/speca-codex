@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-013",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/context.cpp::Context::register_resource::L238-316",
+      "proof_trace": "The single throw-site at line 295 does not explicitly free the live Sass_Import_Entry or the resources entry, but Context::~Context() (lines 117-136) is always invoked via sass_delete_compiler (sass_context.cpp:568) even on the exception path. The destructor frees resources[i].contents/srcmap, strings[n], and each import_stack entry via sass_import_take_source + sass_delete_import, with the take-source/take-srcmap calls nulling the import's pointers to prevent double-free against the resources loop. All allocations live at the throw site are thus fully reclaimed with no leak or double-free.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M1-mlk-013"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 12,
+    "item_count": 1,
+    "timestamp": 1773325188,
+    "processed_ids": [
+      "PROP-M1-mlk-013"
+    ]
+  }
+}

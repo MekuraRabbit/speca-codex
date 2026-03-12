@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-009",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/ast_sel_weave.cpp::getChunks::L162-190",
+      "proof_trace": "getChunks contains zero raw allocations (no new/malloc/SASS_MEMORY_NEW); all locals are std::vector<T> with RAII semantics, and T=std::vector<SelectorComponentObj> where SelectorComponentObj is SharedImpl<SelectorComponent> (reference-counted). On every return path and on exception via stack unwinding, all vector buffers and SharedImpl refcounts are automatically released. No detach() call exists in this function to suppress deallocation.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M1-mlk-009"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 8,
+    "item_count": 1,
+    "timestamp": 1773325055,
+    "processed_ids": [
+      "PROP-M1-mlk-009"
+    ]
+  }
+}

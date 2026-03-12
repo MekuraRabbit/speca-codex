@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-014",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/context.cpp::Context::register_resource::L238-316",
+      "proof_trace": "At the throw-site (line 295), both resources[idx].contents and import_stack.back()->source alias the same allocation, violating single-owner semantics. However, Context::~Context() (lines 117-136) employs a deliberate two-phase cleanup: it frees allocations via resources[] first, then calls sass_import_take_source/sass_import_take_srcmap to nullify import_stack entry pointers before sass_delete_import \u2014 preventing any double-free. All exception paths from register_resource reach this destructor via sass_delete_compiler (sass_context.cpp:323), so no leak occurs in practice.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M1-mlk-014"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 13,
+    "item_count": 1,
+    "timestamp": 1773325368,
+    "processed_ids": [
+      "PROP-M1-mlk-014"
+    ]
+  }
+}

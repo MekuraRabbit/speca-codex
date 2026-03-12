@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-006",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/sass_values.cpp::sass_make_error::L170-178",
+      "proof_trace": "sass_make_error has exactly two allocations: `calloc` for the Sass_Value struct (`v`) and `sass_copy_c_string(msg)` for the message string. On the calloc-failure path, nothing is allocated. On the msg==NULL path, `v` is explicitly freed via `if (v->error.message == 0) { free(v); return 0; }`. On the success path, ownership is transferred to the caller via `return v`. Critically, `sass_copy_c_string` calls `sass_alloc_memory` (src/sass.cpp:37-45), which calls `exit(EXIT_FAILURE)` on OOM rather than returning NULL \u2014 so the string copy either succeeds or terminates the process, eliminating any intermediate leak scenario.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M1-mlk-006"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 5,
+    "item_count": 1,
+    "timestamp": 1773325046,
+    "processed_ids": [
+      "PROP-M1-mlk-006"
+    ]
+  }
+}
