@@ -1,33 +1,33 @@
 {
-  "tp": 35,
-  "fp": 2,
+  "tp": 44,
+  "fp": 11,
   "gt_tp": 35,
-  "new_tp": 0,
-  "human_reviewed": 0,
-  "unreviewed": 16,
-  "precision": 94.59,
+  "new_tp": 9,
+  "human_reviewed": 20,
+  "unreviewed": 0,
+  "precision": 80.0,
   "recall": 100.0,
-  "f1": 97.22,
+  "f1": 88.89,
   "total_ground_truth": 35,
   "total_ground_truth_incl_disputed": 40,
   "total_positive_findings": 50,
   "total_cost": null,
   "bug_type_breakdown": {
-    "NPD": 20,
-    "MLK": 9,
+    "NPD": 24,
+    "MLK": 14,
     "UAF": 6
   },
   "per_project": {
     "N1": 4,
-    "N2": 8,
+    "N2": 9,
     "N3": 2,
-    "N4": 1,
-    "N5": 5,
-    "M1": 2,
+    "N4": 2,
+    "N5": 7,
+    "M1": 3,
     "M2": 4,
-    "M3": 1,
-    "M4": 1,
-    "M5": 1,
+    "M3": 3,
+    "M4": 2,
+    "M5": 2,
     "U1": 1,
     "U2": 1,
     "U3": 1,
@@ -231,10 +231,17 @@
       "confidence": 0.95
     }
   },
-  "new_tp_findings": [],
-  "ra_fp_matched": [
-    "PROP-N1-npd-002",
-    "PROP-N1-npd-008"
+  "new_tp_findings": [
+    "PROP-M1-mlk-010",
+    "PROP-M3-mlk-004",
+    "PROP-M3-mlk-006",
+    "PROP-M4-mlk-009",
+    "PROP-M5-mlk-001",
+    "PROP-N2-npd-010",
+    "PROP-N4-npd-010",
+    "PROP-N5-npd-014",
+    "PROP-N5-npd-015"
   ],
+  "ra_fp_matched": [],
   "llm_model": "haiku"
 }
