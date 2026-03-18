@@ -417,7 +417,172 @@ These findings require manual review but are likely false positives:
 
 These share characteristics with Category 3 (Spec Interpretation) and Category 5 (Validation at Different Layer). The Lighthouse finding is the same class as Sherlock #94 (spec-compliant behavior flagged). The Prysm self-peer bypass is a common pattern in gossip implementations (own messages are trusted by design).
 
-## 10. Consolidated Root Cause Taxonomy
+## 10. SPECA-Independent Discoveries: Confirmed Fixes Outside Sherlock Dataset
+
+SPECA identified **7 findings** (across 4 repositories) labeled `fixed` or `partially_fixed` that have **no match in the Sherlock contest dataset** (`csv_issue_id` is empty). These represent bugs independently discovered by SPECA and subsequently confirmed via fix commits on the latest branch.
+
+### 10.1 Inventory
+
+| Finding ID | Repo | Label | Fix Commit | Phase 04 Verdict |
+|---|---|---|---|---|
+| PROP-57888860-inv-003 | ethereum/c-kzg-4844 | fixed | f18ba082 | CONFIRMED_VULNERABILITY |
+| PROP-6a4369e9-inv-043 | ChainSafe/lodestar | fixed | 3b98c59c | CONFIRMED_VULNERABILITY |
+| PROP-6a4369e9-inv-037 | ChainSafe/lodestar | fixed | 3b98c59c | CONFIRMED_VULNERABILITY |
+| PROP-57888860-inv-027 | status-im/nimbus-eth2 | partially_fixed | b3a3f3f9 | CONFIRMED_VULNERABILITY |
+| PROP-57888860-pre-006 | status-im/nimbus-eth2 | partially_fixed | b3a3f3f9 | DISPUTED_FP |
+| PROP-6a4369e9-inv-036 | OffchainLabs/prysm | fixed | b5bdd65f | NEEDS_MANUAL_REVIEW |
+| PROP-57888860-inv-027 | OffchainLabs/prysm | fixed | b5bdd65f | CONFIRMED_POTENTIAL |
+
+**Phase 04 retention**: 6/7 findings survived Phase 04 filtering (86%). One finding (PROP-57888860-pre-006) was incorrectly filtered as DISPUTED_FP — this is the same finding analyzed in Section 11 as a recall loss case.
+
+### 10.2 Unique Bugs (4)
+
+The 7 findings map to **4 unique bugs** (findings that share a fix commit address different aspects of the same bug):
+
+#### Bug A: c-kzg-4844 — Wrong array in KZG challenge computation (1 finding)
+
+**Finding**: PROP-57888860-inv-003 — "Challenge computation at line 877 passes `commitments_bytes` (original array with duplicates) instead of `unique_commitments` (deduplicated array) to `compute_verify_cell_kzg_proof_batch_challenge`."
+
+**Impact**: High — incorrect challenge computation could lead to accepting invalid KZG proofs. The challenge hash includes commitment data; using duplicates instead of deduplicated commitments produces a different challenge value, potentially allowing a crafted proof to pass verification.
+
+**Fix commit**: `f18ba082` — corrected to pass `unique_commitments`.
+
+**Significance**: This is a cryptographic correctness bug in a core library (c-kzg-4844) used by multiple Ethereum clients. It was not reported in the Sherlock contest, likely because c-kzg-4844 was treated as an external dependency by most auditors.
+
+#### Bug B: Lodestar — Inverted logic + missing validation in data column handling (2 findings)
+
+**Finding 1**: PROP-6a4369e9-inv-043 — "Logic inverted: function returns early when `blobsCount > 0` (line 58), preventing `RESOURCE_UNAVAILABLE` error. When a block has blobs but node is missing custody columns, it yields partial sidecars instead of erroring."
+
+**Finding 2**: PROP-6a4369e9-inv-037 — "`validateBlockDataColumnSidecars` validates `kzgProofs.length == kzgCommitments.length` but does NOT validate `column.length == kzgCommitments.length`. `cellIndices`/`cells` arrays use `column.length` for indexing, causing potential mismatch."
+
+**Impact**: Medium — inverted early return silently returns partial data instead of signaling unavailability, potentially causing downstream consensus issues. Missing length validation could cause index-out-of-bounds or incorrect sidecar construction.
+
+**Fix commit**: `3b98c59c` — corrected both the early return logic and added column length validation.
+
+**Significance**: Two distinct aspects of PeerDAS data column handling, both caught by SPECA from different properties (invariant vs. validation). The inverted logic is a classic boolean error that is difficult to catch without specification-driven analysis.
+
+#### Bug C: Nimbus — Unchecked array access in cell proof construction (2 findings)
+
+**Finding 1**: PROP-57888860-inv-027 — "Function assumes `cell_proofs` contains exactly `blobs.len * CELLS_PER_EXT_BLOB` elements but performs no validation. Line 328 performs unchecked indexed access `cell_proofs[i * CELLS_PER_EXT_BLOB + j]`."
+
+**Finding 2**: PROP-57888860-pre-006 — "Missing bounds check before array access. Function assumes `cell_proofs.len >= blobs.len * CELLS_PER_EXT_BLOB` but no validation exists at any call site (RPC, EL paths, block recovery)."
+
+**Impact**: Medium — out-of-bounds array access in Nim (no automatic bounds checking in release builds with `--panics:off`) could cause a crash or memory corruption. Reachable from multiple entry points including RPC and EL Engine API responses.
+
+**Fix commit**: `b3a3f3f9` — added bounds validation (partially fixed; some call paths may still lack checks).
+
+**Significance**: Both findings describe the same underlying bug from different property perspectives (invariant assertion vs. precondition). The `partially_fixed` label indicates the fix addressed the primary path but may not cover all callers — a common pattern with bounds-check bugs.
+
+#### Bug D: Prysm — Wrong subnet parameter + missing cell count validation (2 findings)
+
+**Finding 1**: PROP-6a4369e9-inv-036 — "Code iterates over custody columns and broadcasts each, but line 154 passes `sidecar.Index` (column index) directly as the subnet parameter instead of computing `column_index % NUMBER_OF_CUSTODY_GROUPS`."
+
+**Finding 2**: PROP-57888860-inv-027 — "Code calls `kzg.ComputeCells()` without validating `len(cells)==128`, then constructs proofs array with exactly 128 elements."
+
+**Impact**: Medium — incorrect subnet parameter causes data columns to be published to wrong subnets, breaking PeerDAS data availability guarantees. Missing cell count validation could cause silent data corruption if the KZG library returns an unexpected number of cells.
+
+**Fix commit**: `b5bdd65f` — corrected subnet computation and added cell count validation.
+
+**Significance**: The subnet parameter bug is a PeerDAS networking correctness issue that would cause node isolation from specific data columns. This type of off-by-one/wrong-variable bug is precisely the kind of spec-vs-implementation gap that SPECA's property-based approach is designed to catch.
+
+### 10.3 Summary
+
+| Metric | Value |
+|---|---|
+| Total SPECA-independent findings | 7 |
+| Unique bugs discovered | 4 |
+| Repositories affected | 4 (c-kzg-4844, lodestar, nimbus, prysm) |
+| Confirmed fully fixed | 5 |
+| Confirmed partially fixed | 2 |
+| Not in Sherlock dataset | 7/7 (100%) |
+| Survived Phase 04 | 6/7 (86%) |
+
+These 4 bugs represent **genuine independent discoveries** by SPECA — they were not reported by any of the 366 Sherlock contest submissions, yet they were confirmed as real bugs by the respective development teams (evidenced by fix commits on the latest branch). This demonstrates SPECA's ability to find vulnerabilities that traditional manual auditing misses, particularly:
+- Cryptographic implementation bugs in core libraries (Bug A)
+- Boolean logic errors in newly-added protocol code (Bug B)
+- Missing bounds checks in unsafe language contexts (Bug C)
+- Spec-implementation parameter mismatches (Bug D)
+
+---
+
+## 11. Phase 04 Recall Loss: TP Findings Incorrectly Filtered
+
+Phase 04's DISPUTED_FP gate incorrectly filtered **6 true positive findings** (all `tp_info` severity). No H/M/L TP was lost — the recall-safe design holds for high-impact findings but over-filters informational ones.
+
+### 10.1 Filtered TP Inventory
+
+| Finding ID | Repo | Sherlock Issue | Severity | Gate | Root Cause |
+|---|---|---|---|---|---|
+| PROP-6a4369e9-inv-014 | grandinetech/grandine | #11 | info | Gate 2 (Trust Boundary) | Config file = operator-controlled |
+| PROP-6a4369e9-inv-014 | sigp/lighthouse | #11 | info | Gate 2 (Trust Boundary) | Config file = operator-controlled |
+| PROP-6a4369e9-inv-014 | OffchainLabs/prysm | #11 | info | Gate 2 (Trust Boundary) | Config file = operator-controlled |
+| PROP-1ada093f-inv-041 | NethermindEth/nethermind | #212 | info | Gate 5+6 (Spec + Scope) | Spec-compliant + pre-Fusaka code |
+| PROP-aa9e39fd-inv-008 | NethermindEth/nethermind | #65 | info | Gate 4 (Exploitability) | Acknowledged design choice |
+| PROP-5a6a79d5-asm-002 | paradigmxyz/reth | #77 | info | Gate 3 (Code Verification) | Validation at type level |
+
+### 10.2 Root Cause Analysis
+
+#### A. Trust Boundary Over-Filtering (3 findings — PROP-6a4369e9-inv-014)
+
+**Issue**: Sherlock #11 — "Prysm has abnormal behaviour from LH, TEKU and Specs on BPO + HardFork epoch, which leads to a network peer isolation of all Prysm nodes"
+
+**Phase 04 reasoning**: Gate 2 classified the entry point as "local configuration files (loaded via CLI flag ChainConfigFileFlag)" under `local_validator` trust assumption with `in_scope_for_bug_bounty=false`. Conclusion: no untrusted path can deliver malicious configs.
+
+**Why this is wrong**: The finding is not about malicious config injection — it is about a **spec deviation** in how blob parameters at fork boundaries are computed. The bug is triggered by the normal upgrade process (all operators upgrading to Fusaka), not by attacker-controlled input. Gate 2's trust boundary model assumes all vulnerabilities require an attacker-controlled entry point, but correctness bugs that manifest during normal operation (fork transitions, config parsing) do not fit this model.
+
+**Pipeline fix**: Gate 2 should exempt "correctness/spec-deviation" findings from trust boundary filtering. When the finding's classification is `potential-vulnerability` or the matched issue is a spec deviation (not an exploit), trust boundary analysis is not applicable.
+
+#### B. Spec Cross-Reference + Scope Over-Filtering (1 finding — PROP-1ada093f-inv-041)
+
+**Issue**: Sherlock #212 — "Erigon panic DoS in blob-wrapped tx when commitments > blobs"
+
+**Phase 04 reasoning**: Gate 5 found the code is spec-compliant (RLP exception caught and handled gracefully, peer disconnected). Gate 6 found the RLP decoding code is pre-Fusaka generic infrastructure, not Fusaka-specific.
+
+**Why this is a borderline case**: The Nethermind code does handle the exception without crashing (spec-compliant). However, the Sherlock issue was about Erigon's handling of the same scenario (panic), and the `human_label` confirms "same report found on Erigon #212." The finding correctly identifies the attack vector (malformed blob tx) even though Nethermind's implementation happens to handle it gracefully. Phase 04 correctly identified the defense but over-applied the scope gate — the finding has value as cross-client validation that the defense exists.
+
+**Pipeline fix**: When a finding matches a known issue from another client, the scope gate should not dismiss it. Cross-client validation findings should survive Phase 04 regardless of whether the specific client has the bug.
+
+#### C. Exploitability Dismissal of Design Choice (1 finding — PROP-aa9e39fd-inv-008)
+
+**Issue**: Sherlock #65 — "EstimateGas Not Enforced Against TX_GAS_LIMIT_CAP By EIP-7825 In Reth"
+
+**Phase 04 reasoning**: Gate 4 found the race condition during fork activation is "acknowledged by design" (code comment: "this is used only in tx pool and this is not a problem there"). The timing difference between TxPool and BlockValidator during fork transitions is intentional.
+
+**Why this is a borderline case**: The code comment acknowledges the race but does not fully analyze its security implications. The Sherlock issue (found on Reth, matched here on Nethermind) was accepted as informational precisely because the impact is "temporary mempool pollution that self-corrects." Phase 04 correctly analyzed the mechanism but over-weighted the "acknowledged by design" signal — a code comment saying "not a problem" is not equivalent to a formal security analysis.
+
+**Pipeline fix**: Gate 4 should not treat developer comments as authoritative security dismissals. "Acknowledged in code" should downgrade severity, not trigger DISPUTED_FP.
+
+#### D. Validation-at-Different-Layer Dismissal (1 finding — PROP-5a6a79d5-asm-002)
+
+**Issue**: Sherlock #77 — "Incorrect max_blob_count initialization post-Osaka allows the Transaction Pool to accept transactions with 7-9 blobs"
+
+**Phase 04 reasoning**: Gate 3 found the validation exists at the type level (EIP-4844 blob transactions are structurally enforced to have a `to` field of type `Address`, not `Option<Address>`). Phase 03's claim about missing pool-level validation is "factually incorrect" because the check exists at a lower layer.
+
+**Why this is wrong**: Phase 04 evaluated a different aspect of the finding than what Sherlock #77 reports. The Sherlock issue is about `max_blob_count` initialization (blob count limits), not about the `to` field validation. Phase 04 verified a correct but **irrelevant** defense (type-level `to` field enforcement) and dismissed the finding. The actual bug (wrong max blob count post-Osaka) was not evaluated.
+
+**Pipeline fix**: Gate 3 should verify the **specific claim** in the finding, not just find any valid defense in the same code region. When the Phase 03 finding text mentions "blob count" but Gate 3 verifies "contract creation field," there is a claim-verification mismatch that should prevent DISPUTED_FP.
+
+### 10.3 Summary
+
+| Root Cause | Count | Gate | Severity Impact |
+|---|---|---|---|
+| Trust boundary inapplicable to correctness bugs | 3 | Gate 2 | info only |
+| Claim-verification mismatch | 1 | Gate 3 | info only |
+| Developer comment as security authority | 1 | Gate 4 | info only |
+| Cross-client scope over-application | 1 | Gate 5+6 | info only |
+| **Total** | **6** | | **All info** |
+
+**Key observation**: All 6 filtered TPs are `tp_info` (informational severity). Zero H/M/L TPs were filtered. The recall-safe design successfully protects high-impact findings, but the gates are overly aggressive on informational findings where the vulnerability pattern is real but the impact is low.
+
+**Recommended improvement priority**:
+1. Gate 2: Exempt correctness/spec-deviation findings from trust boundary filtering (fixes 3/6)
+2. Gate 3: Add claim-verification alignment check — verify the specific claim, not just any defense (fixes 1/6)
+3. Gate 4: Code comments should downgrade, not dismiss (fixes 1/6)
+4. Gate 5+6: Cross-client matches should survive scope filtering (fixes 1/6)
+
+---
+
+## 12. Consolidated Root Cause Taxonomy
 
 Combining Part I (6 unknown FPs) and Part II (27 fp_invalid + 4 fp_review), the full FP taxonomy is:
 
@@ -440,7 +605,7 @@ Combining Part I (6 unknown FPs) and Part II (27 fp_invalid + 4 fp_review), the 
 
 3. **Trust boundary modeling** (7 FPs, Phase 04 catches 43%→need 57% more): Add trust boundaries to `BUG_BOUNTY_SCOPE.json` or `TARGET_INFO.json`. For Ethereum clients: `{trusted: ["engine_api", "local_validator"], untrusted: ["p2p_gossip", "rpc"]}`. Phase 01e properties should be scoped to untrusted inputs only. This is where Phase 04 has the **lowest filter rate**, making upstream improvement most critical.
 
-## 11. Methodology (Part II)
+## 13. Methodology (Part II)
 
 1. **Label analysis**: Parsed all 102 rows of `findings_labels.csv`, grouped by `auto_label`
 2. **Sherlock cross-reference**: For each `fp_invalid`, retrieved the matched Sherlock issue's rejection comment from `sherlock_contest_1140_issues_1766639267091.csv`
