@@ -113,19 +113,30 @@
   "missed_issues": [],
   "precision": {
     "total_findings": 102,
-    "auto_tp": 17,
-    "auto_fp_invalid": 27,
-    "auto_tp_info": 23,
+    "auto_tp": 19,
+    "auto_fp_invalid": 40,
+    "auto_tp_info": 26,
     "auto_tp_other": 13,
-    "auto_unknown": 22,
+    "auto_unknown": 0,
     "human_tp": 0,
     "human_fp": 0,
-    "human_unlabeled": 22,
-    "precision_auto": 0.6625,
-    "precision_conservative": 0.5196,
-    "total_tp": 53
+    "human_unlabeled": 0,
+    "precision_auto": 0.5686,
+    "precision_conservative": 0.5686,
+    "total_tp": 58,
+    "label_distribution": {
+      "tp": 19,
+      "tp_info": 26,
+      "fp_invalid": 40,
+      "fp_review": 4,
+      "potential-info": 6,
+      "fixed": 5,
+      "partially_fixed": 2,
+      "unknown": 0
+    },
+    "updated_at": "2026-03-18T07:51:00.771609+00:00"
   },
-  "f1": 0.797,
+  "f1": 0.725,
   "run_metadata": {
     "generated_at": "2026-02-24T11:53:07.735735+00:00",
     "ai": {
@@ -11661,5 +11672,22 @@
       "phase_timing_source": "outputs/logs",
       "phase_timing_caveat": "Timing is estimated from phase log timestamps when available."
     }
-  }
+  },
+  "precision_phase_04": {
+    "total_findings": 72,
+    "auto_tp": 19,
+    "auto_tp_info": 18,
+    "auto_fp_invalid": 23,
+    "auto_tp_other": 11,
+    "auto_fp_review": 1,
+    "total_tp": 48,
+    "precision": 0.6667,
+    "recall": 1.0,
+    "f1": 0.8,
+    "findings_removed_by_04": 30,
+    "fp_correctly_removed": 20,
+    "tp_incorrectly_removed": 10,
+    "filter_precision": 0.6667
+  },
+  "f1_phase_04": 0.8
 }

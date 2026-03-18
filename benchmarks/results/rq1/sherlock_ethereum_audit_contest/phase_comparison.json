@@ -1938,24 +1938,26 @@
   "comparison": {
     "phase_03": {
       "total_findings": 102,
+      "total_tp": 58,
+      "total_fp": 44,
       "recall": 1.0,
-      "precision_auto": 0.6625,
-      "precision_conservative": 0.5196,
-      "f1": 0.797
+      "precision": 0.5686,
+      "f1": 0.725
     },
     "phase_04": {
-      "total_findings": 88,
+      "total_findings": 72,
+      "total_tp": 48,
+      "total_fp": 24,
       "recall": 1.0,
-      "precision_auto": 0.6714,
-      "precision_conservative": 0.5341,
-      "f1": 0.8034,
+      "precision": 0.6667,
+      "f1": 0.8,
       "lost_recall_issues": []
     },
     "delta": {
-      "findings_removed": 14,
+      "findings_removed": 30,
       "recall_delta": 0.0,
-      "precision_auto_delta": 0.0089,
-      "f1_delta": 0.0064
+      "precision_delta": 0.098,
+      "f1_delta": 0.075
     }
   },
   "efficiency": {
@@ -1972,6 +1974,174 @@
       "total_reviews": 550,
       "tokens_per_review": 393277,
       "secs_per_review": 22.0
+    }
+  },
+  "ground_truth_analysis": {
+    "updated_at": "2026-03-18T07:51:00.771609+00:00",
+    "label_source": "findings_labels.csv (all unknowns resolved)",
+    "label_distribution": {
+      "tp_info": 26,
+      "tp": 19,
+      "fp_invalid": 40,
+      "fixed": 5,
+      "potential-info": 6,
+      "fp_review": 4,
+      "partially_fixed": 2
+    },
+    "confusion_matrix": {
+      "CONFIRMED_POTENTIAL": {
+        "tp": 5,
+        "fp_invalid": 11,
+        "potential-info": 3,
+        "tp_info": 4,
+        "fixed": 1
+      },
+      "CONFIRMED_VULNERABILITY": {
+        "tp_info": 10,
+        "fp_invalid": 10,
+        "tp": 14,
+        "fixed": 3,
+        "partially_fixed": 1,
+        "potential-info": 1
+      },
+      "DISPUTED_FP": {
+        "fp_invalid": 17,
+        "tp_info": 8,
+        "potential-info": 1,
+        "fp_review": 3,
+        "partially_fixed": 1
+      },
+      "DOWNGRADED": {
+        "fp_invalid": 2,
+        "tp_info": 4,
+        "fp_review": 1,
+        "potential-info": 1
+      },
+      "NEEDS_MANUAL_REVIEW": {
+        "fixed": 1
+      }
+    },
+    "disputed_fp_analysis": {
+      "total": 30,
+      "correct_filters": 20,
+      "wrong_filters": 10,
+      "filter_precision": 0.6667,
+      "wrong_filter_details": [
+        {
+          "finding_id": "PROP-6a4369e9-pre-008",
+          "repo": "grandinetech/grandine",
+          "ground_truth": "tp_info"
+        },
+        {
+          "finding_id": "PROP-57888860-inv-032",
+          "repo": "grandinetech/grandine",
+          "ground_truth": "potential-info"
+        },
+        {
+          "finding_id": "PROP-6a4369e9-inv-032",
+          "repo": "grandinetech/grandine",
+          "ground_truth": "tp_info"
+        },
+        {
+          "finding_id": "PROP-6a4369e9-inv-014",
+          "repo": "grandinetech/grandine",
+          "ground_truth": "tp_info"
+        },
+        {
+          "finding_id": "PROP-6a4369e9-inv-014",
+          "repo": "sigp/lighthouse",
+          "ground_truth": "tp_info"
+        },
+        {
+          "finding_id": "PROP-1ada093f-inv-041",
+          "repo": "NethermindEth/nethermind",
+          "ground_truth": "tp_info"
+        },
+        {
+          "finding_id": "PROP-aa9e39fd-inv-008",
+          "repo": "NethermindEth/nethermind",
+          "ground_truth": "tp_info"
+        },
+        {
+          "finding_id": "PROP-57888860-pre-006",
+          "repo": "status-im/nimbus-eth2",
+          "ground_truth": "partially_fixed"
+        },
+        {
+          "finding_id": "PROP-6a4369e9-inv-014",
+          "repo": "OffchainLabs/prysm",
+          "ground_truth": "tp_info"
+        },
+        {
+          "finding_id": "PROP-5a6a79d5-asm-002",
+          "repo": "paradigmxyz/reth",
+          "ground_truth": "tp_info"
+        }
+      ]
+    },
+    "verdict_tp_rate": {
+      "CONFIRMED_POTENTIAL": {
+        "tp": 13,
+        "total": 24,
+        "tp_rate": 0.5417
+      },
+      "CONFIRMED_VULNERABILITY": {
+        "tp": 29,
+        "total": 39,
+        "tp_rate": 0.7436
+      },
+      "DISPUTED_FP": {
+        "tp": 10,
+        "total": 30,
+        "tp_rate": 0.3333
+      },
+      "DOWNGRADED": {
+        "tp": 5,
+        "total": 8,
+        "tp_rate": 0.625
+      },
+      "NEEDS_MANUAL_REVIEW": {
+        "tp": 1,
+        "total": 1,
+        "tp_rate": 1.0
+      }
+    },
+    "label_filter_rate": {
+      "fixed": {
+        "filtered": 0,
+        "total": 5,
+        "rate": 0.0
+      },
+      "fp_invalid": {
+        "filtered": 17,
+        "total": 40,
+        "rate": 0.425
+      },
+      "fp_review": {
+        "filtered": 3,
+        "total": 4,
+        "rate": 0.75
+      },
+      "partially_fixed": {
+        "filtered": 1,
+        "total": 2,
+        "rate": 0.5
+      },
+      "potential-info": {
+        "filtered": 1,
+        "total": 6,
+        "rate": 0.1667
+      },
+      "tp": {
+        "filtered": 0,
+        "total": 19,
+        "rate": 0.0
+      },
+      "tp_info": {
+        "filtered": 8,
+        "total": 26,
+        "rate": 0.3077
+      }
     }
   }
 }

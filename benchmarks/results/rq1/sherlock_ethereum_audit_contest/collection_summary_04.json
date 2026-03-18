@@ -2814,5 +2814,242 @@
     "04_*.json"
   ],
   "logs_dir": "outputs/logs",
-  "log_phase": "04"
+  "log_phase": "04",
+  "ground_truth_per_repo": {
+    "ChainSafe/lodestar": {
+      "branch": "lodestar_fusaka",
+      "phase_03": {
+        "total": 9,
+        "tp": 7,
+        "fp": 2,
+        "precision": 0.7778
+      },
+      "phase_04": {
+        "total": 9,
+        "tp": 7,
+        "fp": 2,
+        "precision": 0.7778,
+        "disputed_fp": 0,
+        "correct_filters": 0,
+        "wrong_filters": 0
+      },
+      "label_distribution": {
+        "tp_info": 4,
+        "tp": 1,
+        "fixed": 2,
+        "fp_review": 1,
+        "fp_invalid": 1
+      }
+    },
+    "NethermindEth/nethermind": {
+      "branch": "nethermind_fusaka",
+      "phase_03": {
+        "total": 5,
+        "tp": 4,
+        "fp": 1,
+        "precision": 0.8
+      },
+      "phase_04": {
+        "total": 2,
+        "tp": 2,
+        "fp": 0,
+        "precision": 1.0,
+        "disputed_fp": 3,
+        "correct_filters": 1,
+        "wrong_filters": 2
+      },
+      "label_distribution": {
+        "tp_info": 3,
+        "tp": 1,
+        "fp_invalid": 1
+      }
+    },
+    "OffchainLabs/prysm": {
+      "branch": "prysm_fusaka",
+      "phase_03": {
+        "total": 25,
+        "tp": 17,
+        "fp": 8,
+        "precision": 0.68
+      },
+      "phase_04": {
+        "total": 20,
+        "tp": 16,
+        "fp": 4,
+        "precision": 0.8,
+        "disputed_fp": 5,
+        "correct_filters": 4,
+        "wrong_filters": 1
+      },
+      "label_distribution": {
+        "fixed": 2,
+        "tp": 5,
+        "fp_invalid": 6,
+        "potential-info": 3,
+        "tp_info": 7,
+        "fp_review": 2
+      }
+    },
+    "alloy-rs/evm": {
+      "branch": "alloy_evm_fusaka",
+      "phase_03": {
+        "total": 3,
+        "tp": 2,
+        "fp": 1,
+        "precision": 0.6667
+      },
+      "phase_04": {
+        "total": 3,
+        "tp": 2,
+        "fp": 1,
+        "precision": 0.6667,
+        "disputed_fp": 0,
+        "correct_filters": 0,
+        "wrong_filters": 0
+      },
+      "label_distribution": {
+        "tp_info": 1,
+        "tp": 1,
+        "fp_invalid": 1
+      }
+    },
+    "crate-crypto/rust-eth-kzg": {
+      "branch": "rust_eth_kzg_fusaka",
+      "phase_03": {
+        "total": 1,
+        "tp": 1,
+        "fp": 0,
+        "precision": 1.0
+      },
+      "phase_04": {
+        "total": 1,
+        "tp": 1,
+        "fp": 0,
+        "precision": 1.0,
+        "disputed_fp": 0,
+        "correct_filters": 0,
+        "wrong_filters": 0
+      },
+      "label_distribution": {
+        "tp": 1
+      }
+    },
+    "ethereum/c-kzg-4844": {
+      "branch": "c_kzg_4844_fusaka",
+      "phase_03": {
+        "total": 5,
+        "tp": 2,
+        "fp": 3,
+        "precision": 0.4
+      },
+      "phase_04": {
+        "total": 5,
+        "tp": 2,
+        "fp": 3,
+        "precision": 0.4,
+        "disputed_fp": 0,
+        "correct_filters": 0,
+        "wrong_filters": 0
+      },
+      "label_distribution": {
+        "fp_invalid": 3,
+        "tp": 1,
+        "fixed": 1
+      }
+    },
+    "grandinetech/grandine": {
+      "branch": "grandine_fusaka",
+      "phase_03": {
+        "total": 12,
+        "tp": 7,
+        "fp": 5,
+        "precision": 0.5833
+      },
+      "phase_04": {
+        "total": 4,
+        "tp": 3,
+        "fp": 1,
+        "precision": 0.75,
+        "disputed_fp": 8,
+        "correct_filters": 4,
+        "wrong_filters": 4
+      },
+      "label_distribution": {
+        "fp_invalid": 5,
+        "tp": 3,
+        "tp_info": 3,
+        "potential-info": 1
+      }
+    },
+    "paradigmxyz/reth": {
+      "branch": "reth_fusaka",
+      "phase_03": {
+        "total": 4,
+        "tp": 1,
+        "fp": 3,
+        "precision": 0.25
+      },
+      "phase_04": {
+        "total": 2,
+        "tp": 0,
+        "fp": 2,
+        "precision": 0.0,
+        "disputed_fp": 2,
+        "correct_filters": 1,
+        "wrong_filters": 1
+      },
+      "label_distribution": {
+        "fp_invalid": 3,
+        "tp_info": 1
+      }
+    },
+    "sigp/lighthouse": {
+      "branch": "lighthouse_fusaka",
+      "phase_03": {
+        "total": 24,
+        "tp": 12,
+        "fp": 12,
+        "precision": 0.5
+      },
+      "phase_04": {
+        "total": 18,
+        "tp": 11,
+        "fp": 7,
+        "precision": 0.6111,
+        "disputed_fp": 6,
+        "correct_filters": 5,
+        "wrong_filters": 1
+      },
+      "label_distribution": {
+        "fp_invalid": 11,
+        "tp_info": 7,
+        "tp": 3,
+        "fp_review": 1,
+        "potential-info": 2
+      }
+    },
+    "status-im/nimbus-eth2": {
+      "branch": "nimbus_fusaka",
+      "phase_03": {
+        "total": 14,
+        "tp": 5,
+        "fp": 9,
+        "precision": 0.3571
+      },
+      "phase_04": {
+        "total": 8,
+        "tp": 4,
+        "fp": 4,
+        "precision": 0.5,
+        "disputed_fp": 6,
+        "correct_filters": 5,
+        "wrong_filters": 1
+      },
+      "label_distribution": {
+        "tp": 3,
+        "fp_invalid": 9,
+        "partially_fixed": 2
+      }
+    }
+  }
 }
