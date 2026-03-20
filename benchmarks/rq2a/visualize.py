@@ -338,7 +338,10 @@ def fig5_cost(data: dict, speca: dict | None):
     ax.legend(loc="upper left", fontsize=9)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    ax.set_xlim(-5, max(60, total_cost + 20))
+    max_cost = total_cost
+    if speca and speca.get("total_cost") is not None:
+        max_cost = max(max_cost, speca["total_cost"])
+    ax.set_xlim(-5, max(60, max_cost + 20))
 
     out = FIGURES_DIR / "rq2a_cost_efficiency.png"
     fig.savefig(out)
