@@ -64,7 +64,8 @@ def call_llm(prompt: str) -> str:
         env.pop(var, None)
 
     model = env.get("RQ2A_MODEL", "haiku")
-    command = ["claude", "--output-format", "json", "--model", model, "-p", prompt]
+    claude_bin = "claude.cmd" if os.name == "nt" else "claude"
+    command = [claude_bin, "--output-format", "json", "--model", model, "-p", prompt]
 
     result = subprocess.run(command, check=False, capture_output=True, text=True, env=env)
     if result.returncode != 0:

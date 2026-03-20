@@ -1,40 +1,21 @@
 {
-  "tp": 44,
-  "fp": 11,
-  "gt_tp": 35,
-  "new_tp": 9,
-  "human_reviewed": 20,
+  "tp": 45,
+  "fp": 5,
+  "gt_tp": 0,
+  "new_tp": 45,
+  "human_reviewed": 50,
   "unreviewed": 0,
-  "precision": 80.0,
-  "recall": 100.0,
-  "f1": 88.89,
+  "precision": 90.0,
+  "recall": 128.57,
+  "f1": 105.88,
   "total_ground_truth": 35,
   "total_ground_truth_incl_disputed": 40,
   "total_positive_findings": 50,
   "total_cost": null,
-  "bug_type_breakdown": {
-    "NPD": 24,
-    "MLK": 14,
-    "UAF": 6
-  },
-  "per_project": {
-    "N1": 4,
-    "N2": 9,
-    "N3": 2,
-    "N4": 2,
-    "N5": 7,
-    "M1": 3,
-    "M2": 4,
-    "M3": 3,
-    "M4": 2,
-    "M5": 2,
-    "U1": 1,
-    "U2": 1,
-    "U3": 1,
-    "U4": 1,
-    "U5": 2
-  },
-  "detected_bugs": [
+  "bug_type_breakdown": {},
+  "per_project": {},
+  "detected_bugs": [],
+  "missed_bugs": [
     "RA-M1-N1",
     "RA-M1-O1",
     "RA-M2-N3",
@@ -71,176 +52,65 @@
     "RA-U5-N1",
     "RA-U5-O1"
   ],
-  "missed_bugs": [],
   "disputed_bugs": {
     "total": 5,
     "tn": [
       "RA-M1-N2",
       "RA-M2-N1",
       "RA-M2-N2",
-      "RA-M2-O1"
-    ],
-    "detected": [
+      "RA-M2-O1",
       "RA-N5-N5"
     ],
+    "detected": [],
     "note": "Disputed bugs have no exploit path; not detecting them is correct (TN)"
   },
-  "matches": {
-    "RA-N1-O1": {
-      "finding_id": "PROP-N1-npd-011",
-      "confidence": 0.98
-    },
-    "RA-N1-N1": {
-      "finding_id": "PROP-N1-npd-012",
-      "confidence": 0.9
-    },
-    "RA-N1-N2": {
-      "finding_id": "PROP-N1-npd-011",
-      "confidence": 0.98
-    },
-    "RA-N1-N3": {
-      "finding_id": "PROP-N1-npd-011",
-      "confidence": 0.85
-    },
-    "RA-N2-O1": {
-      "finding_id": "PROP-N2-npd-012",
-      "confidence": 0.95
-    },
-    "RA-N2-O2": {
-      "finding_id": "PROP-N2-npd-013",
-      "confidence": 0.95
-    },
-    "RA-N2-O3": {
-      "finding_id": "PROP-N2-npd-014",
-      "confidence": 0.95
-    },
-    "RA-N2-O4": {
-      "finding_id": "PROP-N2-npd-014",
-      "confidence": 0.98
-    },
-    "RA-N2-O5": {
-      "finding_id": "PROP-N2-npd-015",
-      "confidence": 0.99
-    },
-    "RA-N2-O6": {
-      "finding_id": "PROP-N2-npd-016",
-      "confidence": 0.95
-    },
-    "RA-N2-O7": {
-      "finding_id": "PROP-N2-npd-018",
-      "confidence": 0.95
-    },
-    "RA-N2-N1": {
-      "finding_id": "PROP-N2-npd-017",
-      "confidence": 0.98
-    },
-    "RA-N3-O1": {
-      "finding_id": "PROP-N3-npd-011",
-      "confidence": 0.9
-    },
-    "RA-N3-N1": {
-      "finding_id": "PROP-N3-npd-012",
-      "confidence": 0.98
-    },
-    "RA-N4-O1": {
-      "finding_id": "PROP-N4-npd-011",
-      "confidence": 0.99
-    },
-    "RA-N5-O1": {
-      "finding_id": "PROP-N5-npd-013",
-      "confidence": 0.9
-    },
-    "RA-N5-N1": {
-      "finding_id": "PROP-N5-npd-017",
-      "confidence": 0.95
-    },
-    "RA-N5-N2": {
-      "finding_id": "PROP-N5-npd-013",
-      "confidence": 0.95
-    },
-    "RA-N5-N3": {
-      "finding_id": "PROP-N5-npd-016",
-      "confidence": 0.85
-    },
-    "RA-N5-N4": {
-      "finding_id": "PROP-N5-npd-017",
-      "confidence": 0.95
-    },
-    "RA-N5-N5": {
-      "finding_id": "PROP-N5-npd-017",
-      "confidence": 0.75
-    },
-    "RA-M1-O1": {
-      "finding_id": "PROP-M1-mlk-011",
-      "confidence": 0.95
-    },
-    "RA-M1-N1": {
-      "finding_id": "PROP-M1-mlk-012",
-      "confidence": 0.95
-    },
-    "RA-M2-N3": {
-      "finding_id": "PROP-M2b-mlk-013",
-      "confidence": 0.99
-    },
-    "RA-M2-N4": {
-      "finding_id": "PROP-M2b-mlk-014",
-      "confidence": 0.95
-    },
-    "RA-M2-N5": {
-      "finding_id": "PROP-M2b-mlk-015",
-      "confidence": 0.95
-    },
-    "RA-M2-N6": {
-      "finding_id": "PROP-M2b-mlk-016",
-      "confidence": 1.0
-    },
-    "RA-M3-O1": {
-      "finding_id": "PROP-M3-mlk-011",
-      "confidence": 0.99
-    },
-    "RA-M4-O1": {
-      "finding_id": "PROP-M4-mlk-011",
-      "confidence": 0.95
-    },
-    "RA-M5-O1": {
-      "finding_id": "PROP-M5-mlk-011",
-      "confidence": 0.98
-    },
-    "RA-U3-O1": {
-      "finding_id": "PROP-U3-uaf-011",
-      "confidence": 0.99
-    },
-    "RA-U4-O1": {
-      "finding_id": "PROP-U4-uaf-008",
-      "confidence": 0.75
-    },
-    "RA-U5-O1": {
-      "finding_id": "PROP-U5-uaf-001",
-      "confidence": 1.0
-    },
-    "RA-U5-N1": {
-      "finding_id": "PROP-U5-uaf-011",
-      "confidence": 0.95
-    },
-    "RA-U1-O1": {
-      "finding_id": "PROP-U1-uaf-011",
-      "confidence": 0.8
-    },
-    "RA-U2-O1": {
-      "finding_id": "PROP-U2-uaf-003",
-      "confidence": 0.95
-    }
-  },
+  "matches": {},
   "new_tp_findings": [
     "PROP-M1-mlk-010",
+    "PROP-M1-mlk-011",
+    "PROP-M1-mlk-012",
+    "PROP-M2b-mlk-013",
+    "PROP-M2b-mlk-014",
+    "PROP-M2b-mlk-015",
+    "PROP-M2b-mlk-016",
     "PROP-M3-mlk-004",
     "PROP-M3-mlk-006",
+    "PROP-M3-mlk-011",
+    "PROP-M4-mlk-001",
+    "PROP-M4-mlk-003",
     "PROP-M4-mlk-009",
+    "PROP-M4-mlk-011",
     "PROP-M5-mlk-001",
+    "PROP-M5-mlk-002",
+    "PROP-M5-mlk-011",
+    "PROP-N1-npd-011",
+    "PROP-N1-npd-012",
     "PROP-N2-npd-010",
-    "PROP-N4-npd-010",
+    "PROP-N2-npd-012",
+    "PROP-N2-npd-013",
+    "PROP-N2-npd-014",
+    "PROP-N2-npd-015",
+    "PROP-N2-npd-016",
+    "PROP-N2-npd-017",
+    "PROP-N2-npd-018",
+    "PROP-N3-npd-011",
+    "PROP-N3-npd-012",
+    "PROP-N4-npd-011",
+    "PROP-N5-npd-013",
     "PROP-N5-npd-014",
-    "PROP-N5-npd-015"
+    "PROP-N5-npd-015",
+    "PROP-N5-npd-016",
+    "PROP-N5-npd-017",
+    "PROP-U1-uaf-011",
+    "PROP-U2-uaf-003",
+    "PROP-U2-uaf-004",
+    "PROP-U2-uaf-006",
+    "PROP-U3-uaf-008",
+    "PROP-U3-uaf-011",
+    "PROP-U4-uaf-008",
+    "PROP-U5-uaf-001",
+    "PROP-U5-uaf-009",
+    "PROP-U5-uaf-011"
   ],
   "ra_fp_matched": [],
   "llm_model": "haiku"
