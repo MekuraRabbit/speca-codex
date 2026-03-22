@@ -583,11 +583,23 @@ def evaluate(results_dir: Path, output_path: Path, reparse: bool = False,
     human_reviewed_fp_pids: list[str] = []
     still_unreviewed: list[dict] = []
 
+    # Build set of all GT bug IDs for reason-field matching
+    all_gt_ids = {b["id"] for b in all_bugs}
+
     for f in unmatched:
         pid = f.get("property_id", "")
         verdict = human_verdicts.get(pid)
         if verdict and verdict["result"] == "TP":
-            human_reviewed_tp_pids.append(pid)
+            # Check if the reason field references a GT bug ID (e.g. "GT RA-U1-O1一致")
+            reason = verdict.get("reason", "")
+            gt_ref = re.search(r"GT\s+(RA-\S+?)(?:一致|$)", reason)
+            if gt_ref and gt_ref.group(1) in all_gt_ids:
+                gt_bug_id = gt_ref.group(1)
+                if gt_bug_id not in recall_matches:
+                    recall_matches[gt_bug_id] = {"finding_id": pid, "confidence": 1.0}
+                    print(f"  human-review recall: {pid} → {gt_bug_id} (from reason field)")
+            else:
+                human_reviewed_tp_pids.append(pid)
         elif verdict and verdict["result"] == "FP":
             human_reviewed_fp_pids.append(pid)
         else:
