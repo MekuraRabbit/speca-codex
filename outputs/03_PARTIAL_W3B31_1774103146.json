@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-028",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::checkUpkeep::L216-294",
+      "proof_trace": "The guard at L234-236 (`if (assetParams.decimals == 0) continue;`) is the first statement inside the asset loop and fires before any eligibility or ended-auction evaluation. Both branches that populate `eligibleAssets` and `endedAuctions` (L246 and L255) are unreachable for a zero-decimals asset. No alternative path bypasses this guard.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-028"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 31,
+    "item_count": 1,
+    "timestamp": 1774103146,
+    "processed_ids": [
+      "PROP-baseauction-inv-028"
+    ]
+  }
+}

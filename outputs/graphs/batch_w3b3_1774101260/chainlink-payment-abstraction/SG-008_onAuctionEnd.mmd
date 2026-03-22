@@ -1,0 +1,21 @@
+---
+title: "_onAuctionEnd (BaseAuction + GPV2CompatibleAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_aggregator: hasFeeAggregator?
+    q_check_aggregator --> q_check_asset_bal: hasFeeAggregator == true
+    q_check_aggregator --> q_check_out_bal: hasFeeAggregator == false
+    q_check_asset_bal --> q_return_asset: assetBalance > 0
+    q_return_asset --> q_check_out_bal: safeTransfer(asset, feeAggregator, balance)
+    q_check_asset_bal --> q_check_out_bal: assetBalance == 0
+    q_check_out_bal --> q_send_out: assetOutBalance > 0
+    q_send_out --> q_revoke: safeTransfer(assetOut, assetOutReceiver, balance)
+    q_check_out_bal --> q_revoke: assetOutBalance == 0
+    q_revoke --> [*]: forceApprove(gpV2VaultRelayer, 0)
+
+    note right of q_return_asset
+        INV-001: Unsold assets return to feeAggregator when auction ends
+        INV-002: Collected assetOut is sent to the designated receiver
+        INV-003: GPV2 vault relayer approval is revoked on auction end
+    end note

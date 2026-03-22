@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-048",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/PriceManager.sol::_getAssetPrice::L372-419",
+      "proof_trace": "The inner guard at L390 (`if (updatedAt < dataFeedUpdatedAt)`) is mathematically equivalent to the assertion condition `dataFeedUpdatedAt > streamsUpdatedAt`; the data feed price is only written at L391-400 when this guard passes. An additional outer guard at L385 also requires the streams price to be stale, making the implementation strictly more conservative than the property requires \u2014 the stale source can never override the fresh source.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-048"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 47,
+    "item_count": 1,
+    "timestamp": 1774103459,
+    "processed_ids": [
+      "PROP-baseauction-inv-048"
+    ]
+  }
+}

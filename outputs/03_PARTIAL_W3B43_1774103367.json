@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-042",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/PriceManager.sol::_getAssetPrice::L404-416",
+      "proof_trace": "The zero-price revert is directly implemented: `isZero = price == 0` at L404, followed by `if (withValidation) { if (isZero) { revert Errors.ZeroFeedData(); } }` at L409-412, unconditionally before any return. All bid()-path callers pass `withValidation=true` (L429 for assetIn, L798 for assetOut via _getAssetOutAmount called with true at L442), and the negative-value bypass is also blocked by SafeCast on int256\u2192uint256 conversion at L392.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-042"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 43,
+    "item_count": 1,
+    "timestamp": 1774103367,
+    "processed_ids": [
+      "PROP-baseauction-inv-042"
+    ]
+  }
+}

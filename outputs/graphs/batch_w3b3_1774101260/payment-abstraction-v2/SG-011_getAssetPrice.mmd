@@ -1,0 +1,27 @@
+---
+title: "_getAssetPrice - Price Resolution (Payment Abstraction V2)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_streams: _getAssetPrice(asset) called
+    q_check_streams --> q_check_fresh: dataStreamsFeedId configured for asset
+    q_check_streams --> q_fallback_feed: no Streams feed configured
+    q_check_fresh --> q_return_streams: streamsPrice.timestamp within stalenessThreshold
+    q_check_fresh --> q_fallback_feed: streams price stale or missing
+    q_return_streams --> [*]: return streamsPrice (normalized to feed decimals)
+    q_fallback_feed --> q_query_feed: query usdDataFeed (Chainlink Data Feed)
+    q_query_feed --> q_check_feed_stale: get latestRoundData from feed
+    q_check_feed_stale --> q_check_feed_price: updatedAt within stalenessThreshold
+    q_check_feed_stale --> q_revert_stale: feed data stale
+    q_revert_stale --> [*]: revert StalePrice
+    q_check_feed_price --> q_return_feed: price > 0
+    q_check_feed_price --> q_revert_zero: price == 0
+    q_revert_zero --> [*]: revert ZeroPrice
+    q_return_feed --> [*]: return feedPrice
+
+    note right of q_check_fresh
+        INV-001: Streams prices take priority over Data Feeds when fresh
+        INV-002: Staleness threshold is configurable per asset via FeedInfo
+        INV-003: Price must be non-zero to be valid
+        INV-004: dataStreamsFeedDecimals used to normalize Streams price to feed precision
+    end note

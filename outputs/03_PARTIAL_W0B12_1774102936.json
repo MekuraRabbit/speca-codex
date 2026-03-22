@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-010",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::_onAuctionEnd::L383-397",
+      "proof_trace": "The residual-asset transfer is guarded by `hasFeeAggregator = (address(s_feeAggregator) != address(this))` (line 387); when false, the contract itself is the feeAggregator, so no cross-contract transfer is needed \u2014 `_setFeeAggregator` explicitly permits this configuration (line 569). The assetOut\u2192receiver transfer (lines 393-396) is unconditional on balance and always executes because `s_assetOutReceiver` is guaranteed non-zero by the constructor and its setter, and `s_assetOut` cannot change during a live auction.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-010"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 12,
+    "item_count": 1,
+    "timestamp": 1774102936,
+    "processed_ids": [
+      "PROP-baseauction-inv-010"
+    ]
+  }
+}

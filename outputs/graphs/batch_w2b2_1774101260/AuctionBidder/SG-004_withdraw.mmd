@@ -1,0 +1,22 @@
+---
+title: "withdraw (AuctionBidder)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_validate: onlyRole(DEFAULT_ADMIN_ROLE)
+    q_validate --> q_check_to: to == address(0)
+    q_check_to --> q_revert: true
+    q_check_to --> q_iter: false
+    q_revert --> [*]: revert InvalidZeroAddress()
+    q_iter --> q_transfer: i < assetAmounts.length
+    q_iter --> [*]: i >= assetAmounts.length
+    q_transfer --> q_iter: safeTransfer(to, assetAmount.amount); i++
+
+    note right of q_check_to
+        INV-001: recipient address must not be zero
+    end note
+
+    note right of q_iter
+        INV-002: all assets in assetAmounts are transferred to the same recipient
+        INV-003: loop iterates exactly assetAmounts.length times
+    end note

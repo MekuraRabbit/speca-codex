@@ -1,0 +1,46 @@
+{
+  "PROP-baseauction-inv-030": {
+    "property_id": "PROP-baseauction-inv-030",
+    "text": "Price computation must use 18-decimal fixed-point arithmetic consistently across all paths.",
+    "type": "invariant",
+    "assertion": "all price values scaled to 1e18 before arithmetic; no mixed-decimal operations",
+    "severity": "HIGH",
+    "covers": "SG-011",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "_getAssetOutAmount",
+          "line_range": {
+            "start": 777,
+            "end": 803
+          },
+          "role": "primary",
+          "note": "All price arithmetic uses 1e18 scaling; mulDivUp uses asset decimals (10**assetInParams.decimals) at line 799"
+        },
+        {
+          "file": "src/PriceManager.sol",
+          "symbol": "_getAssetPrice",
+          "line_range": {
+            "start": 372,
+            "end": 419
+          },
+          "role": "related",
+          "note": "Price normalization to 18 decimals happens here before returning to _getAssetOutAmount"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

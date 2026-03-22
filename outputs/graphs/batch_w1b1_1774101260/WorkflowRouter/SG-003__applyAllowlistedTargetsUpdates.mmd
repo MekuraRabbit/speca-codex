@@ -1,0 +1,34 @@
+---
+title: "_applyAllowlistedTargetsUpdates (WorkflowRouter)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_wf: check workflowId allowlisted
+    q_check_wf --> q_revert_wf: !s_allowlistedWorkflowIds.contains(workflowId)
+    q_revert_wf --> [*]: revert WorkflowIdNotAllowlisted(workflowId)
+    q_check_wf --> q_check_empty: workflowId is allowlisted
+    q_check_empty --> q_revert_empty: removes.length == 0 AND adds.length == 0
+    q_revert_empty --> [*]: revert EmptyList()
+    q_check_empty --> q_iter_removes: at least one list non-empty
+    q_iter_removes --> q_remove_target: i < removes.length
+    q_remove_target --> q_get_selectors: target = removes[i]
+    q_get_selectors --> q_clear_selectors: allowlistedSelectors = s_workflowInfos[workflowId].allowlistedSelectors[target].values()
+    q_clear_selectors --> q_remove_set: _applyAllowlistedSelectorsUpdates(workflowId, target, removedSelectors, empty)
+    q_remove_set --> q_emit_target: s_workflowInfos[workflowId].allowlistedTargets.remove(target)
+    q_emit_target --> q_iter_removes: emit TargetRemovedFromAllowlist(workflowId, target); i++
+    q_iter_removes --> q_iter_adds: i >= removes.length
+    q_iter_adds --> q_add_target: i < adds.length
+    q_add_target --> q_check_zero: target = adds[i].target
+    q_check_zero --> q_revert_zero: target == address(0)
+    q_revert_zero --> [*]: revert InvalidZeroAddress()
+    q_check_zero --> q_add_set: target != address(0)
+    q_add_set --> q_add_selectors: s_workflowInfos[workflowId].allowlistedTargets.add(target)
+    q_add_selectors --> q_iter_adds: _applyAllowlistedSelectorsUpdates(workflowId, target, empty, adds[i].selectors); i++
+    q_iter_adds --> [*]: i >= adds.length
+
+    note right of q_check_wf
+        INV-001: workflowId must be in s_allowlistedWorkflowIds
+        INV-002: removing a target first clears all its selectors via _applyAllowlistedSelectorsUpdates
+        INV-003: zero address cannot be added as target
+        INV-004: assembly cast bytes32[] to bytes4[] is safe (memory layout)
+    end note

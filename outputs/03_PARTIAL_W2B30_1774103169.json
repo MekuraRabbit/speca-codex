@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-026",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::_getAssetOutAmount::L777-803",
+      "proof_trace": "`_getAssetOutAmount` takes `amountIn` (caller-specified bid amount) as a parameter and computes `auctionUsdValue = amountIn * assetInUsdPrice / decimals * priceMultiplier` \u2014 no `balanceOf` call inside. In `bid()`, `availableBalance` is read only as a cap check (revert if `amount > availableBalance`); the user-specified `amount` is passed directly to `_getAssetOutAmount`, so depositing extra tokens cannot alter the per-unit price or inject balance into the calculation.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-026"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 30,
+    "item_count": 1,
+    "timestamp": 1774103169,
+    "processed_ids": [
+      "PROP-baseauction-inv-026"
+    ]
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "PROP-baseauction-inv-002": {
+    "property_id": "PROP-baseauction-inv-002",
+    "text": "Asset transferred to bidder BEFORE pulling assetOut creates callback window; callback must not alter auction state.",
+    "type": "invariant",
+    "assertion": "forall bid(asset, amt, data): state(auction) unchanged between safeTransfer(out) and safeTransferFrom(in)",
+    "severity": "CRITICAL",
+    "covers": "SG-005",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()",
+        "Callback"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "bid",
+          "line_range": {
+            "start": 410,
+            "end": 458
+          },
+          "role": "primary",
+          "note": "safeTransfer(asset out) occurs before auctionCallback and safeTransferFrom(assetOut in) \u2014 window between the two transfers"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

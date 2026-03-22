@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-039",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/PriceManager.sol::_getAssetPrice::L372-419",
+      "proof_trace": "The implementation precisely encodes the invariant: L381-382 sets the default to streams price; L385 triggers the fallback only when streams is stale (`updatedAt < minTimestamp`) AND a data feed is configured (`usdDataFeed != address(0)`); L390 then switches to the data feed price only if it is strictly more recent (`updatedAt < dataFeedUpdatedAt`), otherwise the streams price is retained. All four cases of the property assertion are covered.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-039"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 40,
+    "item_count": 1,
+    "timestamp": 1774103370,
+    "processed_ids": [
+      "PROP-baseauction-inv-039"
+    ]
+  }
+}

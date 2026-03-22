@@ -1,0 +1,15 @@
+---
+title: "_onFeedInfoUpdate (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_super: super._onFeedInfoUpdate(asset, isRemoved)
+    q_super --> q_check_live: check live auction constraints
+    q_check_live --> q_revert: (asset == assetOut and liveAuctionExists) or auctionStarts[asset] != 0
+    q_revert --> [*]: revert LiveAuction
+    q_check_live --> [*]: no live auction conflict
+
+    note right of q_check_live
+        INV-001: Feed info cannot be updated for assets with live auctions
+        INV-002: If asset is assetOut, no feed update while any auction is live
+    end note

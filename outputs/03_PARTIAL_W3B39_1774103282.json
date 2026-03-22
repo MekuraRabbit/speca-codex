@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-036",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::bid::L410-458",
+      "proof_trace": "`bid()` calls `_getAssetPrice(asset, true)` at L429, and passes `withValidation=true` into `_getAssetOutAmount` at L442, which forwards it to `_getAssetPrice(s_assetOut, withValidation)` at L798. `_getAssetPrice` with `withValidation=true` reverts on zero (`ZeroFeedData`) and stale (`StaleFeedData`) prices. The two `withValidation=false` call sites (L238, L764) are in view-only functions (`checkUpkeep`, `getAssetOutAmount`) that never execute bids.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-036"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 39,
+    "item_count": 1,
+    "timestamp": 1774103282,
+    "processed_ids": [
+      "PROP-baseauction-inv-036"
+    ]
+  }
+}

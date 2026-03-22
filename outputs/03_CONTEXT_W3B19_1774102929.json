@@ -1,0 +1,36 @@
+{
+  "PROP-baseauction-post-002": {
+    "property_id": "PROP-baseauction-post-002",
+    "text": "After performUpkeep starts auction, auctionStarts[asset] must equal block.timestamp.",
+    "type": "post-condition",
+    "assertion": "post performUpkeep(start): auctionStarts[asset] == block.timestamp",
+    "severity": "MEDIUM",
+    "covers": "SG-003",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "performUpkeep()"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "indirect",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "performUpkeep",
+          "line_range": {
+            "start": 305,
+            "end": 370
+          },
+          "role": "primary",
+          "note": "s_auctionStarts[asset] = block.timestamp assigned at line 353"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

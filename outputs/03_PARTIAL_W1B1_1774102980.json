@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-002",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::bid::L410-458",
+      "proof_trace": "The `s_entered` flag (L415-418) blocks re-entry into `bid()`; all admin state-modifying functions require `ASSET_ADMIN_ROLE`/`DEFAULT_ADMIN_ROLE` unavailable to regular bidders; and `_setAssetOut`/`_setAssetOutReceiver`/`_setFeeAggregator` call `_whenNoLiveAuctions()` (L503/534/562) which reverts for any live auction. The only unguarded path is `performUpkeep` (which omits the `s_entered` check) but requires `AUCTION_WORKER_ROLE`; even if exploited, `assetOutAmount` and `assetOut` are cached in locals before the callback (L442/L446) so no net gain accrues to the attacker, and `_onAuctionEnd` routes residual funds to the fee aggregator rather than the caller. In `GPV2CompatibleAuction`, `isValidSignature` (L125-127) additionally checks `s_entered` to block GPv2 order settlement during the bid callback window.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 1,
+    "item_count": 1,
+    "timestamp": 1774102980,
+    "processed_ids": [
+      "PROP-baseauction-inv-002"
+    ]
+  }
+}

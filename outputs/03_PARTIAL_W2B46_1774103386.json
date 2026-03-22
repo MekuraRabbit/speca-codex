@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-045",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/PriceManager.sol::transmit::L162-164",
+      "proof_trace": "The staleness check at line 162 directly implements the property: `if (report.observationsTimestamp < block.timestamp - feedInfo.stalenessThreshold) revert Errors.StaleFeedData()` is applied to every report in the loop with no early exit. The stalenessThreshold is guaranteed nonzero by _applyFeedInfoUpdates validation, the feedId is guaranteed allowlisted by the first loop, and no other code path writes to s_dataStreamsPrice.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-045"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 46,
+    "item_count": 1,
+    "timestamp": 1774103386,
+    "processed_ids": [
+      "PROP-baseauction-inv-045"
+    ]
+  }
+}

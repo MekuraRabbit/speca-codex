@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-pre-002",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::bid::L410-458",
+      "proof_trace": "The guard `if (bidUsdValue < minBidUsdValue) { revert BidValueTooLow(...); }` at L433-435 is on the single code path through `bid()` before any state mutations. `s_minBidUsdValue` is always > 0 (enforced in constructor and setter), `assetPrice` is validated non-zero/non-stale by `_getAssetPrice(asset, true)`, and `assetParams.decimals` is validated against the actual token decimals in `_applyAssetParamsUpdates`. Solidity 0.8.26 checked arithmetic prevents overflow from producing a falsely-high `bidUsdValue`.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-pre-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 4,
+    "item_count": 1,
+    "timestamp": 1774102840,
+    "processed_ids": [
+      "PROP-baseauction-pre-002"
+    ]
+  }
+}

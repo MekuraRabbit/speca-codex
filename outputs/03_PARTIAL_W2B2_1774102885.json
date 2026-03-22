@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::bid::L410-458",
+      "proof_trace": "The `s_entered` boolean (L157) is set to `true` at L418, before both the `safeTransfer` (L444) and the `auctionCallback` (L449), blocking re-entry into `bid()` on all paths. The only function that writes to `s_auctionStarts` is `performUpkeep()`, which is gated by `onlyRole(Roles.AUCTION_WORKER_ROLE)` \u2014 an admin-controlled role. Double-spend is additionally prevented because `assetOut` and `assetOutAmount` are cached in local memory before the callback, and the `safeTransferFrom` at L453 atomically reverts the entire transaction (including the prior transfer at L444) if payment fails.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1774102885,
+    "processed_ids": [
+      "PROP-baseauction-inv-003"
+    ]
+  }
+}

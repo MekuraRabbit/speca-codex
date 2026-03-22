@@ -1,0 +1,19 @@
+---
+title: "auctionCallback (AuctionBidder)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_caller: check msg.sender and from
+    q_check_caller --> q_error_access: msg.sender != auction OR from != address(this)
+    q_error_access --> [*]: revert AccessForbidden
+    q_check_caller --> q_decode: authorized caller
+    q_decode --> q_execute: calls = abi.decode(data)
+    q_execute --> q_approve: _multiCall(calls)
+    q_approve --> [*]: forceApprove(assetOut, msg.sender, amountOut)
+
+    note right of q_execute
+        INV-001: Only the configured auction contract can trigger callback
+        INV-002: from must be this contract (self-initiated bid)
+        INV-003: Arbitrary calls executed via _multiCall to source settlement asset
+        INV-004: Approval set for exact amountOut after solve execution
+    end note

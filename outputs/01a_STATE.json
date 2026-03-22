@@ -1,0 +1,51 @@
+{
+  "found_specs": [
+    {
+      "url": "https://github.com/code-423n4/2026-03-chainlink/blob/main/src/BaseAuction.sol",
+      "title": "BaseAuction — Core auction engine with Dutch auction price curve",
+      "status": "pending"
+    },
+    {
+      "url": "https://github.com/code-423n4/2026-03-chainlink/blob/main/src/PriceManager.sol",
+      "title": "PriceManager — Price feed management and validation",
+      "status": "pending"
+    },
+    {
+      "url": "https://github.com/code-423n4/2026-03-chainlink/blob/main/src/WorkflowRouter.sol",
+      "title": "WorkflowRouter — Automation ingress and report routing",
+      "status": "pending"
+    },
+    {
+      "url": "https://github.com/code-423n4/2026-03-chainlink/blob/main/src/GPV2CompatibleAuction.sol",
+      "title": "GPV2CompatibleAuction — CowSwap GPv2 settlement integration",
+      "status": "pending"
+    },
+    {
+      "url": "https://github.com/code-423n4/2026-03-chainlink/blob/main/src/AuctionBidder.sol",
+      "title": "AuctionBidder — Solver helper for programmatic bidding with callbacks",
+      "status": "pending"
+    },
+    {
+      "url": "https://github.com/code-423n4/2026-03-chainlink/blob/main/src/Caller.sol",
+      "title": "Caller — External call execution helper",
+      "status": "pending"
+    },
+    {
+      "url": "https://github.com/code-423n4/2026-03-chainlink/blob/main/payment_abstraction_v2.pdf",
+      "title": "Payment Abstraction V2 — Design documentation",
+      "status": "pending"
+    },
+    {
+      "url": "https://github.com/code-423n4/2026-03-chainlink/blob/main/catalyst.md",
+      "title": "Audit Catalyst — Security considerations by Zellic",
+      "status": "pending"
+    }
+  ],
+  "metadata": {
+    "project": "Chainlink Payment Abstraction V2",
+    "platform": "Code4rena",
+    "language": "Solidity",
+    "total_nsloc": 1060,
+    "source": "manual — Solidity audit contest"
+  }
+}

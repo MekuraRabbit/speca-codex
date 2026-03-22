@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-post-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::performUpkeep::L359-369",
+      "proof_trace": "The deletion `delete s_auctionStarts[asset]` executes on line 367 unconditionally after `_onAuctionEnd` returns on line 366; there is no branching between them. A re-entrancy window exists during `_onAuctionEnd`'s external `safeTransfer` calls while `s_auctionStarts[asset]` is still non-zero, but `bid()` re-entry is neutralised by the zero-balance check (line 438-439), and `performUpkeep` re-entry is blocked by `onlyRole(AUCTION_WORKER_ROLE)`. The post-condition `auctionStarts[asset] == 0` is satisfied on every non-reverting execution.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-post-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 20,
+    "item_count": 1,
+    "timestamp": 1774103085,
+    "processed_ids": [
+      "PROP-baseauction-post-003"
+    ]
+  }
+}

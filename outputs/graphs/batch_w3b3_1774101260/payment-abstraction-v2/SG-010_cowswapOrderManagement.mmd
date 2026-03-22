@@ -1,0 +1,32 @@
+---
+title: "CowSwap Order Management Workflow (Payment Abstraction V2)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_auctions: CowSwap relayer workflow triggered
+    q_check_auctions --> q_iter: query getAuctionStart for each allowlisted asset
+    q_iter --> q_check_live: for asset in allowlistedAssets
+    q_check_live --> q_fetch_orders: live auction detected for asset
+    q_check_live --> q_next: no live auction (skip)
+    q_fetch_orders --> q_check_existing: fetch latest orders from CowSwap API for asset
+    q_check_existing --> q_check_order_stale: existing order found
+    q_check_existing --> q_create_order: no existing order
+    q_check_order_stale --> q_create_order: order.creationTimestamp < auctionStart (stale order)
+    q_check_order_stale --> q_check_price_drift: order.creationTimestamp >= auctionStart
+    q_check_price_drift --> q_update_order: currentAuctionPrice < orderPrice by threshold
+    q_check_price_drift --> q_check_amount_drift: price within threshold
+    q_check_amount_drift --> q_update_order: availableAuctionAmount < orderAmount
+    q_check_amount_drift --> q_next: order still valid (skip)
+    q_update_order --> q_invalidate: invalidate old order on-chain via WorkflowRouter
+    q_invalidate --> q_create_order: old order invalidated
+    q_create_order --> q_post: create partially fillable limit sell order at current auction price
+    q_post --> q_next: post order to CowSwap API
+    q_next --> q_iter: more assets
+    q_next --> [*]: no more assets
+
+    note right of q_check_price_drift
+        INV-001: Orders updated when auction price drifts beyond configurable threshold
+        INV-002: Orders updated when available auction amount decreases (partial fills)
+        INV-003: Short-lived orders can expire automatically without on-chain invalidation
+        INV-004: Order invalidation uses ORDER_MANAGER_ROLE via WorkflowRouter
+    end note

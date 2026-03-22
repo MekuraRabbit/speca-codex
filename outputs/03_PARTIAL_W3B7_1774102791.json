@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-005",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::_getAssetOutAmount::L777-803",
+      "proof_trace": "Line 785 clamps elapsedTime to auctionDuration before the multiplier is computed. Config-time validation in _applyAssetParamsUpdates (L647-657) enforces auctionDuration > 0 and startingPriceMultiplier >= endingPriceMultiplier. The linear decay formula subtracts at most (startingPriceMultiplier \u2212 endingPriceMultiplier) * 1 (when elapsedTime = auctionDuration), yielding exactly endingPriceMultiplier as the floor; for all smaller elapsedTime the floor is not reached, so priceMultiplier >= endingPriceMultiplier holds on every path.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-005"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 7,
+    "item_count": 1,
+    "timestamp": 1774102791,
+    "processed_ids": [
+      "PROP-baseauction-inv-005"
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+---
+title: "bid (AuctionBidder)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_validate: whenNotPaused, onlyRole(AUCTION_BIDDER_ROLE)
+    q_validate --> q_load: auction = s_auction
+    q_load --> q_get_asset: assetOut = auction.getAssetOut()
+    q_get_asset --> q_check_solution: solution.length > 0
+    q_check_solution --> q_encode: true
+    q_check_solution --> q_approve: false
+    q_encode --> q_bid: data = abi.encode(solution)
+    q_approve --> q_bid: forceApprove(auction, getAssetOutAmount(assetIn, amount, block.timestamp))
+    q_bid --> q_balance: auction.bid(assetIn, amount, data)
+    q_balance --> q_check_balance: assetOutBalance = IERC20(assetOut).balanceOf(this)
+    q_check_balance --> q_check_receiver: assetOutBalance > 0
+    q_check_balance --> [*]: assetOutBalance == 0
+    q_check_receiver --> q_transfer: receiver != address(0)
+    q_check_receiver --> [*]: receiver == address(0)
+    q_transfer --> [*]: safeTransfer(receiver, assetOutBalance)
+
+    note right of q_check_solution
+        INV-001: if solution is empty, contract pre-approves assetOut for auction
+        INV-002: if solution is non-empty, data is encoded for auctionCallback
+    end note
+
+    note right of q_check_balance
+        INV-003: leftover assetOut is forwarded to receiver if set and balance > 0
+        INV-004: assetOut balance checked after auction.bid completes (reentrancy surface)
+    end note

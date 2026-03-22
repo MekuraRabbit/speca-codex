@@ -1,0 +1,43 @@
+---
+title: "_applyFeedInfoUpdates (PriceManager)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_empty: check adds and removes
+    q_check_empty --> q_error_empty: both empty
+    q_error_empty --> [*]: revert EmptyList
+    q_check_empty --> q_remove_loop: at least one non-empty
+    q_remove_loop --> q_on_update_rm: for each asset to remove
+    q_on_update_rm --> q_remove_asset: _onFeedInfoUpdate(asset, true)
+    q_remove_asset --> q_error_not_allowed: !allowlisted
+    q_error_not_allowed --> [*]: revert AssetNotAllowlisted
+    q_remove_asset --> q_cleanup: allowlisted, removed
+    q_cleanup --> q_remove_loop: delete feedId mapping, feedInfo, price
+    q_remove_loop --> q_add_loop: removals done
+    q_add_loop --> q_on_update_add: for each feedInfo to add
+    q_on_update_add --> q_check_asset_zero: _onFeedInfoUpdate(asset, false)
+    q_check_asset_zero --> q_error_zero_addr: asset == address(0)
+    q_error_zero_addr --> [*]: revert InvalidZeroAddress
+    q_check_asset_zero --> q_check_feeds: asset != address(0)
+    q_check_feeds --> q_error_zero_val: stalenessThreshold == 0 AND both feed sources zero
+    q_error_zero_val --> [*]: revert InvalidZeroValue
+    q_check_feeds --> q_check_streams: valid feed config
+    q_check_streams --> q_check_version: dataStreamsFeedId != 0
+    q_check_version --> q_error_version: version != 3
+    q_error_version --> [*]: revert InvalidFeedVersion
+    q_check_version --> q_check_rotation: version == 3
+    q_check_rotation --> q_handle_rotation: previousAsset != address(0) AND previousAsset != asset
+    q_handle_rotation --> q_update_mapping: clear previous asset streams data
+    q_check_rotation --> q_update_mapping: no rotation needed
+    q_update_mapping --> q_store: update feedId to asset mapping
+    q_check_streams --> q_store: dataStreamsFeedId == 0
+    q_store --> q_add_loop: s_feedInfo[asset] = feedInfo
+    q_add_loop --> [*]: all adds processed
+
+    note right of q_check_rotation
+        INV-001: Feed ID rotation clears previous asset streams state
+        INV-002: Previous asset must retain data feed if streams feed is rotated away
+        INV-003: Only v3 Data Streams reports are supported
+        INV-004: Staleness threshold must be non-zero
+        INV-005: BaseAuction override prevents changes during live auctions
+    end note

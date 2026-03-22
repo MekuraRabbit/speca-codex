@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-033",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::bid::L410-458",
+      "proof_trace": "The callback at L449 is invoked with a direct external call \u2014 no try/catch wrapper exists anywhere in bid(). A revert from auctionCallback propagates unconditionally through bid(), and EVM atomicity rolls back all prior state changes (safeTransfer at L444, s_entered=true at L418). No storage mutations to auction state (s_auctionStarts, s_assetParams) occur before the callback, so partial settlement is impossible.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-033"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 36,
+    "item_count": 1,
+    "timestamp": 1774103266,
+    "processed_ids": [
+      "PROP-baseauction-inv-033"
+    ]
+  }
+}

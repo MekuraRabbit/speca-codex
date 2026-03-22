@@ -1,0 +1,17 @@
+---
+title: "_getAssetOutAmount (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_bound_time: elapsedTime = min(elapsedTime, auctionDuration)
+    q_bound_time --> q_calc_multiplier: compute priceMultiplier
+    q_calc_multiplier --> q_calc_usd: priceMultiplier = start - (start - end) * elapsed / duration
+    q_calc_usd --> q_get_out_price: auctionUsdValue = amountIn * assetInPrice / 10^decimals * multiplier
+    q_get_out_price --> q_convert: assetOutUsdPrice = _getAssetPrice(assetOut, withValidation)
+    q_convert --> [*]: return auctionUsdValue * 10^assetOutDecimals / assetOutUsdPrice
+
+    note right of q_calc_multiplier
+        INV-001: Price multiplier decays linearly from startingPriceMultiplier to endingPriceMultiplier
+        INV-002: At t=0 price is highest (premium), at t=duration price is lowest (discount)
+        INV-003: mulDivUp used for rounding up in favor of the protocol
+    end note

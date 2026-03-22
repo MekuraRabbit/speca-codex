@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-asm-002",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::bid::L410-458",
+      "proof_trace": "All three required validations \u2014 auctionLive (L425-427), bidValue (L429-435, including revert-on-zero/stale via _getAssetPrice withValidation=true), and balance (L437-440) \u2014 are strictly ordered before the first safeTransfer at L444. The code is sequential with no branch that reaches L444 without passing all guards. The flash callback at L449 cannot alter the pre-computed assetOutAmount (fixed at L442), and s_entered=true at L418 prevents reentrancy throughout.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-asm-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 27,
+    "item_count": 1,
+    "timestamp": 1774103153,
+    "processed_ids": [
+      "PROP-baseauction-asm-002"
+    ]
+  }
+}

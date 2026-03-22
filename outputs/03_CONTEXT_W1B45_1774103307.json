@@ -1,0 +1,36 @@
+{
+  "PROP-baseauction-inv-044": {
+    "property_id": "PROP-baseauction-inv-044",
+    "text": "transmit must validate price is non-zero after conversion; zero price stored would corrupt auction pricing.",
+    "type": "invariant",
+    "assertion": "forall transmit(report): usdPrice == 0 after scaling => revert ZeroFeedData()",
+    "severity": "HIGH",
+    "covers": "SG-002",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "transmit()"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "indirect",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/PriceManager.sol",
+          "symbol": "transmit",
+          "line_range": {
+            "start": 133,
+            "end": 183
+          },
+          "role": "primary",
+          "note": "Zero price check after decimal scaling must happen before storing price to prevent corrupted state"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

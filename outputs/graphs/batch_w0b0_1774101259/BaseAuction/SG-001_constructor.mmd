@@ -1,0 +1,23 @@
+---
+title: "constructor (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_validate_addrs: check assetOut != 0 and assetOutReceiver != 0
+    q_validate_addrs --> q_revert_zero: assetOut == 0 or assetOutReceiver == 0
+    q_revert_zero --> [*]: revert InvalidZeroAddress
+    q_validate_addrs --> q_set_min_bid: addresses valid
+    q_set_min_bid --> q_set_asset_out: _setMinBidUsdValue(minBidUsdValue)
+    q_set_asset_out --> q_set_receiver: _setAssetOut(assetOut)
+    q_set_receiver --> q_set_fee_agg: _setAssetOutReceiver(assetOutReceiver)
+    q_set_fee_agg --> q_validate_multiplier: _setFeeAggregator(feeAggregator)
+    q_validate_multiplier --> q_revert_zero_val: minPriceMultiplier == 0
+    q_revert_zero_val --> [*]: revert InvalidZeroValue
+    q_validate_multiplier --> q_store_multiplier: minPriceMultiplier > 0
+    q_store_multiplier --> q_emit: i_minPriceMultiplier = minPriceMultiplier
+    q_emit --> [*]: emit MinPriceMultiplierSet
+
+    note right of q_validate_addrs
+        INV-001: assetOut and assetOutReceiver must be non-zero addresses
+        INV-002: minPriceMultiplier must be non-zero
+    end note

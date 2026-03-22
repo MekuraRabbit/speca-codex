@@ -1,0 +1,42 @@
+---
+title: "transmit (PriceManager)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_role: onlyRole(PRICE_ADMIN_ROLE)
+    q_check_role --> q_check_empty: caller has role
+    q_check_role --> q_revert_role: caller lacks role
+    q_revert_role --> [*]: revert AccessControl error
+    q_check_empty --> q_revert_empty: unverifiedReports.length == 0
+    q_revert_empty --> [*]: revert Errors.EmptyList()
+    q_check_empty --> q_validate_loop: unverifiedReports.length > 0
+    q_validate_loop --> q_decode: i < unverifiedReports.length
+    q_decode --> q_check_allowlist: decode reportData, extract dataStreamsFeedId
+    q_check_allowlist --> q_revert_feed: s_dataStreamsFeedIdToAsset[feedId] == address(0)
+    q_revert_feed --> [*]: revert FeedNotAllowlisted(feedId)
+    q_check_allowlist --> q_validate_loop: feed is allowlisted, i++
+    q_validate_loop --> q_verify_bulk: i >= unverifiedReports.length
+    q_verify_bulk --> q_process_loop: verifiedReports = verifierProxy.verifyBulk(...)
+    q_process_loop --> q_decode_report: i < verifiedReports.length
+    q_decode_report --> q_convert_price: decode ReportV3, lookup asset and feedInfo
+    q_convert_price --> q_check_stale: usdPrice = int256(report.price).toUint256()
+    q_check_stale --> q_revert_stale: observationsTimestamp < block.timestamp - stalenessThreshold
+    q_revert_stale --> [*]: revert Errors.StaleFeedData()
+    q_check_stale --> q_scale: price is fresh
+    q_scale --> q_check_zero: scale price to 18 decimals
+    q_check_zero --> q_revert_zero: usdPrice == 0
+    q_revert_zero --> [*]: revert Errors.ZeroFeedData()
+    q_check_zero --> q_store: usdPrice > 0
+    q_store --> q_process_loop: s_dataStreamsPrice[asset] = DataStreamsPriceInfo, emit PriceTransmitted
+    q_process_loop --> [*]: i >= verifiedReports.length
+
+    note right of q_validate_loop
+        INV-001: all dataStreamsFeedIds must be allowlisted before verification
+        INV-002: verification happens via VerifierProxy (external trust boundary)
+    end note
+
+    note right of q_scale
+        INV-003: price is scaled to exactly 18 decimals
+        INV-004: price must be non-zero after conversion and scaling
+        INV-005: observationsTimestamp must be within stalenessThreshold of block.timestamp
+    end note

@@ -1,0 +1,26 @@
+---
+title: "applyAllowlistedWorkflowsUpdates (WorkflowRouter)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_empty: check removes and adds
+    q_check_empty --> q_error_empty: both empty
+    q_error_empty --> [*]: revert EmptyList
+    q_check_empty --> q_remove_loop: at least one non-empty
+    q_remove_loop --> q_remove_targets: for each workflowId to remove
+    q_remove_targets --> q_remove_wf: _applyAllowlistedTargetsUpdates(all targets removed)
+    q_remove_wf --> q_remove_loop: s_allowlistedWorkflowIds.remove(workflowId)
+    q_remove_loop --> q_add_loop: removals done
+    q_add_loop --> q_check_zero: for each workflow to add
+    q_check_zero --> q_error_zero: workflowId == bytes32(0)
+    q_error_zero --> [*]: revert InvalidZeroValue
+    q_check_zero --> q_add_wf: workflowId != bytes32(0)
+    q_add_wf --> q_add_targets: s_allowlistedWorkflowIds.add(workflowId)
+    q_add_targets --> q_add_loop: _applyAllowlistedTargetsUpdates(targets added)
+    q_add_loop --> [*]: all adds processed
+
+    note right of q_remove_targets
+        INV-001: Removing a workflowId cascades removal of all targets and selectors
+        INV-002: Zero workflowId cannot be added
+        INV-003: Caller must have DEFAULT_ADMIN_ROLE
+    end note

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-post-002",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::performUpkeep::L305-370",
+      "proof_trace": "The sole write path for auction starts is the `else` branch at L352\u2013356, which unconditionally executes `s_auctionStarts[asset] = block.timestamp` (L353) before emitting `AuctionStarted`; grep confirms no other setter exists. The `LiveAuction()` guard at L327 prevents any reentrant overwrite, and the `asset == s_assetOut` path neither sets `s_auctionStarts` nor emits `AuctionStarted`, so no auction is conceptually started on that path.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-post-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 19,
+    "item_count": 1,
+    "timestamp": 1774103000,
+    "processed_ids": [
+      "PROP-baseauction-post-002"
+    ]
+  }
+}

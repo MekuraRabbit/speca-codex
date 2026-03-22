@@ -1,0 +1,37 @@
+---
+title: "checkUpkeep (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_init: load feeAggregator, allowlisted assets
+    q_init --> q_iter: for i in auctions
+    q_iter --> q_skip: assetParams.decimals == 0
+    q_skip --> q_iter: continue
+    q_iter --> q_get_price: assetParams.decimals > 0
+    q_get_price --> q_check_asset_out: _getAssetPrice(asset, false)
+    q_check_asset_out --> q_set_valid: asset == assetOut
+    q_set_valid --> q_check_live: isAssetOutPriceValid = isPriceValid
+    q_check_asset_out --> q_check_live: asset != assetOut
+    q_check_live --> q_check_ended: auctionStart != 0
+    q_check_ended --> q_add_ended: duration elapsed or balance below min
+    q_add_ended --> q_iter: endedAuctions[idx++] = asset
+    q_check_ended --> q_iter: auction still live
+    q_check_live --> q_check_eligible: auctionStart == 0 and isPriceValid
+    q_check_eligible --> q_add_eligible: availableUsdValue >= minAuctionSizeUsd
+    q_add_eligible --> q_iter: eligibleAssets[idx++] = asset
+    q_check_eligible --> q_iter: availableUsdValue < minAuctionSizeUsd
+    q_check_live --> q_iter: auctionStart == 0 and not isPriceValid
+    q_iter --> q_filter: loop complete
+    q_filter --> q_clear_eligible: not isAssetOutPriceValid
+    q_clear_eligible --> q_encode: eligibleAssetsIdx = 0
+    q_filter --> q_encode: isAssetOutPriceValid
+    q_encode --> q_return_true: eligibleAssetsIdx > 0 or endedAuctionsIdx > 0
+    q_return_true --> [*]: return (true, abi.encode(eligible, ended))
+    q_encode --> q_return_false: both indices == 0
+    q_return_false --> [*]: return (false, empty)
+
+    note right of q_check_ended
+        INV-001: Auction ended if duration elapsed OR balance below minAuctionSizeUsd (dust guard)
+        INV-002: No new auctions started if assetOut price is invalid
+        INV-003: Only assets with configured params (decimals > 0) are evaluated
+    end note

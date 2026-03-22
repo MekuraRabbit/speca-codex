@@ -1,0 +1,47 @@
+{
+  "PROP-baseauction-inv-032": {
+    "property_id": "PROP-baseauction-inv-032",
+    "text": "checkUpkeep and performUpkeep must agree: assets marked eligible by check must be processable by perform.",
+    "type": "invariant",
+    "assertion": "forall asset in checkUpkeep.eligible: performUpkeep(asset) does not revert due to state mismatch",
+    "severity": "MEDIUM",
+    "covers": "SG-002",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "checkUpkeep()",
+        "performUpkeep()"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "indirect",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "checkUpkeep",
+          "line_range": {
+            "start": 216,
+            "end": 294
+          },
+          "role": "primary",
+          "note": "Eligibility conditions here must mirror revert conditions in performUpkeep"
+        },
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "performUpkeep",
+          "line_range": {
+            "start": 305,
+            "end": 370
+          },
+          "role": "related",
+          "note": "Preconditions checked here must match checkUpkeep's eligibility filter"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

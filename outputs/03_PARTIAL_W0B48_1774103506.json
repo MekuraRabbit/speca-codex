@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-050",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/PriceManager.sol::transmit::L133-183",
+      "proof_trace": "The second loop iterates over `verifiedReports.length` (L155) with no explicit `require(verifiedReports.length == unverifiedReports.length)` guard; however, length parity is enforced by the behavioral contract of `i_streamsVerifierProxy`, which is declared `immutable` (L95) and cannot be replaced post-deployment. The Chainlink V0.5.0 VerifierProxy `verifyBulk` is all-or-nothing: it returns exactly one verified report per input or reverts the entire call \u2014 confirmed by MockVerifierProxy (L24: `new bytes[](unverifiedReports.length)`) and all test fixtures. No attacker-controlled path exists to inject a mismatched proxy or bypass the PRICE_ADMIN_ROLE gate.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-050"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 48,
+    "item_count": 1,
+    "timestamp": 1774103506,
+    "processed_ids": [
+      "PROP-baseauction-inv-050"
+    ]
+  }
+}

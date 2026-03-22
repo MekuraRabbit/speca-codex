@@ -1,0 +1,36 @@
+{
+  "PROP-baseauction-inv-050": {
+    "property_id": "PROP-baseauction-inv-050",
+    "text": "Declared unverifiedReports count must match verifiedReports count from verifierProxy for consistent iteration.",
+    "type": "invariant",
+    "assertion": "len(verifiedReports) == len(unverifiedReports); mismatch => index OOB or silent truncation",
+    "severity": "HIGH",
+    "covers": "SG-002",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "transmit()"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "indirect",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/PriceManager.sol",
+          "symbol": "transmit",
+          "line_range": {
+            "start": 133,
+            "end": 183
+          },
+          "role": "primary",
+          "note": "verifierProxy.verifyBulk returns verifiedReports; length must equal unverifiedReports.length for safe iteration"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

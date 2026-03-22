@@ -1,0 +1,27 @@
+---
+title: "onReport (WorkflowRouter)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_decode: workflowId = metadata[0..32]
+    q_decode --> q_check_zero: check workflowId
+    q_check_zero --> q_error_zero: workflowId == bytes32(0)
+    q_error_zero --> [*]: revert InvalidZeroValue
+    q_check_zero --> q_check_allowlist: workflowId != bytes32(0)
+    q_check_allowlist --> q_error_wf: !allowlisted(workflowId)
+    q_error_wf --> [*]: revert WorkflowIdNotAllowlisted
+    q_check_allowlist --> q_decode_report: allowlisted(workflowId)
+    q_decode_report --> q_extract_selector: (target, data) = abi.decode(report)
+    q_extract_selector --> q_check_selector: selector = data[0..4]
+    q_check_selector --> q_check_target: !selectorAllowlisted(workflowId, target, selector)
+    q_check_target --> q_error_target: !targetAllowlisted(workflowId, target)
+    q_error_target --> [*]: revert TargetNotAllowlisted
+    q_check_target --> q_error_sel: targetAllowlisted
+    q_error_sel --> [*]: revert SelectorNotAllowlisted
+    q_check_selector --> q_call: selectorAllowlisted
+    q_call --> [*]: _call(target, data)
+
+    note right of q_check_selector
+        INV-001: Only allowlisted workflow+target+selector combinations can execute calls
+        INV-002: Caller must have FORWARDER_ROLE and contract must not be paused
+    end note

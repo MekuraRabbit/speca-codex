@@ -1,0 +1,27 @@
+---
+title: "AuctionBidder.bid - Solver Bid Workflow (Payment Abstraction V2)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_role: bid(auctionAddress, assetIn, amountIn, assetOut, amountOutMin, swapRoute) called via WorkflowRouter
+    q_check_role --> q_call_bid: caller has AUCTION_BIDDER_ROLE
+    q_check_role --> q_revert_role: unauthorized
+    q_revert_role --> [*]: revert Unauthorized
+    q_call_bid --> q_receive_assets: call auction.bid(assetIn, amountIn, assetOut, amountOutMin, this, swapRoute)
+    q_receive_assets --> q_callback: auction transfers assetOut tokens to AuctionBidder
+    q_callback --> q_execute_swap: onBidCallback(assetIn, amountIn, assetOut, assetOutAmount, swapRoute)
+    q_execute_swap --> q_approve_proceeds: call aggregatorRouter with swapRoute data
+    q_approve_proceeds --> q_check_slippage: approve auction contract to spend LINK proceeds
+    q_check_slippage --> q_check_residual: swapResult >= amountIn (LINK required)
+    q_check_slippage --> q_revert_swap: insufficient swap output
+    q_revert_swap --> [*]: revert SwapFailed
+    q_check_residual --> q_transfer_residual: swapResult > amountIn (positive slippage)
+    q_check_residual --> [*]: swapResult == amountIn (no residual)
+    q_transfer_residual --> [*]: transfer residual to receiver (auction contract)
+
+    note right of q_execute_swap
+        INV-001: AuctionBidder receives assets BEFORE executing swap (callback pattern)
+        INV-002: Positive slippage residuals transferred to configured receiver
+        INV-003: Receiver defaults to auction contract for residual collection
+        INV-004: Admin can withdraw any stuck funds via withdraw function
+    end note

@@ -1,0 +1,26 @@
+---
+title: "applyAllowlistedAssetUpdates (FeeAggregator)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_remove_loop: process removals first
+    q_remove_loop --> q_remove_asset: for each asset to remove
+    q_remove_asset --> q_error_not_allowed: !s_allowlistedAssets.remove(asset)
+    q_error_not_allowed --> [*]: revert AssetNotAllowlisted
+    q_remove_asset --> q_remove_loop: successfully removed
+    q_remove_loop --> q_add_loop: removals done
+    q_add_loop --> q_check_zero: for each asset to add
+    q_check_zero --> q_error_zero: asset == address(0)
+    q_error_zero --> [*]: revert InvalidZeroAddress
+    q_check_zero --> q_add_asset: asset != address(0)
+    q_add_asset --> q_error_dup: !s_allowlistedAssets.add(asset)
+    q_error_dup --> [*]: revert AssetAlreadyAllowlisted
+    q_add_asset --> q_add_loop: successfully added
+    q_add_loop --> [*]: all updates applied
+
+    note right of q_add_asset
+        INV-001: Removed assets must exist in allowlist
+        INV-002: Added assets must not already be in allowlist
+        INV-003: Zero address cannot be added
+        INV-004: Caller must have ASSET_ADMIN_ROLE, contract must not be paused
+    end note

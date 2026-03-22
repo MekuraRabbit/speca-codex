@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-024",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::_getAssetOutAmount::L777-803",
+      "proof_trace": "The priceMultiplier decays monotonically via `S - floor((S-E)*t/D)`: floor division on a positive product is non-decreasing in t, so the result is non-increasing. Both `mulWadUp` (auctionUsdValue) and `mulDivUp` (assetOutAmount) preserve monotonicity because ceiling is a monotone function on a non-increasing sequence \u2014 the output cannot increase as the input decreases. S >= E is enforced at config time by `StartingPriceMultiplierLowerThanEndingPriceMultiplier` validation, ruling out underflow.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-024"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 24,
+    "item_count": 1,
+    "timestamp": 1774103213,
+    "processed_ids": [
+      "PROP-baseauction-inv-024"
+    ]
+  }
+}

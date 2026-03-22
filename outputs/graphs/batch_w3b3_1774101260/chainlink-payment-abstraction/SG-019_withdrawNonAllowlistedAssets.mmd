@@ -1,0 +1,21 @@
+---
+title: "withdrawNonAllowlistedAssets (FeeAggregator)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_empty: check assetAmounts.length
+    q_check_empty --> q_error_empty: length == 0
+    q_error_empty --> [*]: revert EmptyList
+    q_check_empty --> q_loop: length > 0
+    q_loop --> q_check_allowlisted: for each assetAmount
+    q_check_allowlisted --> q_error_allowed: s_allowlistedAssets.contains(asset)
+    q_error_allowed --> [*]: revert AssetAllowlisted
+    q_check_allowlisted --> q_transfer: !allowlisted
+    q_transfer --> q_loop: _transferAsset(to, asset, amount)
+    q_loop --> [*]: all assets withdrawn
+
+    note right of q_check_allowlisted
+        INV-001: Only non-allowlisted assets can be withdrawn through this function
+        INV-002: Prevents accidental withdrawal of protocol-managed assets
+        INV-003: Caller must have WITHDRAWER_ROLE
+    end note

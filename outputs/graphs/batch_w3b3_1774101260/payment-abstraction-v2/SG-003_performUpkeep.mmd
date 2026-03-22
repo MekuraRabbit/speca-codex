@@ -1,0 +1,52 @@
+---
+title: "performUpkeep (Payment Abstraction V2)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_paused: performUpkeep(performData) called
+    q_check_paused --> q_check_role: contract not paused
+    q_check_paused --> q_revert_paused: contract paused
+    q_revert_paused --> [*]: revert Paused
+    q_check_role --> q_check_asset_out: caller has AUCTION_WORKER_ROLE
+    q_check_role --> q_revert_role: unauthorized
+    q_revert_role --> [*]: revert Unauthorized
+    q_check_asset_out --> q_decode: assetOut is configured
+    q_check_asset_out --> q_revert_config: assetOut not configured
+    q_revert_config --> [*]: revert AssetOutNotConfigured
+    q_decode --> q_process_starts: decode performData into startList and endList
+    q_process_starts --> q_validate_start: for asset in startList
+    q_validate_start --> q_check_configured: validate asset
+    q_check_configured --> q_check_no_live: asset is configured
+    q_check_configured --> q_revert_asset: asset not configured
+    q_revert_asset --> [*]: revert AssetNotConfigured
+    q_check_no_live --> q_check_price_valid: no live auction for asset
+    q_check_no_live --> q_revert_live: live auction exists
+    q_revert_live --> [*]: revert AuctionAlreadyActive
+    q_check_price_valid --> q_check_min_size: assetPrice and assetOutPrice valid
+    q_check_price_valid --> q_revert_price: price invalid or stale
+    q_revert_price --> [*]: revert InvalidPrice
+    q_check_min_size --> q_start_auction: totalUsdValue >= minAuctionSizeUsd
+    q_check_min_size --> q_revert_size: below minimum
+    q_revert_size --> [*]: revert BelowMinAuctionSize
+    q_start_auction --> q_transfer: set s_auctionStarts[asset] = block.timestamp
+    q_transfer --> q_approve: transferForSwap from FeeAggregator
+    q_approve --> q_next_start: approve CowSwap VaultRelayer for asset amount
+    q_next_start --> q_process_starts: more start assets
+    q_next_start --> q_process_ends: no more start assets
+    q_process_ends --> q_validate_end: for asset in endList
+    q_validate_end --> q_check_auction_exists: validate auction exists
+    q_check_auction_exists --> q_end_auction: live auction exists
+    q_check_auction_exists --> q_revert_no_auction: no auction
+    q_revert_no_auction --> [*]: revert NoActiveAuction
+    q_end_auction --> q_return_remaining: delete s_auctionStarts[asset]
+    q_return_remaining --> q_send_proceeds: transfer remaining asset balance to FeeAggregator
+    q_send_proceeds --> q_next_end: transfer LINK proceeds to s_assetOutReceiver
+    q_next_end --> q_process_ends: more end assets
+    q_next_end --> [*]: no more end assets
+
+    note right of q_start_auction
+        INV-001: performUpkeep uses hard reverts unlike checkUpkeep soft skips
+        INV-002: performUpkeep does NOT re-check elapsed duration or dust (allows forced endings)
+        INV-003: Remaining auction assets are returned to FeeAggregator on end
+        INV-004: LINK proceeds sent to s_assetOutReceiver (Reserves)
+    end note

@@ -1,0 +1,29 @@
+---
+title: "transmit - Streams Price Transmission (Payment Abstraction V2)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_role: transmit(priceData) called via WorkflowRouter
+    q_check_role --> q_decode: caller has PRICE_ADMIN_ROLE
+    q_check_role --> q_revert_role: unauthorized
+    q_revert_role --> [*]: revert Unauthorized
+    q_decode --> q_iter: decode price reports from priceData
+    q_iter --> q_validate: for report in priceReports
+    q_validate --> q_check_feed: feedId matches configured dataStreamsFeedId
+    q_check_feed --> q_check_stale: feed configured for asset
+    q_check_feed --> q_skip: feed not configured (skip)
+    q_check_stale --> q_check_price: report.timestamp within stalenessThreshold
+    q_check_stale --> q_skip: price data stale
+    q_check_price --> q_update: price > 0
+    q_check_price --> q_skip: price is zero
+    q_update --> q_next: store price with timestamp for asset
+    q_skip --> q_next: skip this report
+    q_next --> q_iter: more reports
+    q_next --> [*]: no more reports
+
+    note right of q_update
+        INV-001: Streams prices take priority over Data Feeds when fresh
+        INV-002: Contract falls back to Data Feeds if no fresh Streams price
+        INV-003: Price staleness checked against configurable threshold per asset
+        INV-004: dataStreamsFeedDecimals used to normalize price precision
+    end note

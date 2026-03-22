@@ -1,0 +1,37 @@
+---
+title: "bid (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_reenter: check s_entered
+    q_check_reenter --> q_error_reenter: s_entered == true
+    q_error_reenter --> [*]: revert ReentrantCall
+    q_check_reenter --> q_set_entered: s_entered == false
+    q_set_entered --> q_load: s_entered = true
+    q_load --> q_check_auction: load assetParams, auctionStart
+    q_check_auction --> q_error_auction: auctionStart == 0 OR elapsed > duration
+    q_error_auction --> [*]: revert InvalidAuction
+    q_check_auction --> q_get_price: auction is live
+    q_get_price --> q_calc_bid_value: assetPrice = _getAssetPrice(asset, true)
+    q_calc_bid_value --> q_check_min_bid: bidUsdValue = amount * assetPrice / 10^decimals
+    q_check_min_bid --> q_error_low: bidUsdValue < minBidUsdValue
+    q_error_low --> [*]: revert BidValueTooLow
+    q_check_min_bid --> q_check_balance: bidUsdValue >= minBidUsdValue
+    q_check_balance --> q_error_high: amount > availableBalance
+    q_error_high --> [*]: revert BidAmountTooHigh
+    q_check_balance --> q_calc_out: amount <= availableBalance
+    q_calc_out --> q_transfer_in: assetOutAmount = _getAssetOutAmount(...)
+    q_transfer_in --> q_check_callback: transfer asset to msg.sender
+    q_check_callback --> q_callback: data.length != 0
+    q_callback --> q_pull_out: IAuctionCallback(msg.sender).auctionCallback(...)
+    q_check_callback --> q_pull_out: data.length == 0
+    q_pull_out --> q_clear: safeTransferFrom(msg.sender, this, assetOutAmount)
+    q_clear --> [*]: s_entered = false
+
+    note right of q_transfer_in
+        INV-001: Asset is transferred to bidder BEFORE payment is collected
+        INV-002: Reentrancy is blocked by s_entered flag
+        INV-003: Callback executes between asset transfer and payment pull
+        INV-004: Bid amount must not exceed available auction balance
+        INV-005: Bid USD value must exceed minimum threshold
+    end note

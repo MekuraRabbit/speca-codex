@@ -1,0 +1,37 @@
+{
+  "PROP-baseauction-inv-003": {
+    "property_id": "PROP-baseauction-inv-003",
+    "text": "Callback execution between asset transfer and assetOut pull must not enable double-spend or state manipulation.",
+    "type": "invariant",
+    "assertion": "forall bid with data.length>0: auctionCallback() cannot re-enter bid() or modify auctionStarts/balances",
+    "severity": "CRITICAL",
+    "covers": "SG-005",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()",
+        "Callback"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "bid",
+          "line_range": {
+            "start": 410,
+            "end": 458
+          },
+          "role": "primary",
+          "note": "auctionCallback invoked at line 449; s_entered guard (set at 418) intended to block re-entry during this window"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

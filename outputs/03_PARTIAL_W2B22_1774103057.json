@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-020",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::getAssetOutAmount::L749-767",
+      "proof_trace": "The clamping `amount = amount > availableBalance ? availableBalance : amount` at L762 is applied on all valid-auction paths before passing to `_getAssetOutAmount`. Invalid auctions return 0 via early exit at L757-759, making the amount irrelevant. No alternative code path bypasses L762.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-020"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 22,
+    "item_count": 1,
+    "timestamp": 1774103057,
+    "processed_ids": [
+      "PROP-baseauction-inv-020"
+    ]
+  }
+}

@@ -1,0 +1,24 @@
+---
+title: "bid (AuctionBidder)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_load: auction = s_auction, assetOut = auction.getAssetOut()
+    q_load --> q_check_solution: check solution.length
+    q_check_solution --> q_encode_calls: solution.length > 0
+    q_encode_calls --> q_call_bid: data = abi.encode(solution)
+    q_check_solution --> q_approve: solution.length == 0
+    q_approve --> q_call_bid: forceApprove(assetOut, auction, getAssetOutAmount)
+    q_call_bid --> q_check_leftover: auction.bid(assetIn, amount, data)
+    q_check_leftover --> q_check_receiver: assetOutBalance > 0
+    q_check_leftover --> [*]: assetOutBalance == 0
+    q_check_receiver --> q_transfer: receiver != address(0)
+    q_transfer --> [*]: safeTransfer(assetOut, receiver, balance)
+    q_check_receiver --> [*]: receiver == address(0)
+
+    note right of q_call_bid
+        INV-001: If solution provided, callback mechanism is used for custom solve logic
+        INV-002: If no solution, pre-approves exact assetOut amount needed
+        INV-003: Leftover assetOut is forwarded to configured receiver
+        INV-004: Caller must have AUCTION_BIDDER_ROLE
+    end note

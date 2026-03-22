@@ -1,0 +1,36 @@
+{
+  "PROP-baseauction-inv-034": {
+    "property_id": "PROP-baseauction-inv-034",
+    "text": "safeTransferFrom failure (bidder lacks assetOut balance/approval) must revert entire bid().",
+    "type": "invariant",
+    "assertion": "forall bid: safeTransferFrom fails => entire bid() reverts atomically",
+    "severity": "HIGH",
+    "covers": "SG-005",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "bid",
+          "line_range": {
+            "start": 410,
+            "end": 458
+          },
+          "role": "primary",
+          "note": "safeTransferFrom at the end of bid(); if it reverts, the entire transaction including prior safeTransfer is rolled back"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

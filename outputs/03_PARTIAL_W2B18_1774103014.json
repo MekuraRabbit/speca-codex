@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-post-001",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::bid::L410-458",
+      "proof_trace": "Both transfers use SafeERC20 safe variants that revert on failure, making any failure roll back the entire transaction. The `assetOut` address is captured to a local variable (L446) before the optional callback fires, preventing `s_assetOut` mutation from affecting the transfer target. If `bid()` returns without reverting, both `safeTransfer(msg.sender, amount)` (L444) and `safeTransferFrom(msg.sender, address(this), assetOutAmount)` (L453) completed successfully, satisfying both post-conditions atomically.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-post-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 18,
+    "item_count": 1,
+    "timestamp": 1774103014,
+    "processed_ids": [
+      "PROP-baseauction-post-001"
+    ]
+  }
+}

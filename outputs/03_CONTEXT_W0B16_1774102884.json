@@ -1,0 +1,36 @@
+{
+  "PROP-baseauction-inv-016": {
+    "property_id": "PROP-baseauction-inv-016",
+    "text": "s_entered must be reset to false after bid() completes, even if callback reverts.",
+    "type": "invariant",
+    "assertion": "forall bid() completion: s_entered == false (unlock always executes)",
+    "severity": "CRITICAL",
+    "covers": "SG-005",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "bid",
+          "line_range": {
+            "start": 410,
+            "end": 458
+          },
+          "role": "primary",
+          "note": "s_entered set to false at line 457; no try/catch \u2014 if callback reverts it propagates and guard is not needed to reset"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

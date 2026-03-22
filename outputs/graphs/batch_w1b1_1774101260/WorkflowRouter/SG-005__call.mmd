@@ -1,0 +1,21 @@
+---
+title: "_call (Caller)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_call: (success, response) = target.call(data)
+    q_call --> q_check: check success
+    q_check --> q_return: success == true
+    q_return --> [*]: return response
+    q_check --> q_check_response: success == false
+    q_check_response --> q_bubble_revert: response.length > 0
+    q_bubble_revert --> [*]: revert(add(response, 32), returndataSize)
+    q_check_response --> q_revert_generic: response.length == 0
+    q_revert_generic --> [*]: revert LowLevelCallFailed()
+
+    note right of q_call
+        INV-001: low-level call to arbitrary target address
+        INV-002: failed calls with return data bubble up the revert reason
+        INV-003: failed calls without return data revert with LowLevelCallFailed
+        INV-004: no value (ETH) is forwarded in the call
+    end note

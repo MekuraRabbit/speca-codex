@@ -1,0 +1,43 @@
+---
+title: "_getAssetPrice (PriceManager)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_load: load priceInfo and feedInfo for asset
+    q_load --> q_init_price: price = priceInfo.usdPrice; updatedAt = priceInfo.timestamp
+    q_init_price --> q_check_stale: minTimestamp = block.timestamp - stalenessThreshold
+
+    q_check_stale --> q_check_fallback: updatedAt < minTimestamp (streams price stale)
+    q_check_stale --> q_compute_valid: updatedAt >= minTimestamp (streams price fresh)
+
+    q_check_fallback --> q_compute_valid: usdDataFeed == address(0) (no fallback configured)
+    q_check_fallback --> q_fetch_feed: usdDataFeed != address(0)
+
+    q_fetch_feed --> q_compare_ts: (answer, dataFeedUpdatedAt) = usdDataFeed.latestRoundData()
+    q_compare_ts --> q_compute_valid: updatedAt >= dataFeedUpdatedAt (streams more recent)
+    q_compare_ts --> q_scale_feed: updatedAt < dataFeedUpdatedAt (feed more recent)
+
+    q_scale_feed --> q_compute_valid: price = answer scaled to 18 decimals; updatedAt = dataFeedUpdatedAt
+
+    q_compute_valid --> q_check_validation: isValid = (price != 0) AND (updatedAt >= minTimestamp)
+
+    q_check_validation --> q_validate_zero: withValidation == true
+    q_check_validation --> [*]: withValidation == false; return (price, updatedAt, isValid)
+
+    q_validate_zero --> q_revert_zero: price == 0
+    q_revert_zero --> [*]: revert Errors.ZeroFeedData()
+    q_validate_zero --> q_validate_stale: price != 0
+    q_validate_stale --> q_revert_stale: updatedAt < minTimestamp
+    q_revert_stale --> [*]: revert Errors.StaleFeedData()
+    q_validate_stale --> [*]: return (price, updatedAt, isValid)
+
+    note right of q_check_stale
+        INV-001: Data Streams price is prioritized over Data Feed price
+        INV-002: fallback to Data Feed only when streams price is stale AND feed is configured
+        INV-003: most recent timestamp wins between streams and feed
+    end note
+
+    note right of q_scale_feed
+        INV-004: returned price is always scaled to exactly 18 decimals
+        INV-005: with validation enabled, zero price and stale price both revert
+    end note

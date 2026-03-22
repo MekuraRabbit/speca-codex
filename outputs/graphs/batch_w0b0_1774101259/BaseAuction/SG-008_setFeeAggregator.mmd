@@ -1,0 +1,24 @@
+---
+title: "_setFeeAggregator (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_live: _whenNoLiveAuctions()
+    q_check_live --> q_revert_live: live auction exists
+    q_revert_live --> [*]: revert LiveAuction
+    q_check_live --> q_check_zero: no live auctions
+    q_check_zero --> q_revert_zero: feeAggregator == address(0)
+    q_revert_zero --> [*]: revert InvalidZeroAddress
+    q_check_zero --> q_check_same: feeAggregator != address(0)
+    q_check_same --> q_revert_same: current == feeAggregator
+    q_revert_same --> [*]: revert ValueNotUpdated
+    q_check_same --> q_check_interface: current != feeAggregator
+    q_check_interface --> q_revert_iface: feeAggregator != this and not supportsInterface
+    q_revert_iface --> [*]: revert InvalidFeeAggregator
+    q_check_interface --> q_update: feeAggregator == this or supportsInterface
+    q_update --> [*]: s_feeAggregator = feeAggregator, emit FeeAggregatorSet
+
+    note right of q_check_interface
+        INV-001: feeAggregator must implement IFeeAggregator unless it is self
+        INV-002: No configuration changes during live auctions
+    end note

@@ -1,0 +1,26 @@
+---
+title: "bridgeAssets (FeeAggregator)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_receiver: check allowlisted receiver
+    q_check_receiver --> q_error_receiver: !allowlisted(chainSelector, receiver)
+    q_error_receiver --> [*]: revert ReceiverNotAllowlisted
+    q_check_receiver --> q_check_empty: receiver allowlisted
+    q_check_empty --> q_error_empty: bridgeAssetAmounts.length == 0
+    q_error_empty --> [*]: revert EmptyList
+    q_check_empty --> q_build_msg: length > 0
+    q_build_msg --> q_get_fee: _buildBridgeAssetsMessage(amounts, receiver, extraArgs)
+    q_get_fee --> q_check_bal: fees = ccipRouter.getFee(chainSelector, message)
+    q_check_bal --> q_error_bal: fees > linkBalance
+    q_error_bal --> [*]: revert InsufficientBalance
+    q_check_bal --> q_approve_link: fees <= linkBalance
+    q_approve_link --> q_send: safeIncreaseAllowance(ccipRouter, fees)
+    q_send --> [*]: messageId = ccipRouter.ccipSend(chainSelector, message)
+
+    note right of q_build_msg
+        INV-001: Only allowlisted receivers on allowlisted chains can receive bridged assets
+        INV-002: Only allowlisted assets can be bridged
+        INV-003: LINK balance must cover bridging fees
+        INV-004: Caller must have BRIDGER_ROLE
+    end note

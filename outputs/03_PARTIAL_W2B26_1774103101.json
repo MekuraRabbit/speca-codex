@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-pre-005",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::performUpkeep::L305-370",
+      "proof_trace": "The explicit check at L334\u2013336 (`if (assetDecimals == 0) revert AssetParamsNotSet(asset)`) directly enforces the property for all eligible assets. For the ended-auctions path, the invariant holds transitively: `s_auctionStarts[asset]` can only be set after the decimals guard (L353 is guarded by L334), and `_updateAssetParams` blocks zeroing decimals while any auction is live (L611 reverts on `s_auctionStarts[asset] != 0`).",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-pre-005"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 26,
+    "item_count": 1,
+    "timestamp": 1774103101,
+    "processed_ids": [
+      "PROP-baseauction-pre-005"
+    ]
+  }
+}

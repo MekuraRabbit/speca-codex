@@ -1,0 +1,10 @@
+{
+  "worker_id": 1,
+  "phase": "01b",
+  "item_ids": [
+    "https://github.com/code-423n4/2026-03-chainlink/blob/main/src/WorkflowRouter.sol",
+    "https://github.com/code-423n4/2026-03-chainlink/blob/main/src/GPV2CompatibleAuction.sol"
+  ],
+  "total_items": 2,
+  "context_file": "outputs\\01b_CONTEXT_W1B1_1774101260.json"
+}

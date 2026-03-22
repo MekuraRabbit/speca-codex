@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-011",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::checkUpkeep::L216-294",
+      "proof_trace": "The balance-based end condition is guarded by `isPriceValid` (line 251), deviating from the unconditional assertion. However, when the price feed is invalid, `bid()` also reverts via `_getAssetPrice(asset, true)` (withValidation=true, PriceManager.sol:409-416), so no bids can drain the auction to dust \u2014 removing all attack surface for the omitted condition. The duration-based end fires unconditionally regardless of price validity, serving as a guaranteed fallback.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-011"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 13,
+    "item_count": 1,
+    "timestamp": 1774102929,
+    "processed_ids": [
+      "PROP-baseauction-inv-011"
+    ]
+  }
+}

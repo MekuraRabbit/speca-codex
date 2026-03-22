@@ -1,0 +1,38 @@
+---
+title: "bid - Direct Auction Bidding (Payment Abstraction V2)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_paused: bid(assetIn, amountIn, assetOut, amountOutMin, receiver, callbackData) called
+    q_check_paused --> q_check_auction: contract not paused
+    q_check_paused --> q_revert_paused: contract paused
+    q_revert_paused --> [*]: revert Paused
+    q_check_auction --> q_check_amount: live auction exists for assetIn
+    q_check_auction --> q_revert_no_auction: no live auction
+    q_revert_no_auction --> [*]: revert NoActiveAuction
+    q_check_amount --> q_check_min_bid: amountIn > 0
+    q_check_amount --> q_revert_amount: amountIn == 0
+    q_revert_amount --> [*]: revert InvalidAmount
+    q_check_min_bid --> q_calc_out: amountIn USD value >= minBidUsdValue
+    q_check_min_bid --> q_revert_min: below minimum
+    q_revert_min --> [*]: revert BelowMinBidValue
+    q_calc_out --> q_check_balance: assetOutAmount = getAssetOutAmount(amountIn, assetIn, assetOut, elapsed)
+    q_check_balance --> q_check_slippage: auction contract has sufficient assetOut balance
+    q_check_balance --> q_revert_balance: insufficient balance
+    q_revert_balance --> [*]: revert InsufficientBalance
+    q_check_slippage --> q_transfer_out: assetOutAmount >= amountOutMin
+    q_check_slippage --> q_revert_slippage: slippage exceeded
+    q_revert_slippage --> [*]: revert SlippageExceeded
+    q_transfer_out --> q_callback: transfer assetOut tokens to bidder (or receiver)
+    q_callback --> q_check_callback: callbackData not empty
+    q_callback --> q_pull_in: callbackData empty (no callback)
+    q_check_callback --> q_exec_callback: execute callback on bidder with (assetIn, amountIn, assetOut, assetOutAmount, callbackData)
+    q_exec_callback --> q_pull_in: callback completed
+    q_pull_in --> [*]: transferFrom bidder amountIn of assetIn (LINK) to auction contract
+
+    note right of q_transfer_out
+        INV-001: Assets are transferred to bidder BEFORE pulling payment (callback pattern)
+        INV-002: Callback allows flash-loan style execution (receive assets, swap, return LINK)
+        INV-003: amountOutMin protects bidder against price movement during transaction
+        INV-004: Final transferFrom pulls exact LINK amount required by auction curve
+    end note
