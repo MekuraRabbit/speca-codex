@@ -1,0 +1,26 @@
+id,contest,year,severity,title,pattern_category,description,applicable_to_chainlink_v2,already_found
+1,2021-11-malt,2021,Medium,Dutch auction can be manipulated,auction_termination,"Attacker prevents _endAuction() by committing maxCommitments-1 wei; buys at average price",Partial - M-04 covers performUpkeep no end validation,M-04
+2,2022-05-cally,2022,High,Inefficiency in Dutch Auction due to lower duration,price_curve,"Quadratic price curve doesn't reach reserve price until full duration",No - Chainlink uses linear decay correctly,N/A
+3,2022-05-runes,2022,Medium,Governance can refuse to refund Dutch Auction participants,admin_abuse,"setFinalPrice() lets governance block refunds",No - different auction model (NFT),N/A
+4,2022-05-runes,2022,Medium,Users may overpay because finalPrice must be manually set,price_setting,"Manual price setting after incomplete auction causes overpayment",No - prices are oracle-based,N/A
+5,2022-12-escher,2022,High,LPDA price can underflow due to bad settings,arithmetic,"elapsed*dropPerSecond > startPrice causes underflow",No - Solidity 0.8 checked arithmetic; mulDiv safe,N/A
+6,2023-06-stader,2023,Medium,No bidder incentive except last-minute MEV due to fixed endBlock,MEV_timing,"Fixed end block means rational bidders wait until last moment",Partial - inherent Dutch auction property; not a code bug,N/A
+7,2023-10-nextgen,2023,High,Malicious auction winner can lock losing bidder's funds,callback_abuse,"Winner's callback locks funds of other participants",No - bid() is per-user; no multi-party funds at risk,N/A
+8,2023-11-canto,2023,Medium,No slippage protection for Market functions,missing_slippage,"buy()/sell() have no minAmountOut/maxAmountIn parameter",YES - bid() has no maxAssetOutAmount,M-06
+9,2023-12-revolution,2023,Medium,Missing slippage and deadline in buyToken() VRGDA,missing_slippage,"VRGDA buy function lacks slippage/deadline protection",YES - bid() has no maxAssetOutAmount or deadline,M-06
+10,2023-12-revolution,2023,High,Last bidder can win by force-sending ETH via selfdestruct,force_send,"selfdestruct sends ETH to bypass bid logic",No - auction uses ERC20 not ETH; no receive(),N/A
+11,2023-12-ethcreditguild,2023,High,creditMultiplier updates prevent bidding on pre-existing auctions,state_change_blocks_bid,"External state change (bad debt) makes existing auctions unbiddable",Partial - M-01/M-03 cover oracle state blocking bids,M-01/M-03
+12,2023-12-ethcreditguild,2023,High,Bad debt forces other loans in auction to create bad debt,cascading_failure,"One auction's failure cascades to others via shared state",No - auctions are independent per asset,N/A
+13,2023-12-ethcreditguild,2023,Medium,bid() DOS via underflow in second phase,arithmetic,"creditMultiplier change causes underflow in bid calculation",No - Solidity 0.8 checked; oracle prices validated,N/A
+14,2023-12-ethcreditguild,2023,Medium,Auction manipulation via block stuffing and ERC-777 hooks,erc777_reentrancy,"ERC-777 transfer hooks used to manipulate auction timing",No - non-canonical ERC20s explicitly OOS,N/A
+15,2024-07-reserve,2024,Medium,Dutch auctions fail to settle due to unexpected collateral behavior,external_revert_blocks,"One collateral's revert blocks all auction settlements",YES - M-03 covers reverting feed blocking all operations,M-03
+16,2022-07-yield,2022,Medium,Liquidators can bid even if vault became overcollateralized,stale_eligibility,"Auction continues even when no longer needed",Partial - checkUpkeep/performUpkeep TOCTOU is inherent,N/A
+17,2023-01-biconomy,2023,High,Attacker bypasses isValidSignature for arbitrary transactions,eip1271_bypass,"Crafted signature returns magic value from attacker contract",No - hash is verified against GPv2Order.hash(),N/A
+18,2023-04-eigenlayer,2023,Medium,depositIntoStrategyWithSignature fails for counterfactual wallets,eip1271_compat,"isValidSignature fails for not-yet-deployed contracts",No - auction contract is always deployed,N/A
+19,2022-05-seaport,2022,Medium,isValidSignature not compatible with Gnosis Safe,eip1271_compat,"Signature validation incompatible with certain smart wallets",No - isValidSignature is for CowSwap orders only,N/A
+20,NA,NA,Medium,transmit() accepts future-dated price reports,timestamp_validation,"No upper bound check on report.observationsTimestamp",YES - FutureTimestamp PoC exists but not numbered,CHECK
+21,NA,NA,Medium,Shared stalenessThreshold for dual oracle,oracle_config,"Single threshold makes fallback dead or primary too lenient",YES,M-02
+22,NA,NA,Medium,Reverting data feed blocks all operations,external_revert,"No try-catch on latestRoundData() causes total DOS",YES,M-03
+23,NA,NA,Medium,performUpkeep no end validation,missing_validation,"endedAuctions array not re-validated against actual conditions",YES,M-04
+24,NA,NA,Medium,isValidSignature bypasses minBidUsdValue,path_asymmetry,"CowSwap path has no minimum bid check unlike bid()",YES,M-05
+25,NA,NA,Medium,bid() lacks slippage protection,missing_slippage,"No maxAssetOutAmount parameter for direct bidders",YES,M-06
