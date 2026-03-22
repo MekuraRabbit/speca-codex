@@ -1,7 +1,0 @@
-{
-  "target_repo": "code-423n4/2026-03-chainlink",
-  "target_ref_type": "latest_default_branch",
-  "target_ref_label": "default branch (main)",
-  "target_commit": "5317782e3855d9547412ab5a490257d7c5e51fac",
-  "target_commit_short": "5317782"
-}

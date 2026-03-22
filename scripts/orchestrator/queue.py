@@ -41,7 +41,7 @@ class QueueManager:
     
     def _load_items_from_file(self, filepath: str) -> list[dict[str, Any]]:
         """Load items from a single file."""
-        with open(filepath, encoding="utf-8") as f:
+        with open(filepath) as f:
             data = json.load(f)
         
         if isinstance(data, list):
