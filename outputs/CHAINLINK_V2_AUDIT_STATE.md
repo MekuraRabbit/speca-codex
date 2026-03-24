@@ -76,6 +76,7 @@
 | **M-10** | FeeAggregator/BaseAuction allowlist不整合 → token donation DoS | Medium | `test/poc/M10_*.t.sol` (1 test PASS) | [#165](https://github.com/NyxFoundation/security-agent/issues/165) | allowlist_mismatch / batch_dos |
 | **M-11** | performUpkeep atomic batching → stale price blocks all auction endings | Medium | `test/poc/M11_*.t.sol` (1 test PASS) | [#166](https://github.com/NyxFoundation/security-agent/issues/166) | atomic_batch / cross_contamination |
 | **M-12** | checkUpkeep gas limit超過（~80 assets で 5M gas超え → Automation停止） | Medium | — | [#167](https://github.com/NyxFoundation/security-agent/issues/167) | gas_dos / unbounded_loop |
+| **M-13** | L2 sequencer downtime → Dutch auction価格decay skip → 最大discount即売 | Medium | — | [#168](https://github.com/NyxFoundation/security-agent/issues/168) | l2_sequencer / price_manipulation |
 
 ### QA/Info降格
 
