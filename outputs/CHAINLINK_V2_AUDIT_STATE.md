@@ -110,10 +110,32 @@ SPECAパイプライン（全6フェーズ）は完了済み:
 
 ## 6. パターンマッチングDB
 
-`outputs/c4_dutch_auction_patterns.csv` (45エントリ, 18カテゴリ)
-- ブランチ: `c4-pattern-db`, PR: #162
-- スキーマ: `id, contest, year, severity, title, pattern_category, url, description`
-- 使い方: AIがCSV読込 → 各pattern_categoryについてターゲットコードを検査 → 該当/非該当判定
+### CSV ソース
+- `outputs/past_defi_patterns.csv` (95件) — sherlock/code4rena/codehawks 全 HIGH findings
+- キーワードカテゴリ: dutch+auction, cowswap/gpv2, EIP-1271, keeper/upkeep, settlement, approval, price+oracle, reentrancy+callback, balance+stale
+
+### 網羅的パターン検証結果 (2026-03-24)
+
+5並列 AI エージェントが 95 パターンを 26 検証項目に分類し、全てのソースコードを直接読んで検証。
+
+| 検証グループ | パターン数 | 結果 | 新規 finding |
+|---|---|---|---|
+| Dutch Auction (#1-6): 価格曲線、overpayment、終了チェック、refund、partial fill | 16件 | **全て非該当** | なし |
+| Oracle/Price (#7-11): flash manipulation、stale/zero price、negative answer、sandwich | 12件 | #9 は M-03 重複、他は非該当 | なし |
+| EIP-1271/Approval (#12-16): signature bypass、replay、approval race、callback drain | 17件 | **全て非該当**（`s_entered` が防御の鍵） | なし |
+| Reentrancy/Callback (#17-20): bid callback、cross-contract、read-only | 20件 | #18 は config依存 (Low)、#19 は read-only (Low) | なし |
+| Keeper/Balance (#21-26): fund theft、overflow、donation、stale balance、precision | 30件 | #25 stale performData は M-01 と同クラス | なし |
+
+**結論: 95パターン × 26検証で M-01〜M-13 を超える新規 HIGH/MEDIUM は発見されなかった。**
+
+### プロトコル防御が堅固な理由
+
+1. `s_entered` が `bid()` + `isValidSignature()` 両方を保護 → callback reentrancy 無効化
+2. 全 state-changing function がロールゲート → callback からの権限昇格不可
+3. Dutch auction の instant atomic settlement → batch/commit-reveal 系パターン非該当
+4. `forceApprove` + immutable vault relayer → approval attack 防止
+5. Solady `mulDivUp` の 512bit 中間演算 → precision/overflow attack 防止
+6. off-chain Data Streams (DON consensus) → on-chain spot price manipulation 非該当
 
 ## 7. コードベース重要ポイント（AIが知るべきこと）
 
@@ -164,16 +186,45 @@ forge test --match-contract M07_FutureTimestampExtendsValidity -vvv
 # 旧FutureTimestamp.t.sol: BaseIntegrationTest ベース (別)
 ```
 
-## 9. 次にやるべきこと
+## 9. 提出優先順位（外部レビュー済み）
 
-1. **M-02〜M-07 + M-08〜M-11をC4に提出** (締切: 2026-03-27 20:00 UTC)
-2. **PoC動作確認**: `forge test --match-path test/poc/M0*.t.sol` で全PoC PASS を確認してから提出
-3. **M-08〜M-11のsubmission MD作成**: `outputs/submitted/` にC4テンプレートで作成
-4. **AI深層監査サマリー**: 47+エージェント、300+パターン確認、10 fuzzテスト (1024 runs each)。HIGHなし。
-5. **パターンDB拡張**: atomic_batch_failure, stuck_auction, allowlist_mismatch パターンを追加
-6. **結果追跡**: 判定後、各findingの accept/reject を記録して精度向上に活用
+Issue #158 で独立レビューを受けた結果:
 
-## 10. ファイルマップ
+| 順位 | ID | 認められやすさ | 理由 | リスク |
+|------|-----|---|---|---|
+| 1 | **M-03** | ★★★★★ | 完全同一パターンが C4 で Medium 判定済み (reserve M-10)。反論不可能 | ほぼゼロ |
+| 2 | **M-08** | ★★★★☆ | `_onAuctionEnd` revert → auction freeze は明確な DoS。回復関数なし | Low 判定リスク小 |
+| 3 | **M-11** | ★★★★☆ | atomic batching → cross-contamination は M-01/M-03 と同クラスだが独立 root cause | 重複判定リスク中 |
+| 4 | **M-02** | ★★★☆☆ | M-01 との重複判定リスク。独立 root cause の説明が肝 | 重複判定リスク中 |
+| 5 | **M-04** | ★★☆☆☆ | trusted role 前提 → Low/QA 判定リスク最大 | Low 判定リスク大 |
+| 6 | **M-06** | ★★☆☆☆ | 外部レビューで「設計/UX制限、Low/Info相当」と判定 | Low/Info 判定リスク大 |
+| 7 | **M-07** | ★★☆☆☆ | PRICE_ADMIN_ROLE (trusted) 前提 | Low/Info 判定リスク大 |
+
+## 10. 次にやるべきこと
+
+1. **M-03 を最優先で C4 に提出** (締切: 2026-03-27 20:00 UTC)
+2. **M-08〜M-11 の submission MD が未作成なら作成**: `outputs/submitted/` にC4テンプレートで
+3. **PoC動作確認**: `forge test --match-path test/poc/M0*.t.sol -vvv` で全PoC PASS を確認
+4. **M-02, M-04 は提出判断が必要**: signal score への悪影響 vs 当たった場合の報酬を天秤
+5. **M-06, M-07 は Low/Info リスクが高い**: 提出するなら QA report としてまとめる方が安全
+6. **結果追跡**: 判定後、各 finding の accept/reject を記録して精度向上に活用
+
+## 11. 監査工数サマリー
+
+| 項目 | 値 |
+|---|---|
+| 総ラウンド数 | 10+ (SPECA自動5 + 手動5+) |
+| 総エージェント数 | 50+ |
+| 総パターン検証数 | 360+ (CSV) + 95 (past_defi_patterns) |
+| Fuzz テスト | 10 invariants × 1024 runs each |
+| 総コスト | ~$50 |
+| 自動パイプライン時間 | ~40min |
+| Permissionless HIGH | **0** |
+| Medium 候補 | **13 (M-01〜M-13)** |
+| 提出済み | M-01 (2026-03-22) |
+| 提出待ち | M-03 (最優先) |
+
+## 12. ファイルマップ
 
 ```
 security-agent/
