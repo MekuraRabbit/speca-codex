@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial2-pre-001",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/AuctionBidder.sol::bid::L65-92",
+      "proof_trace": "Both `whenNotPaused` and `onlyRole(Roles.AUCTION_BIDDER_ROLE)` modifiers are present on the `bid()` function signature at line 69, enforcing the required pre-conditions before any function body executes. The function is `external` with no internal callers that could bypass the modifiers, and `PausableWithAccessControl` correctly inherits standard OpenZeppelin Pausable and AccessControl implementations.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial2-pre-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 82,
+    "item_count": 1,
+    "timestamp": 1774343084,
+    "processed_ids": [
+      "PROP-01b-partial2-pre-001"
+    ]
+  }
+}

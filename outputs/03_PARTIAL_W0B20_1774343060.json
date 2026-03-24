@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial-inv-015",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/PriceManager.sol::_getAssetPrice::L372-419",
+      "proof_trace": "The outer guard at L385 (`updatedAt < minTimestamp && feedInfo.usdDataFeed != address(0)`) exactly matches the property's gating condition; the data feed is never queried outside this guard. The inner `if (updatedAt < dataFeedUpdatedAt)` at L390 applies a 'most recent wins' refinement \u2014 when both sources are stale, the fresher one (Data Streams) is returned, which is intentional design confirmed by unit tests and in-code comments. Final staleness validation (L404-416) correctly uses the winning `updatedAt`, so the stale case is still caught.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial-inv-015"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 20,
+    "item_count": 1,
+    "timestamp": 1774343060,
+    "processed_ids": [
+      "PROP-01b-partial-inv-015"
+    ]
+  }
+}

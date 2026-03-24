@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial1-inv-017",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::checkUpkeep::L216-293",
+      "proof_trace": "The invariant holds by design. At line 271, the only gate on `isAssetOutPriceValid` resets `eligibleAssetsIdx` (new auctions) but never touches `endedAuctionsIdx`. Ended auctions accumulate via the time-elapsed branch (`auctionStart + duration < block.timestamp`) which has no price dependency, and `_onAuctionEnd` (lines 383-397) performs oracle-free token transfers to fixed trusted addresses.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial1-inv-017"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 60,
+    "item_count": 1,
+    "timestamp": 1774343057,
+    "processed_ids": [
+      "PROP-01b-partial1-inv-017"
+    ]
+  }
+}

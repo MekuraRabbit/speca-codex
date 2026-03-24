@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial1-pre-008",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::performUpkeep::L305-370",
+      "proof_trace": "The check at lines 346-348 (`if (availableAssetUsdValue < assetParams.minAuctionSizeUsd) revert AmountBelowMinAuctionSize(...)`) is applied to every asset in the loop before any auction-starting side-effect. The function is additionally restricted to `AUCTION_WORKER_ROLE`, making untrusted bypass impossible. `checkUpkeep` also pre-filters ineligible assets (line 261), and `performUpkeep` re-validates with a fresh oracle price, so the guard holds on all reachable paths.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial1-pre-008"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 61,
+    "item_count": 1,
+    "timestamp": 1774343061,
+    "processed_ids": [
+      "PROP-01b-partial1-pre-008"
+    ]
+  }
+}

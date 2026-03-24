@@ -1,0 +1,25 @@
+---
+title: "_setAssetOut / _setAssetOutReceiver / _setFeeAggregator (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_no_live: _whenNoLiveAuctions()
+    q_check_no_live --> q_revert_live: live auction exists
+    q_revert_live --> [*]: revert LiveAuction
+    q_check_no_live --> q_check_zero: no live auctions
+    q_check_zero --> q_revert_zero: address == address(0)
+    q_revert_zero --> [*]: revert InvalidZeroAddress
+    q_check_zero --> q_check_same: valid address
+    q_check_same --> q_revert_same: new value == current value
+    q_revert_same --> [*]: revert ValueNotUpdated
+    q_check_same --> q_check_interface: value changed
+    q_check_interface --> q_store: interface check passes (for feeAggregator)
+    q_check_interface --> q_revert_interface: interface check fails
+    q_revert_interface --> [*]: revert InvalidFeeAggregator
+    q_store --> [*]: update storage, emit event
+
+    note right of q_check_no_live
+        INV-001: Critical config (assetOut, assetOutReceiver, feeAggregator) cannot change during live auctions
+        INV-002: setAssetOut deletes old assetOut's assetParams
+        INV-003: feeAggregator must implement IFeeAggregator interface (or be address(this))
+    end note

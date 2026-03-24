@@ -1,0 +1,35 @@
+{
+  "PROP-01b-partial-inv-035": {
+    "property_id": "PROP-01b-partial-inv-035",
+    "text": "int192 to uint256 cast for price must revert on negative values (SafeCast protection).",
+    "type": "invariant",
+    "assertion": "forall transmit(report): report.price < 0 => revert SafeCast",
+    "severity": "HIGH",
+    "covers": "SG-002",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "PriceManager.transmit"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "configuration-dependent",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/PriceManager.sol",
+          "symbol": "transmit",
+          "line_range": {
+            "start": 133,
+            "end": 192
+          },
+          "role": "primary",
+          "note": "SafeCast.toUint224 applied to price at line 179 chain \u2014 negative int192 triggers SafeCast revert"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

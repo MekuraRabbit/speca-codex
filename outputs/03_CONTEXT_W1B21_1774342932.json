@@ -1,0 +1,35 @@
+{
+  "PROP-01b-partial-inv-016": {
+    "property_id": "PROP-01b-partial-inv-016",
+    "text": "When both prices stale, most recent timestamp wins between Data Streams and Data Feed.",
+    "type": "invariant",
+    "assertion": "forall getAssetPrice(): use_feed iff dataFeedUpdatedAt > streamsUpdatedAt",
+    "severity": "MEDIUM",
+    "covers": "SG-004",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.bid"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/PriceManager.sol",
+          "symbol": "_getAssetPrice",
+          "line_range": {
+            "start": 372,
+            "end": 421
+          },
+          "role": "primary",
+          "note": "dataFeedUpdatedAt > updatedAt comparison at line 390 \u2014 most recent timestamp wins"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

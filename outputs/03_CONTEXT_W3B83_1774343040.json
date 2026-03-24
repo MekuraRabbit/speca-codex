@@ -1,0 +1,36 @@
+{
+  "PROP-01b-partial2-pre-002": {
+    "property_id": "PROP-01b-partial2-pre-002",
+    "text": "auctionCallback must enforce whenNotPaused modifier.",
+    "type": "pre-condition",
+    "assertion": "pre auctionCallback(): !paused()",
+    "severity": "MEDIUM",
+    "covers": "SG-003",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "Callback"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/AuctionBidder.sol",
+          "symbol": "auctionCallback",
+          "line_range": {
+            "start": 97,
+            "end": 112
+          },
+          "role": "primary",
+          "note": "whenNotPaused modifier at function declaration line 102"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

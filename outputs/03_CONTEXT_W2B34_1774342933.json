@@ -1,0 +1,35 @@
+{
+  "PROP-01b-partial-inv-034": {
+    "property_id": "PROP-01b-partial-inv-034",
+    "text": "Auction end via performUpkeep must only process assets with non-zero auctionStart.",
+    "type": "invariant",
+    "assertion": "forall performUpkeep(ended): s_auctionStarts[asset] != 0 => valid; == 0 => revert InvalidAuction",
+    "severity": "MEDIUM",
+    "covers": "SG-002",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.performUpkeep"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "configuration-dependent",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "performUpkeep",
+          "line_range": {
+            "start": 305,
+            "end": 374
+          },
+          "role": "primary",
+          "note": "s_auctionStarts[asset] == 0 check at line 362 reverts InvalidAuction before ending"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

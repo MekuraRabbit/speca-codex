@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial1-pre-006",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/GPV2CompatibleAuction.sol::isValidSignature::L158-159",
+      "proof_trace": "The expiry check `if (order.validTo < block.timestamp) revert ExpiredOrder(...)` at L158-159 is on the sole execution path of `isValidSignature`, before the magic value is returned. All calls must pass through this guard; there is no bypass path. The check correctly enforces `validTo >= block.timestamp` as the property requires.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial1-pre-006"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 51,
+    "item_count": 1,
+    "timestamp": 1774343000,
+    "processed_ids": [
+      "PROP-01b-partial1-pre-006"
+    ]
+  }
+}

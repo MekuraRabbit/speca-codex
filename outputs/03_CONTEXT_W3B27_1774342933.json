@@ -1,0 +1,35 @@
+{
+  "PROP-01b-partial-inv-023": {
+    "property_id": "PROP-01b-partial-inv-023",
+    "text": "If eligible asset is assetOut itself, transfer full balance to assetOutReceiver (no auction).",
+    "type": "invariant",
+    "assertion": "forall performUpkeep(asset == assetOut): transfer(fullBalance, assetOutReceiver), no auctionStart set",
+    "severity": "MEDIUM",
+    "covers": "SG-002",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.performUpkeep"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "configuration-dependent",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "performUpkeep",
+          "line_range": {
+            "start": 305,
+            "end": 374
+          },
+          "role": "primary",
+          "note": "asset == assetOut branch transfers balance directly to assetOutReceiver without setting auctionStart"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

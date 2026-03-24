@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial3-asm-002",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/GPV2CompatibleAuction.sol::isValidSignature::L119-176",
+      "proof_trace": "isValidSignature is indeed the sole EIP-1271 authorization gate for CowSwap orders: it validates hash/domain-separator binding, live auction existence, buy token, receiver, sell balance sufficiency, price floor, order expiry, fee zero, KIND_SELL, partial fillability, and ERC20 balance markers. The vault relayer holds an ERC20 approval set at auction start (L92), but this only enables GPv2Settlement's internal transfer leg, which is always preceded by the isValidSignature call within the same transaction. No alternative authorization path exists for external solvers.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial3-asm-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 126,
+    "item_count": 1,
+    "timestamp": 1774343249,
+    "processed_ids": [
+      "PROP-01b-partial3-asm-002"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial3-inv-030",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/FeeAggregator.sol::transferForSwap::L167-186",
+      "proof_trace": "The property holds. Every asset in the `assetAmounts` array is checked via `!s_allowlistedAssets.contains(asset) \u2192 revert AssetNotAllowlisted` (L179-181) before `_transferAsset` is called (L183), inside the same for-loop iteration with no external calls between check and transfer. No alternative swap entry point exists \u2014 `withdrawNonAllowlistedAssets` requires `WITHDRAWER_ROLE`, explicitly blocks allowlisted assets, and is not a swap path; `emergencyWithdraw` requires the contract to be paused and `DEFAULT_ADMIN_ROLE`.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial3-inv-030"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 122,
+    "item_count": 1,
+    "timestamp": 1774343158,
+    "processed_ids": [
+      "PROP-01b-partial3-inv-030"
+    ]
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "PROP-01b-partial3-inv-023": {
+    "property_id": "PROP-01b-partial3-inv-023",
+    "text": "AuctionBidder callback executes arbitrary multiCall then approves exact amountOut to auction.",
+    "type": "invariant",
+    "assertion": "forall auctionCallback(): forceApprove(auction, amountOut) after _multiCall(calls)",
+    "severity": "HIGH",
+    "covers": "SG-014",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/AuctionBidder.sol",
+          "symbol": "auctionCallback",
+          "line_range": {
+            "start": 97,
+            "end": 112
+          },
+          "role": "primary",
+          "note": "line 109: _multiCall(calls); line 111: forceApprove(msg.sender, amountOut) after multiCall"
+        },
+        {
+          "file": "src/Caller.sol",
+          "symbol": "_multiCall",
+          "line_range": {
+            "start": 49,
+            "end": 63
+          },
+          "role": "callee",
+          "note": "executes arbitrary external calls; any call can fail and bubble up"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

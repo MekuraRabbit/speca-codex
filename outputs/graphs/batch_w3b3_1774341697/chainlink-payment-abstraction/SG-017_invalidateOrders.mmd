@@ -1,0 +1,15 @@
+---
+title: "invalidateOrders (GPV2CompatibleAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_role: require ORDER_MANAGER_ROLE
+    q_check_role --> q_loop: access granted
+    q_loop --> q_invalidate: i < orderUids.length
+    q_loop --> [*]: i >= orderUids.length
+    q_invalidate --> q_loop: i_gpV2Settlement.invalidateOrder(orderUids[i])
+
+    note right of q_invalidate
+        INV-001: Only ORDER_MANAGER_ROLE can invalidate CowProtocol orders
+        INV-002: Delegates to GPv2Settlement contract for order invalidation
+    end note

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial-post-001",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::performUpkeep::L305-370",
+      "proof_trace": "The assignment `s_auctionStarts[asset] = block.timestamp` at line 353 is the sole write on the auction-start path, executes exactly when `asset != s_assetOut` inside `performUpkeep`, and is not overwritten by subsequent calls (`_onAuctionStart` in both the base and GPV2 override touches only ERC20 approvals). The guard at line 327 ensures the mapping is zero before writing, so the post-condition `s_auctionStarts[asset] == block.timestamp` holds after every auction start.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial-post-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 11,
+    "item_count": 1,
+    "timestamp": 1774343026,
+    "processed_ids": [
+      "PROP-01b-partial-post-001"
+    ]
+  }
+}

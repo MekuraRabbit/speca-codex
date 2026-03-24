@@ -1,0 +1,36 @@
+{
+  "PROP-01b-partial3-inv-043": {
+    "property_id": "PROP-01b-partial3-inv-043",
+    "text": "Prices stored in transmit() must be scaled to 18 decimals before storage.",
+    "type": "invariant",
+    "assertion": "forall transmit(report): s_dataStreamsPrice[asset].usdPrice has 18 decimal precision",
+    "severity": "HIGH",
+    "covers": "SG-001",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "transmit()"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "configuration-dependent",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/PriceManager.sol",
+          "symbol": "transmit",
+          "line_range": {
+            "start": 133,
+            "end": 183
+          },
+          "role": "primary",
+          "note": "lines 166-172: scales usdPrice to PRICE_DECIMALS (18) before storing in s_dataStreamsPrice"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

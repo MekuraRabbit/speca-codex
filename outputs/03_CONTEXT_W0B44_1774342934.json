@@ -1,0 +1,35 @@
+{
+  "PROP-01b-partial1-pre-003": {
+    "property_id": "PROP-01b-partial1-pre-003",
+    "text": "bid() must revert if no active auction exists for the asset (auctionStart == 0 or expired).",
+    "type": "pre-condition",
+    "assertion": "forall bid(asset,amt,data): s_auctionStarts[asset]!=0 AND elapsed<=duration => proceed; else revert",
+    "severity": "MEDIUM",
+    "covers": "SG-008",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.bid"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "bid",
+          "line_range": {
+            "start": 410,
+            "end": 465
+          },
+          "role": "primary",
+          "note": "auctionStart loaded at line 421; InvalidAuction revert if 0 or elapsed > duration"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

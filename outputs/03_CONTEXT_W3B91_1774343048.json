@@ -1,0 +1,36 @@
+{
+  "PROP-01b-partial3-inv-003": {
+    "property_id": "PROP-01b-partial3-inv-003",
+    "text": "LINK payment is always pulled from bidder AFTER callback execution completes.",
+    "type": "invariant",
+    "assertion": "forall bid(cb): safeTransferFrom(bidder, assetOut) executes strictly after auctionCallback returns",
+    "severity": "CRITICAL",
+    "covers": "SG-005",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "bid",
+          "line_range": {
+            "start": 410,
+            "end": 465
+          },
+          "role": "primary",
+          "note": "safeTransferFrom(bidder, assetOutAmount) executed after auctionCallback; ordering enforces payment after delivery"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

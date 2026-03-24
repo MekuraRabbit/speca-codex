@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial3-pre-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::performUpkeep::L327-329",
+      "proof_trace": "The guard `if (s_auctionStarts[asset] != 0) { revert LiveAuction(); }` at L327-329 executes for every asset in `eligibleAssets` before the only write to `s_auctionStarts[asset]` at L353. Grep confirms no other code path sets this mapping. Within-call duplicates are also caught because the mapping is updated in the first iteration before the second iteration's check runs.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial3-pre-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 114,
+    "item_count": 1,
+    "timestamp": 1774343159,
+    "processed_ids": [
+      "PROP-01b-partial3-pre-003"
+    ]
+  }
+}

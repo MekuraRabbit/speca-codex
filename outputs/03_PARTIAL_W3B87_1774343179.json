@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial2-inv-019",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/AuctionBidder.sol::auctionCallback::L97-112",
+      "proof_trace": "Access control at L103-104 ensures only the registered auction contract (`s_auction`) can invoke `auctionCallback` with `from == address(this)`, meaning only `AuctionBidder.bid()` can trigger it. In that path, non-empty `data` is always `abi.encode(solution)` (L76), which is a valid `Call[]` encoding; `BaseAuction.bid()` guards the callback with `if (data.length != 0)` (L448) and passes data unchanged, so `abi.decode(data, (Call[]))` always succeeds.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial2-inv-019"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 87,
+    "item_count": 1,
+    "timestamp": 1774343179,
+    "processed_ids": [
+      "PROP-01b-partial2-inv-019"
+    ]
+  }
+}

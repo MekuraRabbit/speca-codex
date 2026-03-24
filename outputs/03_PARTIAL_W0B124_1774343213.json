@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial3-inv-034",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::_getAssetOutAmount::L777-803",
+      "proof_trace": "Solady's `mulDiv` (floor division) at L793-795 computes `floor((startPM - endPM) * elapsedTime / duration)`, which is \u2264 `(startPM - endPM)` whenever `elapsedTime \u2264 auctionDuration`, so `priceMultiplier = startPM - decayAmount \u2265 endPM` by arithmetic. Both preconditions hold: `_applyAssetParamsUpdates` (L653-657) enforces `startPM \u2265 endPM` at config time, and L785 caps `elapsedTime` at `auctionDuration` inside the function (all three callers also independently revert or validate before calling). The design intent is explicitly documented in the struct comment (L130-134).",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial3-inv-034"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 124,
+    "item_count": 1,
+    "timestamp": 1774343213,
+    "processed_ids": [
+      "PROP-01b-partial3-inv-034"
+    ]
+  }
+}

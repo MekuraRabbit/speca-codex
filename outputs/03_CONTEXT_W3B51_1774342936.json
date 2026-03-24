@@ -1,0 +1,36 @@
+{
+  "PROP-01b-partial1-pre-006": {
+    "property_id": "PROP-01b-partial1-pre-006",
+    "text": "isValidSignature must reject expired orders where validTo < block.timestamp.",
+    "type": "pre-condition",
+    "assertion": "forall isValidSignature(hash,sig): order.validTo >= block.timestamp; else revert ExpiredOrder",
+    "severity": "MEDIUM",
+    "covers": "SG-004",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "GPV2CompatibleAuction.isValidSignature"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/GPV2CompatibleAuction.sol",
+          "symbol": "isValidSignature",
+          "line_range": {
+            "start": 119,
+            "end": 179
+          },
+          "role": "primary",
+          "note": "validTo < block.timestamp check at lines 158-159; reverts ExpiredOrder"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

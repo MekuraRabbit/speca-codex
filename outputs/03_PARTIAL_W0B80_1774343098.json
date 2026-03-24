@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial2-inv-014",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/Caller.sol::_call::L21-44",
+      "proof_trace": "At line 27, `target.call(data)` passes `data` verbatim as EVM calldata with no transformation. All callers (`_multiCall`, `WorkflowRouter.onReport`) pass `data` to `_call` without modification; the assembly read in WorkflowRouter (lines 106-108) extracts the selector via `mload` (read-only) and does not mutate `data`. Property holds on all paths.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial2-inv-014"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 80,
+    "item_count": 1,
+    "timestamp": 1774343098,
+    "processed_ids": [
+      "PROP-01b-partial2-inv-014"
+    ]
+  }
+}

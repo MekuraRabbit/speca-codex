@@ -1,0 +1,18 @@
+{
+  "PROP-01b-partial-inv-031": {
+    "property_id": "PROP-01b-partial-inv-031",
+    "audit_result": {
+      "property_id": "PROP-01b-partial-inv-031",
+      "classification": "potential-vulnerability",
+      "code_path": "src/BaseAuction.sol::checkUpkeep::L216-294",
+      "proof_trace": "checkUpkeep iterates all s_allowlistedAssets.values() (L228) performing per-asset external calls (oracle latestRoundData via _getAssetPrice, IERC20.balanceOf \u00d7 2); the proof fails because applyAllowlistedAssetUpdates in FeeAggregator.sol (L319) enforces no maximum on the set size, making gas consumption O(n) and unbounded. With ~250\u2013500 assets, gas exceeds Chainlink Automation's checkGasLimit (~5M), permanently disabling automated auction management.",
+      "attack_scenario": "ASSET_ADMIN_ROLE gradually allowlists enough fee token assets that checkUpkeep gas exceeds Chainlink Automation's gas limit; upkeep checks always fail, blocking all auction starts and closes, leaving fee tokens stuck in the aggregator indefinitely.",
+      "checklist_id": "PROP-01b-partial-inv-031"
+    },
+    "text": "checkUpkeep gas must be bounded: iteration over s_allowlistedAssets must not exceed block gas.",
+    "assertion": "forall checkUpkeep(): gasUsed <= blockGasLimit for all allowlisted asset counts",
+    "covers": "SG-001",
+    "severity": "MEDIUM",
+    "type": "invariant"
+  }
+}

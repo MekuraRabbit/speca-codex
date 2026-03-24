@@ -1,0 +1,46 @@
+{
+  "PROP-01b-partial3-inv-047": {
+    "property_id": "PROP-01b-partial3-inv-047",
+    "text": "CowSwap order lifecycle: stale orders (pre-auction) must be replaced, not reused.",
+    "type": "invariant",
+    "assertion": "forall order: order.createdAt < auctionStart => invalidate and create new order",
+    "severity": "MEDIUM",
+    "covers": "SG-010",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "isValidSignature"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/GPV2CompatibleAuction.sol",
+          "symbol": "invalidateOrders",
+          "line_range": {
+            "start": 180,
+            "end": 185
+          },
+          "role": "primary",
+          "note": "ORDER_MANAGER_ROLE can invalidate old orders via GPv2Settlement.invalidateOrder"
+        },
+        {
+          "file": "src/GPV2CompatibleAuction.sol",
+          "symbol": "isValidSignature",
+          "line_range": {
+            "start": 119,
+            "end": 176
+          },
+          "role": "related",
+          "note": "auctionStart check at line 131-134 prevents validating orders from before auction restart; no explicit createdAt field check"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

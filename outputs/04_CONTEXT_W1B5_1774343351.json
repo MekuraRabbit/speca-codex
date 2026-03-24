@@ -1,0 +1,18 @@
+{
+  "PROP-01b-partial2-inv-004": {
+    "property_id": "PROP-01b-partial2-inv-004",
+    "audit_result": {
+      "property_id": "PROP-01b-partial2-inv-004",
+      "classification": "vulnerability",
+      "code_path": "src/AuctionBidder.sol::auctionCallback::L97-112",
+      "proof_trace": "`auctionCallback` decodes user-supplied `solution` bytes into a `Call[]` array and passes it to `_multiCall` (Caller.sol L58-60) with no inspection of call targets or encoded selectors. `_multiCall` issues raw low-level `.call(data)` per entry, so any ERC20 `approve(arbitrarySpender, amount)` payload in the solution executes unconditionally; the only post-`_multiCall` approval at L111 covers only `assetOut`\u2192auction for `amountOut` and does not undo rogue allowances on other tokens.",
+      "attack_scenario": "A holder of AUCTION_BIDDER_ROLE calls `bid()` with a `solution` containing `Call{target: LINK_token, data: approve(attackerEOA, type(uint256).max)}`. This is decoded in `auctionCallback` and executed by `_multiCall`, granting the attacker an unlimited spending allowance on the AuctionBidder contract's LINK balance, which the attacker then drains via `transferFrom`.",
+      "checklist_id": "PROP-01b-partial2-inv-004"
+    },
+    "text": "Solution _multiCall must not approve contract tokens to addresses other than the auction contract.",
+    "assertion": "forall _call in auctionCallback._multiCall: if target is ERC20 and data encodes approve(spender, amt) then spender == s_auction",
+    "covers": "SG-003",
+    "severity": "CRITICAL",
+    "type": "invariant"
+  }
+}

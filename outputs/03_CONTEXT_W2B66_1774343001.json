@@ -1,0 +1,36 @@
+{
+  "PROP-01b-partial1-inv-024": {
+    "property_id": "PROP-01b-partial1-inv-024",
+    "text": "isValidSignature must reject orders where auction has expired (elapsedTime > auctionDuration).",
+    "type": "invariant",
+    "assertion": "forall isValidSignature: block.timestamp - auctionStart > auctionDuration => revert InvalidAuction",
+    "severity": "MEDIUM",
+    "covers": "SG-004",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "GPV2CompatibleAuction.isValidSignature"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/GPV2CompatibleAuction.sol",
+          "symbol": "isValidSignature",
+          "line_range": {
+            "start": 119,
+            "end": 179
+          },
+          "role": "primary",
+          "note": "elapsedTime > assetParams.auctionDuration check at lines 148-152"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

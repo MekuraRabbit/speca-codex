@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial3-inv-033",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::_applyAssetParamsUpdates::L598-664",
+      "proof_trace": "The multiplier constraints (lines 650\u2013657) are intentionally skipped for s_assetOut, as documented by the code comment at line 645: 'The asset out is also configured but it only requires the min auction size to avoid dust attacks.' The s_assetOut params are only read for .decimals (line 802) when computing assetOut amounts \u2014 the multipliers are not used in the normal bid flow. Setting invalid multipliers for s_assetOut requires ASSET_ADMIN_ROLE and represents intentional design, not a security gap.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial3-inv-033"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 123,
+    "item_count": 1,
+    "timestamp": 1774343280,
+    "processed_ids": [
+      "PROP-01b-partial3-inv-033"
+    ]
+  }
+}

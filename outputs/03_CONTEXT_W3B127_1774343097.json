@@ -1,0 +1,47 @@
+{
+  "PROP-01b-partial3-asm-003": {
+    "property_id": "PROP-01b-partial3-asm-003",
+    "text": "Price feed staleness within threshold is trusted; manipulation within window is in-scope.",
+    "type": "assumption",
+    "assertion": "price data within stalenessThreshold is used without further validation",
+    "severity": "MEDIUM",
+    "covers": "SG-002",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "transmit()",
+        "bid()"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/PriceManager.sol",
+          "symbol": "_getAssetPrice",
+          "line_range": {
+            "start": 372,
+            "end": 419
+          },
+          "role": "primary",
+          "note": "only staleness check (updatedAt >= minTimestamp); no TWAP, circuit breaker, or further validation"
+        },
+        {
+          "file": "src/PriceManager.sol",
+          "symbol": "transmit",
+          "line_range": {
+            "start": 133,
+            "end": 183
+          },
+          "role": "related",
+          "note": "stores price directly from verifiedReport without deviation checks"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

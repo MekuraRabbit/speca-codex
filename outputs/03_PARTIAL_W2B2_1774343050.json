@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial-inv-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::bid::L410-458",
+      "proof_trace": "assetOutAmount (L442) and assetOut (L446) are local stack variables computed and cached before the callback invocation (L449); the callback receives assetOutAmount as a value parameter and cannot write back to the caller's stack. The reentrancy guard (s_entered=true at L418, checked in both bid and isValidSignature) blocks all re-entry paths. The transferFrom at L453 is bound to these pre-committed locals, so no callback-driven state manipulation can reduce the payment amount.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial-inv-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1774343050,
+    "processed_ids": [
+      "PROP-01b-partial-inv-003"
+    ]
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "PROP-01b-partial1-inv-012": {
+    "property_id": "PROP-01b-partial1-inv-012",
+    "text": "Vault relayer approval must equal full contract balance on auction start and be revoked to zero on end.",
+    "type": "invariant",
+    "assertion": "forall _onAuctionStart: approve(relayer,balanceOf(this)); forall _onAuctionEnd: approve(relayer,0)",
+    "severity": "HIGH",
+    "covers": "SG-002",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.performUpkeep"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "requires-trusted-role",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/GPV2CompatibleAuction.sol",
+          "symbol": "_onAuctionStart",
+          "line_range": {
+            "start": 86,
+            "end": 93
+          },
+          "role": "primary",
+          "note": "forceApprove(i_gpV2VaultRelayer, balanceOf(this)) at line 92"
+        },
+        {
+          "file": "src/GPV2CompatibleAuction.sol",
+          "symbol": "_onAuctionEnd",
+          "line_range": {
+            "start": 96,
+            "end": 104
+          },
+          "role": "primary",
+          "note": "forceApprove(i_gpV2VaultRelayer, 0) at line 103"
+        },
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "performUpkeep",
+          "line_range": {
+            "start": 305,
+            "end": 370
+          },
+          "role": "caller",
+          "note": "calls _onAuctionStart at line 354 and _onAuctionEnd at line 366"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial3-inv-045",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::performUpkeep::L305-370",
+      "proof_trace": "Lines 350-356 enforce a strict if/else: when `asset == s_assetOut`, the contract calls `safeTransfer(s_assetOutReceiver, balance)` and the `else` branch (which sets `s_auctionStarts` and calls `_onAuctionStart`) is never reached. The only write to `s_auctionStarts` in the entire codebase is inside that `else` arm (L353), so `s_auctionStarts[assetOut]` can never be non-zero. `s_assetOut` cannot change mid-execution because `setAssetOut` requires `ASSET_ADMIN_ROLE` and `_whenNoLiveAuctions()` reverts if any auction is live.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial3-inv-045"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 134,
+    "item_count": 1,
+    "timestamp": 1774343249,
+    "processed_ids": [
+      "PROP-01b-partial3-inv-045"
+    ]
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "PROP-01b-partial2-inv-019": {
+    "property_id": "PROP-01b-partial2-inv-019",
+    "text": "Solution with non-empty data must be abi.encoded as Call[] before passing to _multiCall.",
+    "type": "invariant",
+    "assertion": "auctionCallback: calls = abi.decode(data, (Call[])) must succeed or revert",
+    "severity": "MEDIUM",
+    "covers": "SG-003",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "AuctionBidder.bid"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/AuctionBidder.sol",
+          "symbol": "auctionCallback",
+          "line_range": {
+            "start": 97,
+            "end": 112
+          },
+          "role": "primary",
+          "note": "abi.decode(data, (Call[])) at line 107; malformed data causes revert"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

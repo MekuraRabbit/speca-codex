@@ -1,0 +1,715 @@
+{
+  "PROP-01b-partial3-inv-012": {
+    "property_id": "PROP-01b-partial3-inv-012",
+    "text": "Zero-amount bids must be rejected (sellAmount == 0 in isValidSignature, bidAmount == 0 in bid).",
+    "type": "invariant",
+    "assertion": "forall bid/isValidSig: amount == 0 => revert",
+    "severity": "MEDIUM",
+    "covers": "SG-005",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()",
+        "isValidSignature"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "_id_prefix": "PROP-01b-partial3-inv-012"
+  },
+  "PROP-01b-partial3-inv-013": {
+    "property_id": "PROP-01b-partial3-inv-013",
+    "text": "minBidUsdValue prevents dust bid DoS attacks on auction.",
+    "type": "invariant",
+    "assertion": "forall bid(amount): bidUsdValue(amount) >= minBidUsdValue",
+    "severity": "MEDIUM",
+    "covers": "SG-005",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "_id_prefix": "PROP-01b-partial3-inv-013"
+  },
+  "PROP-01b-partial3-pre-001": {
+    "property_id": "PROP-01b-partial3-pre-001",
+    "text": "bid() requires live auction: auctionStart != 0 AND elapsedTime <= auctionDuration.",
+    "type": "pre-condition",
+    "assertion": "forall bid(asset): s_auctionStarts[asset] != 0 AND block.timestamp - s_auctionStarts[asset] <= duration",
+    "severity": "MEDIUM",
+    "covers": "SG-006",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "_id_prefix": "PROP-01b-partial3-pre-001"
+  },
+  "PROP-01b-partial3-pre-002": {
+    "property_id": "PROP-01b-partial3-pre-002",
+    "text": "isValidSignature requires live auction within duration window.",
+    "type": "pre-condition",
+    "assertion": "forall isValidSignature(): auctionStart != 0 AND elapsedTime <= auctionDuration",
+    "severity": "MEDIUM",
+    "covers": "SG-010",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "isValidSignature"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "_id_prefix": "PROP-01b-partial3-pre-002"
+  },
+  "PROP-01b-partial3-inv-014": {
+    "property_id": "PROP-01b-partial3-inv-014",
+    "text": "CowSwap vault relayer approval revoked on auction end to prevent stale approvals.",
+    "type": "invariant",
+    "assertion": "forall _onAuctionEnd(): allowance(vaultRelayer) == 0 after execution",
+    "severity": "HIGH",
+    "covers": "SG-008",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "performUpkeep"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "configuration-dependent",
+    "_id_prefix": "PROP-01b-partial3-inv-014"
+  },
+  "PROP-01b-partial3-inv-015": {
+    "property_id": "PROP-01b-partial3-inv-015",
+    "text": "Unsold assets must return to FeeAggregator on auction end, never stuck in contract.",
+    "type": "invariant",
+    "assertion": "forall _onAuctionEnd(asset): assetBalance > 0 => safeTransfer(feeAggregator, assetBalance)",
+    "severity": "HIGH",
+    "covers": "SG-008",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "performUpkeep"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "configuration-dependent",
+    "_id_prefix": "PROP-01b-partial3-inv-015"
+  },
+  "PROP-01b-partial3-inv-016": {
+    "property_id": "PROP-01b-partial3-inv-016",
+    "text": "Accumulated assetOut (LINK) transferred to assetOutReceiver on auction end.",
+    "type": "invariant",
+    "assertion": "forall _onAuctionEnd(): assetOutBalance > 0 => safeTransfer(assetOutReceiver, assetOutBalance)",
+    "severity": "HIGH",
+    "covers": "SG-008",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "performUpkeep"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "configuration-dependent",
+    "_id_prefix": "PROP-01b-partial3-inv-016"
+  },
+  "PROP-01b-partial3-inv-017": {
+    "property_id": "PROP-01b-partial3-inv-017",
+    "text": "Zero price from any feed source must always cause revert, never used in calculations.",
+    "type": "invariant",
+    "assertion": "forall _getAssetPrice(asset, true): price == 0 => revert ZeroFeedData",
+    "severity": "HIGH",
+    "covers": "SG-009",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()",
+        "performUpkeep"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "_id_prefix": "PROP-01b-partial3-inv-017"
+  },
+  "PROP-01b-partial3-inv-018": {
+    "property_id": "PROP-01b-partial3-inv-018",
+    "text": "Stale price data (older than stalenessThreshold) must be rejected.",
+    "type": "invariant",
+    "assertion": "forall _getAssetPrice(asset, true): updatedAt < minTimestamp => revert StaleFeedData",
+    "severity": "MEDIUM",
+    "covers": "SG-009",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()",
+        "performUpkeep"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "_id_prefix": "PROP-01b-partial3-inv-018"
+  },
+  "PROP-01b-partial3-inv-019": {
+    "property_id": "PROP-01b-partial3-inv-019",
+    "text": "Data Streams price prioritized over Data Feed; fallback only when Streams is stale.",
+    "type": "invariant",
+    "assertion": "forall _getAssetPrice(): streams.updatedAt >= minTs => use streams price, ignore dataFeed",
+    "severity": "MEDIUM",
+    "covers": "SG-002",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()",
+        "performUpkeep"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "_id_prefix": "PROP-01b-partial3-inv-019"
+  },
+  "PROP-01b-partial3-inv-020": {
+    "property_id": "PROP-01b-partial3-inv-020",
+    "text": "transmit() must reject stale reports (timestamp < block.timestamp - stalenessThreshold).",
+    "type": "invariant",
+    "assertion": "forall transmit(report): report.timestamp < block.timestamp - staleness => revert StaleFeedData",
+    "severity": "MEDIUM",
+    "covers": "SG-001",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "transmit()"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "configuration-dependent",
+    "_id_prefix": "PROP-01b-partial3-inv-020"
+  },
+  "PROP-01b-partial3-inv-021": {
+    "property_id": "PROP-01b-partial3-inv-021",
+    "text": "transmit() must verify all reports via VerifierProxy before storing prices.",
+    "type": "invariant",
+    "assertion": "forall transmit(): verifierProxy.verifyBulk() called before any s_dataStreamsPrice write",
+    "severity": "HIGH",
+    "covers": "SG-001",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "transmit()"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "configuration-dependent",
+    "_id_prefix": "PROP-01b-partial3-inv-021"
+  },
+  "PROP-01b-partial3-inv-022": {
+    "property_id": "PROP-01b-partial3-inv-022",
+    "text": "auctionCallback only callable by configured auction contract with from == address(this).",
+    "type": "invariant",
+    "assertion": "forall auctionCallback(): msg.sender == s_auction AND from == address(this)",
+    "severity": "CRITICAL",
+    "covers": "SG-014",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()",
+        "auctionCallback"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "_id_prefix": "PROP-01b-partial3-inv-022"
+  },
+  "PROP-01b-partial3-inv-023": {
+    "property_id": "PROP-01b-partial3-inv-023",
+    "text": "AuctionBidder callback executes arbitrary multiCall then approves exact amountOut to auction.",
+    "type": "invariant",
+    "assertion": "forall auctionCallback(): forceApprove(auction, amountOut) after _multiCall(calls)",
+    "severity": "HIGH",
+    "covers": "SG-014",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "_id_prefix": "PROP-01b-partial3-inv-023"
+  },
+  "PROP-01b-partial3-pre-003": {
+    "property_id": "PROP-01b-partial3-pre-003",
+    "text": "Cannot start auction when one already exists for the same asset.",
+    "type": "pre-condition",
+    "assertion": "forall performUpkeep(start, asset): s_auctionStarts[asset] == 0",
+    "severity": "MEDIUM",
+    "covers": "SG-005",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "performUpkeep"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "configuration-dependent",
+    "_id_prefix": "PROP-01b-partial3-pre-003"
+  },
+  "PROP-01b-partial3-inv-024": {
+    "property_id": "PROP-01b-partial3-inv-024",
+    "text": "Asset eligible for auction only if USD value >= minAuctionSizeUsd.",
+    "type": "invariant",
+    "assertion": "forall performUpkeep(start, asset): availableUsdValue(asset) >= minAuctionSizeUsd",
+    "severity": "MEDIUM",
+    "covers": "SG-004",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "performUpkeep"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "configuration-dependent",
+    "_id_prefix": "PROP-01b-partial3-inv-024"
+  },
+  "PROP-01b-partial3-post-001": {
+    "property_id": "PROP-01b-partial3-post-001",
+    "text": "After auction end, s_auctionStarts[asset] must be deleted (set to 0).",
+    "type": "post-condition",
+    "assertion": "forall _onAuctionEnd(asset): post(s_auctionStarts[asset]) == 0",
+    "severity": "MEDIUM",
+    "covers": "SG-005",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "performUpkeep"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "configuration-dependent",
+    "_id_prefix": "PROP-01b-partial3-post-001"
+  },
+  "PROP-01b-partial3-inv-025": {
+    "property_id": "PROP-01b-partial3-inv-025",
+    "text": "Auction start sets timestamp to block.timestamp and approves vault relayer for full balance.",
+    "type": "invariant",
+    "assertion": "forall _onAuctionStart(asset): s_auctionStarts[asset] = block.timestamp AND approve(relayer, balance)",
+    "severity": "MEDIUM",
+    "covers": "SG-009",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "performUpkeep"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "configuration-dependent",
+    "_id_prefix": "PROP-01b-partial3-inv-025"
+  },
+  "PROP-01b-partial3-inv-026": {
+    "property_id": "PROP-01b-partial3-inv-026",
+    "text": "WorkflowRouter enforces 3-level ACL: workflowId \u2192 target \u2192 selector.",
+    "type": "invariant",
+    "assertion": "forall onReport(wf, target, sel): allowlisted(wf) AND allowlisted(target) AND allowlisted(sel)",
+    "severity": "MEDIUM",
+    "covers": "SG-011",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "onReport()"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "conditional"
+    },
+    "exploitability": "configuration-dependent",
+    "_id_prefix": "PROP-01b-partial3-inv-026"
+  },
+  "PROP-01b-partial3-inv-027": {
+    "property_id": "PROP-01b-partial3-inv-027",
+    "text": "isValidSignature order hash must match GPv2Order.hash(order, domainSeparator).",
+    "type": "invariant",
+    "assertion": "forall isValidSignature(hash, sig): hash == GPv2Order.hash(decode(sig), domainSeparator)",
+    "severity": "CRITICAL",
+    "covers": "SG-010",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "isValidSignature"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "_id_prefix": "PROP-01b-partial3-inv-027"
+  },
+  "PROP-01b-partial3-inv-028": {
+    "property_id": "PROP-01b-partial3-inv-028",
+    "text": "isValidSignature must reject expired orders (validTo < block.timestamp).",
+    "type": "invariant",
+    "assertion": "forall isValidSignature(order): order.validTo < block.timestamp => revert ExpiredOrder",
+    "severity": "MEDIUM",
+    "covers": "SG-010",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "isValidSignature"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "_id_prefix": "PROP-01b-partial3-inv-028"
+  },
+  "PROP-01b-partial3-inv-029": {
+    "property_id": "PROP-01b-partial3-inv-029",
+    "text": "isValidSignature must reject non-zero fee amounts to prevent fee extraction.",
+    "type": "invariant",
+    "assertion": "forall isValidSignature(order): order.feeAmount > 0 => revert InvalidFeeAmount",
+    "severity": "HIGH",
+    "covers": "SG-010",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "isValidSignature"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "_id_prefix": "PROP-01b-partial3-inv-029"
+  },
+  "PROP-01b-partial3-inv-030": {
+    "property_id": "PROP-01b-partial3-inv-030",
+    "text": "Only allowlisted assets can be transferred from FeeAggregator for swap.",
+    "type": "invariant",
+    "assertion": "forall transferForSwap(asset): s_allowlistedAssets.contains(asset)",
+    "severity": "MEDIUM",
+    "covers": "SG-015",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "performUpkeep"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "configuration-dependent",
+    "_id_prefix": "PROP-01b-partial3-inv-030"
+  },
+  "PROP-01b-partial3-inv-033": {
+    "property_id": "PROP-01b-partial3-inv-033",
+    "text": "endingPriceMultiplier >= minPriceMultiplier AND startingPM >= endingPM enforced.",
+    "type": "invariant",
+    "assertion": "forall assetParams: endingPM >= minPM AND startingPM >= endingPM",
+    "severity": "MEDIUM",
+    "covers": "SG-016",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()",
+        "isValidSignature"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "_id_prefix": "PROP-01b-partial3-inv-033"
+  },
+  "PROP-01b-partial3-inv-034": {
+    "property_id": "PROP-01b-partial3-inv-034",
+    "text": "decayRate rounded down to never exceed maximum discount (endingPriceMultiplier).",
+    "type": "invariant",
+    "assertion": "forall getAssetOutAmount(): decayRate = (startPM - endPM) / duration uses floor division",
+    "severity": "HIGH",
+    "covers": "SG-007",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()",
+        "isValidSignature"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "_id_prefix": "PROP-01b-partial3-inv-034"
+  },
+  "PROP-01b-partial3-asm-001": {
+    "property_id": "PROP-01b-partial3-asm-001",
+    "text": "Bidders are untrusted; any address can call bid() without authentication.",
+    "type": "assumption",
+    "assertion": "bid() has no access control modifier; msg.sender is arbitrary",
+    "severity": "HIGH",
+    "covers": "SG-005",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "_id_prefix": "PROP-01b-partial3-asm-001"
+  },
+  "PROP-01b-partial3-asm-002": {
+    "property_id": "PROP-01b-partial3-asm-002",
+    "text": "CowSwap solvers are untrusted; settlement validation relies solely on isValidSignature.",
+    "type": "assumption",
+    "assertion": "GPv2Settlement calls isValidSignature as the sole authorization check for orders",
+    "severity": "HIGH",
+    "covers": "SG-010",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "isValidSignature"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "_id_prefix": "PROP-01b-partial3-asm-002"
+  },
+  "PROP-01b-partial3-asm-003": {
+    "property_id": "PROP-01b-partial3-asm-003",
+    "text": "Price feed staleness within threshold is trusted; manipulation within window is in-scope.",
+    "type": "assumption",
+    "assertion": "price data within stalenessThreshold is used without further validation",
+    "severity": "MEDIUM",
+    "covers": "SG-002",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "transmit()",
+        "bid()"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "_id_prefix": "PROP-01b-partial3-asm-003"
+  },
+  "PROP-01b-partial3-inv-035": {
+    "property_id": "PROP-01b-partial3-inv-035",
+    "text": "Auction early termination when remaining balance < minAuctionSizeUsd.",
+    "type": "invariant",
+    "assertion": "forall checkUpkeep(asset): auctionBalance < minAuctionSize => mark for ending",
+    "severity": "MEDIUM",
+    "covers": "SG-004",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()",
+        "checkUpkeep"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "_id_prefix": "PROP-01b-partial3-inv-035"
+  },
+  "PROP-01b-partial3-inv-036": {
+    "property_id": "PROP-01b-partial3-inv-036",
+    "text": "checkUpkeep uses soft-skip (no revert) for ineligible/stale/low-value assets.",
+    "type": "invariant",
+    "assertion": "forall checkUpkeep(asset): ineligible condition => continue (no revert), return false",
+    "severity": "MEDIUM",
+    "covers": "SG-004",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "checkUpkeep"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "configuration-dependent",
+    "_id_prefix": "PROP-01b-partial3-inv-036"
+  },
+  "PROP-01b-partial3-inv-037": {
+    "property_id": "PROP-01b-partial3-inv-037",
+    "text": "No new auctions started when assetOut price is invalid (stale or zero).",
+    "type": "invariant",
+    "assertion": "forall checkUpkeep(): !isAssetOutPriceValid => eligibleAssetsIdx = 0",
+    "severity": "MEDIUM",
+    "covers": "SG-004",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "checkUpkeep",
+        "performUpkeep"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "_id_prefix": "PROP-01b-partial3-inv-037"
+  },
+  "PROP-01b-partial3-inv-038": {
+    "property_id": "PROP-01b-partial3-inv-038",
+    "text": "AuctionBidder pre-approves exact assetOutAmount when no solution provided (no callback).",
+    "type": "invariant",
+    "assertion": "forall AuctionBidder.bid(sol=empty): forceApprove(auction, getAssetOutAmount(...)) before bid()",
+    "severity": "MEDIUM",
+    "covers": "SG-013",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "AuctionBidder.bid"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "configuration-dependent",
+    "_id_prefix": "PROP-01b-partial3-inv-038"
+  },
+  "PROP-01b-partial3-inv-039": {
+    "property_id": "PROP-01b-partial3-inv-039",
+    "text": "AuctionBidder leftover assetOut transferred to configured receiver, never stuck.",
+    "type": "invariant",
+    "assertion": "forall AuctionBidder.bid(): post(assetOutBalance) > 0 AND receiver != 0 => transfer(receiver, balance)",
+    "severity": "MEDIUM",
+    "covers": "SG-013",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "AuctionBidder.bid"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "configuration-dependent",
+    "_id_prefix": "PROP-01b-partial3-inv-039"
+  },
+  "PROP-01b-partial3-inv-043": {
+    "property_id": "PROP-01b-partial3-inv-043",
+    "text": "Prices stored in transmit() must be scaled to 18 decimals before storage.",
+    "type": "invariant",
+    "assertion": "forall transmit(report): s_dataStreamsPrice[asset].usdPrice has 18 decimal precision",
+    "severity": "HIGH",
+    "covers": "SG-001",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "transmit()"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "configuration-dependent",
+    "_id_prefix": "PROP-01b-partial3-inv-043"
+  },
+  "PROP-01b-partial3-inv-045": {
+    "property_id": "PROP-01b-partial3-inv-045",
+    "text": "AssetOut (LINK) is never auctioned \u2014 transferred directly to assetOutReceiver in performUpkeep.",
+    "type": "invariant",
+    "assertion": "forall performUpkeep(asset): asset == assetOut => transfer(receiver, all) and skip auction start",
+    "severity": "MEDIUM",
+    "covers": "SG-005",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "performUpkeep"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "configuration-dependent",
+    "_id_prefix": "PROP-01b-partial3-inv-045"
+  },
+  "PROP-01b-partial3-inv-046": {
+    "property_id": "PROP-01b-partial3-inv-046",
+    "text": "Callback data in bid() triggers arbitrary external call; reentrancy guard must hold.",
+    "type": "invariant",
+    "assertion": "forall bid(data.length>0): IAuctionCallback(msg.sender).auctionCallback() called with s_entered==true",
+    "severity": "CRITICAL",
+    "covers": "SG-006",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "_id_prefix": "PROP-01b-partial3-inv-046"
+  },
+  "PROP-01b-partial3-inv-047": {
+    "property_id": "PROP-01b-partial3-inv-047",
+    "text": "CowSwap order lifecycle: stale orders (pre-auction) must be replaced, not reused.",
+    "type": "invariant",
+    "assertion": "forall order: order.createdAt < auctionStart => invalidate and create new order",
+    "severity": "MEDIUM",
+    "covers": "SG-010",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "isValidSignature"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "_id_prefix": "PROP-01b-partial3-inv-047"
+  },
+  "PROP-01b-partial3-inv-048": {
+    "property_id": "PROP-01b-partial3-inv-048",
+    "text": "getAssetOutAmount output >= 1 for all valid inputs due to rounding-up chain.",
+    "type": "invariant",
+    "assertion": "forall getAssetOutAmount(valid_inputs): result >= 1",
+    "severity": "HIGH",
+    "covers": "SG-001",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()",
+        "isValidSignature"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "_id_prefix": "PROP-01b-partial3-inv-048"
+  },
+  "PROP-01b-partial3-inv-050": {
+    "property_id": "PROP-01b-partial3-inv-050",
+    "text": "totalUsdValue for checkUpkeep includes balance in both FeeAggregator and auction contract.",
+    "type": "invariant",
+    "assertion": "forall checkUpkeep(asset): totalUsd = usdValue(balanceOf(feeAgg, asset) + balanceOf(auction, asset))",
+    "severity": "MEDIUM",
+    "covers": "SG-004",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "checkUpkeep"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "configuration-dependent",
+    "_id_prefix": "PROP-01b-partial3-inv-050"
+  }
+}

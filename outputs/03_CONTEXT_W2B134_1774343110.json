@@ -1,0 +1,36 @@
+{
+  "PROP-01b-partial3-inv-045": {
+    "property_id": "PROP-01b-partial3-inv-045",
+    "text": "AssetOut (LINK) is never auctioned \u2014 transferred directly to assetOutReceiver in performUpkeep.",
+    "type": "invariant",
+    "assertion": "forall performUpkeep(asset): asset == assetOut => transfer(receiver, all) and skip auction start",
+    "severity": "MEDIUM",
+    "covers": "SG-005",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "performUpkeep"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "configuration-dependent",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "performUpkeep",
+          "line_range": {
+            "start": 305,
+            "end": 370
+          },
+          "role": "primary",
+          "note": "lines 350-352: asset == s_assetOut => safeTransfer(s_assetOutReceiver, full balance) then continue (skip _onAuctionStart)"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

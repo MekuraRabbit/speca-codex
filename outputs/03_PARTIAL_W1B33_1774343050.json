@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial-inv-033",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::bid::L410-458",
+      "proof_trace": "`assetOutAmount` is computed once at L442 via `_getAssetOutAmount()`, which uses exclusively round-up arithmetic (`mulDivUp`, `mulWadUp`), ensuring no truncation downward. The same stack-local variable is passed unmodified to `safeTransferFrom` at L453; no code between L442 and L453 (including the reentrant-guarded `auctionCallback`) can alter it.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial-inv-033"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 33,
+    "item_count": 1,
+    "timestamp": 1774343050,
+    "processed_ids": [
+      "PROP-01b-partial-inv-033"
+    ]
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "PROP-01b-partial2-inv-013": {
+    "property_id": "PROP-01b-partial2-inv-013",
+    "text": "returnData.length must equal calls.length on successful _multiCall completion.",
+    "type": "invariant",
+    "assertion": "post _multiCall(calls): returnData.length == calls.length",
+    "severity": "MEDIUM",
+    "covers": "SG-002",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "AuctionBidder.bid"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/Caller.sol",
+          "symbol": "_multiCall",
+          "line_range": {
+            "start": 49,
+            "end": 63
+          },
+          "role": "primary",
+          "note": "returnData array initialized with calls.length at line 56; filled 1:1 in loop"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial-inv-023",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::performUpkeep::L305-370",
+      "proof_trace": "At L350-352, the if/else branch is mutually exclusive: `asset == s_assetOut` triggers `safeTransfer(s_assetOutReceiver, balanceOf(address(this)))` (full balance), while `s_auctionStarts[asset] = block.timestamp` lives exclusively in the else branch (L353). An exhaustive grep confirms `s_auctionStarts` is written only at L353; therefore `s_auctionStarts[assetOut]` is never set. Both conditions of the property hold by construction.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial-inv-023"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 27,
+    "item_count": 1,
+    "timestamp": 1774343045,
+    "processed_ids": [
+      "PROP-01b-partial-inv-023"
+    ]
+  }
+}

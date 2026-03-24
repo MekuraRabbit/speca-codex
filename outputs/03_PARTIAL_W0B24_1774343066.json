@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial-asm-002",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/PriceManager.sol::transmit::L133-183",
+      "proof_trace": "Both staleness and zero-price checks are correctly implemented as local responsibility: L162-164 reverts with StaleFeedData when `report.observationsTimestamp < block.timestamp - feedInfo.stalenessThreshold`, and L174-176 reverts with ZeroFeedData when `usdPrice == 0` (evaluated after decimal scaling). stalenessThreshold is enforced non-zero at configuration time (L244), so no bypass is possible.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial-asm-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 24,
+    "item_count": 1,
+    "timestamp": 1774343066,
+    "processed_ids": [
+      "PROP-01b-partial-asm-002"
+    ]
+  }
+}

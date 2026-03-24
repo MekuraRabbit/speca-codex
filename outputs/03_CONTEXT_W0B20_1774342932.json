@@ -1,0 +1,35 @@
+{
+  "PROP-01b-partial-inv-015": {
+    "property_id": "PROP-01b-partial-inv-015",
+    "text": "Data Streams price prioritized over Data Feed; fallback only when streams stale and feed configured.",
+    "type": "invariant",
+    "assertion": "forall getAssetPrice(): use_feed iff streamsUpdatedAt < minTimestamp AND usdDataFeed != 0",
+    "severity": "MEDIUM",
+    "covers": "SG-004",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.bid"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/PriceManager.sol",
+          "symbol": "_getAssetPrice",
+          "line_range": {
+            "start": 372,
+            "end": 421
+          },
+          "role": "primary",
+          "note": "fallback logic at line 385: use usdDataFeed only when updatedAt < minTimestamp AND usdDataFeed != address(0)"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

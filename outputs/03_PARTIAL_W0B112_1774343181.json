@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial3-inv-022",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/AuctionBidder.sol::auctionCallback::L97-112",
+      "proof_trace": "The guard at L103-105 uses `msg.sender != address(s_auction) || from != address(this)` which is De Morgan-equivalent to enforcing both `msg.sender == s_auction AND from == address(this)`. The only external call site (BaseAuction.sol:449) correctly passes `from = msg.sender = address(AuctionBidder)`, satisfying both conditions. No bypass path exists: `s_auction` is admin-controlled, non-zero, and no reentrancy vector can swap it mid-transaction.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial3-inv-022"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 112,
+    "item_count": 1,
+    "timestamp": 1774343181,
+    "processed_ids": [
+      "PROP-01b-partial3-inv-022"
+    ]
+  }
+}

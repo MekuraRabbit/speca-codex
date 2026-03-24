@@ -1,0 +1,18 @@
+{
+  "PROP-01b-partial1-inv-015": {
+    "property_id": "PROP-01b-partial1-inv-015",
+    "audit_result": {
+      "property_id": "PROP-01b-partial1-inv-015",
+      "classification": "potential-vulnerability",
+      "code_path": "src/BaseAuction.sol::checkUpkeep::L216-294",
+      "proof_trace": "The loop at L228 iterates every entry in `s_allowlistedAssets` with no upper bound; neither `applyAllowlistedAssetUpdates` (FeeAggregator.sol:L319) nor `applyFeedInfoUpdates` (PriceManager.sol:L285) enforces a maximum asset count. Each iteration may invoke an external `latestRoundData()` oracle call plus two `IERC20.balanceOf` calls, making total gas O(N \u00d7 3 external calls). Because `checkUpkeep` is an off-chain Automation simulation, the binding limit is the Automation registry's `checkGasLimit` (~6.5M gas); with enough assets this limit is exceeded and `upkeepNeeded` is never returned, permanently disabling automated upkeep.",
+      "attack_scenario": "An admin holding `ASSET_ADMIN_ROLE` legitimately adds many assets to the allowlist, each backed by a Chainlink data feed. When the Automation keeper simulates `checkUpkeep`, the accumulated external oracle and `balanceOf` calls exceed the registry's `checkGasLimit`, causing the simulation to fail and `performUpkeep` to never be triggered, halting all automated auction management.",
+      "checklist_id": "PROP-01b-partial1-inv-015"
+    },
+    "text": "checkUpkeep iterates all allowlisted assets; unbounded asset count may exceed block gas limit.",
+    "assertion": "forall checkUpkeep(): gas_consumed(loop) < block.gasLimit for all possible s_allowlistedAssets sizes",
+    "covers": "SG-006",
+    "severity": "MEDIUM",
+    "type": "invariant"
+  }
+}

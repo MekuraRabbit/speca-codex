@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial3-inv-043",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/PriceManager.sol::transmit::L166-172",
+      "proof_trace": "The scaling block at L167-172 exhaustively covers all non-zero feedDecimals values (< 18 \u2192 multiply, == 18 \u2192 identity, > 18 \u2192 divide), and zero decimals are rejected at configuration time by _applyFeedInfoUpdates (L253-254). The only write site for s_dataStreamsPrice is L178, which always receives the post-scaling value; a zero-price guard (L174-176) prevents any division-truncated zero from being stored.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial3-inv-043"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 133,
+    "item_count": 1,
+    "timestamp": 1774343201,
+    "processed_ids": [
+      "PROP-01b-partial3-inv-043"
+    ]
+  }
+}

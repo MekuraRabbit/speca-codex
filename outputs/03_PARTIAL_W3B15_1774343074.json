@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial-inv-010",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::checkUpkeep::L216-294",
+      "proof_trace": "All three eligibility conditions are structurally enforced by the compound branch in checkUpkeep: isPriceValid is guaranteed by the `else if (isPriceValid)` guard at L255; auctionStart==0 is guaranteed because the eligible path is the `else` branch of `if (auctionStart != 0)` at L246; and usdValue>=minAuctionSizeUsd is enforced by the explicit check at L261 before the single `eligibleAssets` push at L264. performUpkeep independently re-validates all three conditions as a defense-in-depth layer.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial-inv-010"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 15,
+    "item_count": 1,
+    "timestamp": 1774343074,
+    "processed_ids": [
+      "PROP-01b-partial-inv-010"
+    ]
+  }
+}

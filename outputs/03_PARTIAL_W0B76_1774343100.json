@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial2-inv-010",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/AuctionBidder.sol::bid::L83-91",
+      "proof_trace": "The only safeTransfer of assetOut in bid() (line 89) is exclusively gated by `if (receiver != address(0))` where receiver is a local snapshot of s_receiver taken at line 86. When s_receiver == address(0), this guard evaluates false and the transfer is skipped, leaving all assetOut tokens in the contract. No other code path in bid() transfers assetOut.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial2-inv-010"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 76,
+    "item_count": 1,
+    "timestamp": 1774343100,
+    "processed_ids": [
+      "PROP-01b-partial2-inv-010"
+    ]
+  }
+}

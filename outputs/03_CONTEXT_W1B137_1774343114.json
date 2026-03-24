@@ -1,0 +1,47 @@
+{
+  "PROP-01b-partial3-inv-048": {
+    "property_id": "PROP-01b-partial3-inv-048",
+    "text": "getAssetOutAmount output >= 1 for all valid inputs due to rounding-up chain.",
+    "type": "invariant",
+    "assertion": "forall getAssetOutAmount(valid_inputs): result >= 1",
+    "severity": "HIGH",
+    "covers": "SG-001",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()",
+        "isValidSignature"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "_getAssetOutAmount",
+          "line_range": {
+            "start": 777,
+            "end": 803
+          },
+          "role": "primary",
+          "note": "line 799: mulDivUp for auctionUsdValue; line 802: mulDivUp for final conversion \u2014 rounding-up chain ensures result >= 1 when inputs are positive"
+        },
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "getAssetOutAmount",
+          "line_range": {
+            "start": 749,
+            "end": 767
+          },
+          "role": "caller",
+          "note": "public view that wraps _getAssetOutAmount; returns 0 for expired/non-existent auctions"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

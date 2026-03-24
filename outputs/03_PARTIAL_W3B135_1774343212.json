@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial3-inv-046",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::bid::L410-458",
+      "proof_trace": "`s_entered = true` is set unconditionally at L418 before any external calls; `auctionCallback()` at L449 executes while the flag is set; `s_entered = false` only resets at L457 after all external calls return. Grep confirms no other code writes `s_entered`, so no path can clear it between L418 and L449. Both `bid()` and `isValidSignature()` check the guard, blocking all known re-entry vectors.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial3-inv-046"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 135,
+    "item_count": 1,
+    "timestamp": 1774343212,
+    "processed_ids": [
+      "PROP-01b-partial3-inv-046"
+    ]
+  }
+}

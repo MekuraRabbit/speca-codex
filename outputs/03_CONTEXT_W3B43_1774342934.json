@@ -1,0 +1,46 @@
+{
+  "PROP-01b-partial1-inv-005": {
+    "property_id": "PROP-01b-partial1-inv-005",
+    "text": "Auction price must decay monotonically from startingPriceMultiplier to endingPriceMultiplier over duration.",
+    "type": "invariant",
+    "assertion": "forall t1<t2<=auctionDuration: getAssetOutAmount(t1,amt) <= getAssetOutAmount(t2,amt)",
+    "severity": "HIGH",
+    "covers": "SG-008",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.bid",
+        "GPV2CompatibleAuction.isValidSignature"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "_getAssetOutAmount",
+          "line_range": {
+            "start": 777,
+            "end": 805
+          },
+          "role": "primary",
+          "note": "price decay formula at lines 793-797; used by both bid() and isValidSignature()"
+        },
+        {
+          "file": "src/GPV2CompatibleAuction.sol",
+          "symbol": "isValidSignature",
+          "line_range": {
+            "start": 119,
+            "end": 179
+          },
+          "role": "related",
+          "note": "calls _getAssetOutAmount at line 154 to compute minBuyAmount \u2014 same price curve"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "PROP-01b-partial3-inv-039": {
+    "property_id": "PROP-01b-partial3-inv-039",
+    "text": "AuctionBidder leftover assetOut transferred to configured receiver, never stuck.",
+    "type": "invariant",
+    "assertion": "forall AuctionBidder.bid(): post(assetOutBalance) > 0 AND receiver != 0 => transfer(receiver, balance)",
+    "severity": "MEDIUM",
+    "covers": "SG-013",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "AuctionBidder.bid"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "configuration-dependent",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/AuctionBidder.sol",
+          "symbol": "bid",
+          "line_range": {
+            "start": 65,
+            "end": 92
+          },
+          "role": "primary",
+          "note": "lines 83-91: after auction.bid, if assetOutBalance > 0 && receiver != 0 => safeTransfer(receiver, balance)"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

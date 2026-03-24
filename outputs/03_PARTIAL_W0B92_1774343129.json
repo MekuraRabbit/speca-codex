@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial3-inv-004",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::bid::L437-440",
+      "proof_trace": "The balance check at L437-440 reads `IERC20(asset).balanceOf(address(this))` into `availableBalance` and reverts with `BidAmountTooHigh` if `amount > availableBalance`, directly enforcing the property before the `safeTransfer` at L444. The reentrancy guard (`s_entered = true` at L418) is set before the check, blocking any callback-based bypass. `AuctionBidder.bid` routes through `BaseAuction.bid`, providing no alternative path.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial3-inv-004"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 92,
+    "item_count": 1,
+    "timestamp": 1774343129,
+    "processed_ids": [
+      "PROP-01b-partial3-inv-004"
+    ]
+  }
+}

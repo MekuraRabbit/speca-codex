@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial3-inv-027",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/GPV2CompatibleAuction.sol::isValidSignature::L119-176",
+      "proof_trace": "Lines 128-130 enforce `hash == GPv2Order.hash(order, i_gpV2Settlement.domainSeparator())` as the second gate in `isValidSignature`; any mismatch reverts with `InvalidOrderId`. Since `i_gpV2Settlement` is immutable and this check precedes all subsequent logic with no alternate path, the property holds on every non-reverting execution.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial3-inv-027"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 119,
+    "item_count": 1,
+    "timestamp": 1774343144,
+    "processed_ids": [
+      "PROP-01b-partial3-inv-027"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial2-post-001",
+      "classification": "potential-vulnerability",
+      "code_path": "src/AuctionBidder.sol::_setAuction::L150-166",
+      "proof_trace": "`_setAuction` reads `address(s_auction)` only for the equality guard (line 159) then overwrites `s_auction` (line 163) with no call to `forceApprove(oldAuction, 0)` or any approval-clearing mechanism. Approvals to the old auction accumulate via `bid()` (line 78: `forceApprove(address(auction), getAssetOutAmount(..., block.timestamp))`) and `auctionCallback()` (line 111: `forceApprove(msg.sender, amountOut)`); if either call leaves a residual (e.g., dynamic pricing causes under-consumption), that allowance persists on the old auction address after the swap.",
+      "attack_scenario": "Admin calls `setAuction(newAuction)` after prior `bid()` left a non-zero approval to `oldAuction` (e.g., `getAssetOutAmount` returned X but auction consumed Y < X); the old auction contract (compromised or adversarial post-migration) then calls `ERC20.transferFrom(auctionBidder, attacker, residual)` to drain tokens.",
+      "checklist_id": "PROP-01b-partial2-post-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 84,
+    "item_count": 1,
+    "timestamp": 1774343182,
+    "processed_ids": [
+      "PROP-01b-partial2-post-001"
+    ]
+  }
+}

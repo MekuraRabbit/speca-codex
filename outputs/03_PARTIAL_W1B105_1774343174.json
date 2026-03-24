@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial3-inv-015",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::_onAuctionEnd::L383-397",
+      "proof_trace": "The transfer guard `if (hasFeeAggregator)` is false only when `s_feeAggregator == address(this)`, which is an explicitly permitted configuration (L569 of `_setFeeAggregator` carves out `address(this)` from the interface check). In that self-hosted configuration, unsold assets already reside at the fee aggregator (the contract itself), so no transfer is required and assets are not stuck.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial3-inv-015"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 105,
+    "item_count": 1,
+    "timestamp": 1774343174,
+    "processed_ids": [
+      "PROP-01b-partial3-inv-015"
+    ]
+  }
+}

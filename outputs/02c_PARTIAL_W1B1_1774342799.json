@@ -1,0 +1,1972 @@
+{
+  "properties_with_code": [
+    {
+      "property_id": "PROP-01b-partial1-pre-005",
+      "text": "isValidSignature must reject orders with sellAmount exceeding contract balance.",
+      "type": "pre-condition",
+      "assertion": "forall isValidSignature(hash,sig): order.sellAmount <= balanceOf(this); else revert InsufficientBalance",
+      "severity": "CRITICAL",
+      "covers": "SG-004",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "GPV2CompatibleAuction.isValidSignature"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "isValidSignature",
+            "line_range": {
+              "start": 119,
+              "end": 179
+            },
+            "role": "primary",
+            "note": "sellAmount > assetInBalance check at lines 144-146; reverts InsufficientAssetInBalance"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial1-pre-006",
+      "text": "isValidSignature must reject expired orders where validTo < block.timestamp.",
+      "type": "pre-condition",
+      "assertion": "forall isValidSignature(hash,sig): order.validTo >= block.timestamp; else revert ExpiredOrder",
+      "severity": "MEDIUM",
+      "covers": "SG-004",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "GPV2CompatibleAuction.isValidSignature"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "isValidSignature",
+            "line_range": {
+              "start": 119,
+              "end": 179
+            },
+            "role": "primary",
+            "note": "validTo < block.timestamp check at lines 158-159; reverts ExpiredOrder"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial1-inv-010",
+      "text": "isValidSignature must enforce feeAmount == 0, kind == KIND_SELL, partiallyFillable == true.",
+      "type": "invariant",
+      "assertion": "forall isValidSignature: order.feeAmount==0 AND order.kind==SELL AND order.partiallyFillable==true",
+      "severity": "MEDIUM",
+      "covers": "SG-004",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "GPV2CompatibleAuction.isValidSignature"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "isValidSignature",
+            "line_range": {
+              "start": 119,
+              "end": 179
+            },
+            "role": "primary",
+            "note": "feeAmount, kind==KIND_SELL, partiallyFillable checks at lines 162-170"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial1-inv-011",
+      "text": "isValidSignature must enforce both sellTokenBalance and buyTokenBalance are BALANCE_ERC20.",
+      "type": "invariant",
+      "assertion": "forall isValidSignature: order.sellTokenBalance==ERC20 AND order.buyTokenBalance==ERC20; else revert",
+      "severity": "MEDIUM",
+      "covers": "SG-004",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "GPV2CompatibleAuction.isValidSignature"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "isValidSignature",
+            "line_range": {
+              "start": 119,
+              "end": 179
+            },
+            "role": "primary",
+            "note": "sellTokenBalance and buyTokenBalance BALANCE_ERC20 check at lines 171-172; reverts InvalidTokenBalanceMarker"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial1-inv-012",
+      "text": "Vault relayer approval must equal full contract balance on auction start and be revoked to zero on end.",
+      "type": "invariant",
+      "assertion": "forall _onAuctionStart: approve(relayer,balanceOf(this)); forall _onAuctionEnd: approve(relayer,0)",
+      "severity": "HIGH",
+      "covers": "SG-002",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "BaseAuction.performUpkeep"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "requires-trusted-role",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "_onAuctionStart",
+            "line_range": {
+              "start": 86,
+              "end": 93
+            },
+            "role": "primary",
+            "note": "forceApprove(i_gpV2VaultRelayer, balanceOf(this)) at line 92"
+          },
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "_onAuctionEnd",
+            "line_range": {
+              "start": 96,
+              "end": 104
+            },
+            "role": "primary",
+            "note": "forceApprove(i_gpV2VaultRelayer, 0) at line 103"
+          },
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "performUpkeep",
+            "line_range": {
+              "start": 305,
+              "end": 370
+            },
+            "role": "caller",
+            "note": "calls _onAuctionStart at line 354 and _onAuctionEnd at line 366"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial1-inv-013",
+      "text": "Vault relayer approval during live auction must not exceed auctioned asset balance at approval time.",
+      "type": "invariant",
+      "assertion": "forall _onAuctionStart(asset): approval(relayer) == balanceOf(this,asset) at time of call",
+      "severity": "HIGH",
+      "covers": "SG-002",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "BaseAuction.performUpkeep",
+          "BaseAuction.bid"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "_onAuctionStart",
+            "line_range": {
+              "start": 86,
+              "end": 93
+            },
+            "role": "primary",
+            "note": "approval set to balanceOf(this) at line 92; balance may shrink after partial bids"
+          },
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "performUpkeep",
+            "line_range": {
+              "start": 305,
+              "end": 370
+            },
+            "role": "caller",
+            "note": "transfers assets via transferForSwap before calling _onAuctionStart"
+          },
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "bid",
+            "line_range": {
+              "start": 410,
+              "end": 465
+            },
+            "role": "related",
+            "note": "reduces asset balance without updating relayer approval, creating approval > balance condition"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial1-inv-014",
+      "text": "Remaining vault relayer approval after partial bids may exceed remaining balance, enabling solver overdraft.",
+      "type": "invariant",
+      "assertion": "forall bid(asset,amt): approval(relayer) set at start >= balance_after_bid => solver can pull excess via approval",
+      "severity": "HIGH",
+      "covers": "SG-002",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "BaseAuction.bid",
+          "GPV2CompatibleAuction.isValidSignature"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "bid",
+            "line_range": {
+              "start": 410,
+              "end": 465
+            },
+            "role": "primary",
+            "note": "transfers asset to bidder but does not reduce vault relayer approval"
+          },
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "_onAuctionStart",
+            "line_range": {
+              "start": 86,
+              "end": 93
+            },
+            "role": "related",
+            "note": "initial approval equals full balance at auction start"
+          },
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "isValidSignature",
+            "line_range": {
+              "start": 119,
+              "end": 179
+            },
+            "role": "related",
+            "note": "validates sellAmount <= assetInBalance but approval may still exceed current balance"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial1-pre-007",
+      "text": "performUpkeep must revert if auction already live for an asset (prevent double-start).",
+      "type": "pre-condition",
+      "assertion": "forall performUpkeep(eligible): s_auctionStarts[asset]!=0 => revert LiveAuction()",
+      "severity": "MEDIUM",
+      "covers": "SG-007",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "BaseAuction.performUpkeep"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "requires-trusted-role",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "performUpkeep",
+            "line_range": {
+              "start": 305,
+              "end": 370
+            },
+            "role": "primary",
+            "note": "s_auctionStarts[asset] != 0 => revert LiveAuction() check at lines 327-328"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial1-inv-015",
+      "text": "checkUpkeep iterates all allowlisted assets; unbounded asset count may exceed block gas limit.",
+      "type": "invariant",
+      "assertion": "forall checkUpkeep(): gas_consumed(loop) < block.gasLimit for all possible s_allowlistedAssets sizes",
+      "severity": "MEDIUM",
+      "covers": "SG-006",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "BaseAuction.checkUpkeep"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "requires-trusted-role",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "checkUpkeep",
+            "line_range": {
+              "start": 216,
+              "end": 304
+            },
+            "role": "primary",
+            "note": "unbounded loop over s_allowlistedAssets with per-asset price oracle calls"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial1-inv-016",
+      "text": "No new auctions start when assetOut price feed is invalid (isAssetOutPriceValid == false).",
+      "type": "invariant",
+      "assertion": "forall checkUpkeep(): !isAssetOutPriceValid => eligibleAssetsIdx = 0 (no new auctions returned)",
+      "severity": "MEDIUM",
+      "covers": "SG-006",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "BaseAuction.checkUpkeep"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "requires-oracle-manipulation",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "checkUpkeep",
+            "line_range": {
+              "start": 216,
+              "end": 304
+            },
+            "role": "primary",
+            "note": "isAssetOutPriceValid gate at line 271 prevents eligible assets being returned when feed invalid"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial1-inv-017",
+      "text": "Ended auctions can still be processed even when assetOut price feed is invalid.",
+      "type": "invariant",
+      "assertion": "forall checkUpkeep(): !isAssetOutPriceValid => endedAuctions list unaffected by price validity",
+      "severity": "MEDIUM",
+      "covers": "SG-006",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "BaseAuction.checkUpkeep"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "requires-oracle-manipulation",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "checkUpkeep",
+            "line_range": {
+              "start": 216,
+              "end": 304
+            },
+            "role": "primary",
+            "note": "endedAuctions accumulation is independent of isAssetOutPriceValid flag"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial1-pre-008",
+      "text": "performUpkeep must reject assets with usdValue below minAuctionSizeUsd to prevent dust auctions.",
+      "type": "pre-condition",
+      "assertion": "forall performUpkeep(eligible): usdValue(asset) >= minAuctionSizeUsd; else revert AmountBelowMinAuctionSize",
+      "severity": "MEDIUM",
+      "covers": "SG-007",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "BaseAuction.performUpkeep"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "requires-trusted-role",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "performUpkeep",
+            "line_range": {
+              "start": 305,
+              "end": 370
+            },
+            "role": "primary",
+            "note": "availableAssetUsdValue < minAuctionSizeUsd => revert AmountBelowMinAuctionSize at lines 346-347"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial1-post-001",
+      "text": "After _onAuctionEnd, vault relayer approval must be exactly zero and remaining assets transferred out.",
+      "type": "post-condition",
+      "assertion": "forall _onAuctionEnd(asset): post: allowance(relayer)==0 AND balance(asset)==0 (transferred to receiver)",
+      "severity": "HIGH",
+      "covers": "SG-003",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "BaseAuction.performUpkeep"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "requires-trusted-role",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "_onAuctionEnd",
+            "line_range": {
+              "start": 96,
+              "end": 104
+            },
+            "role": "primary",
+            "note": "forceApprove(i_gpV2VaultRelayer, 0) at line 103"
+          },
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "_onAuctionEnd",
+            "line_range": {
+              "start": 383,
+              "end": 409
+            },
+            "role": "related",
+            "note": "transfers remaining asset balance to fee aggregator or receiver"
+          },
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "performUpkeep",
+            "line_range": {
+              "start": 305,
+              "end": 370
+            },
+            "role": "caller",
+            "note": "calls _onAuctionEnd then deletes s_auctionStarts[asset] at line 367"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial1-post-002",
+      "text": "After performUpkeep starts auction, s_auctionStarts[asset] must equal block.timestamp exactly.",
+      "type": "post-condition",
+      "assertion": "forall performUpkeep(eligible): post: s_auctionStarts[asset] == block.timestamp for each started asset",
+      "severity": "MEDIUM",
+      "covers": "SG-007",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "BaseAuction.performUpkeep"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "requires-trusted-role",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "performUpkeep",
+            "line_range": {
+              "start": 305,
+              "end": 370
+            },
+            "role": "primary",
+            "note": "s_auctionStarts[asset] = block.timestamp at line 353"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial1-post-003",
+      "text": "After bid() completes, s_entered must be reset to false regardless of callback success or failure.",
+      "type": "post-condition",
+      "assertion": "forall bid(asset,amt,data): post: s_entered == false (reset in all execution paths)",
+      "severity": "HIGH",
+      "covers": "SG-008",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "BaseAuction.bid"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "bid",
+            "line_range": {
+              "start": 410,
+              "end": 465
+            },
+            "role": "primary",
+            "note": "s_entered = false reset at line 457; no try/catch \u2014 revert in callback leaves s_entered = true"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial1-inv-023",
+      "text": "isValidSignature must reject orders for assets without active auctions (auctionStart == 0).",
+      "type": "invariant",
+      "assertion": "forall isValidSignature(hash,sig): s_auctionStarts[sellToken]==0 => revert InvalidAuction(sellToken)",
+      "severity": "MEDIUM",
+      "covers": "SG-004",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "GPV2CompatibleAuction.isValidSignature"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "isValidSignature",
+            "line_range": {
+              "start": 119,
+              "end": 179
+            },
+            "role": "primary",
+            "note": "auctionStart == 0 => revert InvalidAuction check at lines 131-133"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial1-inv-024",
+      "text": "isValidSignature must reject orders where auction has expired (elapsedTime > auctionDuration).",
+      "type": "invariant",
+      "assertion": "forall isValidSignature: block.timestamp - auctionStart > auctionDuration => revert InvalidAuction",
+      "severity": "MEDIUM",
+      "covers": "SG-004",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "GPV2CompatibleAuction.isValidSignature"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "isValidSignature",
+            "line_range": {
+              "start": 119,
+              "end": 179
+            },
+            "role": "primary",
+            "note": "elapsedTime > assetParams.auctionDuration check at lines 148-152"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial2-inv-001",
+      "text": "auctionCallback must reject calls where msg.sender is not the stored auction contract.",
+      "type": "invariant",
+      "assertion": "forall call auctionCallback(from, assetIn, amountIn, assetOut, amountOut, data): msg.sender == address(s_auction)",
+      "severity": "HIGH",
+      "covers": "SG-003",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "AuctionBidder.bid",
+          "Callback"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/AuctionBidder.sol",
+            "symbol": "auctionCallback",
+            "line_range": {
+              "start": 97,
+              "end": 112
+            },
+            "role": "primary",
+            "note": "msg.sender != address(s_auction) check combined with from check at line 103; reverts AccessForbidden"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial2-inv-002",
+      "text": "auctionCallback must reject calls where from is not address(this).",
+      "type": "invariant",
+      "assertion": "forall call auctionCallback(from, ...): from == address(this) OR revert",
+      "severity": "HIGH",
+      "covers": "SG-003",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "AuctionBidder.bid",
+          "Callback"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/AuctionBidder.sol",
+            "symbol": "auctionCallback",
+            "line_range": {
+              "start": 97,
+              "end": 112
+            },
+            "role": "primary",
+            "note": "from != address(this) check at line 103; reverts AccessForbidden"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial2-inv-003",
+      "text": "_multiCall in auctionCallback must not allow transferring contract token balances to arbitrary addresses.",
+      "type": "invariant",
+      "assertion": "forall solution in auctionCallback: no _call(target, data) where data encodes transfer(attacker, amount) on held tokens",
+      "severity": "CRITICAL",
+      "covers": "SG-003",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "AuctionBidder.bid"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/AuctionBidder.sol",
+            "symbol": "auctionCallback",
+            "line_range": {
+              "start": 97,
+              "end": 112
+            },
+            "role": "primary",
+            "note": "decodes Call[] from data and passes to _multiCall with no allowlist on targets or calldata"
+          },
+          {
+            "file": "src/Caller.sol",
+            "symbol": "_multiCall",
+            "line_range": {
+              "start": 49,
+              "end": 63
+            },
+            "role": "callee",
+            "note": "executes arbitrary calls; no restriction on target addresses or calldata"
+          },
+          {
+            "file": "src/Caller.sol",
+            "symbol": "_call",
+            "line_range": {
+              "start": 21,
+              "end": 44
+            },
+            "role": "callee",
+            "note": "low-level call with arbitrary target and data"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial2-inv-004",
+      "text": "Solution _multiCall must not approve contract tokens to addresses other than the auction contract.",
+      "type": "invariant",
+      "assertion": "forall _call in auctionCallback._multiCall: if target is ERC20 and data encodes approve(spender, amt) then spender == s_auction",
+      "severity": "CRITICAL",
+      "covers": "SG-003",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "AuctionBidder.bid"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/AuctionBidder.sol",
+            "symbol": "auctionCallback",
+            "line_range": {
+              "start": 97,
+              "end": 112
+            },
+            "role": "primary",
+            "note": "no validation of spender in approve calls within _multiCall"
+          },
+          {
+            "file": "src/Caller.sol",
+            "symbol": "_multiCall",
+            "line_range": {
+              "start": 49,
+              "end": 63
+            },
+            "role": "callee",
+            "note": "arbitrary calldata dispatched; no ERC20 approve spender restriction"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial2-inv-005",
+      "text": "Reentrancy via _multiCall must not allow bid() to be re-entered during auctionCallback execution.",
+      "type": "invariant",
+      "assertion": "forall bid() execution: no reentrant call to bid() via auctionCallback._multiCall path",
+      "severity": "HIGH",
+      "covers": "SG-002",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "AuctionBidder.bid"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "bid",
+            "line_range": {
+              "start": 410,
+              "end": 465
+            },
+            "role": "primary",
+            "note": "s_entered guard at lines 415-418 prevents re-entry; set true before callback, false after"
+          },
+          {
+            "file": "src/AuctionBidder.sol",
+            "symbol": "auctionCallback",
+            "line_range": {
+              "start": 97,
+              "end": 112
+            },
+            "role": "related",
+            "note": "executes _multiCall which may call back into bid() on BaseAuction"
+          },
+          {
+            "file": "src/Caller.sol",
+            "symbol": "_multiCall",
+            "line_range": {
+              "start": 49,
+              "end": 63
+            },
+            "role": "related",
+            "note": "vector for reentrancy if calls include BaseAuction.bid"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial2-inv-006",
+      "text": "forceApprove amount in bid() no-solution path must equal getAssetOutAmount(assetIn, amount, block.timestamp).",
+      "type": "invariant",
+      "assertion": "bid(assetIn, amount, []) => approvedAmount == getAssetOutAmount(assetIn, amount, block.timestamp)",
+      "severity": "HIGH",
+      "covers": "SG-002",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "AuctionBidder.bid"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/AuctionBidder.sol",
+            "symbol": "bid",
+            "line_range": {
+              "start": 65,
+              "end": 92
+            },
+            "role": "primary",
+            "note": "forceApprove(address(auction), s_auction.getAssetOutAmount(...)) at line 78 when solution.length==0"
+          },
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "getAssetOutAmount",
+            "line_range": {
+              "start": 749,
+              "end": 776
+            },
+            "role": "callee",
+            "note": "computes the required assetOut amount for the approval"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial2-inv-007",
+      "text": "_multiCall targets must not include AuctionBidder itself to prevent self-callback reentrancy loops.",
+      "type": "invariant",
+      "assertion": "forall call in _multiCall(calls): calls[i].target != address(this)",
+      "severity": "HIGH",
+      "covers": "SG-003",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "AuctionBidder.bid"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/Caller.sol",
+            "symbol": "_multiCall",
+            "line_range": {
+              "start": 49,
+              "end": 63
+            },
+            "role": "primary",
+            "note": "no check on calls[i].target != address(this); AuctionBidder self-calls possible"
+          },
+          {
+            "file": "src/AuctionBidder.sol",
+            "symbol": "auctionCallback",
+            "line_range": {
+              "start": 97,
+              "end": 112
+            },
+            "role": "related",
+            "note": "passes decoded Call[] directly to _multiCall without target validation"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial2-inv-008",
+      "text": "forceApprove after _multiCall in auctionCallback must approve exact amountOut to msg.sender (auction).",
+      "type": "invariant",
+      "assertion": "auctionCallback post-multiCall: forceApprove(msg.sender, amountOut) where msg.sender == s_auction",
+      "severity": "HIGH",
+      "covers": "SG-003",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "AuctionBidder.bid",
+          "Callback"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/AuctionBidder.sol",
+            "symbol": "auctionCallback",
+            "line_range": {
+              "start": 97,
+              "end": 112
+            },
+            "role": "primary",
+            "note": "forceApprove(msg.sender, amountOut) at line 111; msg.sender verified == s_auction at line 103"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial2-inv-009",
+      "text": "Leftover assetOut after bid must be forwarded to receiver if receiver != address(0).",
+      "type": "invariant",
+      "assertion": "post bid(): s_receiver != address(0) AND assetOutBalance > 0 => safeTransfer(s_receiver, assetOutBalance)",
+      "severity": "MEDIUM",
+      "covers": "SG-002",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "AuctionBidder.bid"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/AuctionBidder.sol",
+            "symbol": "bid",
+            "line_range": {
+              "start": 65,
+              "end": 92
+            },
+            "role": "primary",
+            "note": "receiver check and safeTransfer at lines 85-91"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial2-inv-010",
+      "text": "If receiver is address(0), leftover assetOut tokens must remain in contract after bid.",
+      "type": "invariant",
+      "assertion": "post bid(): s_receiver == address(0) => no safeTransfer of assetOut AND tokens remain in contract",
+      "severity": "MEDIUM",
+      "covers": "SG-002",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "AuctionBidder.bid"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/AuctionBidder.sol",
+            "symbol": "bid",
+            "line_range": {
+              "start": 65,
+              "end": 92
+            },
+            "role": "primary",
+            "note": "receiver == address(0) branch skips safeTransfer; tokens remain in contract at lines 86-91"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial2-inv-011",
+      "text": "Failed external calls in _call must always revert, never return silently.",
+      "type": "invariant",
+      "assertion": "forall _call(target, data): success == false => revert (never return empty)",
+      "severity": "MEDIUM",
+      "covers": "SG-001",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "AuctionBidder.bid"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/Caller.sol",
+            "symbol": "_call",
+            "line_range": {
+              "start": 21,
+              "end": 44
+            },
+            "role": "primary",
+            "note": "success==false: bubbles response if length>0, else reverts LowLevelCallFailed at lines 30-40"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial2-inv-012",
+      "text": "Empty calls array in _multiCall must revert with EmptyList().",
+      "type": "invariant",
+      "assertion": "_multiCall(calls) where calls.length == 0 => revert EmptyList()",
+      "severity": "LOW",
+      "covers": "SG-002",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "AuctionBidder.bid"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/Caller.sol",
+            "symbol": "_multiCall",
+            "line_range": {
+              "start": 49,
+              "end": 63
+            },
+            "role": "primary",
+            "note": "calls.length == 0 => revert Errors.EmptyList() at lines 52-53"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial2-inv-013",
+      "text": "returnData.length must equal calls.length on successful _multiCall completion.",
+      "type": "invariant",
+      "assertion": "post _multiCall(calls): returnData.length == calls.length",
+      "severity": "MEDIUM",
+      "covers": "SG-002",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "AuctionBidder.bid"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/Caller.sol",
+            "symbol": "_multiCall",
+            "line_range": {
+              "start": 49,
+              "end": 63
+            },
+            "role": "primary",
+            "note": "returnData array initialized with calls.length at line 56; filled 1:1 in loop"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial2-inv-014",
+      "text": "_call must forward exact calldata to target without modification.",
+      "type": "invariant",
+      "assertion": "forall _call(target, data): target receives data unmodified",
+      "severity": "LOW",
+      "covers": "SG-001",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "AuctionBidder.bid"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/Caller.sol",
+            "symbol": "_call",
+            "line_range": {
+              "start": 21,
+              "end": 44
+            },
+            "role": "primary",
+            "note": "target.call(data) at line 27 forwards data unmodified"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial2-inv-015",
+      "text": "Original revert reason from external call must be preserved when response.length > 0.",
+      "type": "invariant",
+      "assertion": "_call: success == false AND response.length > 0 => revert(response) preserves original reason",
+      "severity": "LOW",
+      "covers": "SG-001",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "AuctionBidder.bid"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/Caller.sol",
+            "symbol": "_call",
+            "line_range": {
+              "start": 21,
+              "end": 44
+            },
+            "role": "primary",
+            "note": "assembly revert with response data at lines 33-37 preserves original revert reason"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial2-pre-001",
+      "text": "bid() must enforce AUCTION_BIDDER_ROLE and whenNotPaused before execution.",
+      "type": "pre-condition",
+      "assertion": "pre bid(): hasRole(AUCTION_BIDDER_ROLE, msg.sender) AND !paused()",
+      "severity": "HIGH",
+      "covers": "SG-002",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "AuctionBidder.bid"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/AuctionBidder.sol",
+            "symbol": "bid",
+            "line_range": {
+              "start": 65,
+              "end": 92
+            },
+            "role": "primary",
+            "note": "whenNotPaused and onlyRole(Roles.AUCTION_BIDDER_ROLE) modifiers at line 69"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial2-pre-002",
+      "text": "auctionCallback must enforce whenNotPaused modifier.",
+      "type": "pre-condition",
+      "assertion": "pre auctionCallback(): !paused()",
+      "severity": "MEDIUM",
+      "covers": "SG-003",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "Callback"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/AuctionBidder.sol",
+            "symbol": "auctionCallback",
+            "line_range": {
+              "start": 97,
+              "end": 112
+            },
+            "role": "primary",
+            "note": "whenNotPaused modifier at function declaration line 102"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial2-post-001",
+      "text": "Changing auction via _setAuction must not leave stale token approvals to the old auction contract.",
+      "type": "post-condition",
+      "assertion": "post _setAuction(newAuction): allowance(address(this), oldAuction) == 0 for all tokens",
+      "severity": "MEDIUM",
+      "covers": "SG-005",
+      "reachability": {
+        "classification": "internal-only",
+        "entry_points": [
+          "Admin"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "conditional"
+      },
+      "exploitability": "requires-admin",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/AuctionBidder.sol",
+            "symbol": "_setAuction",
+            "line_range": {
+              "start": 150,
+              "end": 168
+            },
+            "role": "primary",
+            "note": "updates s_auction to new address at line 163; does not revoke approvals from old auction contract"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial2-inv-017",
+      "text": "All _multiCall calls must execute sequentially in order 0..calls.length-1.",
+      "type": "invariant",
+      "assertion": "_multiCall(calls): execution order is calls[0], calls[1], ..., calls[n-1] strictly sequential",
+      "severity": "LOW",
+      "covers": "SG-002",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "AuctionBidder.bid"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/Caller.sol",
+            "symbol": "_multiCall",
+            "line_range": {
+              "start": 49,
+              "end": 63
+            },
+            "role": "primary",
+            "note": "sequential for loop i=0..calls.length-1 at lines 58-60"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial2-inv-018",
+      "text": "If any _call in _multiCall reverts, entire _multiCall must revert with no partial execution returned.",
+      "type": "invariant",
+      "assertion": "_multiCall: any _call revert => entire multiCall reverts (atomic)",
+      "severity": "MEDIUM",
+      "covers": "SG-002",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "AuctionBidder.bid"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/Caller.sol",
+            "symbol": "_multiCall",
+            "line_range": {
+              "start": 49,
+              "end": 63
+            },
+            "role": "primary",
+            "note": "_call reverts bubble up through _multiCall; no try/catch means atomic behavior"
+          },
+          {
+            "file": "src/Caller.sol",
+            "symbol": "_call",
+            "line_range": {
+              "start": 21,
+              "end": 44
+            },
+            "role": "callee",
+            "note": "always reverts on failure; never swallows errors"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial2-inv-019",
+      "text": "Solution with non-empty data must be abi.encoded as Call[] before passing to _multiCall.",
+      "type": "invariant",
+      "assertion": "auctionCallback: calls = abi.decode(data, (Call[])) must succeed or revert",
+      "severity": "MEDIUM",
+      "covers": "SG-003",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "AuctionBidder.bid"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/AuctionBidder.sol",
+            "symbol": "auctionCallback",
+            "line_range": {
+              "start": 97,
+              "end": 112
+            },
+            "role": "primary",
+            "note": "abi.decode(data, (Call[])) at line 107; malformed data causes revert"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial2-inv-020",
+      "text": "No-solution bid path must use forceApprove to set exact approval without residual allowance from prior bids.",
+      "type": "invariant",
+      "assertion": "bid(solution=[]) => forceApprove resets to 0 then sets getAssetOutAmount, no residual allowance",
+      "severity": "MEDIUM",
+      "covers": "SG-002",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "AuctionBidder.bid"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/AuctionBidder.sol",
+            "symbol": "bid",
+            "line_range": {
+              "start": 65,
+              "end": 92
+            },
+            "role": "primary",
+            "note": "forceApprove (OZ SafeERC20) resets allowance to 0 then sets exact value at line 78"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-001",
+      "text": "Reentrancy guard must prevent recursive bid() calls via s_entered flag.",
+      "type": "invariant",
+      "assertion": "forall call bid(): s_entered == true during execution => recursive bid() reverts",
+      "severity": "CRITICAL",
+      "covers": "SG-006",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "bid()",
+          "auctionCallback"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "bid",
+            "line_range": {
+              "start": 410,
+              "end": 465
+            },
+            "role": "primary",
+            "note": "s_entered check at lines 415-418; set true at 418 before callback, false at 457 after"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-002",
+      "text": "Bidder callback cannot re-enter isValidSignature during bid() execution.",
+      "type": "invariant",
+      "assertion": "forall bid(cb): s_entered == true => isValidSignature() reverts ReentrantCall",
+      "severity": "CRITICAL",
+      "covers": "SG-010",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "bid()",
+          "isValidSignature"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "isValidSignature",
+            "line_range": {
+              "start": 119,
+              "end": 179
+            },
+            "role": "primary",
+            "note": "s_entered check at lines 125-126; reverts Errors.ReentrantCall() when bid() in progress"
+          },
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "bid",
+            "line_range": {
+              "start": 410,
+              "end": 465
+            },
+            "role": "related",
+            "note": "sets s_entered=true at line 418, creating the guard observed in isValidSignature"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-003",
+      "text": "LINK payment is always pulled from bidder AFTER callback execution completes.",
+      "type": "invariant",
+      "assertion": "forall bid(cb): safeTransferFrom(bidder, assetOut) executes strictly after auctionCallback returns",
+      "severity": "CRITICAL",
+      "covers": "SG-005",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "bid()"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "bid",
+            "line_range": {
+              "start": 410,
+              "end": 465
+            },
+            "role": "primary",
+            "note": "safeTransferFrom(bidder, assetOutAmount) executed after auctionCallback; ordering enforces payment after delivery"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-004",
+      "text": "Bid amount must not exceed available auction balance for the asset.",
+      "type": "invariant",
+      "assertion": "forall bid(asset, amount): amount <= balanceOf(this, asset)",
+      "severity": "HIGH",
+      "covers": "SG-006",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "bid()"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "bid",
+            "line_range": {
+              "start": 410,
+              "end": 465
+            },
+            "role": "primary",
+            "note": "availableBalance = balanceOf(this, asset) at line 437; checked against amount parameter"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-005",
+      "text": "All rounding in getAssetOutAmount must favor the protocol (round up asset out).",
+      "type": "invariant",
+      "assertion": "forall getAssetOutAmount(): mulDivUp used for all USD and token conversions",
+      "severity": "HIGH",
+      "covers": "SG-001",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "bid()",
+          "isValidSignature"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "_getAssetOutAmount",
+            "line_range": {
+              "start": 777,
+              "end": 805
+            },
+            "role": "primary",
+            "note": "mulDivUp used for USD value and token conversion at lines 799 and 802; rounds up in protocol's favor"
+          },
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "getAssetOutAmount",
+            "line_range": {
+              "start": 749,
+              "end": 776
+            },
+            "role": "related",
+            "note": "public wrapper that delegates to _getAssetOutAmount"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-006",
+      "text": "Price multiplier bounded: endingPriceMultiplier <= multiplier <= startingPriceMultiplier.",
+      "type": "invariant",
+      "assertion": "forall t: endingPM <= priceMultiplier(t) <= startingPM",
+      "severity": "HIGH",
+      "covers": "SG-007",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "bid()",
+          "isValidSignature"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "_getAssetOutAmount",
+            "line_range": {
+              "start": 777,
+              "end": 805
+            },
+            "role": "primary",
+            "note": "priceMultiplier computed as linear interpolation from startingPriceMultiplier to endingPriceMultiplier at lines 793-797"
+          },
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "_applyAssetParamsUpdates",
+            "line_range": {
+              "start": 598,
+              "end": 665
+            },
+            "role": "related",
+            "note": "validates endingPriceMultiplier >= i_minPriceMultiplier and endingPM <= startingPM at lines 650-655"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-007",
+      "text": "isValidSignature buyAmount must meet current auction price curve minimum.",
+      "type": "invariant",
+      "assertion": "forall isValidSignature(order): order.buyAmount >= getAssetOutAmount(order.sellAmount)",
+      "severity": "CRITICAL",
+      "covers": "SG-010",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "isValidSignature"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "isValidSignature",
+            "line_range": {
+              "start": 119,
+              "end": 179
+            },
+            "role": "primary",
+            "note": "minBuyAmount computed via _getAssetOutAmount; order.buyAmount < minBuyAmount => revert InsufficientBuyAmount at lines 154-156"
+          },
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "_getAssetOutAmount",
+            "line_range": {
+              "start": 777,
+              "end": 805
+            },
+            "role": "callee",
+            "note": "computes minimum required buyAmount based on elapsed time and price curve"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-008",
+      "text": "isValidSignature receiver must be the auction contract itself.",
+      "type": "invariant",
+      "assertion": "forall isValidSignature(order): order.receiver == address(this)",
+      "severity": "CRITICAL",
+      "covers": "SG-010",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "isValidSignature"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "isValidSignature",
+            "line_range": {
+              "start": 119,
+              "end": 179
+            },
+            "role": "primary",
+            "note": "order.receiver != address(this) => revert InvalidReceiver at lines 138-140"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-009",
+      "text": "isValidSignature buyToken must equal configured assetOut (LINK).",
+      "type": "invariant",
+      "assertion": "forall isValidSignature(order): order.buyToken == s_assetOut",
+      "severity": "CRITICAL",
+      "covers": "SG-010",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "isValidSignature"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "isValidSignature",
+            "line_range": {
+              "start": 119,
+              "end": 179
+            },
+            "role": "primary",
+            "note": "order.buyToken != s_assetOut => revert InvalidBuyToken at lines 135-137"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-010",
+      "text": "CowSwap orders must be sell-kind, partially fillable, zero-fee, and ERC20 balance type.",
+      "type": "invariant",
+      "assertion": "forall isValidSignature(o): o.kind==SELL AND o.partiallyFillable AND o.feeAmount==0 AND o.balanceERC20",
+      "severity": "HIGH",
+      "covers": "SG-010",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "isValidSignature"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "isValidSignature",
+            "line_range": {
+              "start": 119,
+              "end": 179
+            },
+            "role": "primary",
+            "note": "feeAmount, kind==KIND_SELL, partiallyFillable, BALANCE_ERC20 enforced at lines 162-172"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-011",
+      "text": "isValidSignature sellAmount must not exceed contract's asset balance.",
+      "type": "invariant",
+      "assertion": "forall isValidSignature(order): order.sellAmount <= balanceOf(this, sellToken)",
+      "severity": "HIGH",
+      "covers": "SG-010",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "isValidSignature"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "isValidSignature",
+            "line_range": {
+              "start": 119,
+              "end": 179
+            },
+            "role": "primary",
+            "note": "order.sellAmount > assetInBalance => revert InsufficientAssetInBalance at lines 144-146"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    }
+  ],
+  "metadata": {
+    "phase": "02c",
+    "worker_id": 1,
+    "batch_index": 1,
+    "item_count": 50,
+    "timestamp": 1774342799,
+    "processed_ids": [
+      "PROP-01b-partial1-pre-005",
+      "PROP-01b-partial1-pre-006",
+      "PROP-01b-partial1-inv-010",
+      "PROP-01b-partial1-inv-011",
+      "PROP-01b-partial1-inv-012",
+      "PROP-01b-partial1-inv-013",
+      "PROP-01b-partial1-inv-014",
+      "PROP-01b-partial1-pre-007",
+      "PROP-01b-partial1-inv-015",
+      "PROP-01b-partial1-inv-016",
+      "PROP-01b-partial1-inv-017",
+      "PROP-01b-partial1-pre-008",
+      "PROP-01b-partial1-post-001",
+      "PROP-01b-partial1-post-002",
+      "PROP-01b-partial1-post-003",
+      "PROP-01b-partial1-inv-023",
+      "PROP-01b-partial1-inv-024",
+      "PROP-01b-partial2-inv-001",
+      "PROP-01b-partial2-inv-002",
+      "PROP-01b-partial2-inv-003",
+      "PROP-01b-partial2-inv-004",
+      "PROP-01b-partial2-inv-005",
+      "PROP-01b-partial2-inv-006",
+      "PROP-01b-partial2-inv-007",
+      "PROP-01b-partial2-inv-008",
+      "PROP-01b-partial2-inv-009",
+      "PROP-01b-partial2-inv-010",
+      "PROP-01b-partial2-inv-011",
+      "PROP-01b-partial2-inv-012",
+      "PROP-01b-partial2-inv-013",
+      "PROP-01b-partial2-inv-014",
+      "PROP-01b-partial2-inv-015",
+      "PROP-01b-partial2-pre-001",
+      "PROP-01b-partial2-pre-002",
+      "PROP-01b-partial2-post-001",
+      "PROP-01b-partial2-inv-017",
+      "PROP-01b-partial2-inv-018",
+      "PROP-01b-partial2-inv-019",
+      "PROP-01b-partial2-inv-020",
+      "PROP-01b-partial3-inv-001",
+      "PROP-01b-partial3-inv-002",
+      "PROP-01b-partial3-inv-003",
+      "PROP-01b-partial3-inv-004",
+      "PROP-01b-partial3-inv-005",
+      "PROP-01b-partial3-inv-006",
+      "PROP-01b-partial3-inv-007",
+      "PROP-01b-partial3-inv-008",
+      "PROP-01b-partial3-inv-009",
+      "PROP-01b-partial3-inv-010",
+      "PROP-01b-partial3-inv-011"
+    ]
+  }
+}

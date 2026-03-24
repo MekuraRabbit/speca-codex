@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial2-inv-009",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/AuctionBidder.sol::bid::L83-91",
+      "proof_trace": "Lines 83-91 directly implement the invariant: after `auction.bid()` returns, the contract reads `assetOutBalance`; if non-zero, it reads `s_receiver`; if also non-zero, it calls `safeTransfer(receiver, assetOutBalance)`. This is a one-to-one code implementation of the stated property with no missing paths or alternative return routes.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial2-inv-009"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 75,
+    "item_count": 1,
+    "timestamp": 1774343110,
+    "processed_ids": [
+      "PROP-01b-partial2-inv-009"
+    ]
+  }
+}

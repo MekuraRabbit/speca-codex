@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial-inv-001",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::bid::L410-457",
+      "proof_trace": "The s_entered flag is set to true at L418 before any external call (safeTransfer at L444, auctionCallback at L449, safeTransferFrom at L453). Any re-entry into bid hits the if (s_entered) check at L415-416 and reverts. All other state-modifying functions require privileged roles (AUCTION_WORKER_ROLE, ASSET_ADMIN_ROLE) that an attacker cannot satisfy; view functions (isValidSignature, checkUpkeep) also check or are harmless.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial-inv-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 0,
+    "item_count": 1,
+    "timestamp": 1774343098,
+    "processed_ids": [
+      "PROP-01b-partial-inv-001"
+    ]
+  }
+}

@@ -1,0 +1,1549 @@
+{
+  "properties_with_code": [
+    {
+      "property_id": "PROP-01b-partial3-inv-012",
+      "text": "Zero-amount bids must be rejected (sellAmount == 0 in isValidSignature, bidAmount == 0 in bid).",
+      "type": "invariant",
+      "assertion": "forall bid/isValidSig: amount == 0 => revert",
+      "severity": "MEDIUM",
+      "covers": "SG-005",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "bid()",
+          "isValidSignature"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "bid",
+            "line_range": {
+              "start": 410,
+              "end": 458
+            },
+            "role": "primary",
+            "note": "no explicit amount==0 check; zero amount would produce zero bidUsdValue which is checked against minBidUsdValue"
+          },
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "isValidSignature",
+            "line_range": {
+              "start": 119,
+              "end": 176
+            },
+            "role": "related",
+            "note": "explicit sellAmount==0 check at line 141-143: revert InvalidZeroAmount"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-013",
+      "text": "minBidUsdValue prevents dust bid DoS attacks on auction.",
+      "type": "invariant",
+      "assertion": "forall bid(amount): bidUsdValue(amount) >= minBidUsdValue",
+      "severity": "MEDIUM",
+      "covers": "SG-005",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "bid()"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "bid",
+            "line_range": {
+              "start": 410,
+              "end": 458
+            },
+            "role": "primary",
+            "note": "bidUsdValue < minBidUsdValue => revert BidValueTooLow at lines 431-435"
+          },
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "_setMinBidUsdValue",
+            "line_range": {
+              "start": 474,
+              "end": 485
+            },
+            "role": "related",
+            "note": "ensures minBidUsdValue is never set to 0"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-pre-001",
+      "text": "bid() requires live auction: auctionStart != 0 AND elapsedTime <= auctionDuration.",
+      "type": "pre-condition",
+      "assertion": "forall bid(asset): s_auctionStarts[asset] != 0 AND block.timestamp - s_auctionStarts[asset] <= duration",
+      "severity": "MEDIUM",
+      "covers": "SG-006",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "bid()"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "bid",
+            "line_range": {
+              "start": 410,
+              "end": 458
+            },
+            "role": "primary",
+            "note": "line 425: auctionStart == 0 || elapsedTime > assetParams.auctionDuration => revert InvalidAuction"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-pre-002",
+      "text": "isValidSignature requires live auction within duration window.",
+      "type": "pre-condition",
+      "assertion": "forall isValidSignature(): auctionStart != 0 AND elapsedTime <= auctionDuration",
+      "severity": "MEDIUM",
+      "covers": "SG-010",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "isValidSignature"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "isValidSignature",
+            "line_range": {
+              "start": 119,
+              "end": 176
+            },
+            "role": "primary",
+            "note": "line 131-134: auctionStart==0 => revert; line 148-151: elapsedTime > auctionDuration => revert"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-014",
+      "text": "CowSwap vault relayer approval revoked on auction end to prevent stale approvals.",
+      "type": "invariant",
+      "assertion": "forall _onAuctionEnd(): allowance(vaultRelayer) == 0 after execution",
+      "severity": "HIGH",
+      "covers": "SG-008",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "performUpkeep"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "configuration-dependent",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "_onAuctionEnd",
+            "line_range": {
+              "start": 96,
+              "end": 104
+            },
+            "role": "primary",
+            "note": "line 103: forceApprove(i_gpV2VaultRelayer, 0) revokes approval after super._onAuctionEnd"
+          },
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "performUpkeep",
+            "line_range": {
+              "start": 305,
+              "end": 370
+            },
+            "role": "caller",
+            "note": "calls _onAuctionEnd at line 366; also deletes s_auctionStarts at line 367"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-015",
+      "text": "Unsold assets must return to FeeAggregator on auction end, never stuck in contract.",
+      "type": "invariant",
+      "assertion": "forall _onAuctionEnd(asset): assetBalance > 0 => safeTransfer(feeAggregator, assetBalance)",
+      "severity": "HIGH",
+      "covers": "SG-008",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "performUpkeep"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "configuration-dependent",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "_onAuctionEnd",
+            "line_range": {
+              "start": 383,
+              "end": 397
+            },
+            "role": "primary",
+            "note": "lines 387-392: if hasFeeAggregator && assetBalance > 0 => safeTransfer(s_feeAggregator, assetBalance)"
+          },
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "_onAuctionEnd",
+            "line_range": {
+              "start": 96,
+              "end": 104
+            },
+            "role": "related",
+            "note": "calls super._onAuctionEnd which contains the transfer logic"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-016",
+      "text": "Accumulated assetOut (LINK) transferred to assetOutReceiver on auction end.",
+      "type": "invariant",
+      "assertion": "forall _onAuctionEnd(): assetOutBalance > 0 => safeTransfer(assetOutReceiver, assetOutBalance)",
+      "severity": "HIGH",
+      "covers": "SG-008",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "performUpkeep"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "configuration-dependent",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "_onAuctionEnd",
+            "line_range": {
+              "start": 383,
+              "end": 397
+            },
+            "role": "primary",
+            "note": "lines 393-396: assetOutBalance > 0 => safeTransfer(s_assetOutReceiver, assetOutBalance)"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-017",
+      "text": "Zero price from any feed source must always cause revert, never used in calculations.",
+      "type": "invariant",
+      "assertion": "forall _getAssetPrice(asset, true): price == 0 => revert ZeroFeedData",
+      "severity": "HIGH",
+      "covers": "SG-009",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "bid()",
+          "performUpkeep"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/PriceManager.sol",
+            "symbol": "_getAssetPrice",
+            "line_range": {
+              "start": 372,
+              "end": 419
+            },
+            "role": "primary",
+            "note": "line 404-411: if withValidation && price==0 => revert ZeroFeedData"
+          },
+          {
+            "file": "src/PriceManager.sol",
+            "symbol": "transmit",
+            "line_range": {
+              "start": 133,
+              "end": 183
+            },
+            "role": "related",
+            "note": "line 174-176: also rejects zero price at ingestion time"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-018",
+      "text": "Stale price data (older than stalenessThreshold) must be rejected.",
+      "type": "invariant",
+      "assertion": "forall _getAssetPrice(asset, true): updatedAt < minTimestamp => revert StaleFeedData",
+      "severity": "MEDIUM",
+      "covers": "SG-009",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "bid()",
+          "performUpkeep"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/PriceManager.sol",
+            "symbol": "_getAssetPrice",
+            "line_range": {
+              "start": 372,
+              "end": 419
+            },
+            "role": "primary",
+            "note": "line 405-415: if withValidation && updatedAt < minTimestamp => revert StaleFeedData"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-019",
+      "text": "Data Streams price prioritized over Data Feed; fallback only when Streams is stale.",
+      "type": "invariant",
+      "assertion": "forall _getAssetPrice(): streams.updatedAt >= minTs => use streams price, ignore dataFeed",
+      "severity": "MEDIUM",
+      "covers": "SG-002",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "bid()",
+          "performUpkeep"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/PriceManager.sol",
+            "symbol": "_getAssetPrice",
+            "line_range": {
+              "start": 372,
+              "end": 419
+            },
+            "role": "primary",
+            "note": "line 381-401: Streams price loaded first; Data Feed only consulted if updatedAt < minTimestamp (line 385)"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-020",
+      "text": "transmit() must reject stale reports (timestamp < block.timestamp - stalenessThreshold).",
+      "type": "invariant",
+      "assertion": "forall transmit(report): report.timestamp < block.timestamp - staleness => revert StaleFeedData",
+      "severity": "MEDIUM",
+      "covers": "SG-001",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "transmit()"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "configuration-dependent",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/PriceManager.sol",
+            "symbol": "transmit",
+            "line_range": {
+              "start": 133,
+              "end": 183
+            },
+            "role": "primary",
+            "note": "lines 162-163: observationsTimestamp < block.timestamp - stalenessThreshold => revert StaleFeedData"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-021",
+      "text": "transmit() must verify all reports via VerifierProxy before storing prices.",
+      "type": "invariant",
+      "assertion": "forall transmit(): verifierProxy.verifyBulk() called before any s_dataStreamsPrice write",
+      "severity": "HIGH",
+      "covers": "SG-001",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "transmit()"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "configuration-dependent",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/PriceManager.sol",
+            "symbol": "transmit",
+            "line_range": {
+              "start": 133,
+              "end": 183
+            },
+            "role": "primary",
+            "note": "line 153: verifyBulk called; line 178: s_dataStreamsPrice written only after verification loop"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-022",
+      "text": "auctionCallback only callable by configured auction contract with from == address(this).",
+      "type": "invariant",
+      "assertion": "forall auctionCallback(): msg.sender == s_auction AND from == address(this)",
+      "severity": "CRITICAL",
+      "covers": "SG-014",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "bid()",
+          "auctionCallback"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/AuctionBidder.sol",
+            "symbol": "auctionCallback",
+            "line_range": {
+              "start": 97,
+              "end": 112
+            },
+            "role": "primary",
+            "note": "line 103-105: msg.sender != s_auction || from != address(this) => revert AccessForbidden"
+          },
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "bid",
+            "line_range": {
+              "start": 410,
+              "end": 458
+            },
+            "role": "caller",
+            "note": "line 449: calls auctionCallback(msg.sender, assetOut, assetOutAmount, data) \u2014 from is msg.sender"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-023",
+      "text": "AuctionBidder callback executes arbitrary multiCall then approves exact amountOut to auction.",
+      "type": "invariant",
+      "assertion": "forall auctionCallback(): forceApprove(auction, amountOut) after _multiCall(calls)",
+      "severity": "HIGH",
+      "covers": "SG-014",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "bid()"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/AuctionBidder.sol",
+            "symbol": "auctionCallback",
+            "line_range": {
+              "start": 97,
+              "end": 112
+            },
+            "role": "primary",
+            "note": "line 109: _multiCall(calls); line 111: forceApprove(msg.sender, amountOut) after multiCall"
+          },
+          {
+            "file": "src/Caller.sol",
+            "symbol": "_multiCall",
+            "line_range": {
+              "start": 49,
+              "end": 63
+            },
+            "role": "callee",
+            "note": "executes arbitrary external calls; any call can fail and bubble up"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-pre-003",
+      "text": "Cannot start auction when one already exists for the same asset.",
+      "type": "pre-condition",
+      "assertion": "forall performUpkeep(start, asset): s_auctionStarts[asset] == 0",
+      "severity": "MEDIUM",
+      "covers": "SG-005",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "performUpkeep"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "configuration-dependent",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "performUpkeep",
+            "line_range": {
+              "start": 305,
+              "end": 370
+            },
+            "role": "primary",
+            "note": "line 327-329: s_auctionStarts[asset] != 0 => revert LiveAuction"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-024",
+      "text": "Asset eligible for auction only if USD value >= minAuctionSizeUsd.",
+      "type": "invariant",
+      "assertion": "forall performUpkeep(start, asset): availableUsdValue(asset) >= minAuctionSizeUsd",
+      "severity": "MEDIUM",
+      "covers": "SG-004",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "performUpkeep"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "configuration-dependent",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "performUpkeep",
+            "line_range": {
+              "start": 305,
+              "end": 370
+            },
+            "role": "primary",
+            "note": "line 346-348: availableAssetUsdValue < minAuctionSizeUsd => revert AmountBelowMinAuctionSize"
+          },
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "checkUpkeep",
+            "line_range": {
+              "start": 216,
+              "end": 294
+            },
+            "role": "related",
+            "note": "line 261: gate that also checks minAuctionSizeUsd before adding to eligibleAssets"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-post-001",
+      "text": "After auction end, s_auctionStarts[asset] must be deleted (set to 0).",
+      "type": "post-condition",
+      "assertion": "forall _onAuctionEnd(asset): post(s_auctionStarts[asset]) == 0",
+      "severity": "MEDIUM",
+      "covers": "SG-005",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "performUpkeep"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "configuration-dependent",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "performUpkeep",
+            "line_range": {
+              "start": 305,
+              "end": 370
+            },
+            "role": "primary",
+            "note": "line 367: delete s_auctionStarts[asset] after _onAuctionEnd"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-025",
+      "text": "Auction start sets timestamp to block.timestamp and approves vault relayer for full balance.",
+      "type": "invariant",
+      "assertion": "forall _onAuctionStart(asset): s_auctionStarts[asset] = block.timestamp AND approve(relayer, balance)",
+      "severity": "MEDIUM",
+      "covers": "SG-009",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "performUpkeep"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "configuration-dependent",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "performUpkeep",
+            "line_range": {
+              "start": 305,
+              "end": 370
+            },
+            "role": "primary",
+            "note": "line 353: s_auctionStarts[asset] = block.timestamp; then _onAuctionStart called at line 354"
+          },
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "_onAuctionStart",
+            "line_range": {
+              "start": 86,
+              "end": 93
+            },
+            "role": "callee",
+            "note": "line 92: forceApprove(i_gpV2VaultRelayer, full balance) \u2014 implements the approval"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-026",
+      "text": "WorkflowRouter enforces 3-level ACL: workflowId \u2192 target \u2192 selector.",
+      "type": "invariant",
+      "assertion": "forall onReport(wf, target, sel): allowlisted(wf) AND allowlisted(target) AND allowlisted(sel)",
+      "severity": "MEDIUM",
+      "covers": "SG-011",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "onReport()"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "conditional"
+      },
+      "exploitability": "configuration-dependent",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/WorkflowRouter.sol",
+            "symbol": "onReport",
+            "line_range": {
+              "start": 86,
+              "end": 118
+            },
+            "role": "primary",
+            "note": "line 99: workflowId allowlist check; line 110-114: target+selector allowlist checks (3-level ACL)"
+          },
+          {
+            "file": "src/WorkflowRouter.sol",
+            "symbol": "applyAllowlistedWorkflowsUpdates",
+            "line_range": {
+              "start": 134,
+              "end": 173
+            },
+            "role": "related",
+            "note": "manages workflowId/target/selector allowlists"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-027",
+      "text": "isValidSignature order hash must match GPv2Order.hash(order, domainSeparator).",
+      "type": "invariant",
+      "assertion": "forall isValidSignature(hash, sig): hash == GPv2Order.hash(decode(sig), domainSeparator)",
+      "severity": "CRITICAL",
+      "covers": "SG-010",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "isValidSignature"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "isValidSignature",
+            "line_range": {
+              "start": 119,
+              "end": 176
+            },
+            "role": "primary",
+            "note": "lines 128-130: hash != GPv2Order.hash(order, domainSeparator) => revert InvalidOrderId"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-028",
+      "text": "isValidSignature must reject expired orders (validTo < block.timestamp).",
+      "type": "invariant",
+      "assertion": "forall isValidSignature(order): order.validTo < block.timestamp => revert ExpiredOrder",
+      "severity": "MEDIUM",
+      "covers": "SG-010",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "isValidSignature"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "isValidSignature",
+            "line_range": {
+              "start": 119,
+              "end": 176
+            },
+            "role": "primary",
+            "note": "lines 158-160: order.validTo < block.timestamp => revert ExpiredOrder"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-029",
+      "text": "isValidSignature must reject non-zero fee amounts to prevent fee extraction.",
+      "type": "invariant",
+      "assertion": "forall isValidSignature(order): order.feeAmount > 0 => revert InvalidFeeAmount",
+      "severity": "HIGH",
+      "covers": "SG-010",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "isValidSignature"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "isValidSignature",
+            "line_range": {
+              "start": 119,
+              "end": 176
+            },
+            "role": "primary",
+            "note": "lines 162-164: feeAmount > 0 => revert InvalidFeeAmount"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-030",
+      "text": "Only allowlisted assets can be transferred from FeeAggregator for swap.",
+      "type": "invariant",
+      "assertion": "forall transferForSwap(asset): s_allowlistedAssets.contains(asset)",
+      "severity": "MEDIUM",
+      "covers": "SG-015",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "performUpkeep"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "configuration-dependent",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/FeeAggregator.sol",
+            "symbol": "transferForSwap",
+            "line_range": {
+              "start": 167,
+              "end": 186
+            },
+            "role": "primary",
+            "note": "lines 179-181: !s_allowlistedAssets.contains(asset) => revert AssetNotAllowlisted"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-033",
+      "text": "endingPriceMultiplier >= minPriceMultiplier AND startingPM >= endingPM enforced.",
+      "type": "invariant",
+      "assertion": "forall assetParams: endingPM >= minPM AND startingPM >= endingPM",
+      "severity": "MEDIUM",
+      "covers": "SG-016",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "bid()",
+          "isValidSignature"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "_applyAssetParamsUpdates",
+            "line_range": {
+              "start": 598,
+              "end": 664
+            },
+            "role": "primary",
+            "note": "lines 650-651: endingPM < minPriceMultiplier => revert; lines 653-657: startingPM < endingPM => revert"
+          },
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "applyAssetParamsUpdates",
+            "line_range": {
+              "start": 582,
+              "end": 587
+            },
+            "role": "caller",
+            "note": "public entry point for admin to update asset params"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-034",
+      "text": "decayRate rounded down to never exceed maximum discount (endingPriceMultiplier).",
+      "type": "invariant",
+      "assertion": "forall getAssetOutAmount(): decayRate = (startPM - endPM) / duration uses floor division",
+      "severity": "HIGH",
+      "covers": "SG-007",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "bid()",
+          "isValidSignature"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "_getAssetOutAmount",
+            "line_range": {
+              "start": 777,
+              "end": 803
+            },
+            "role": "primary",
+            "note": "lines 793-795: uses mulDiv (floor division) for decay computation \u2014 priceMultiplier = startPM - (startPM-endPM)*elapsed/duration"
+          },
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "getAssetOutAmount",
+            "line_range": {
+              "start": 749,
+              "end": 767
+            },
+            "role": "caller",
+            "note": "public view wrapper that calls _getAssetOutAmount"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-asm-001",
+      "text": "Bidders are untrusted; any address can call bid() without authentication.",
+      "type": "assumption",
+      "assertion": "bid() has no access control modifier; msg.sender is arbitrary",
+      "severity": "HIGH",
+      "covers": "SG-005",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "bid()"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "bid",
+            "line_range": {
+              "start": 410,
+              "end": 458
+            },
+            "role": "primary",
+            "note": "only whenNotPaused modifier \u2014 no role-based access control; any address can call"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-asm-002",
+      "text": "CowSwap solvers are untrusted; settlement validation relies solely on isValidSignature.",
+      "type": "assumption",
+      "assertion": "GPv2Settlement calls isValidSignature as the sole authorization check for orders",
+      "severity": "HIGH",
+      "covers": "SG-010",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "isValidSignature"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "isValidSignature",
+            "line_range": {
+              "start": 119,
+              "end": 176
+            },
+            "role": "primary",
+            "note": "EIP-1271 entry point; no other authorization; any solver can call with arbitrary order data"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-asm-003",
+      "text": "Price feed staleness within threshold is trusted; manipulation within window is in-scope.",
+      "type": "assumption",
+      "assertion": "price data within stalenessThreshold is used without further validation",
+      "severity": "MEDIUM",
+      "covers": "SG-002",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "transmit()",
+          "bid()"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/PriceManager.sol",
+            "symbol": "_getAssetPrice",
+            "line_range": {
+              "start": 372,
+              "end": 419
+            },
+            "role": "primary",
+            "note": "only staleness check (updatedAt >= minTimestamp); no TWAP, circuit breaker, or further validation"
+          },
+          {
+            "file": "src/PriceManager.sol",
+            "symbol": "transmit",
+            "line_range": {
+              "start": 133,
+              "end": 183
+            },
+            "role": "related",
+            "note": "stores price directly from verifiedReport without deviation checks"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-035",
+      "text": "Auction early termination when remaining balance < minAuctionSizeUsd.",
+      "type": "invariant",
+      "assertion": "forall checkUpkeep(asset): auctionBalance < minAuctionSize => mark for ending",
+      "severity": "MEDIUM",
+      "covers": "SG-004",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "bid()",
+          "checkUpkeep"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "checkUpkeep",
+            "line_range": {
+              "start": 216,
+              "end": 294
+            },
+            "role": "primary",
+            "note": "lines 250-253: isPriceValid && assetBalanceUsdValue < minAuctionSizeUsd => add to endedAuctions"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-036",
+      "text": "checkUpkeep uses soft-skip (no revert) for ineligible/stale/low-value assets.",
+      "type": "invariant",
+      "assertion": "forall checkUpkeep(asset): ineligible condition => continue (no revert), return false",
+      "severity": "MEDIUM",
+      "covers": "SG-004",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "checkUpkeep"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "configuration-dependent",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "checkUpkeep",
+            "line_range": {
+              "start": 216,
+              "end": 294
+            },
+            "role": "primary",
+            "note": "line 234-236: assetParams.decimals==0 => continue (no revert); no reverts in loop for price fetch failures"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-037",
+      "text": "No new auctions started when assetOut price is invalid (stale or zero).",
+      "type": "invariant",
+      "assertion": "forall checkUpkeep(): !isAssetOutPriceValid => eligibleAssetsIdx = 0",
+      "severity": "MEDIUM",
+      "covers": "SG-004",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "checkUpkeep",
+          "performUpkeep"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "checkUpkeep",
+            "line_range": {
+              "start": 216,
+              "end": 294
+            },
+            "role": "primary",
+            "note": "lines 271-273: !isAssetOutPriceValid => eligibleAssetsIdx = 0 (clears all eligible assets)"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-038",
+      "text": "AuctionBidder pre-approves exact assetOutAmount when no solution provided (no callback).",
+      "type": "invariant",
+      "assertion": "forall AuctionBidder.bid(sol=empty): forceApprove(auction, getAssetOutAmount(...)) before bid()",
+      "severity": "MEDIUM",
+      "covers": "SG-013",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "AuctionBidder.bid"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "configuration-dependent",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/AuctionBidder.sol",
+            "symbol": "bid",
+            "line_range": {
+              "start": 65,
+              "end": 92
+            },
+            "role": "primary",
+            "note": "lines 75-79: if solution.length==0 => forceApprove(auction, getAssetOutAmount(...)) before calling auction.bid"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-039",
+      "text": "AuctionBidder leftover assetOut transferred to configured receiver, never stuck.",
+      "type": "invariant",
+      "assertion": "forall AuctionBidder.bid(): post(assetOutBalance) > 0 AND receiver != 0 => transfer(receiver, balance)",
+      "severity": "MEDIUM",
+      "covers": "SG-013",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "AuctionBidder.bid"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "configuration-dependent",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/AuctionBidder.sol",
+            "symbol": "bid",
+            "line_range": {
+              "start": 65,
+              "end": 92
+            },
+            "role": "primary",
+            "note": "lines 83-91: after auction.bid, if assetOutBalance > 0 && receiver != 0 => safeTransfer(receiver, balance)"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-043",
+      "text": "Prices stored in transmit() must be scaled to 18 decimals before storage.",
+      "type": "invariant",
+      "assertion": "forall transmit(report): s_dataStreamsPrice[asset].usdPrice has 18 decimal precision",
+      "severity": "HIGH",
+      "covers": "SG-001",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "transmit()"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "configuration-dependent",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/PriceManager.sol",
+            "symbol": "transmit",
+            "line_range": {
+              "start": 133,
+              "end": 183
+            },
+            "role": "primary",
+            "note": "lines 166-172: scales usdPrice to PRICE_DECIMALS (18) before storing in s_dataStreamsPrice"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-045",
+      "text": "AssetOut (LINK) is never auctioned \u2014 transferred directly to assetOutReceiver in performUpkeep.",
+      "type": "invariant",
+      "assertion": "forall performUpkeep(asset): asset == assetOut => transfer(receiver, all) and skip auction start",
+      "severity": "MEDIUM",
+      "covers": "SG-005",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "performUpkeep"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "configuration-dependent",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "performUpkeep",
+            "line_range": {
+              "start": 305,
+              "end": 370
+            },
+            "role": "primary",
+            "note": "lines 350-352: asset == s_assetOut => safeTransfer(s_assetOutReceiver, full balance) then continue (skip _onAuctionStart)"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-046",
+      "text": "Callback data in bid() triggers arbitrary external call; reentrancy guard must hold.",
+      "type": "invariant",
+      "assertion": "forall bid(data.length>0): IAuctionCallback(msg.sender).auctionCallback() called with s_entered==true",
+      "severity": "CRITICAL",
+      "covers": "SG-006",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "bid()"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "bid",
+            "line_range": {
+              "start": 410,
+              "end": 458
+            },
+            "role": "primary",
+            "note": "line 415-418: s_entered check + set; line 448-450: if data.length>0 => auctionCallback called while s_entered==true; line 457: s_entered=false"
+          },
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "isValidSignature",
+            "line_range": {
+              "start": 119,
+              "end": 176
+            },
+            "role": "related",
+            "note": "line 125-127: if s_entered => revert ReentrantCall \u2014 prevents CowSwap solver reentrancy during bid"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-047",
+      "text": "CowSwap order lifecycle: stale orders (pre-auction) must be replaced, not reused.",
+      "type": "invariant",
+      "assertion": "forall order: order.createdAt < auctionStart => invalidate and create new order",
+      "severity": "MEDIUM",
+      "covers": "SG-010",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "isValidSignature"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "invalidateOrders",
+            "line_range": {
+              "start": 180,
+              "end": 185
+            },
+            "role": "primary",
+            "note": "ORDER_MANAGER_ROLE can invalidate old orders via GPv2Settlement.invalidateOrder"
+          },
+          {
+            "file": "src/GPV2CompatibleAuction.sol",
+            "symbol": "isValidSignature",
+            "line_range": {
+              "start": 119,
+              "end": 176
+            },
+            "role": "related",
+            "note": "auctionStart check at line 131-134 prevents validating orders from before auction restart; no explicit createdAt field check"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-048",
+      "text": "getAssetOutAmount output >= 1 for all valid inputs due to rounding-up chain.",
+      "type": "invariant",
+      "assertion": "forall getAssetOutAmount(valid_inputs): result >= 1",
+      "severity": "HIGH",
+      "covers": "SG-001",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "bid()",
+          "isValidSignature"
+        ],
+        "attacker_controlled": true,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "external-attack",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "_getAssetOutAmount",
+            "line_range": {
+              "start": 777,
+              "end": 803
+            },
+            "role": "primary",
+            "note": "line 799: mulDivUp for auctionUsdValue; line 802: mulDivUp for final conversion \u2014 rounding-up chain ensures result >= 1 when inputs are positive"
+          },
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "getAssetOutAmount",
+            "line_range": {
+              "start": 749,
+              "end": 767
+            },
+            "role": "caller",
+            "note": "public view that wraps _getAssetOutAmount; returns 0 for expired/non-existent auctions"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    },
+    {
+      "property_id": "PROP-01b-partial3-inv-050",
+      "text": "totalUsdValue for checkUpkeep includes balance in both FeeAggregator and auction contract.",
+      "type": "invariant",
+      "assertion": "forall checkUpkeep(asset): totalUsd = usdValue(balanceOf(feeAgg, asset) + balanceOf(auction, asset))",
+      "severity": "MEDIUM",
+      "covers": "SG-004",
+      "reachability": {
+        "classification": "external-reachable",
+        "entry_points": [
+          "checkUpkeep"
+        ],
+        "attacker_controlled": false,
+        "bug_bounty_scope": "in-scope"
+      },
+      "exploitability": "configuration-dependent",
+      "code_scope": {
+        "locations": [
+          {
+            "file": "src/BaseAuction.sol",
+            "symbol": "checkUpkeep",
+            "line_range": {
+              "start": 216,
+              "end": 294
+            },
+            "role": "primary",
+            "note": "lines 246-251: for live auctions, checks balanceOf(address(this)); lines 257-264: for new auctions, checks balanceOf(feeAggregator) \u2014 combined USD value determines eligibility and early-end detection"
+          }
+        ],
+        "resolution_status": "resolved",
+        "resolution_error": "",
+        "resolution_method": "grep_fallback"
+      }
+    }
+  ],
+  "metadata": {
+    "phase": "02c",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 39,
+    "timestamp": 1774342740,
+    "processed_ids": [
+      "PROP-01b-partial3-inv-012",
+      "PROP-01b-partial3-inv-013",
+      "PROP-01b-partial3-pre-001",
+      "PROP-01b-partial3-pre-002",
+      "PROP-01b-partial3-inv-014",
+      "PROP-01b-partial3-inv-015",
+      "PROP-01b-partial3-inv-016",
+      "PROP-01b-partial3-inv-017",
+      "PROP-01b-partial3-inv-018",
+      "PROP-01b-partial3-inv-019",
+      "PROP-01b-partial3-inv-020",
+      "PROP-01b-partial3-inv-021",
+      "PROP-01b-partial3-inv-022",
+      "PROP-01b-partial3-inv-023",
+      "PROP-01b-partial3-pre-003",
+      "PROP-01b-partial3-inv-024",
+      "PROP-01b-partial3-post-001",
+      "PROP-01b-partial3-inv-025",
+      "PROP-01b-partial3-inv-026",
+      "PROP-01b-partial3-inv-027",
+      "PROP-01b-partial3-inv-028",
+      "PROP-01b-partial3-inv-029",
+      "PROP-01b-partial3-inv-030",
+      "PROP-01b-partial3-inv-033",
+      "PROP-01b-partial3-inv-034",
+      "PROP-01b-partial3-asm-001",
+      "PROP-01b-partial3-asm-002",
+      "PROP-01b-partial3-asm-003",
+      "PROP-01b-partial3-inv-035",
+      "PROP-01b-partial3-inv-036",
+      "PROP-01b-partial3-inv-037",
+      "PROP-01b-partial3-inv-038",
+      "PROP-01b-partial3-inv-039",
+      "PROP-01b-partial3-inv-043",
+      "PROP-01b-partial3-inv-045",
+      "PROP-01b-partial3-inv-046",
+      "PROP-01b-partial3-inv-047",
+      "PROP-01b-partial3-inv-048",
+      "PROP-01b-partial3-inv-050"
+    ]
+  }
+}

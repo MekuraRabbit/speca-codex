@@ -1,0 +1,35 @@
+{
+  "PROP-01b-partial1-pre-004": {
+    "property_id": "PROP-01b-partial1-pre-004",
+    "text": "isValidSignature must reject orders with sellAmount == 0 to prevent zero-value settlements.",
+    "type": "pre-condition",
+    "assertion": "forall isValidSignature(hash,sig): order.sellAmount > 0; else revert InvalidZeroAmount",
+    "severity": "HIGH",
+    "covers": "SG-004",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "GPV2CompatibleAuction.isValidSignature"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/GPV2CompatibleAuction.sol",
+          "symbol": "isValidSignature",
+          "line_range": {
+            "start": 119,
+            "end": 179
+          },
+          "role": "primary",
+          "note": "sellAmount == 0 check at lines 141-143: revert InvalidZeroAmount"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

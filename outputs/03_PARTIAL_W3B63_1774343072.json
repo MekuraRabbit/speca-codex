@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial1-post-002",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::performUpkeep::L305-370",
+      "proof_trace": "Line 353 performs a direct assignment `s_auctionStarts[asset] = block.timestamp` in the same transaction where the auction starts, so the post-condition holds exactly. `checkUpkeep` constructs `eligibleAssets` and `endedAuctions` as mutually exclusive sets (lines 246\u2013265, if/else if on auctionStart), so the second loop never deletes a value set in the first loop during normal Automation-driven execution. Reentrancy via the virtual `_onAuctionStart` is blocked by the LiveAuction guard at line 327.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial1-post-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 63,
+    "item_count": 1,
+    "timestamp": 1774343072,
+    "processed_ids": [
+      "PROP-01b-partial1-post-002"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial1-pre-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::bid::L421-427",
+      "proof_trace": "The guard at L425 explicitly checks both `auctionStart == 0` (no auction) and `elapsedTime > assetParams.auctionDuration` (expired auction), reverting with `InvalidAuction` in either case. `s_auctionStarts` is only ever assigned `block.timestamp` (L353) or deleted to 0 (L367), so no underflow in the elapsed-time calculation is possible. All code paths through `bid()` reach this unconditional check before any state mutation.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial1-pre-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 44,
+    "item_count": 1,
+    "timestamp": 1774343038,
+    "processed_ids": [
+      "PROP-01b-partial1-pre-003"
+    ]
+  }
+}

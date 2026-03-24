@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial-asm-001",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::bid::L410-458",
+      "proof_trace": "The `bid` function validates all three attacker-controlled inputs against admin-written storage: `asset` is gated by `s_auctionStarts[asset]` (reverts if unregistered), price oracle reads from admin-set `s_dataStreamsPrice`/`s_feedInfo` mappings (unaffected by arbitrary address), and `amount` is bounded by the contract's actual ERC-20 balance. The `data` parameter is forwarded untouched to the caller's own callback contract \u2014 consistent with the untrusted-bidder flash-loan design \u2014 with a reentrancy guard (`s_entered`) preventing bid re-entry.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial-asm-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 23,
+    "item_count": 1,
+    "timestamp": 1774343059,
+    "processed_ids": [
+      "PROP-01b-partial-asm-001"
+    ]
+  }
+}

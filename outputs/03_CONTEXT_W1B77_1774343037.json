@@ -1,0 +1,36 @@
+{
+  "PROP-01b-partial2-inv-011": {
+    "property_id": "PROP-01b-partial2-inv-011",
+    "text": "Failed external calls in _call must always revert, never return silently.",
+    "type": "invariant",
+    "assertion": "forall _call(target, data): success == false => revert (never return empty)",
+    "severity": "MEDIUM",
+    "covers": "SG-001",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "AuctionBidder.bid"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/Caller.sol",
+          "symbol": "_call",
+          "line_range": {
+            "start": 21,
+            "end": 44
+          },
+          "role": "primary",
+          "note": "success==false: bubbles response if length>0, else reverts LowLevelCallFailed at lines 30-40"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

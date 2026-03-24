@@ -1,0 +1,36 @@
+{
+  "PROP-01b-partial2-inv-012": {
+    "property_id": "PROP-01b-partial2-inv-012",
+    "text": "Empty calls array in _multiCall must revert with EmptyList().",
+    "type": "invariant",
+    "assertion": "_multiCall(calls) where calls.length == 0 => revert EmptyList()",
+    "severity": "LOW",
+    "covers": "SG-002",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "AuctionBidder.bid"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/Caller.sol",
+          "symbol": "_multiCall",
+          "line_range": {
+            "start": 49,
+            "end": 63
+          },
+          "role": "primary",
+          "note": "calls.length == 0 => revert Errors.EmptyList() at lines 52-53"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial3-inv-039",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/AuctionBidder.sol::bid::L65-92",
+      "proof_trace": "The property assertion (`assetOutBalance > 0 AND receiver != address(0) => safeTransfer(receiver, balance)`) is a literal implementation of lines 83-91: balance is read after `auction.bid()` returns, both conditions are checked, and `safeTransfer` executes atomically (reverts on failure, so no silent fund loss). The `assetOut` address is captured once at L71 and used consistently with no TOCTOU gap. When receiver is zero (not configured), funds remain in the contract per intentional design; admin recovery is available via `withdraw()`.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial3-inv-039"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 132,
+    "item_count": 1,
+    "timestamp": 1774343207,
+    "processed_ids": [
+      "PROP-01b-partial3-inv-039"
+    ]
+  }
+}

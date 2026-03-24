@@ -1,0 +1,47 @@
+{
+  "PROP-01b-partial3-inv-033": {
+    "property_id": "PROP-01b-partial3-inv-033",
+    "text": "endingPriceMultiplier >= minPriceMultiplier AND startingPM >= endingPM enforced.",
+    "type": "invariant",
+    "assertion": "forall assetParams: endingPM >= minPM AND startingPM >= endingPM",
+    "severity": "MEDIUM",
+    "covers": "SG-016",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()",
+        "isValidSignature"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "_applyAssetParamsUpdates",
+          "line_range": {
+            "start": 598,
+            "end": 664
+          },
+          "role": "primary",
+          "note": "lines 650-651: endingPM < minPriceMultiplier => revert; lines 653-657: startingPM < endingPM => revert"
+        },
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "applyAssetParamsUpdates",
+          "line_range": {
+            "start": 582,
+            "end": 587
+          },
+          "role": "caller",
+          "note": "public entry point for admin to update asset params"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

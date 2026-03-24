@@ -1,0 +1,46 @@
+{
+  "PROP-01b-partial2-inv-007": {
+    "property_id": "PROP-01b-partial2-inv-007",
+    "text": "_multiCall targets must not include AuctionBidder itself to prevent self-callback reentrancy loops.",
+    "type": "invariant",
+    "assertion": "forall call in _multiCall(calls): calls[i].target != address(this)",
+    "severity": "HIGH",
+    "covers": "SG-003",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "AuctionBidder.bid"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/Caller.sol",
+          "symbol": "_multiCall",
+          "line_range": {
+            "start": 49,
+            "end": 63
+          },
+          "role": "primary",
+          "note": "no check on calls[i].target != address(this); AuctionBidder self-calls possible"
+        },
+        {
+          "file": "src/AuctionBidder.sol",
+          "symbol": "auctionCallback",
+          "line_range": {
+            "start": 97,
+            "end": 112
+          },
+          "role": "related",
+          "note": "passes decoded Call[] directly to _multiCall without target validation"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

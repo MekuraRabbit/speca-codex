@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial3-inv-037",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::checkUpkeep::L216-294",
+      "proof_trace": "Lines 271-273 directly enforce the invariant: `if (!isAssetOutPriceValid) { eligibleAssetsIdx = 0; }` runs unconditionally after the loop with no bypass. `isAssetOutPriceValid` defaults to `false` and is only set to `true` when `_getAssetPrice(s_assetOut, false)` returns a non-zero, non-stale price; if assetOut is absent or unconfigured, it remains `false` and clears all eligible assets conservatively. The subsequent assembly block (lines 274-278) also zeroes the in-memory array length, so the ABI-encoded payload passed to `performUpkeep` carries an empty eligible-assets array.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial3-inv-037"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 130,
+    "item_count": 1,
+    "timestamp": 1774343189,
+    "processed_ids": [
+      "PROP-01b-partial3-inv-037"
+    ]
+  }
+}

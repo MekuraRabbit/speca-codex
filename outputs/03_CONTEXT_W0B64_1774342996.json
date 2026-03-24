@@ -1,0 +1,36 @@
+{
+  "PROP-01b-partial1-post-003": {
+    "property_id": "PROP-01b-partial1-post-003",
+    "text": "After bid() completes, s_entered must be reset to false regardless of callback success or failure.",
+    "type": "post-condition",
+    "assertion": "forall bid(asset,amt,data): post: s_entered == false (reset in all execution paths)",
+    "severity": "HIGH",
+    "covers": "SG-008",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.bid"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "bid",
+          "line_range": {
+            "start": 410,
+            "end": 465
+          },
+          "role": "primary",
+          "note": "s_entered = false reset at line 457; no try/catch \u2014 revert in callback leaves s_entered = true"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

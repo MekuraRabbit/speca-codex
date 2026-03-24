@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial-inv-008",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::_applyAssetParamsUpdates::L598-664",
+      "proof_trace": "For all non-assetOut assets, L650-652 enforces endingPM >= i_minPriceMultiplier and L653-657 enforces startingPM >= endingPM, together guaranteeing startingPM >= endingPM >= minPM. The assetOut exclusion (L646) is by design: when asset == s_assetOut, performUpkeep transfers the balance directly to the receiver (L350-351) rather than starting an auction, so assetOut's price multipliers are never consumed by _getAssetOutAmount. The only write path to s_assetParams is through _applyAssetParamsUpdates (L660), so there is no bypass.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial-inv-008"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 9,
+    "item_count": 1,
+    "timestamp": 1774343083,
+    "processed_ids": [
+      "PROP-01b-partial-inv-008"
+    ]
+  }
+}

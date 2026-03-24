@@ -1,0 +1,35 @@
+{
+  "PROP-01b-partial-inv-009": {
+    "property_id": "PROP-01b-partial-inv-009",
+    "text": "checkUpkeep clears eligible assets when assetOut price is invalid (no auctions with bad price).",
+    "type": "invariant",
+    "assertion": "forall checkUpkeep(): !isAssetOutPriceValid => eligibleAssetsIdx == 0",
+    "severity": "MEDIUM",
+    "covers": "SG-001",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.performUpkeep"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "configuration-dependent",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "checkUpkeep",
+          "line_range": {
+            "start": 216,
+            "end": 304
+          },
+          "role": "primary",
+          "note": "isAssetOutPriceValid check at line 271; clears eligible array if false"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

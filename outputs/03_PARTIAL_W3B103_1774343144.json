@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial3-pre-002",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/GPV2CompatibleAuction.sol::isValidSignature::L119-176",
+      "proof_trace": "Both conditions are enforced on the sole execution path: lines 131-134 revert if `s_auctionStarts[token] == 0`, and lines 148-152 revert if `elapsedTime > assetParams.auctionDuration`. `s_auctionStarts` is set to `block.timestamp` on auction start (BaseAuction.sol:353) and deleted on end (BaseAuction.sol:367), with no bypass paths around either guard.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial3-pre-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 103,
+    "item_count": 1,
+    "timestamp": 1774343144,
+    "processed_ids": [
+      "PROP-01b-partial3-pre-002"
+    ]
+  }
+}

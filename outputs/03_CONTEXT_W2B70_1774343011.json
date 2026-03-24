@@ -1,0 +1,46 @@
+{
+  "PROP-01b-partial2-inv-004": {
+    "property_id": "PROP-01b-partial2-inv-004",
+    "text": "Solution _multiCall must not approve contract tokens to addresses other than the auction contract.",
+    "type": "invariant",
+    "assertion": "forall _call in auctionCallback._multiCall: if target is ERC20 and data encodes approve(spender, amt) then spender == s_auction",
+    "severity": "CRITICAL",
+    "covers": "SG-003",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "AuctionBidder.bid"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/AuctionBidder.sol",
+          "symbol": "auctionCallback",
+          "line_range": {
+            "start": 97,
+            "end": 112
+          },
+          "role": "primary",
+          "note": "no validation of spender in approve calls within _multiCall"
+        },
+        {
+          "file": "src/Caller.sol",
+          "symbol": "_multiCall",
+          "line_range": {
+            "start": 49,
+            "end": 63
+          },
+          "role": "callee",
+          "note": "arbitrary calldata dispatched; no ERC20 approve spender restriction"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

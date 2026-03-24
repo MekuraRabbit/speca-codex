@@ -1,0 +1,46 @@
+{
+  "PROP-01b-partial3-inv-024": {
+    "property_id": "PROP-01b-partial3-inv-024",
+    "text": "Asset eligible for auction only if USD value >= minAuctionSizeUsd.",
+    "type": "invariant",
+    "assertion": "forall performUpkeep(start, asset): availableUsdValue(asset) >= minAuctionSizeUsd",
+    "severity": "MEDIUM",
+    "covers": "SG-004",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "performUpkeep"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "configuration-dependent",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "performUpkeep",
+          "line_range": {
+            "start": 305,
+            "end": 370
+          },
+          "role": "primary",
+          "note": "line 346-348: availableAssetUsdValue < minAuctionSizeUsd => revert AmountBelowMinAuctionSize"
+        },
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "checkUpkeep",
+          "line_range": {
+            "start": 216,
+            "end": 294
+          },
+          "role": "related",
+          "note": "line 261: gate that also checks minAuctionSizeUsd before adding to eligibleAssets"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

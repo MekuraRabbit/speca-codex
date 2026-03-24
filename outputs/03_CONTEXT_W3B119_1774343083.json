@@ -1,0 +1,36 @@
+{
+  "PROP-01b-partial3-inv-027": {
+    "property_id": "PROP-01b-partial3-inv-027",
+    "text": "isValidSignature order hash must match GPv2Order.hash(order, domainSeparator).",
+    "type": "invariant",
+    "assertion": "forall isValidSignature(hash, sig): hash == GPv2Order.hash(decode(sig), domainSeparator)",
+    "severity": "CRITICAL",
+    "covers": "SG-010",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "isValidSignature"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/GPV2CompatibleAuction.sol",
+          "symbol": "isValidSignature",
+          "line_range": {
+            "start": 119,
+            "end": 176
+          },
+          "role": "primary",
+          "note": "lines 128-130: hash != GPv2Order.hash(order, domainSeparator) => revert InvalidOrderId"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

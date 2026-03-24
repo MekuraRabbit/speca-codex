@@ -1,0 +1,22 @@
+{
+  "reviewed_items": [
+    {
+      "property_id": "PROP-01b-partial2-inv-003",
+      "review_verdict": "CONFIRMED_VULNERABILITY",
+      "original_classification": "vulnerability",
+      "adjusted_severity": "Critical",
+      "reviewer_notes": "All 3 gates passed. Gate 1: auctionCallback exists at AuctionBidder.sol:97 and has a live non-test caller at BaseAuction.sol:449; it also implements IAuctionCallback (public interface). Gate 2: the attack path flows through an AUCTION_BIDDER_ROLE external solver via AuctionBidder.bid() \u2014 trust_assumptions maps this to 'bidders: UNTRUSTED' (in_scope_for_bug_bounty: true). Gate 3: src/AuctionBidder.sol is explicitly listed in scope. An attacker holding AUCTION_BIDDER_ROLE can call AuctionBidder.bid() with a solution containing Call({target: heldToken, data: transfer(attacker, balance)}); the auction transfers assetIn to AuctionBidder then invokes auctionCallback passing the attacker-controlled data verbatim, and _multiCall executes the transfer with no target or calldata restrictions, draining any token held by the AuctionBidder contract before the auction's safeTransferFrom for assetOut runs. Severity is Critical per BUG_BOUNTY_SCOPE ('Direct theft or permanent freezing of funds'); no client_diversity cap applies.",
+      "spec_reference": "SG-003"
+    }
+  ],
+  "metadata": {
+    "phase": "04",
+    "worker_id": 3,
+    "batch_index": 3,
+    "item_count": 1,
+    "timestamp": 1774343464,
+    "processed_ids": [
+      "PROP-01b-partial2-inv-003"
+    ]
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "PROP-01b-partial-inv-001": {
+    "property_id": "PROP-01b-partial-inv-001",
+    "text": "Reentrancy guard must prevent re-entry during bid callback execution.",
+    "type": "invariant",
+    "assertion": "forall bid(asset, amount, data): s_entered == true during callback => re-entry reverts",
+    "severity": "HIGH",
+    "covers": "SG-003",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.bid"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "bid",
+          "line_range": {
+            "start": 410,
+            "end": 465
+          },
+          "role": "primary",
+          "note": "s_entered flag set at 418, cleared at 457; re-entry check at 415-416"
+        },
+        {
+          "file": "src/GPV2CompatibleAuction.sol",
+          "symbol": "isValidSignature",
+          "line_range": {
+            "start": 119,
+            "end": 179
+          },
+          "role": "related",
+          "note": "shares s_entered guard \u2014 cross-function reentrancy path"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

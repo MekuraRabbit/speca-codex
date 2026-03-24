@@ -1,0 +1,46 @@
+{
+  "PROP-01b-partial2-inv-006": {
+    "property_id": "PROP-01b-partial2-inv-006",
+    "text": "forceApprove amount in bid() no-solution path must equal getAssetOutAmount(assetIn, amount, block.timestamp).",
+    "type": "invariant",
+    "assertion": "bid(assetIn, amount, []) => approvedAmount == getAssetOutAmount(assetIn, amount, block.timestamp)",
+    "severity": "HIGH",
+    "covers": "SG-002",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "AuctionBidder.bid"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/AuctionBidder.sol",
+          "symbol": "bid",
+          "line_range": {
+            "start": 65,
+            "end": 92
+          },
+          "role": "primary",
+          "note": "forceApprove(address(auction), s_auction.getAssetOutAmount(...)) at line 78 when solution.length==0"
+        },
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "getAssetOutAmount",
+          "line_range": {
+            "start": 749,
+            "end": 776
+          },
+          "role": "callee",
+          "note": "computes the required assetOut amount for the approval"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

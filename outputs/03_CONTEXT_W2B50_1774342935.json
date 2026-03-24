@@ -1,0 +1,36 @@
+{
+  "PROP-01b-partial1-pre-005": {
+    "property_id": "PROP-01b-partial1-pre-005",
+    "text": "isValidSignature must reject orders with sellAmount exceeding contract balance.",
+    "type": "pre-condition",
+    "assertion": "forall isValidSignature(hash,sig): order.sellAmount <= balanceOf(this); else revert InsufficientBalance",
+    "severity": "CRITICAL",
+    "covers": "SG-004",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "GPV2CompatibleAuction.isValidSignature"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/GPV2CompatibleAuction.sol",
+          "symbol": "isValidSignature",
+          "line_range": {
+            "start": 119,
+            "end": 179
+          },
+          "role": "primary",
+          "note": "sellAmount > assetInBalance check at lines 144-146; reverts InsufficientAssetInBalance"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

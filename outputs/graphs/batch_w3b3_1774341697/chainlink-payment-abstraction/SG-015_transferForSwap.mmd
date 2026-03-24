@@ -1,0 +1,22 @@
+---
+title: "transferForSwap (FeeAggregator)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_access: require whenNotPaused, SWAPPER_ROLE
+    q_check_access --> q_check_empty: access granted
+    q_check_empty --> q_revert_empty: assetAmounts.length == 0
+    q_revert_empty --> [*]: revert EmptyList
+    q_check_empty --> q_loop: not empty
+    q_loop --> q_check_asset: i < assetAmounts.length
+    q_loop --> [*]: i >= assetAmounts.length
+    q_check_asset --> q_revert_not_allowed: NOT s_allowlistedAssets.contains(asset)
+    q_revert_not_allowed --> [*]: revert AssetNotAllowlisted
+    q_check_asset --> q_transfer: asset is allowlisted
+    q_transfer --> q_loop: _transferAsset(to, asset, amount), emit AssetTransferredForSwap
+
+    note right of q_check_asset
+        INV-001: Only allowlisted assets can be transferred for swap
+        INV-002: Only SWAPPER_ROLE can initiate transfers (auction contract)
+        INV-003: FeeAggregator is the custody point for protocol revenue tokens
+    end note

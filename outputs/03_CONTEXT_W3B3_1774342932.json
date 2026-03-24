@@ -1,0 +1,35 @@
+{
+  "PROP-01b-partial-pre-001": {
+    "property_id": "PROP-01b-partial-pre-001",
+    "text": "Bid must revert if auction is not live (auctionStart == 0 or duration elapsed).",
+    "type": "pre-condition",
+    "assertion": "forall bid(asset): auctionStart == 0 OR elapsed > duration => revert InvalidAuction",
+    "severity": "HIGH",
+    "covers": "SG-003",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.bid"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "bid",
+          "line_range": {
+            "start": 410,
+            "end": 465
+          },
+          "role": "primary",
+          "note": "s_auctionStarts check at line 421; elapsed vs duration check determines liveness"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

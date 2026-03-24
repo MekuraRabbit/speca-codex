@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial2-inv-015",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/Caller.sol::_call::L21-44",
+      "proof_trace": "The assembly block at L33-37 correctly implements the canonical Solidity bubble-up-revert pattern: `mload(response)` reads the 32-byte length prefix of the `bytes memory` variable (which equals `returndatasize()` post-call), and `add(response, 32)` points to the raw payload. Both guards (`!success` and `response.length > 0`) are present, and no callers bypass this path.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial2-inv-015"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 81,
+    "item_count": 1,
+    "timestamp": 1774343097,
+    "processed_ids": [
+      "PROP-01b-partial2-inv-015"
+    ]
+  }
+}

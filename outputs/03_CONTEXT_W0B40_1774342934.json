@@ -1,0 +1,45 @@
+{
+  "PROP-01b-partial1-inv-004": {
+    "property_id": "PROP-01b-partial1-inv-004",
+    "text": "bid() callback executes attacker-controlled code with transferred assets before assetOut is pulled.",
+    "type": "invariant",
+    "assertion": "forall bid(asset,amt,data): data.length>0 => callback(bidder,assetOut,assetOutAmt,data) called after transfer",
+    "severity": "HIGH",
+    "covers": "SG-008",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.bid"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "bid",
+          "line_range": {
+            "start": 410,
+            "end": 465
+          },
+          "role": "primary",
+          "note": "IAuctionCallback.onBidCallback invoked when data.length > 0; executes after safeTransfer, before safeTransferFrom"
+        },
+        {
+          "file": "src/interfaces/IAuctionCallback.sol",
+          "symbol": "IAuctionCallback",
+          "line_range": {
+            "start": 1,
+            "end": 30
+          },
+          "role": "related",
+          "note": "callback interface \u2014 attacker implements this to execute arbitrary logic during bid window"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

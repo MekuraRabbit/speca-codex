@@ -1,0 +1,47 @@
+{
+  "PROP-01b-partial3-inv-034": {
+    "property_id": "PROP-01b-partial3-inv-034",
+    "text": "decayRate rounded down to never exceed maximum discount (endingPriceMultiplier).",
+    "type": "invariant",
+    "assertion": "forall getAssetOutAmount(): decayRate = (startPM - endPM) / duration uses floor division",
+    "severity": "HIGH",
+    "covers": "SG-007",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()",
+        "isValidSignature"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "_getAssetOutAmount",
+          "line_range": {
+            "start": 777,
+            "end": 803
+          },
+          "role": "primary",
+          "note": "lines 793-795: uses mulDiv (floor division) for decay computation \u2014 priceMultiplier = startPM - (startPM-endPM)*elapsed/duration"
+        },
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "getAssetOutAmount",
+          "line_range": {
+            "start": 749,
+            "end": 767
+          },
+          "role": "caller",
+          "note": "public view wrapper that calls _getAssetOutAmount"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

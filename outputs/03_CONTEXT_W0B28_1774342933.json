@@ -1,0 +1,35 @@
+{
+  "PROP-01b-partial-inv-024": {
+    "property_id": "PROP-01b-partial-inv-024",
+    "text": "All feed IDs must be allowlisted before bulk verification in transmit().",
+    "type": "invariant",
+    "assertion": "forall transmit(reports): forall r in reports: feedIdToAsset[r.feedId] != address(0)",
+    "severity": "MEDIUM",
+    "covers": "SG-002",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "PriceManager.transmit"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "configuration-dependent",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/PriceManager.sol",
+          "symbol": "transmit",
+          "line_range": {
+            "start": 133,
+            "end": 192
+          },
+          "role": "primary",
+          "note": "feedIdToAsset lookup per report in bulk loop; address(0) check gates processing"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

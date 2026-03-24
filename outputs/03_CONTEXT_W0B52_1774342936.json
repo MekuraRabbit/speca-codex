@@ -1,0 +1,36 @@
+{
+  "PROP-01b-partial1-inv-010": {
+    "property_id": "PROP-01b-partial1-inv-010",
+    "text": "isValidSignature must enforce feeAmount == 0, kind == KIND_SELL, partiallyFillable == true.",
+    "type": "invariant",
+    "assertion": "forall isValidSignature: order.feeAmount==0 AND order.kind==SELL AND order.partiallyFillable==true",
+    "severity": "MEDIUM",
+    "covers": "SG-004",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "GPV2CompatibleAuction.isValidSignature"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/GPV2CompatibleAuction.sol",
+          "symbol": "isValidSignature",
+          "line_range": {
+            "start": 119,
+            "end": 179
+          },
+          "role": "primary",
+          "note": "feeAmount, kind==KIND_SELL, partiallyFillable checks at lines 162-170"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

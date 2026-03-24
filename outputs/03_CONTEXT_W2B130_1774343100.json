@@ -1,0 +1,37 @@
+{
+  "PROP-01b-partial3-inv-037": {
+    "property_id": "PROP-01b-partial3-inv-037",
+    "text": "No new auctions started when assetOut price is invalid (stale or zero).",
+    "type": "invariant",
+    "assertion": "forall checkUpkeep(): !isAssetOutPriceValid => eligibleAssetsIdx = 0",
+    "severity": "MEDIUM",
+    "covers": "SG-004",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "checkUpkeep",
+        "performUpkeep"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "checkUpkeep",
+          "line_range": {
+            "start": 216,
+            "end": 294
+          },
+          "role": "primary",
+          "note": "lines 271-273: !isAssetOutPriceValid => eligibleAssetsIdx = 0 (clears all eligible assets)"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

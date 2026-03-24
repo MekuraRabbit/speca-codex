@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial3-inv-047",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/GPV2CompatibleAuction.sol::isValidSignature::L119-176",
+      "proof_trace": "`isValidSignature` always fetches `auctionStart = s_auctionStarts[sellToken]` which reflects the CURRENT (new) auction's start time, so `minBuyAmount` is computed from the current auction's elapsed time \u2014 any stale order from auction A can only be settled in auction B at auction B's current price, providing no economic advantage. Additionally, `_onAuctionEnd` revokes the vault relayer allowance to 0 (L103), preventing settlement of any order during the gap between auctions; the `invalidateOrders` mechanism exists for explicit cleanup if needed.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial3-inv-047"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 136,
+    "item_count": 1,
+    "timestamp": 1774343350,
+    "processed_ids": [
+      "PROP-01b-partial3-inv-047"
+    ]
+  }
+}

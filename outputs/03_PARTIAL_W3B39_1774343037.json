@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial1-inv-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::bid::L410-458",
+      "proof_trace": "The transfer-before-pull ordering (L444 safeTransfer \u2192 L449 auctionCallback \u2192 L453 safeTransferFrom) is intentional flash-loan design: IAuctionCallback is an explicitly designed interface, AuctionBidder.sol is its reference implementation that uses multi-calls to acquire assetOut and then approves the auction contract. The reentrancy guard (s_entered L415-418, L457) prevents re-entry into bid() during the callback, and assetOutAmount is computed at L442 before the callback executes, so the callback cannot alter the amount owed. If the bidder fails to fund assetOut, L453 reverts the entire transaction including the original safeTransfer.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial1-inv-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 39,
+    "item_count": 1,
+    "timestamp": 1774343037,
+    "processed_ids": [
+      "PROP-01b-partial1-inv-003"
+    ]
+  }
+}

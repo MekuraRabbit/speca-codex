@@ -1,0 +1,36 @@
+{
+  "PROP-01b-partial3-inv-010": {
+    "property_id": "PROP-01b-partial3-inv-010",
+    "text": "CowSwap orders must be sell-kind, partially fillable, zero-fee, and ERC20 balance type.",
+    "type": "invariant",
+    "assertion": "forall isValidSignature(o): o.kind==SELL AND o.partiallyFillable AND o.feeAmount==0 AND o.balanceERC20",
+    "severity": "HIGH",
+    "covers": "SG-010",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "isValidSignature"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/GPV2CompatibleAuction.sol",
+          "symbol": "isValidSignature",
+          "line_range": {
+            "start": 119,
+            "end": 179
+          },
+          "role": "primary",
+          "note": "feeAmount, kind==KIND_SELL, partiallyFillable, BALANCE_ERC20 enforced at lines 162-172"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

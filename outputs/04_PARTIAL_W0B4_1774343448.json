@@ -1,0 +1,22 @@
+{
+  "reviewed_items": [
+    {
+      "property_id": "PROP-01b-partial1-inv-015",
+      "review_verdict": "DISPUTED_FP",
+      "original_classification": "potential-vulnerability",
+      "adjusted_severity": "Medium",
+      "reviewer_notes": "Gate 2 triggered: The attack path critically depends on an admin holding ASSET_ADMIN_ROLE adding many assets to the allowlist via applyAllowlistedAssetUpdates. Trust lookup against trust_assumptions.admin_roles yields trust_level=TRUSTED and in_scope_for_bug_bounty=false; no untrusted actor can add assets to the allowlist. Per conditional_scope.automation_infrastructure, automation triggering logic (checkUpkeep/performUpkeep) is also explicitly noted as out of scope, reinforcing the Gate 2 disposition.",
+      "spec_reference": "SG-006"
+    }
+  ],
+  "metadata": {
+    "phase": "04",
+    "worker_id": 0,
+    "batch_index": 4,
+    "item_count": 1,
+    "timestamp": 1774343448,
+    "processed_ids": [
+      "PROP-01b-partial1-inv-015"
+    ]
+  }
+}

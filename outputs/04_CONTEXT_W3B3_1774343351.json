@@ -1,0 +1,18 @@
+{
+  "PROP-01b-partial2-inv-003": {
+    "property_id": "PROP-01b-partial2-inv-003",
+    "audit_result": {
+      "property_id": "PROP-01b-partial2-inv-003",
+      "classification": "vulnerability",
+      "code_path": "src/AuctionBidder.sol::auctionCallback::L97-112",
+      "proof_trace": "auctionCallback decodes the caller-supplied Call[] from data and passes it verbatim to _multiCall, which executes each Call with no restriction on target address or calldata. Because any AUCTION_BIDDER_ROLE holder can construct a solution containing Call({target: tokenAddress, data: transfer(attacker, balance)}), they can drain any token held by the contract during the callback. The withdraw() function requiring DEFAULT_ADMIN_ROLE confirms this privilege was never intended for AUCTION_BIDDER_ROLE.",
+      "attack_scenario": "An AUCTION_BIDDER_ROLE holder calls bid() with solution=[Call({target: heldToken, data: abi.encodeWithSignature(\"transfer(address,uint256)\", attacker, balance)})]; the auction transfers assetIn to AuctionBidder then invokes auctionCallback, which calls _multiCall executing the transfer and draining heldToken to the attacker before the auction can pull assetOut.",
+      "checklist_id": "PROP-01b-partial2-inv-003"
+    },
+    "text": "_multiCall in auctionCallback must not allow transferring contract token balances to arbitrary addresses.",
+    "assertion": "forall solution in auctionCallback: no _call(target, data) where data encodes transfer(attacker, amount) on held tokens",
+    "covers": "SG-003",
+    "severity": "CRITICAL",
+    "type": "invariant"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-01b-partial3-asm-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/PriceManager.sol::_getAssetPrice::L372-419",
+      "proof_trace": "The property is an explicit trust assumption that is faithfully implemented. `transmit` is gated by `PRICE_ADMIN_ROLE` and all prices are cryptographically verified by `verifyBulk()` before storage; no unprivileged path can inject prices. The absence of TWAP or circuit breakers is intentional design \u2014 the system treats verified Data Streams reports as authoritative within the staleness window.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-01b-partial3-asm-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 127,
+    "item_count": 1,
+    "timestamp": 1774343176,
+    "processed_ids": [
+      "PROP-01b-partial3-asm-003"
+    ]
+  }
+}

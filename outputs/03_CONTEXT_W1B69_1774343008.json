@@ -1,0 +1,56 @@
+{
+  "PROP-01b-partial2-inv-003": {
+    "property_id": "PROP-01b-partial2-inv-003",
+    "text": "_multiCall in auctionCallback must not allow transferring contract token balances to arbitrary addresses.",
+    "type": "invariant",
+    "assertion": "forall solution in auctionCallback: no _call(target, data) where data encodes transfer(attacker, amount) on held tokens",
+    "severity": "CRITICAL",
+    "covers": "SG-003",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "AuctionBidder.bid"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/AuctionBidder.sol",
+          "symbol": "auctionCallback",
+          "line_range": {
+            "start": 97,
+            "end": 112
+          },
+          "role": "primary",
+          "note": "decodes Call[] from data and passes to _multiCall with no allowlist on targets or calldata"
+        },
+        {
+          "file": "src/Caller.sol",
+          "symbol": "_multiCall",
+          "line_range": {
+            "start": 49,
+            "end": 63
+          },
+          "role": "callee",
+          "note": "executes arbitrary calls; no restriction on target addresses or calldata"
+        },
+        {
+          "file": "src/Caller.sol",
+          "symbol": "_call",
+          "line_range": {
+            "start": 21,
+            "end": 44
+          },
+          "role": "callee",
+          "note": "low-level call with arbitrary target and data"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}
