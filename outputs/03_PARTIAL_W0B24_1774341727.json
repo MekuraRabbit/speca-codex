@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-024",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::_getAssetOutAmount::L777-803",
+      "proof_trace": "priceMultiplier = startingPM - floor((startingPM - endingPM) * elapsedTime / duration) is monotonically non-increasing because floor() is non-decreasing in elapsedTime; mulDiv (floor division) ensures the subtracted term grows with time. The subsequent mulWadUp and mulDivUp operations preserve non-increasing order: ceil(A*x) is non-decreasing in x, so smaller priceMultiplier yields smaller or equal output. Invariant startingPM >= endingPM is enforced at L653.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-024"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 24,
+    "item_count": 1,
+    "timestamp": 1774341727,
+    "processed_ids": [
+      "PROP-baseauction-inv-024"
+    ]
+  }
+}

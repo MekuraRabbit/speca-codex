@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-004",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::_getAssetOutAmount::L777-803",
+      "proof_trace": "The linear decay formula `start - (start-end).mulDiv(elapsed, duration)` is correctly implemented: (1) parameter validation at L653-657 enforces `startingPriceMultiplier >= endingPriceMultiplier`, preventing underflow; (2) L647-649 enforces `auctionDuration != 0`, preventing division-by-zero; (3) elapsed time is clamped to `auctionDuration` at L785 implementing `min(elapsed, duration)`; (4) `mulDiv` rounds down the subtracted term so `priceMultiplier >= end` holds always.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-004"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 6,
+    "item_count": 1,
+    "timestamp": 1774341698,
+    "processed_ids": [
+      "PROP-baseauction-inv-004"
+    ]
+  }
+}

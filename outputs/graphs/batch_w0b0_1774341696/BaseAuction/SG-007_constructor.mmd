@@ -1,0 +1,21 @@
+---
+title: "constructor (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_init_parent: PriceManager(adminRoleTransferDelay, admin, verifierProxy, linkToken, feedInfos)
+    q_init_parent --> q_check_zero: check assetOut and assetOutReceiver
+    q_check_zero --> q_revert_zero: assetOut == address(0) OR assetOutReceiver == address(0)
+    q_revert_zero --> [*]: revert InvalidZeroAddress()
+    q_check_zero --> q_set_values: both non-zero
+    q_set_values --> q_check_min_pm: setMinBidUsdValue, setAssetOut, setAssetOutReceiver, setFeeAggregator
+    q_check_min_pm --> q_revert_pm: minPriceMultiplier == 0
+    q_revert_pm --> [*]: revert InvalidZeroValue()
+    q_check_min_pm --> q_set_pm: minPriceMultiplier > 0
+    q_set_pm --> [*]: i_minPriceMultiplier = minPriceMultiplier, emit MinPriceMultiplierSet
+
+    note right of q_set_values
+        INV-001: assetOut and assetOutReceiver must be non-zero addresses
+        INV-002: minPriceMultiplier is immutable after construction
+        INV-003: minBidUsdValue must be non-zero
+    end note

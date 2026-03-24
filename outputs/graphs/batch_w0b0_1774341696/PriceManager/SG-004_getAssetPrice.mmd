@@ -1,0 +1,46 @@
+---
+title: "_getAssetPrice (PriceManager)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_load: priceInfo = s_dataStreamsPrice[asset], feedInfo = s_feedInfo[asset]
+    q_load --> q_init: price = priceInfo.usdPrice, updatedAt = priceInfo.timestamp
+    q_init --> q_check_stale: minTimestamp = block.timestamp - feedInfo.stalenessThreshold
+
+    q_check_stale --> q_check_datafeed: updatedAt < minTimestamp (streams price stale)
+    q_check_stale --> q_validate: updatedAt >= minTimestamp (streams price fresh)
+
+    q_check_datafeed --> q_validate: usdDataFeed == address(0) (no fallback configured)
+    q_check_datafeed --> q_fetch_feed: usdDataFeed != address(0)
+
+    q_fetch_feed --> q_compare_ts: (answer, dataFeedUpdatedAt) = usdDataFeed.latestRoundData()
+    q_compare_ts --> q_validate: updatedAt >= dataFeedUpdatedAt (streams more recent)
+    q_compare_ts --> q_use_feed: updatedAt < dataFeedUpdatedAt (feed more recent)
+
+    q_use_feed --> q_scale_feed: price = answer.toUint256(), updatedAt = dataFeedUpdatedAt
+    q_scale_feed --> q_scale_up: decimals < 18
+    q_scale_feed --> q_scale_down: decimals > 18
+    q_scale_feed --> q_validate: decimals == 18
+    q_scale_up --> q_validate: price = price * 10^(18 - decimals)
+    q_scale_down --> q_validate: price = price / 10^(decimals - 18)
+
+    q_validate --> q_compute_valid: isZero = (price == 0), isStale = (updatedAt < minTimestamp)
+    q_compute_valid --> q_check_validation: isValid = !isZero and !isStale
+
+    q_check_validation --> q_revert_zero: withValidation and isZero
+    q_revert_zero --> [*]: revert ZeroFeedData()
+    q_check_validation --> q_revert_stale: withValidation and isStale
+    q_revert_stale --> [*]: revert StaleFeedData()
+    q_check_validation --> [*]: return (price, updatedAt, isValid)
+
+    note right of q_check_stale
+        INV-001: Data Streams price is always prioritized over Data Feed price
+        INV-002: fallback to Data Feed only when streams price is stale AND feed is configured
+        INV-003: between stale streams and data feed, the most recent timestamp wins
+    end note
+
+    note right of q_validate
+        INV-004: returned price is always scaled to 18 decimals
+        INV-005: isValid == true iff price != 0 and updatedAt >= block.timestamp - stalenessThreshold
+        INV-006: negative data feed answer reverts via SafeCast.toUint256()
+    end note

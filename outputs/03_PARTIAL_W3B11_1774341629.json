@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-009",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::performUpkeep::L359-369",
+      "proof_trace": "`_onAuctionEnd` is an `internal virtual` function with exactly one call site at `performUpkeep::L366`. That call site is unconditionally preceded by the guard at L362 (`if (s_auctionStarts[asset] == 0) revert InvalidAuction(asset)`), and `s_auctionStarts[asset]` is only cleared by `delete` at L367 after `_onAuctionEnd` returns \u2014 so the non-zero invariant holds at every call.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-009"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 11,
+    "item_count": 1,
+    "timestamp": 1774341629,
+    "processed_ids": [
+      "PROP-baseauction-inv-009"
+    ]
+  }
+}

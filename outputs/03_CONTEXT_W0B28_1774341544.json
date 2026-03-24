@@ -1,0 +1,36 @@
+{
+  "PROP-baseauction-asm-003": {
+    "property_id": "PROP-baseauction-asm-003",
+    "text": "CowSwap solvers are untrusted; GPV2CompatibleAuction.isValidSignature must validate order params fully.",
+    "type": "assumption",
+    "assertion": "forall isValidSignature(hash, sig): validate order against current auction state and price",
+    "severity": "HIGH",
+    "covers": "SG-005",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "isValidSignature()"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/GPV2CompatibleAuction.sol",
+          "symbol": "isValidSignature",
+          "line_range": {
+            "start": 119,
+            "end": 176
+          },
+          "role": "primary",
+          "note": "ERC-1271 signature validation for CowSwap orders; validates order hash against current auction state"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

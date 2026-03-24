@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-008",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::performUpkeep::L305-370",
+      "proof_trace": "The exhaustive if/else at L350-355 guarantees that when asset == s_assetOut the full balanceOf(this) is transferred to s_assetOutReceiver (L351) and the auction-start branch is never entered. s_auctionStarts[assetOut] is structurally never set (the only writer at L353 is in the else branch where asset != s_assetOut), so assetOut cannot appear legitimately in endedAuctions either. _onAuctionEnd independently sweeps all assetOut balance to assetOutReceiver as a secondary guarantee.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-008"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 10,
+    "item_count": 1,
+    "timestamp": 1774341741,
+    "processed_ids": [
+      "PROP-baseauction-inv-008"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-010",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::_onAuctionEnd::L383-397",
+      "proof_trace": "Both transfers are correctly implemented: residual asset is transferred to `s_feeAggregator` when `hasFeeAggregator == true` (L387-391), and `assetOut` is unconditionally forwarded to `s_assetOutReceiver` (L393-396). When `s_feeAggregator == address(this)` (self-managed mode), `hasFeeAggregator` is false by design \u2014 `checkUpkeep` reads `balanceOf(address(this))` as the available pool (L257) and no external aggregator exists to return residual to, so retention in the contract is intentional.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-010"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 12,
+    "item_count": 1,
+    "timestamp": 1774341689,
+    "processed_ids": [
+      "PROP-baseauction-inv-010"
+    ]
+  }
+}

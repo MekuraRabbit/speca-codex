@@ -1,0 +1,16 @@
+---
+title: "constructor (AuctionBidder)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_init: PausableWithAccessControl(adminRoleTransferDelay, admin)
+    q_init --> q_setAuction: _setAuction(auction)
+    q_setAuction --> q_checkReceiver: receiver != address(0)
+    q_setAuction --> q_final: receiver == address(0)
+    q_checkReceiver --> q_final: _setReceiver(receiver)
+    q_final --> [*]
+
+    note right of q_checkReceiver
+        INV-001: auction is validated non-zero and supports IBaseAuction before storage
+        INV-002: receiver is only set if non-zero, allowing zero-receiver deployment
+    end note

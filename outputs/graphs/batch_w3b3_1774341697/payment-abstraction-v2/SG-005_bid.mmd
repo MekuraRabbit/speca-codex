@@ -1,0 +1,43 @@
+---
+title: "bid (Payment Abstraction V2)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_pause: check paused
+    q_check_pause --> q_error_paused: paused == true
+    q_error_paused --> [*]: revert "paused"
+    q_check_pause --> q_check_auction: paused == false
+
+    q_check_auction --> q_error_no_auction: no live auction for asset
+    q_error_no_auction --> [*]: revert "no live auction"
+    q_check_auction --> q_check_amount: live auction exists
+
+    q_check_amount --> q_error_amount: bidAmount == 0
+    q_error_amount --> [*]: revert "zero amount"
+    q_check_amount --> q_check_min_bid: bidAmount > 0
+
+    q_check_min_bid --> q_error_min_bid: bidUsdValue < minBidUsdValue
+    q_error_min_bid --> [*]: revert "below min bid"
+    q_check_min_bid --> q_calc_out: bidUsdValue >= minBidUsdValue
+
+    q_calc_out --> q_transfer_to_bidder: assetOutAmount = getAssetOutAmount(bidAmount)
+    q_transfer_to_bidder --> q_check_callback: transfer auctioned assets to bidder
+
+    q_check_callback --> q_pull_link: no callback requested
+    q_check_callback --> q_callback: callback requested
+
+    q_callback --> q_exec_callback: auctionCallback(bidder, asset, amount, callbackData)
+    q_exec_callback --> q_pull_link: callback executed
+
+    q_pull_link --> q_check_dust: transferFrom(bidder, this, assetOutAmount) LINK
+
+    q_check_dust --> q_end_early: remaining balance < minAuctionSizeUsd
+    q_check_dust --> [*]: remaining balance >= minAuctionSizeUsd; bid complete
+    q_end_early --> [*]: auction eligible for early termination
+
+    note right of q_calc_out
+        INV-016: bid is permissionless - any address can call
+        INV-017: bidder receives auctioned assets before LINK is pulled (callback pattern)
+        INV-018: minBidUsdValue prevents dust bid attacks
+        INV-019: auction can end early if remaining balance falls below minimum
+    end note

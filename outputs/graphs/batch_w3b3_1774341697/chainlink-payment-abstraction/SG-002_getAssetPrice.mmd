@@ -1,0 +1,31 @@
+---
+title: "_getAssetPrice (PriceManager)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_load: price = s_dataStreamsPrice[asset].usdPrice
+    q_load --> q_check_stale: updatedAt = s_dataStreamsPrice[asset].timestamp
+    q_check_stale --> q_check_datafeed: updatedAt < minTimestamp
+    q_check_stale --> q_compute_valid: updatedAt >= minTimestamp
+    q_check_datafeed --> q_compute_valid: usdDataFeed == address(0)
+    q_check_datafeed --> q_fetch_feed: usdDataFeed != address(0)
+    q_fetch_feed --> q_check_feed_newer: (answer, dataFeedUpdatedAt) = latestRoundData()
+    q_check_feed_newer --> q_use_feed: dataFeedUpdatedAt > updatedAt
+    q_check_feed_newer --> q_compute_valid: dataFeedUpdatedAt <= updatedAt
+    q_use_feed --> q_scale_feed: price = answer, scale to 18 decimals
+    q_scale_feed --> q_compute_valid: updatedAt = dataFeedUpdatedAt
+    q_compute_valid --> q_check_validation: isValid = price != 0 AND updatedAt >= minTimestamp
+    q_check_validation --> q_validate_zero: withValidation == true
+    q_check_validation --> [*]: withValidation == false, return (price, updatedAt, isValid)
+    q_validate_zero --> q_revert_zero: price == 0
+    q_revert_zero --> [*]: revert ZeroFeedData
+    q_validate_zero --> q_validate_stale: price != 0
+    q_validate_stale --> q_revert_stale: updatedAt < minTimestamp
+    q_revert_stale --> [*]: revert StaleFeedData
+    q_validate_stale --> [*]: return (price, updatedAt, isValid)
+
+    note right of q_check_datafeed
+        INV-001: Data Streams price is prioritized over Data Feed price
+        INV-002: Fallback to Data Feed only when Data Streams price is stale AND Data Feed is configured
+        INV-003: The most recent timestamp between sources is always used
+    end note

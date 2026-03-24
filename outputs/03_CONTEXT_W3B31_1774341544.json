@@ -1,0 +1,36 @@
+{
+  "PROP-baseauction-inv-028": {
+    "property_id": "PROP-baseauction-inv-028",
+    "text": "Only assets with configured params (decimals > 0) may be evaluated for auction eligibility.",
+    "type": "invariant",
+    "assertion": "forall checkUpkeep(asset): assetParams.decimals == 0 => skip (continue)",
+    "severity": "LOW",
+    "covers": "SG-002",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "checkUpkeep()"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "none",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "checkUpkeep",
+          "line_range": {
+            "start": 216,
+            "end": 294
+          },
+          "role": "primary",
+          "note": "assetParams.decimals == 0 causes skip/continue in the eligibility loop"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

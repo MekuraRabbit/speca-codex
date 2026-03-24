@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-005",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::_getAssetOutAmount::L777-803",
+      "proof_trace": "Line 785 clamps elapsedTime to auctionDuration before the multiplier formula runs. With elapsedTime in [0, auctionDuration] and floor-division in mulDiv, priceMultiplier >= endingPriceMultiplier holds exactly. Parameter validation in _setAssetParams (L647-656) enforces auctionDuration != 0 and startingPriceMultiplier >= endingPriceMultiplier, so no arithmetic underflow or division-by-zero path exists.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-005"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 7,
+    "item_count": 1,
+    "timestamp": 1774341647,
+    "processed_ids": [
+      "PROP-baseauction-inv-005"
+    ]
+  }
+}

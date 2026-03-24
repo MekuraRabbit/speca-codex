@@ -1,0 +1,12 @@
+{
+  "https://github.com/code-423n4/2026-03-chainlink/blob/main/src/BaseAuction.sol": {
+    "url": "https://github.com/code-423n4/2026-03-chainlink/blob/main/src/BaseAuction.sol",
+    "title": "BaseAuction \u2014 Core auction engine with Dutch auction price curve",
+    "status": "pending"
+  },
+  "https://github.com/code-423n4/2026-03-chainlink/blob/main/src/PriceManager.sol": {
+    "url": "https://github.com/code-423n4/2026-03-chainlink/blob/main/src/PriceManager.sol",
+    "title": "PriceManager \u2014 Price feed management and validation",
+    "status": "pending"
+  }
+}

@@ -1,0 +1,23 @@
+---
+title: "_onAuctionEnd (BaseAuction + GPV2CompatibleAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_gpv2: GPV2CompatibleAuction override
+    q_check_gpv2 --> q_revoke_approval: revoke CowSwap vault relayer allowance
+    q_revoke_approval --> q_check_feeagg: forceApprove(vaultRelayer, 0)
+    q_check_feeagg --> q_return_asset: hasFeeAggregator == true
+    q_check_feeagg --> q_check_assetout_balance: hasFeeAggregator == false
+    q_return_asset --> q_check_asset_balance: check remaining asset balance
+    q_check_asset_balance --> q_transfer_back: assetBalance > 0
+    q_check_asset_balance --> q_check_assetout_balance: assetBalance == 0
+    q_transfer_back --> q_check_assetout_balance: safeTransfer(feeAggregator, assetBalance)
+    q_check_assetout_balance --> q_transfer_assetout: assetOutBalance > 0
+    q_check_assetout_balance --> [*]: assetOutBalance == 0
+    q_transfer_assetout --> [*]: safeTransfer(assetOutReceiver, assetOutBalance)
+
+    note right of q_return_asset
+        INV-001: Remaining unsold assets are returned to feeAggregator
+        INV-002: Accumulated assetOut (settlement) is forwarded to assetOutReceiver
+        INV-003: CowSwap vault relayer approval is revoked on auction end
+    end note

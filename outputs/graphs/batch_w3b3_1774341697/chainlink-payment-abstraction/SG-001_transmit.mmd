@@ -1,0 +1,40 @@
+---
+title: "transmit (PriceManager)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_validate: require PRICE_ADMIN_ROLE
+    q_validate --> q_check_empty: unverifiedReports.length == 0
+    q_check_empty --> q_revert_empty: true
+    q_revert_empty --> [*]: revert EmptyList
+    q_check_empty --> q_pre_loop: false
+    q_pre_loop --> q_decode: i = 0
+    q_decode --> q_check_feed: dataStreamsFeedId = bytes32(reportData)
+    q_check_feed --> q_revert_feed: asset == address(0)
+    q_revert_feed --> [*]: revert FeedNotAllowlisted
+    q_check_feed --> q_next_pre: asset != address(0)
+    q_next_pre --> q_decode: i < length
+    q_next_pre --> q_verify_bulk: i >= length
+    q_verify_bulk --> q_post_loop: verifiedReports = verifierProxy.verifyBulk()
+    q_post_loop --> q_decode_report: i = 0
+    q_decode_report --> q_check_stale: report = decode(verifiedReports[i])
+    q_check_stale --> q_revert_stale: observationsTimestamp < block.timestamp - stalenessThreshold
+    q_revert_stale --> [*]: revert StaleFeedData
+    q_check_stale --> q_scale: not stale
+    q_scale --> q_check_zero: scale price to 18 decimals
+    q_check_zero --> q_revert_zero: usdPrice == 0
+    q_revert_zero --> [*]: revert ZeroFeedData
+    q_check_zero --> q_store: usdPrice != 0
+    q_store --> q_next_post: s_dataStreamsPrice[asset] = DataStreamsPriceInfo(usdPrice, timestamp)
+    q_next_post --> q_decode_report: i < length
+    q_next_post --> [*]: i >= length
+
+    note right of q_verify_bulk
+        INV-001: All reports are cryptographically verified by VerifierProxy before storage
+        INV-002: Price is always scaled to 18 decimals before storage
+    end note
+
+    note right of q_check_stale
+        INV-003: Stale prices (older than stalenessThreshold) are rejected
+        INV-004: Zero prices are rejected after scaling
+    end note

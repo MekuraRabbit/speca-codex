@@ -1,0 +1,36 @@
+---
+title: "CowSwap Order Lifecycle (Payment Abstraction V2)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_detect: CRE workflow detects live auction
+
+    q_detect --> q_fetch_orders: fetch existing orders from CowSwap API
+    q_fetch_orders --> q_check_exists: check if order exists for auctioned asset
+
+    q_check_exists --> q_create_new: no existing order
+    q_check_exists --> q_check_timestamp: order exists
+
+    q_check_timestamp --> q_create_new: order.createdAt < auctionStart (stale order)
+    q_check_timestamp --> q_check_update: order.createdAt >= auctionStart
+
+    q_check_update --> q_update_order: currentPrice < orderPrice by at least x%
+    q_check_update --> q_update_order: availableAmount < orderAmount
+    q_check_update --> [*]: no update needed
+
+    q_create_new --> q_post: create partially fillable limit order at current auction price
+    q_update_order --> q_invalidate: invalidate old order on-chain via WorkflowRouter
+    q_invalidate --> q_post: create new order
+
+    q_post --> q_settlement: CowSwap solvers pick up order
+    q_settlement --> q_verify: GPV2Settlement calls isValidSignature
+    q_verify --> q_pull: signature valid; settlement pulls auctioned assets
+    q_pull --> q_transfer: settlement transfers LINK to auction contract
+    q_transfer --> [*]: order filled (partially or fully)
+
+    note right of q_post
+        INV-035: orders are partially fillable limit orders
+        INV-036: order price is derived from live auction price curve
+        INV-037: stale orders (pre-auction) are replaced with new orders
+        INV-038: order invalidation can be on-chain or via short-lived expiry
+    end note

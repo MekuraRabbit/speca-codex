@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-pre-007",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::checkUpkeep::L216-294",
+      "proof_trace": "The `else if (isPriceValid)` guard at line 255 is the sole code path into `eligibleAssets`; assets with `isPriceValid == false` cannot reach line 264 and are skipped. A secondary post-loop guard (lines 271-273) resets `eligibleAssetsIdx` to zero if the assetOut price is also invalid. `performUpkeep` enforces a tertiary check via `_getAssetPrice(asset, true)` (withValidation=true) which reverts on stale/zero price.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-pre-007"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 35,
+    "item_count": 1,
+    "timestamp": 1774341662,
+    "processed_ids": [
+      "PROP-baseauction-pre-007"
+    ]
+  }
+}

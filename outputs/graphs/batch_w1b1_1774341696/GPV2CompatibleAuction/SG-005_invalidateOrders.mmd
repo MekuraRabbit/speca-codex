@@ -1,0 +1,18 @@
+---
+title: "invalidateOrders (GPV2CompatibleAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_role: caller has ORDER_MANAGER_ROLE
+    q_check_role --> q_iter: role check passed
+    q_check_role --> q_revert: missing role
+    q_revert --> [*]: revert AccessControl error
+    q_iter --> q_invalidate: i < orderUids.length
+    q_iter --> [*]: i >= orderUids.length (loop done)
+    q_invalidate --> q_iter: i_gpV2Settlement.invalidateOrder(orderUids[i]); i++
+
+    note right of q_invalidate
+        INV-001: Only ORDER_MANAGER_ROLE can invalidate orders
+        INV-002: Delegates to GPv2Settlement.invalidateOrder for each UID
+        INV-003: Invalidated orders will fail isValidSignature hash check on settlement
+    end note

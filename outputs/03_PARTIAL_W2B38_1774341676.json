@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-035",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::_getAssetOutAmount::L777-803",
+      "proof_trace": "The inner uint64 subtraction (startingPriceMultiplier - endingPriceMultiplier) cannot underflow because _applyAssetParamsUpdates (the sole setter of s_assetParams) enforces endingPriceMultiplier <= startingPriceMultiplier at L653. elapsedTime is clamped to auctionDuration at L785, bounding the mulDiv ratio to \u2264 1 so the result never exceeds the minuend; auctionDuration != 0 is enforced at L647, preventing division by zero. Solady FixedPointMathLib.mulDiv uses 512-bit intermediates and Solidity 0.8.26 checked arithmetic provides a final backstop.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-035"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 38,
+    "item_count": 1,
+    "timestamp": 1774341676,
+    "processed_ids": [
+      "PROP-baseauction-inv-035"
+    ]
+  }
+}

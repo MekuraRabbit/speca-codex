@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-007",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::performUpkeep::L305-370",
+      "proof_trace": "The guard at L327 (`if (s_auctionStarts[asset] != 0) revert LiveAuction()`) is applied to every element of `eligibleAssets` unconditionally before the only write to `s_auctionStarts[asset]` (L353). No alternative path sets `s_auctionStarts` to a non-zero value \u2014 grep confirms it is written only in `performUpkeep`. Even crafted calldata with duplicate assets or a reentrant call cannot produce a second live auction: the first case reverts the entire transaction after the first duplicate is encountered; the second case causes the outer call's guard to fire and revert.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-007"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 9,
+    "item_count": 1,
+    "timestamp": 1774341678,
+    "processed_ids": [
+      "PROP-baseauction-inv-007"
+    ]
+  }
+}

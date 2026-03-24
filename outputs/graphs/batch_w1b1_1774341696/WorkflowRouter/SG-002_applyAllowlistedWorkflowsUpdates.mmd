@@ -1,0 +1,34 @@
+---
+title: "applyAllowlistedWorkflowsUpdates (WorkflowRouter)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_empty: check removes.length and adds.length
+    q_check_empty --> q_revert_empty: removes.length == 0 AND adds.length == 0
+    q_revert_empty --> [*]: revert EmptyList()
+    q_check_empty --> q_remove_loop: at least one list non-empty
+    q_remove_loop --> q_remove_body: i < removes.length
+    q_remove_loop --> q_add_loop: i >= removes.length
+    q_remove_body --> q_remove_targets: workflowId = removes[i]
+    q_remove_targets --> q_remove_wfid: _applyAllowlistedTargetsUpdates(workflowId, currentTargets, empty)
+    q_remove_wfid --> q_emit_remove: s_allowlistedWorkflowIds.remove(workflowId)
+    q_emit_remove --> q_remove_loop: emit WorkflowIdRemovedFromAllowlist(workflowId); i++
+    q_add_loop --> q_add_body: i < adds.length
+    q_add_loop --> [*]: i >= adds.length
+    q_add_body --> q_check_zero: workflowId = adds[i].workflowId
+    q_check_zero --> q_revert_zero: workflowId == bytes32(0)
+    q_revert_zero --> [*]: revert InvalidZeroValue()
+    q_check_zero --> q_add_wfid: workflowId != bytes32(0)
+    q_add_wfid --> q_add_targets: s_allowlistedWorkflowIds.add(workflowId)
+    q_add_targets --> q_add_loop: _applyAllowlistedTargetsUpdates(workflowId, empty, adds[i].targetSelectors); i++
+
+    note right of q_check_empty
+        INV-001: caller must have DEFAULT_ADMIN_ROLE (enforced by onlyRole modifier)
+        INV-002: removes are processed before adds
+        INV-003: removing a workflowId cascades to remove all its targets and selectors
+    end note
+
+    note right of q_remove_wfid
+        INV-004: workflowId is removed from set AFTER its targets/selectors are cleaned up
+        INV-005: if workflowId was not in set, remove() returns false silently (no revert)
+    end note

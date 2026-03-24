@@ -1,0 +1,44 @@
+---
+title: "performUpkeep (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_decode: decode(performData) into eligibleAssets and endedAuctions
+    q_decode --> q_get_assetout_price: eligibleAssets.length > 0
+    q_decode --> q_end_loop_init: eligibleAssets.length == 0
+    q_get_assetout_price --> q_transfer_from_fee: hasFeeAggregator AND eligibleAssets.length > 0
+    q_get_assetout_price --> q_start_loop: !hasFeeAggregator OR eligibleAssets.length == 0
+    q_transfer_from_fee --> q_start_loop: feeAggregator.transferForSwap(this, eligibleAssets)
+    q_start_loop --> q_check_live: i < eligibleAssets.length
+    q_start_loop --> q_end_loop_init: i >= eligibleAssets.length
+    q_check_live --> q_revert_live: s_auctionStarts[asset] != 0
+    q_revert_live --> [*]: revert LiveAuction()
+    q_check_live --> q_check_params: auctionStart == 0
+    q_check_params --> q_revert_params: decimals == 0
+    q_revert_params --> [*]: revert AssetParamsNotSet(asset)
+    q_check_params --> q_check_min_size: decimals != 0
+    q_check_min_size --> q_revert_min: usdValue < minAuctionSizeUsd
+    q_revert_min --> [*]: revert AmountBelowMinAuctionSize(usdValue, minSize)
+    q_check_min_size --> q_is_assetout: usdValue >= minAuctionSizeUsd
+    q_is_assetout --> q_transfer_out: asset == s_assetOut
+    q_is_assetout --> q_set_start: asset != s_assetOut
+    q_transfer_out --> q_start_loop: transfer balance to assetOutReceiver; i++
+    q_set_start --> q_start_loop: s_auctionStarts[asset] = block.timestamp; _onAuctionStart(asset); i++
+    q_end_loop_init --> q_end_iter: j = 0
+    q_end_iter --> q_check_end_valid: j < endedAuctions.length
+    q_end_iter --> [*]: j >= endedAuctions.length (done)
+    q_check_end_valid --> q_revert_no_auction: s_auctionStarts[asset] == 0
+    q_revert_no_auction --> [*]: revert InvalidAuction(asset)
+    q_check_end_valid --> q_end_auction: auctionStart != 0
+    q_end_auction --> q_end_iter: _onAuctionEnd(asset); delete s_auctionStarts[asset]; j++
+
+    note right of q_set_start
+        INV-001: s_auctionStarts[asset] = block.timestamp marks auction as live
+        INV-002: _onAuctionStart approves vault relayer (in GPV2 variant)
+        INV-003: Only AUCTION_WORKER_ROLE can call performUpkeep
+    end note
+
+    note right of q_end_auction
+        INV-004: _onAuctionEnd revokes vault relayer approval and transfers remaining assets
+        INV-005: delete s_auctionStarts[asset] marks auction as ended
+    end note

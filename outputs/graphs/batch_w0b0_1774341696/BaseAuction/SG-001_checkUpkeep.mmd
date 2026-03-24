@@ -1,0 +1,40 @@
+---
+title: "checkUpkeep (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_init: feeAggregator = s_feeAggregator, auctions = s_allowlistedAssets.values()
+    q_init --> q_iter: for i in 0..auctions.length
+    q_iter --> q_skip: assetParams.decimals == 0
+    q_skip --> q_iter: continue (next i)
+    q_iter --> q_get_price: assetParams.decimals != 0
+    q_get_price --> q_check_assetout: asset == s_assetOut
+    q_check_assetout --> q_set_valid: isAssetOutPriceValid = isPriceValid
+    q_set_valid --> q_check_live: check auctionStart
+    q_get_price --> q_check_live: asset != s_assetOut
+    q_check_live --> q_check_ended: auctionStart != 0
+    q_check_ended --> q_end_auction: duration elapsed OR (isPriceValid AND balanceUsd below minAuctionSize)
+    q_end_auction --> q_iter: endedAuctions[idx++] = asset
+    q_check_ended --> q_iter: auction still live
+    q_check_live --> q_check_eligible: auctionStart == 0 AND isPriceValid
+    q_check_eligible --> q_add_eligible: availableAssetUsdValue >= minAuctionSizeUsd
+    q_add_eligible --> q_iter: eligibleAssets[idx++] = AssetAmount(asset, balance)
+    q_check_eligible --> q_iter: availableAssetUsdValue below minAuctionSizeUsd
+    q_check_live --> q_iter: auctionStart == 0 AND !isPriceValid
+    q_iter --> q_finalize: loop complete
+    q_finalize --> q_clear_eligible: !isAssetOutPriceValid
+    q_clear_eligible --> q_encode: eligibleAssetsIdx = 0
+    q_finalize --> q_encode: isAssetOutPriceValid
+    q_encode --> q_return_true: eligibleAssetsIdx > 0 OR endedAuctionsIdx > 0
+    q_return_true --> [*]: return (true, abi.encode(eligibleAssets, endedAuctions))
+    q_encode --> q_return_false: eligibleAssetsIdx == 0 AND endedAuctionsIdx == 0
+    q_return_false --> [*]: return (false, empty)
+
+    note right of q_check_ended
+        INV-001: Auction is ended if duration elapsed OR remaining balance below minAuctionSizeUsd (dust guard)
+        INV-002: Asset out price validity gates all new auction starts
+    end note
+
+    note right of q_check_eligible
+        INV-003: Only assets with valid price AND no live auction AND balance above minAuctionSizeUsd are eligible
+    end note

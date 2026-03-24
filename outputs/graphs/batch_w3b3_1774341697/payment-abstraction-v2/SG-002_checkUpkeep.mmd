@@ -1,0 +1,47 @@
+---
+title: "checkUpkeep (Payment Abstraction V2)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_paused: check contract paused
+    q_paused --> [*]: paused == true; return (false, empty)
+    q_paused --> q_asset_out: paused == false
+
+    q_asset_out --> [*]: s_assetOut not configured; return (false, empty)
+    q_asset_out --> q_access: s_assetOut configured
+
+    q_access --> [*]: caller lacks AUCTION_WORKER_ROLE; return (false, empty)
+    q_access --> q_iter: caller has AUCTION_WORKER_ROLE
+
+    q_iter --> q_check_end: for asset in s_allowlistedAssets
+    q_iter --> q_build_result: all assets processed
+
+    q_check_end --> q_mark_ended: auction exists AND (elapsed >= duration OR balance < minAuctionSize)
+    q_check_end --> q_check_start: no ended auction for asset
+
+    q_mark_ended --> q_iter: add asset to endedAuctions list
+
+    q_check_start --> q_iter: asset not configured (soft skip)
+    q_check_start --> q_check_price_out: asset configured
+
+    q_check_price_out --> q_iter: assetOut price stale or zero (soft skip, zeros eligible list)
+    q_check_price_out --> q_check_price_in: assetOut price valid
+
+    q_check_price_in --> q_iter: asset price stale or zero (soft skip)
+    q_check_price_in --> q_check_live: asset price valid
+
+    q_check_live --> q_iter: live auction exists for asset (soft skip)
+    q_check_live --> q_check_min: no live auction
+
+    q_check_min --> q_iter: totalUsdValue < minAuctionSizeUsd (soft skip)
+    q_check_min --> q_add_eligible: totalUsdValue >= minAuctionSizeUsd
+
+    q_add_eligible --> q_iter: add asset to eligible list
+
+    q_build_result --> [*]: return (hasWork, abi.encode(eligible, ended))
+
+    note right of q_check_start
+        INV-005: checkUpkeep uses soft-skip (not revert) for ineligible assets
+        INV-006: totalUsdValue includes balance in both FeeAggregator and auction contract
+        INV-007: ended auctions are detected by elapsed duration OR below-minimum balance
+    end note

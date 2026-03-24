@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-041",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/PriceManager.sol::_getAssetPrice::L372-419",
+      "proof_trace": "The staleness check is fully enforced: `minTimestamp = block.timestamp - feedInfo.stalenessThreshold`, the freshest available timestamp (Data Streams or Data Feed fallback) is used, and `if (withValidation && isStale) revert StaleFeedData()` at L413-415 is on every code path. All actual trade entry points (bid L429, performUpkeep L315/342, GPV2 L153) call with `withValidation=true`; non-trade callers (checkUpkeep, view quote) use `false` by intentional design and check the returned `isValid` flag.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-041"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 42,
+    "item_count": 1,
+    "timestamp": 1774341671,
+    "processed_ids": [
+      "PROP-baseauction-inv-041"
+    ]
+  }
+}

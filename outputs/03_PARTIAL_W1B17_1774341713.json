@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-017",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::bid::L410-458",
+      "proof_trace": "`assetOutAmount` is computed once as a local variable at line 442 and cannot be altered by the intervening callback because `s_entered = true` blocks any re-entry into `bid()` (line 415-418). `safeTransferFrom(msg.sender, address(this), assetOutAmount)` at line 453 transfers exactly that value (reverts on failure), so the balance increases by exactly `assetOutAmount` for standard ERC-20 tokens. The `asset == assetOut` scenario is structurally impossible because `performUpkeep` never sets `s_auctionStarts[assetOut]`, so `bid(assetOut)` would revert at the `auctionStart == 0` check (line 425).",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-017"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 17,
+    "item_count": 1,
+    "timestamp": 1774341713,
+    "processed_ids": [
+      "PROP-baseauction-inv-017"
+    ]
+  }
+}

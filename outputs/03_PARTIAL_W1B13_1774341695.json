@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-011",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::checkUpkeep::L244-254",
+      "proof_trace": "The balance-below-min condition correctly requires `isPriceValid` before computing and comparing `assetBalanceUsdValue`; comparing a stale/zero price-derived USD value against `minAuctionSizeUsd` would be unsound, so the guard is intentional. When price is stale, `bid()` already reverts (`_getAssetPrice(asset, true)` at L429), freezing the auction without further fund drain. The unconditional duration condition (`auctionStart + auctionDuration < block.timestamp`) guarantees every auction eventually terminates regardless of price validity, making the system safe.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-011"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 13,
+    "item_count": 1,
+    "timestamp": 1774341695,
+    "processed_ids": [
+      "PROP-baseauction-inv-011"
+    ]
+  }
+}

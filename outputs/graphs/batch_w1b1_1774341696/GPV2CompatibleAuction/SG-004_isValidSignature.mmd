@@ -1,0 +1,62 @@
+---
+title: "isValidSignature (GPV2CompatibleAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_decode: order = abi.decode(signature, GPv2Order.Data)
+    q_decode --> q_reentrant: s_entered == true
+    q_decode --> q_check_hash: s_entered == false
+    q_reentrant --> [*]: revert ReentrantCall()
+    q_check_hash --> q_hash_fail: hash != GPv2Order.hash(order, domainSeparator)
+    q_check_hash --> q_check_auction: hash matches
+    q_hash_fail --> [*]: revert InvalidOrderId(hash)
+    q_check_auction --> q_no_auction: auctionStart == 0
+    q_check_auction --> q_check_buytoken: auctionStart != 0
+    q_no_auction --> [*]: revert InvalidAuction(sellToken)
+    q_check_buytoken --> q_bad_buytoken: buyToken != s_assetOut
+    q_check_buytoken --> q_check_receiver: buyToken == s_assetOut
+    q_bad_buytoken --> [*]: revert InvalidBuyToken(buyToken, assetOut)
+    q_check_receiver --> q_bad_receiver: receiver != address(this)
+    q_check_receiver --> q_check_amount: receiver == address(this)
+    q_bad_receiver --> [*]: revert InvalidReceiver(receiver, assetOutReceiver)
+    q_check_amount --> q_zero_amount: sellAmount == 0
+    q_check_amount --> q_check_balance: sellAmount != 0
+    q_zero_amount --> [*]: revert InvalidZeroAmount()
+    q_check_balance --> q_insuff_balance: sellAmount > balanceOf(this)
+    q_check_balance --> q_check_elapsed: sellAmount <= balanceOf(this)
+    q_insuff_balance --> [*]: revert InsufficientAssetInBalance(sellToken, sellAmount, balance)
+    q_check_elapsed --> q_expired_auction: elapsedTime > auctionDuration
+    q_check_elapsed --> q_price_calc: elapsedTime <= auctionDuration
+    q_expired_auction --> [*]: revert InvalidAuction(sellToken)
+    q_price_calc --> q_check_price: minBuyAmount = _getAssetOutAmount(params, price, sellAmount, elapsed, true)
+    q_check_price --> q_insuff_buy: buyAmount < minBuyAmount
+    q_check_price --> q_check_expiry: buyAmount >= minBuyAmount
+    q_insuff_buy --> [*]: revert InsufficientBuyAmount(buyAmount, minBuyAmount)
+    q_check_expiry --> q_order_expired: validTo < block.timestamp
+    q_check_expiry --> q_check_fee: validTo >= block.timestamp
+    q_order_expired --> [*]: revert ExpiredOrder(validTo, block.timestamp)
+    q_check_fee --> q_bad_fee: feeAmount > 0
+    q_check_fee --> q_check_kind: feeAmount == 0
+    q_bad_fee --> [*]: revert InvalidFeeAmount()
+    q_check_kind --> q_bad_kind: kind != KIND_SELL
+    q_check_kind --> q_check_partial: kind == KIND_SELL
+    q_bad_kind --> [*]: revert InvalidOrderKind(kind)
+    q_check_partial --> q_not_partial: partiallyFillable == false
+    q_check_partial --> q_check_balance_marker: partiallyFillable == true
+    q_not_partial --> [*]: revert OrderNotPartiallyFillable()
+    q_check_balance_marker --> q_bad_marker: sellTokenBalance != BALANCE_ERC20 OR buyTokenBalance != BALANCE_ERC20
+    q_check_balance_marker --> q_valid: both == BALANCE_ERC20
+    q_bad_marker --> [*]: revert InvalidTokenBalanceMarker()
+    q_valid --> [*]: return IERC1271.isValidSignature.selector
+
+    note right of q_price_calc
+        INV-001: Auction price decays linearly from startingPriceMultiplier to endingPriceMultiplier over auctionDuration
+        INV-002: minBuyAmount enforces that solver pays at least the current auction price
+        INV-003: Function is view-only (no state changes) - validation only
+        INV-004: Reentrancy check uses s_entered flag shared with bid()
+    end note
+
+    note right of q_check_auction
+        INV-005: sellToken must have active auction (auctionStart != 0)
+        INV-006: elapsedTime must not exceed auctionDuration
+    end note

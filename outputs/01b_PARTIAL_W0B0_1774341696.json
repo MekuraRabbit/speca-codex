@@ -1,0 +1,36 @@
+{
+  "phase": "01b",
+  "worker_id": 0,
+  "batch_id": 0,
+  "timestamp": 1774341696,
+  "status": "complete",
+  "items_processed": 2,
+  "items_total": 2,
+  "results": [
+    {
+      "source_url": "https://github.com/code-423n4/2026-03-chainlink/blob/main/src/BaseAuction.sol",
+      "title": "BaseAuction - Dutch Auction Base Contract (Chainlink)",
+      "sub_graphs": [
+        {"id": "SG-001", "name": "checkUpkeep", "mermaid_file": "BaseAuction/SG-001_checkUpkeep.mmd"},
+        {"id": "SG-002", "name": "performUpkeep", "mermaid_file": "BaseAuction/SG-002_performUpkeep.mmd"},
+        {"id": "SG-003", "name": "bid", "mermaid_file": "BaseAuction/SG-003_bid.mmd"},
+        {"id": "SG-004", "name": "_getAssetOutAmount", "mermaid_file": "BaseAuction/SG-004_getAssetOutAmount.mmd"},
+        {"id": "SG-005", "name": "_onAuctionEnd", "mermaid_file": "BaseAuction/SG-005_onAuctionEnd.mmd"},
+        {"id": "SG-006", "name": "_applyAssetParamsUpdates", "mermaid_file": "BaseAuction/SG-006_applyAssetParamsUpdates.mmd"},
+        {"id": "SG-007", "name": "constructor", "mermaid_file": "BaseAuction/SG-007_constructor.mmd"},
+        {"id": "SG-008", "name": "setConfigFunctions", "mermaid_file": "BaseAuction/SG-008_setConfigFunctions.mmd"},
+        {"id": "SG-009", "name": "getAssetOutAmount_view", "mermaid_file": "BaseAuction/SG-009_getAssetOutAmount_view.mmd"}
+      ]
+    },
+    {
+      "source_url": "https://github.com/code-423n4/2026-03-chainlink/blob/main/src/PriceManager.sol",
+      "title": "PriceManager: Data Streams Price Verification and Fallback",
+      "sub_graphs": [
+        {"id": "SG-001", "name": "constructor", "mermaid_file": "PriceManager/SG-001_constructor.mmd"},
+        {"id": "SG-002", "name": "transmit", "mermaid_file": "PriceManager/SG-002_transmit.mmd"},
+        {"id": "SG-003", "name": "_applyFeedInfoUpdates", "mermaid_file": "PriceManager/SG-003_applyFeedInfoUpdates.mmd"},
+        {"id": "SG-004", "name": "_getAssetPrice", "mermaid_file": "PriceManager/SG-004_getAssetPrice.mmd"}
+      ]
+    }
+  ]
+}

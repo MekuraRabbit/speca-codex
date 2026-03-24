@@ -1,0 +1,12 @@
+---
+title: "_onAuctionStart (GPV2CompatibleAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_approve: GPV2CompatibleAuction override
+    q_approve --> [*]: forceApprove(gpV2VaultRelayer, balanceOf(this))
+
+    note right of q_approve
+        INV-001: CowSwap vault relayer is approved for the full asset balance at auction start
+        INV-002: Approval enables CowProtocol settlement to pull assets for order filling
+    end note

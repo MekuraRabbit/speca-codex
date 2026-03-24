@@ -1,0 +1,43 @@
+---
+title: "_applyAllowlistedSelectorsUpdates (WorkflowRouter)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_wf: check workflowId allowlisted
+    q_check_wf --> q_revert_wf: !s_allowlistedWorkflowIds.contains(workflowId)
+    q_revert_wf --> [*]: revert WorkflowIdNotAllowlisted(workflowId)
+    q_check_wf --> q_check_target: workflowId is allowlisted
+    q_check_target --> q_revert_target: !allowlistedTargets.contains(target)
+    q_revert_target --> [*]: revert TargetNotAllowlisted(workflowId, target)
+    q_check_target --> q_check_empty: target is allowlisted
+    q_check_empty --> q_revert_empty: removes.length == 0 AND adds.length == 0
+    q_revert_empty --> [*]: revert EmptyList()
+    q_check_empty --> q_remove_loop: at least one list non-empty
+    q_remove_loop --> q_remove_body: i < removes.length
+    q_remove_loop --> q_add_loop: i >= removes.length
+    q_remove_body --> q_try_remove: selector = removes[i]
+    q_try_remove --> q_revert_sel: !allowlistedSelectors[target].remove(bytes32(selector))
+    q_revert_sel --> [*]: revert SelectorNotAllowlisted(workflowId, target, selector)
+    q_try_remove --> q_emit_removed: remove succeeded
+    q_emit_removed --> q_remove_loop: emit SelectorRemovedFromAllowlist(workflowId, target, selector); i++
+    q_add_loop --> q_add_body: i < adds.length
+    q_add_loop --> [*]: i >= adds.length
+    q_add_body --> q_check_zero_sel: selector = adds[i]
+    q_check_zero_sel --> q_revert_zero: selector == bytes4(0)
+    q_revert_zero --> [*]: revert InvalidZeroValue()
+    q_check_zero_sel --> q_try_add: selector != bytes4(0)
+    q_try_add --> q_emit_added: allowlistedSelectors[target].add(bytes32(selector)) returns true
+    q_try_add --> q_add_loop: add returns false (already exists, no-op); i++
+    q_emit_added --> q_add_loop: emit SelectorAllowlisted(workflowId, target, selector); i++
+
+    note right of q_check_wf
+        INV-001: workflowId must be allowlisted
+        INV-002: target must be allowlisted for this workflowId
+        INV-003: removes processed before adds
+    end note
+
+    note right of q_try_remove
+        INV-004: removing a non-existent selector reverts (strict removal)
+        INV-005: adding a duplicate selector is a silent no-op (idempotent add)
+        INV-006: zero selector cannot be added (explicit check)
+    end note

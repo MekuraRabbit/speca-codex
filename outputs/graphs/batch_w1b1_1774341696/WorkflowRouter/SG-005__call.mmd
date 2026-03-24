@@ -1,0 +1,21 @@
+---
+title: "_call (WorkflowRouter via Caller)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_call: (success, response) = target.call(data)
+    q_call --> q_check_success: check success
+    q_check_success --> q_success: success == true
+    q_success --> [*]: return response
+    q_check_success --> q_check_response: success == false
+    q_check_response --> q_bubble_revert: response.length > 0
+    q_bubble_revert --> [*]: revert with response data (bubble up)
+    q_check_response --> q_low_level_fail: response.length == 0
+    q_low_level_fail --> [*]: revert LowLevelCallFailed()
+
+    note right of q_call
+        INV-001: low-level call forwards all remaining gas
+        INV-002: if target reverts with data, the revert reason is bubbled up
+        INV-003: if target reverts without data, LowLevelCallFailed is thrown
+        INV-004: return value is the raw bytes from the external call
+    end note

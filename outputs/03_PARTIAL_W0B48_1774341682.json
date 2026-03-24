@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-050",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/PriceManager.sol::transmit::L133-183",
+      "proof_trace": "The second loop iterates exclusively over `verifiedReports.length` and accesses only `verifiedReports[i]`, never cross-indexing with `unverifiedReports` \u2014 the OOB claim is factually incorrect. Silent truncation (if verifyBulk returns fewer items) is a theoretical protocol-level concern only; the Chainlink VerifierProxy is an immutable trusted contract that reverts on individual report failures rather than silently dropping items, so the 1:1 length guarantee holds by protocol design.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-050"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 48,
+    "item_count": 1,
+    "timestamp": 1774341682,
+    "processed_ids": [
+      "PROP-baseauction-inv-050"
+    ]
+  }
+}

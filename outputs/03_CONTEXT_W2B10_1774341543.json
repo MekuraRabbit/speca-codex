@@ -1,0 +1,36 @@
+{
+  "PROP-baseauction-inv-008": {
+    "property_id": "PROP-baseauction-inv-008",
+    "text": "Asset out tokens received via performUpkeep must be forwarded to assetOutReceiver, not auctioned.",
+    "type": "invariant",
+    "assertion": "forall performUpkeep: asset == assetOut => safeTransfer(asset, assetOutReceiver, balance)",
+    "severity": "HIGH",
+    "covers": "SG-003",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "performUpkeep()"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "indirect",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "performUpkeep",
+          "line_range": {
+            "start": 305,
+            "end": 370
+          },
+          "role": "primary",
+          "note": "assetOut forwarding logic: when asset == assetOut, transfers balance to assetOutReceiver"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

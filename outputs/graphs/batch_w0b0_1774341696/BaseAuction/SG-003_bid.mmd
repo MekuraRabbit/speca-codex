@@ -1,0 +1,39 @@
+---
+title: "bid (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_reentrancy: check s_entered
+    q_reentrancy --> q_revert_reentrant: s_entered == true
+    q_revert_reentrant --> [*]: revert ReentrantCall()
+    q_reentrancy --> q_lock: s_entered == false
+    q_lock --> q_load: s_entered = true
+    q_load --> q_check_auction: load assetParams, auctionStart, elapsedTime
+    q_check_auction --> q_revert_invalid: auctionStart == 0 OR elapsedTime > auctionDuration
+    q_revert_invalid --> [*]: revert InvalidAuction(asset)
+    q_check_auction --> q_get_price: auction is live
+    q_get_price --> q_check_bid_value: assetPrice = _getAssetPrice(asset, true)
+    q_check_bid_value --> q_revert_low: bidUsdValue below minBidUsdValue
+    q_revert_low --> [*]: revert BidValueTooLow
+    q_check_bid_value --> q_check_balance: bidUsdValue >= minBidUsdValue
+    q_check_balance --> q_revert_high: amount > availableBalance
+    q_revert_high --> [*]: revert BidAmountTooHigh
+    q_check_balance --> q_compute: amount <= availableBalance
+    q_compute --> q_transfer_out: assetOutAmount = _getAssetOutAmount(...)
+    q_transfer_out --> q_callback: transfer asset to msg.sender
+    q_callback --> q_pull: data.length != 0, call auctionCallback
+    q_transfer_out --> q_pull: data.length == 0
+    q_pull --> q_emit: transferFrom(msg.sender, this, assetOutAmount)
+    q_emit --> q_unlock: emit AuctionBidSettled
+    q_unlock --> [*]: s_entered = false
+
+    note right of q_transfer_out
+        INV-001: Asset is transferred to bidder BEFORE assetOut is pulled (flash-loan pattern)
+        INV-002: Reentrancy guard via s_entered flag protects against callback exploitation
+        INV-003: bidUsdValue must meet minBidUsdValue threshold
+    end note
+
+    note right of q_compute
+        INV-004: assetOutAmount computed via linear price decay curve
+        INV-005: amount must not exceed contract balance of asset
+    end note

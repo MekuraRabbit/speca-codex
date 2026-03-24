@@ -1,0 +1,36 @@
+{
+  "PROP-baseauction-inv-005": {
+    "property_id": "PROP-baseauction-inv-005",
+    "text": "elapsedTime must be clamped to auctionDuration so multiplier never goes below endingPriceMultiplier.",
+    "type": "invariant",
+    "assertion": "elapsedTime = min(elapsedTime, auctionDuration); multiplier >= endingPriceMultiplier",
+    "severity": "HIGH",
+    "covers": "SG-011",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "_getAssetOutAmount",
+          "line_range": {
+            "start": 777,
+            "end": 803
+          },
+          "role": "primary",
+          "note": "elapsedTime clamping and multiplier floor enforcement implemented here"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

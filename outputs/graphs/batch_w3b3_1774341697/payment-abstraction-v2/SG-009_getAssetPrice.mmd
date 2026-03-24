@@ -1,0 +1,23 @@
+---
+title: "_getAssetPrice (Payment Abstraction V2)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_streams: check for fresh Streams price
+    q_check_streams --> q_use_streams: streamsPrice exists AND not stale
+    q_check_streams --> q_fallback: no fresh streams price
+
+    q_use_streams --> q_validate: price = streamsPrice (scaled to feed decimals)
+    q_fallback --> q_read_feed: read from usdDataFeed (Chainlink Data Feed)
+    q_read_feed --> q_validate: price = dataFeedAnswer
+
+    q_validate --> q_error: price == 0 OR price is stale
+    q_error --> [*]: revert "invalid price"
+    q_validate --> [*]: price > 0 AND not stale; return price
+
+    note right of q_check_streams
+        INV-031: Streams price takes priority over Data Feed price
+        INV-032: fallback to Data Feed if Streams price is stale or missing
+        INV-033: zero price always causes revert (never used in calculations)
+        INV-034: staleness is checked against per-feed stalenessThreshold
+    end note

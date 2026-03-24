@@ -1,0 +1,36 @@
+{
+  "PROP-baseauction-inv-019": {
+    "property_id": "PROP-baseauction-inv-019",
+    "text": "getAssetOutAmount view must return 0 for invalid auctions instead of reverting.",
+    "type": "invariant",
+    "assertion": "forall getAssetOutAmount(view): auctionStart==0 OR expired => return 0 (no revert)",
+    "severity": "LOW",
+    "covers": "SG-012",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "getAssetOutAmount()"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "none",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "getAssetOutAmount",
+          "line_range": {
+            "start": 749,
+            "end": 767
+          },
+          "role": "primary",
+          "note": "view function; returns 0 early when auctionStart==0 or expired per natspec at line 744"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

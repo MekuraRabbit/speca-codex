@@ -1,0 +1,37 @@
+{
+  "PROP-baseauction-inv-011": {
+    "property_id": "PROP-baseauction-inv-011",
+    "text": "Auction ended condition must trigger when duration elapsed OR balance drops below minAuctionSizeUsd.",
+    "type": "invariant",
+    "assertion": "auctionEnded(asset) iff (elapsed > duration) OR (balanceUsd < minAuctionSizeUsd)",
+    "severity": "MEDIUM",
+    "covers": "SG-002",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "checkUpkeep()",
+        "performUpkeep()"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "indirect",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "checkUpkeep",
+          "line_range": {
+            "start": 216,
+            "end": 294
+          },
+          "role": "primary",
+          "note": "Auction ended condition evaluated here; checks elapsed > duration OR balanceUsd < minAuctionSizeUsd (line 251)"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

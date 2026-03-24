@@ -1,0 +1,37 @@
+---
+title: "_applyFeedInfoUpdates (PriceManager)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_empty: require ASSET_ADMIN_ROLE
+    q_check_empty --> q_revert_empty: adds.length == 0 AND removes.length == 0
+    q_revert_empty --> [*]: revert EmptyList
+    q_check_empty --> q_remove_loop: not empty
+    q_remove_loop --> q_remove_item: i < removes.length
+    q_remove_loop --> q_add_loop: i >= removes.length
+    q_remove_item --> q_hook_remove: _onFeedInfoUpdate(asset, true)
+    q_hook_remove --> q_check_allowlisted: s_allowlistedAssets.remove(asset)
+    q_check_allowlisted --> q_revert_not_allowed: remove returns false
+    q_revert_not_allowed --> [*]: revert AssetNotAllowlisted
+    q_check_allowlisted --> q_cleanup: remove returns true
+    q_cleanup --> q_remove_loop: delete feedId mapping, feedInfo, price
+    q_add_loop --> q_add_item: i < adds.length
+    q_add_loop --> [*]: i >= adds.length
+    q_add_item --> q_check_zero_addr: validate asset != address(0)
+    q_check_zero_addr --> q_revert_zero: asset == address(0)
+    q_revert_zero --> [*]: revert InvalidZeroAddress
+    q_check_zero_addr --> q_check_feed_config: asset != address(0)
+    q_check_feed_config --> q_validate_streams: dataStreamsFeedId != bytes32(0)
+    q_check_feed_config --> q_store_feed: dataStreamsFeedId == bytes32(0) AND usdDataFeed != address(0)
+    q_check_feed_config --> q_revert_no_source: both zero
+    q_revert_no_source --> [*]: revert InvalidZeroValue
+    q_validate_streams --> q_check_decimals: validate version == 3
+    q_check_decimals --> q_check_rotation: decimals > 0
+    q_check_rotation --> q_store_feed: handle feed ID rotation to different asset
+    q_store_feed --> q_add_loop: s_feedInfo[asset] = feedInfo
+
+    note right of q_check_rotation
+        INV-001: When rotating a feed ID to a different asset, the previous asset must retain a valid price source
+        INV-002: Feed ID version must be STREAMS_REPORT_V3
+        INV-003: Feed decimals must be non-zero for Data Streams feeds
+    end note

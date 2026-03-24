@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-inv-020",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::getAssetOutAmount::L749-767",
+      "proof_trace": "Lines 761-762 directly implement amount = min(amount, IERC20(assetIn).balanceOf(address(this))), which is semantically correct since assetIn is the collateral the contract holds and sells. The only alternative return path (line 758) returns 0 for invalid auctions, requiring no clamp. Property holds on all reachable paths.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-inv-020"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 22,
+    "item_count": 1,
+    "timestamp": 1774341649,
+    "processed_ids": [
+      "PROP-baseauction-inv-020"
+    ]
+  }
+}

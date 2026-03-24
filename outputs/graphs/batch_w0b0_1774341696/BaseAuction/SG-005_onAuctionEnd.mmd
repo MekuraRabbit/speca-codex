@@ -1,0 +1,19 @@
+---
+title: "_onAuctionEnd (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_fee_agg: hasFeeAggregator?
+    q_check_fee_agg --> q_check_asset_bal: hasFeeAggregator == true
+    q_check_asset_bal --> q_return_asset: assetBalance > 0
+    q_return_asset --> q_check_out_bal: transfer asset back to feeAggregator
+    q_check_asset_bal --> q_check_out_bal: assetBalance == 0
+    q_check_fee_agg --> q_check_out_bal: hasFeeAggregator == false
+    q_check_out_bal --> q_transfer_out: assetOutBalance > 0
+    q_transfer_out --> [*]: transfer assetOut to assetOutReceiver
+    q_check_out_bal --> [*]: assetOutBalance == 0
+
+    note right of q_return_asset
+        INV-001: Remaining auctioned asset is returned to feeAggregator on auction end
+        INV-002: Accumulated assetOut (bid payments) is forwarded to assetOutReceiver
+    end note

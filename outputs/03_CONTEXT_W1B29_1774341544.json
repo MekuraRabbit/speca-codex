@@ -1,0 +1,36 @@
+{
+  "PROP-baseauction-inv-025": {
+    "property_id": "PROP-baseauction-inv-025",
+    "text": "Concurrent bids draining balance must not cause later bids to transfer more than available balance.",
+    "type": "invariant",
+    "assertion": "forall bid: amount <= balanceOf(asset, contract) at time of transfer",
+    "severity": "HIGH",
+    "covers": "SG-005",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "bid()"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "bid",
+          "line_range": {
+            "start": 410,
+            "end": 458
+          },
+          "role": "primary",
+          "note": "Balance cap check in bid() must use live balance at transfer time, not cached value from earlier"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_error": "",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-baseauction-post-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/BaseAuction.sol::performUpkeep::L359-369",
+      "proof_trace": "`delete s_auctionStarts[asset]` at line 367 unconditionally follows `_onAuctionEnd(...)` at line 366 with no intervening branch, return, or conditional. No other code path calls `_onAuctionEnd`, and no subclass override can skip the delete because it resides in the caller (`performUpkeep`). Property holds on all reachable execution paths.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-baseauction-post-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 20,
+    "item_count": 1,
+    "timestamp": 1774341625,
+    "processed_ids": [
+      "PROP-baseauction-post-003"
+    ]
+  }
+}

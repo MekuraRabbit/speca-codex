@@ -1,0 +1,32 @@
+---
+title: "transmit (Payment Abstraction V2)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_role: check caller role
+    q_check_role --> q_error_role: caller lacks PRICE_ADMIN_ROLE
+    q_error_role --> [*]: revert "access denied"
+    q_check_role --> q_decode: caller has PRICE_ADMIN_ROLE
+
+    q_decode --> q_iter: decode price reports array
+    q_iter --> q_validate_feed: for each (feedId, price, timestamp) in reports
+    q_iter --> [*]: all reports processed
+
+    q_validate_feed --> q_check_stale: lookup feedInfo by feedId
+    q_check_stale --> q_iter: feedId not configured (skip)
+    q_check_stale --> q_check_timestamp: feedId configured
+
+    q_check_timestamp --> q_iter: timestamp older than existing price (skip)
+    q_check_timestamp --> q_check_freshness: timestamp newer than existing
+
+    q_check_freshness --> q_iter: timestamp exceeds staleness threshold
+    q_check_freshness --> q_store: timestamp within staleness threshold
+
+    q_store --> q_iter: store price and timestamp for feedId
+
+    note right of q_store
+        INV-024: only PRICE_ADMIN_ROLE (WorkflowRouter) can push prices
+        INV-025: newer prices overwrite older ones (monotonic timestamp)
+        INV-026: stale prices are rejected based on stalenessThreshold
+        INV-027: contract falls back to Data Feeds if no fresh Streams price exists
+    end note

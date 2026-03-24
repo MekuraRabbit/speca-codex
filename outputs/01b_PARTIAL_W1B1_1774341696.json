@@ -1,0 +1,94 @@
+{
+  "phase": "01b",
+  "worker_id": 1,
+  "batch_id": 1,
+  "timestamp": 1774341696,
+  "results": [
+    {
+      "id": "https://github.com/code-423n4/2026-03-chainlink/blob/main/src/WorkflowRouter.sol",
+      "status": "success",
+      "source_url": "https://github.com/code-423n4/2026-03-chainlink/blob/main/src/WorkflowRouter.sol",
+      "title": "WorkflowRouter",
+      "sub_graphs": [
+        {
+          "id": "SG-001",
+          "name": "onReport",
+          "mermaid_file": "WorkflowRouter/SG-001_onReport.mmd"
+        },
+        {
+          "id": "SG-002",
+          "name": "applyAllowlistedWorkflowsUpdates",
+          "mermaid_file": "WorkflowRouter/SG-002_applyAllowlistedWorkflowsUpdates.mmd"
+        },
+        {
+          "id": "SG-003",
+          "name": "_applyAllowlistedTargetsUpdates",
+          "mermaid_file": "WorkflowRouter/SG-003__applyAllowlistedTargetsUpdates.mmd"
+        },
+        {
+          "id": "SG-004",
+          "name": "_applyAllowlistedSelectorsUpdates",
+          "mermaid_file": "WorkflowRouter/SG-004__applyAllowlistedSelectorsUpdates.mmd"
+        },
+        {
+          "id": "SG-005",
+          "name": "_call",
+          "mermaid_file": "WorkflowRouter/SG-005__call.mmd"
+        },
+        {
+          "id": "SG-006",
+          "name": "supportsInterface",
+          "mermaid_file": "WorkflowRouter/SG-006_supportsInterface.mmd"
+        }
+      ]
+    },
+    {
+      "id": "https://github.com/code-423n4/2026-03-chainlink/blob/main/src/GPV2CompatibleAuction.sol",
+      "status": "success",
+      "source_url": "https://github.com/code-423n4/2026-03-chainlink/blob/main/src/GPV2CompatibleAuction.sol",
+      "title": "GPV2CompatibleAuction: CowProtocol-Compatible Dutch Auction",
+      "sub_graphs": [
+        {
+          "id": "SG-001",
+          "name": "constructor",
+          "mermaid_file": "GPV2CompatibleAuction/SG-001_constructor.mmd"
+        },
+        {
+          "id": "SG-002",
+          "name": "_onAuctionStart",
+          "mermaid_file": "GPV2CompatibleAuction/SG-002_onAuctionStart.mmd"
+        },
+        {
+          "id": "SG-003",
+          "name": "_onAuctionEnd",
+          "mermaid_file": "GPV2CompatibleAuction/SG-003_onAuctionEnd.mmd"
+        },
+        {
+          "id": "SG-004",
+          "name": "isValidSignature",
+          "mermaid_file": "GPV2CompatibleAuction/SG-004_isValidSignature.mmd"
+        },
+        {
+          "id": "SG-005",
+          "name": "invalidateOrders",
+          "mermaid_file": "GPV2CompatibleAuction/SG-005_invalidateOrders.mmd"
+        },
+        {
+          "id": "SG-006",
+          "name": "checkUpkeep",
+          "mermaid_file": "GPV2CompatibleAuction/SG-006_checkUpkeep.mmd"
+        },
+        {
+          "id": "SG-007",
+          "name": "performUpkeep",
+          "mermaid_file": "GPV2CompatibleAuction/SG-007_performUpkeep.mmd"
+        },
+        {
+          "id": "SG-008",
+          "name": "bid",
+          "mermaid_file": "GPV2CompatibleAuction/SG-008_bid.mmd"
+        }
+      ]
+    }
+  ]
+}

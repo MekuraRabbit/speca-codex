@@ -1,0 +1,18 @@
+{
+  "PROP-baseauction-inv-032": {
+    "property_id": "PROP-baseauction-inv-032",
+    "audit_result": {
+      "property_id": "PROP-baseauction-inv-032",
+      "classification": "potential-vulnerability",
+      "code_path": "src/BaseAuction.sol::performUpkeep::L305-370",
+      "proof_trace": "checkUpkeep determines eligibility using (feeAggregatorBalance_T0 * oraclePrice_T0 / decimals) >= minAuctionSizeUsd and encodes the T0 balance as the amount. performUpkeep re-fetches oracle prices with withValidation=true (L315, L342) and recomputes (amount_T0 * oraclePrice_T1 / decimals); if the price drops between check and perform such that this falls below minAuctionSizeUsd, it reverts with AmountBelowMinAuctionSize (L346-348). Because performUpkeep has no per-asset try/catch, a revert on any single eligible asset also aborts the entire endedAuctions loop (L359-369), blocking pending auction closes.",
+      "attack_scenario": "An asset barely above minAuctionSizeUsd threshold is returned as eligible by checkUpkeep; by the time the Chainlink Automation keeper's performUpkeep transaction executes, the oracle price has dropped (naturally or via adversarial feed manipulation), causing AmountBelowMinAuctionSize revert that aborts all auction starts and end-of-auction settlements in the same upkeep batch.",
+      "checklist_id": "PROP-baseauction-inv-032"
+    },
+    "text": "checkUpkeep and performUpkeep must agree: assets marked eligible by check must be processable by perform.",
+    "assertion": "forall asset in checkUpkeep.eligible: performUpkeep(asset) does not revert due to state mismatch",
+    "covers": "SG-002",
+    "severity": "MEDIUM",
+    "type": "invariant"
+  }
+}

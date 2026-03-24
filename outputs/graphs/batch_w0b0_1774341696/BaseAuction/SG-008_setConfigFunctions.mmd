@@ -1,0 +1,60 @@
+---
+title: "Configuration Setters (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    state "setMinBidUsdValue" as set_min {
+        [*] --> q_check_zero_min: minBidUsdValue == 0?
+        q_check_zero_min --> q_revert_zero_min: yes
+        q_revert_zero_min --> [*]: revert InvalidZeroValue()
+        q_check_zero_min --> q_check_same_min: no
+        q_check_same_min --> q_revert_same_min: s_minBidUsdValue == minBidUsdValue
+        q_revert_same_min --> [*]: revert ValueNotUpdated()
+        q_check_same_min --> q_set_min: different value
+        q_set_min --> [*]: s_minBidUsdValue = minBidUsdValue, emit MinBidUsdValueSet
+    }
+
+    state "setAssetOut" as set_out {
+        [*] --> q_no_live_out: _whenNoLiveAuctions()
+        q_no_live_out --> q_check_zero_out: no live auctions
+        q_check_zero_out --> q_revert_zero_out: assetOut == address(0)
+        q_revert_zero_out --> [*]: revert InvalidZeroAddress()
+        q_check_zero_out --> q_check_same_out: non-zero
+        q_check_same_out --> q_revert_same_out: currentAssetOut == assetOut
+        q_revert_same_out --> [*]: revert ValueNotUpdated()
+        q_check_same_out --> q_set_out: different value
+        q_set_out --> [*]: s_assetOut = assetOut, delete s_assetParams[old], emit AssetOutSet
+    }
+
+    state "setAssetOutReceiver" as set_recv {
+        [*] --> q_no_live_recv: _whenNoLiveAuctions()
+        q_no_live_recv --> q_check_zero_recv: no live auctions
+        q_check_zero_recv --> q_revert_zero_recv: assetOutReceiver == address(0)
+        q_revert_zero_recv --> [*]: revert InvalidZeroAddress()
+        q_check_zero_recv --> q_check_same_recv: non-zero
+        q_check_same_recv --> q_revert_same_recv: s_assetOutReceiver == assetOutReceiver
+        q_revert_same_recv --> [*]: revert ValueNotUpdated()
+        q_check_same_recv --> q_set_recv: different value
+        q_set_recv --> [*]: s_assetOutReceiver = assetOutReceiver, emit AssetOutReceiverSet
+    }
+
+    state "setFeeAggregator" as set_fee {
+        [*] --> q_no_live_fee: _whenNoLiveAuctions()
+        q_no_live_fee --> q_check_zero_fee: no live auctions
+        q_check_zero_fee --> q_revert_zero_fee: feeAggregator == address(0)
+        q_revert_zero_fee --> [*]: revert InvalidZeroAddress()
+        q_check_zero_fee --> q_check_same_fee: non-zero
+        q_check_same_fee --> q_revert_same_fee: s_feeAggregator == feeAggregator
+        q_revert_same_fee --> [*]: revert ValueNotUpdated()
+        q_check_same_fee --> q_check_interface: different value
+        q_check_interface --> q_revert_iface: feeAggregator != this AND !supportsInterface(IFeeAggregator)
+        q_revert_iface --> [*]: revert InvalidFeeAggregator
+        q_check_interface --> q_set_fee: valid interface or self
+        q_set_fee --> [*]: s_feeAggregator = feeAggregator, emit FeeAggregatorSet
+    }
+
+    note right of set_out
+        INV-001: setAssetOut deletes old assetOut params (prevents stale config)
+        INV-002: All config setters except setMinBidUsdValue require no live auctions
+        INV-003: setFeeAggregator validates ERC165 interface (unless self-referencing)
+    end note

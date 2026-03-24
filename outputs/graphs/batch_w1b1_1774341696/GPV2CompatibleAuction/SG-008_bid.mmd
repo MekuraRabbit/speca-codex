@@ -1,0 +1,36 @@
+---
+title: "bid (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_reentrant_check: s_entered == true
+    [*] --> q_set_entered: s_entered == false
+    q_reentrant_check --> [*]: revert ReentrantCall()
+    q_set_entered --> q_check_auction: s_entered = true
+    q_check_auction --> q_revert_auction: auctionStart == 0 OR elapsedTime > auctionDuration
+    q_check_auction --> q_check_bid_value: auction is live
+    q_revert_auction --> [*]: revert InvalidAuction(asset)
+    q_check_bid_value --> q_revert_low: bidUsdValue < minBidUsdValue
+    q_check_bid_value --> q_check_balance: bidUsdValue >= minBidUsdValue
+    q_revert_low --> [*]: revert BidValueTooLow(bidUsdValue, minBidUsdValue)
+    q_check_balance --> q_revert_high: amount > balanceOf(this)
+    q_check_balance --> q_calc_out: amount <= balanceOf(this)
+    q_revert_high --> [*]: revert BidAmountTooHigh(amount, balance)
+    q_calc_out --> q_transfer_asset: assetOutAmount = _getAssetOutAmount(params, price, amount, elapsed, true)
+    q_transfer_asset --> q_callback: safeTransfer(msg.sender, amount); data.length != 0
+    q_transfer_asset --> q_pull_assetout: safeTransfer(msg.sender, amount); data.length == 0
+    q_callback --> q_pull_assetout: auctionCallback(msg.sender, assetOut, assetOutAmount, data)
+    q_pull_assetout --> q_emit: safeTransferFrom(msg.sender, this, assetOutAmount)
+    q_emit --> q_clear: emit AuctionBidSettled(msg.sender, asset, amount, assetOutAmount)
+    q_clear --> [*]: s_entered = false
+
+    note right of q_transfer_asset
+        INV-001: Asset transferred to bidder BEFORE pulling assetOut (callback pattern)
+        INV-002: Callback enabled flash-loan style bids (receive asset, convert, pay assetOut)
+        INV-003: s_entered reentrancy guard prevents re-entry during callback
+    end note
+
+    note right of q_calc_out
+        INV-004: Price decays linearly from startingPriceMultiplier to endingPriceMultiplier
+        INV-005: assetOutAmount calculated using oracle price and time-decayed multiplier
+    end note

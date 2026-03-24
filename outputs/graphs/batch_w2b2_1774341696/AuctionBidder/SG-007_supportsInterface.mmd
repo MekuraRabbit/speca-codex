@@ -1,0 +1,15 @@
+---
+title: "supportsInterface (AuctionBidder)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check: interfaceId == type(IAuctionCallback).interfaceId
+    q_check --> q_returnTrue: matches IAuctionCallback
+    q_check --> q_super: does not match
+    q_super --> [*]: return super.supportsInterface(interfaceId)
+    q_returnTrue --> [*]: return true
+
+    note right of q_check
+        INV-001: contract advertises IAuctionCallback support via ERC-165
+        INV-002: delegates to parent for other interface checks (AccessControl, Pausable)
+    end note
