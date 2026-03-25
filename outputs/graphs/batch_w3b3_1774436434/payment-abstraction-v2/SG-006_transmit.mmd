@@ -1,0 +1,43 @@
+---
+title: "transmit (Payment Abstraction V2 - PriceManager)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_access: onlyRole(PRICE_ADMIN_ROLE)
+    q_check_access --> q_check_empty: check unverifiedReports.length
+    q_check_empty --> q_revert_empty: length == 0
+    q_revert_empty --> [*]: revert EmptyList()
+    q_check_empty --> q_pre_validate: length > 0
+
+    q_pre_validate --> q_iter_pre: for report in unverifiedReports
+    q_iter_pre --> q_decode_feed_id: decode reportData, extract dataStreamsFeedId
+    q_decode_feed_id --> q_check_allowlist: check s_dataStreamsFeedIdToAsset
+    q_check_allowlist --> q_revert_not_allowed: asset == address(0)
+    q_revert_not_allowed --> [*]: revert FeedNotAllowlisted()
+    q_check_allowlist --> q_iter_pre: feed is allowlisted
+    q_iter_pre --> q_verify_bulk: pre-validation complete
+
+    q_verify_bulk --> q_iter_verified: verifiedReports = verifierProxy.verifyBulk(reports)
+
+    q_iter_verified --> q_decode_report: for report in verifiedReports
+    q_decode_report --> q_get_asset: report = abi.decode(ReportV3)
+    q_get_asset --> q_check_stale: asset = s_dataStreamsFeedIdToAsset[feedId]
+    q_check_stale --> q_revert_stale: observationsTimestamp < block.timestamp - stalenessThreshold
+    q_revert_stale --> [*]: revert StaleFeedData()
+    q_check_stale --> q_scale_price: price not stale
+
+    q_scale_price --> q_check_zero: scale usdPrice to 18 decimals
+    q_check_zero --> q_revert_zero: usdPrice == 0
+    q_revert_zero --> [*]: revert ZeroFeedData()
+    q_check_zero --> q_store: usdPrice > 0
+
+    q_store --> q_iter_verified: s_dataStreamsPrice[asset] = DataStreamsPriceInfo(usdPrice, timestamp)
+    q_iter_verified --> [*]: all reports processed
+
+    note right of q_verify_bulk
+        INV-001: Reports are verified through external VerifierProxy before storage
+        INV-002: Only allowlisted feed IDs are accepted
+        INV-003: Prices are scaled to 18 decimals uniformly
+        INV-004: Stale and zero prices are rejected
+        INV-005: Pre-validation loop checks allowlisting BEFORE bulk verification (gas optimization)
+    end note

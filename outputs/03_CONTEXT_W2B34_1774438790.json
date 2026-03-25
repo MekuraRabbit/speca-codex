@@ -1,0 +1,35 @@
+{
+  "PROP-baseauction-inv-038": {
+    "property_id": "PROP-baseauction-inv-038",
+    "text": "Bid on asset with decimals==0 (removed/unconfigured) must revert.",
+    "type": "pre-condition",
+    "assertion": "forall bid(asset): s_assetParams[asset].decimals==0 => revert (no valid auction)",
+    "severity": "MEDIUM",
+    "covers": "FN-bid",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.bid"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "bid",
+          "line_range": {
+            "start": 410,
+            "end": 458
+          },
+          "role": "primary",
+          "note": "assetParams loaded at line 420; unconfigured asset has auctionStart==0, InvalidAuction reverts at line 426"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "PROP-baseauction-inv-073": {
+    "property_id": "PROP-baseauction-inv-073",
+    "text": "Data Feed answer cast via SafeCast must revert on negative price values.",
+    "type": "invariant",
+    "assertion": "int256(answer).toUint256() reverts if answer < 0",
+    "severity": "MEDIUM",
+    "covers": "FN-getAssetPrice",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.bid"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "indirect",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/PriceManager.sol",
+          "symbol": "_getAssetPrice",
+          "line_range": {
+            "start": 372,
+            "end": 419
+          },
+          "role": "primary",
+          "note": "line 392: price = answer.toUint256() \u2014 SafeCast from int256 reverts on negative answer"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

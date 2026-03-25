@@ -1,0 +1,16 @@
+---
+title: "_setReceiver (AuctionBidder)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_same: receiver == s_receiver
+    q_check_same --> q_revert: true
+    q_check_same --> q_set: false
+    q_revert --> [*]: revert ValueNotUpdated()
+    q_set --> q_emit: s_receiver = receiver
+    q_emit --> [*]: emit ReceiverSet(receiver)
+
+    note right of q_check_same
+        INV-001: Setting same receiver is rejected (no-op prevention)
+        INV-002: receiver can be set to address(0) to disable forwarding
+    end note

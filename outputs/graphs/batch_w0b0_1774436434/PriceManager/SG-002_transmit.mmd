@@ -1,0 +1,52 @@
+---
+title: "transmit (PriceManager)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_role: onlyRole(PRICE_ADMIN_ROLE)
+    q_check_role --> q_check_empty: caller has role
+    q_check_role --> q_revert_role: caller lacks role
+    q_revert_role --> [*]: revert AccessControlUnauthorized
+    q_check_empty --> q_revert_empty: unverifiedReports.length == 0
+    q_revert_empty --> [*]: revert EmptyList()
+    q_check_empty --> q_pre_validate_loop: unverifiedReports.length > 0
+    q_pre_validate_loop --> q_decode_feed_id: i < unverifiedReports.length
+    q_decode_feed_id --> q_check_allowlist: dataStreamsFeedId = bytes32(reportData)
+    q_check_allowlist --> q_revert_not_allowed: s_dataStreamsFeedIdToAsset[feedId] == address(0)
+    q_revert_not_allowed --> [*]: revert FeedNotAllowlisted(feedId)
+    q_check_allowlist --> q_pre_validate_loop: feedId is allowlisted, i++
+    q_pre_validate_loop --> q_verify_bulk: loop complete
+    q_verify_bulk --> q_store_loop: verifiedReports = verifierProxy.verifyBulk(reports)
+    q_store_loop --> q_decode_report: i < verifiedReports.length
+    q_decode_report --> q_get_asset: report = abi.decode(verifiedReports[i])
+    q_get_asset --> q_cast_price: asset = s_dataStreamsFeedIdToAsset[report.feedId]
+    q_cast_price --> q_check_stale: usdPrice = int256(report.price).toUint256()
+    q_check_stale --> q_revert_stale: observationsTimestamp < block.timestamp - stalenessThreshold
+    q_revert_stale --> [*]: revert StaleFeedData()
+    q_check_stale --> q_scale: price is fresh
+    q_scale --> q_scale_up: feedDecimals < 18
+    q_scale_up --> q_check_zero: usdPrice = usdPrice * 10^(18 - feedDecimals)
+    q_scale --> q_scale_down: feedDecimals > 18
+    q_scale_down --> q_check_zero: usdPrice = usdPrice / 10^(feedDecimals - 18)
+    q_scale --> q_check_zero: feedDecimals == 18
+    q_check_zero --> q_revert_zero: usdPrice == 0
+    q_revert_zero --> [*]: revert ZeroFeedData()
+    q_check_zero --> q_store: usdPrice > 0
+    q_store --> q_emit: s_dataStreamsPrice[asset] = DataStreamsPriceInfo(usdPrice, timestamp)
+    q_emit --> q_store_loop: emit PriceTransmitted(asset, usdPrice), i++
+    q_store_loop --> [*]: loop complete
+
+    note right of q_cast_price
+        INV-001: report.price is cast from int192 to uint256 via SafeCast, reverts on negative
+        INV-002: usdPrice is scaled to exactly 18 decimals before storage
+        INV-003: only PRICE_ADMIN_ROLE can call transmit
+    end note
+
+    note right of q_pre_validate_loop
+        INV-004: all feed IDs are validated as allowlisted BEFORE verifyBulk call
+        INV-005: pre-validation loop decodes feedId from unverified data before verification
+    end note
+
+    note right of q_check_stale
+        INV-006: staleness check uses observationsTimestamp against block.timestamp - stalenessThreshold
+    end note

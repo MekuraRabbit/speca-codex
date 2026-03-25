@@ -1,0 +1,35 @@
+{
+  "PROP-baseauction-inv-056": {
+    "property_id": "PROP-baseauction-inv-056",
+    "text": "getAssetOutAmount with elapsed > duration must clamp elapsed to duration (no negative multiplier).",
+    "type": "invariant",
+    "assertion": "elapsed = min(elapsed, duration) => (start-end)*elapsed/duration <= start-end",
+    "severity": "HIGH",
+    "covers": "FN-getAssetOutAmount",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.bid"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "_getAssetOutAmount",
+          "line_range": {
+            "start": 777,
+            "end": 803
+          },
+          "role": "primary",
+          "note": "line 785: elapsedTime = elapsedTime > auctionDuration ? auctionDuration : elapsedTime \u2014 clamp enforced"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

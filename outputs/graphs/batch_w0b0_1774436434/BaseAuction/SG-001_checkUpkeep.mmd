@@ -1,0 +1,39 @@
+---
+title: "checkUpkeep (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_init: feeAggregator = s_feeAggregator; auctions = s_allowlistedAssets.values()
+    q_init --> q_iter: i = 0
+    q_iter --> q_skip: assetParams.decimals == 0
+    q_skip --> q_next: continue
+    q_iter --> q_getprice: assetParams.decimals != 0
+    q_getprice --> q_check_assetout: getAssetPrice(asset, false)
+    q_check_assetout --> q_check_live: asset == s_assetOut ? isAssetOutPriceValid = isPriceValid
+    q_check_live --> q_check_ended: auctionStart != 0
+    q_check_ended --> q_add_ended: duration elapsed OR (priceValid AND balance below minAuctionSize)
+    q_check_ended --> q_next: auction still live
+    q_add_ended --> q_next: endedAuctions[idx++] = asset
+    q_check_live --> q_check_eligible: auctionStart == 0 AND isPriceValid
+    q_check_eligible --> q_add_eligible: availableAssetUsdValue >= minAuctionSizeUsd
+    q_check_eligible --> q_next: below min auction size
+    q_add_eligible --> q_next: eligibleAssets[idx++] = AssetAmount(asset, balance)
+    q_check_live --> q_next: auctionStart == 0 AND !isPriceValid
+    q_next --> q_iter: i++; i < auctions.length
+    q_next --> q_assetout_gate: i >= auctions.length
+    q_assetout_gate --> q_clear_eligible: !isAssetOutPriceValid
+    q_clear_eligible --> q_encode: eligibleAssetsIdx = 0
+    q_assetout_gate --> q_encode: isAssetOutPriceValid
+    q_encode --> [*]: return (upkeepNeeded, performData)
+
+    note right of q_check_ended
+        INV-001: Auction ends when duration elapsed OR remaining balance below minAuctionSizeUsd (dust guard)
+    end note
+
+    note right of q_assetout_gate
+        INV-002: No auctions started if assetOut price is invalid - bids would revert
+    end note
+
+    note right of q_check_eligible
+        INV-003: Only feeAggregator balance is counted for eligible assets (not auction contract balance)
+    end note

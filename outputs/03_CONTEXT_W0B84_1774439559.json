@@ -1,0 +1,35 @@
+{
+  "PROP-baseauction-inv-079": {
+    "property_id": "PROP-baseauction-inv-079",
+    "text": "transmit price scaling must normalize all prices to exactly 18 decimals before storage.",
+    "type": "invariant",
+    "assertion": "feedDecimals<18 => price*10^(18-dec); feedDecimals>18 => price/10^(dec-18); ==18 => noop",
+    "severity": "HIGH",
+    "covers": "FN-transmit",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "PriceManager.transmit"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "conditional"
+    },
+    "exploitability": "indirect",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/PriceManager.sol",
+          "symbol": "transmit",
+          "line_range": {
+            "start": 133,
+            "end": 183
+          },
+          "role": "primary",
+          "note": "lines 167-172: feedDecimals < PRICE_DECIMALS => multiply; > PRICE_DECIMALS => divide; == 18 => no-op"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

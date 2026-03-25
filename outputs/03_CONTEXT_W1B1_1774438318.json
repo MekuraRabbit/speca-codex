@@ -1,0 +1,35 @@
+{
+  "PROP-baseauction-inv-002": {
+    "property_id": "PROP-baseauction-inv-002",
+    "text": "Asset transferred to bidder BEFORE pulling payment; callback must not bypass payment pull.",
+    "type": "invariant",
+    "assertion": "forall bid(asset,amt,data): safeTransfer(bidder,amt) precedes safeTransferFrom(bidder,assetOutAmt)",
+    "severity": "CRITICAL",
+    "covers": "FN-bid",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.bid"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "bid",
+          "line_range": {
+            "start": 410,
+            "end": 458
+          },
+          "role": "primary",
+          "note": "safeTransfer at line 444, callback at line 449, safeTransferFrom at line 453"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "PROP-baseauction-inv-021": {
+    "property_id": "PROP-baseauction-inv-021",
+    "text": "Stale performData between checkUpkeep and performUpkeep can start auctions with invalid state.",
+    "type": "invariant",
+    "assertion": "performUpkeep re-validates auctionStart==0 and balance>=minSize for each eligible asset",
+    "severity": "HIGH",
+    "covers": "FN-performUpkeep",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.performUpkeep"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "indirect",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "performUpkeep",
+          "line_range": {
+            "start": 305,
+            "end": 370
+          },
+          "role": "primary",
+          "note": "re-validates auctionStart!=0 (327-329), decimals (334-336), minAuctionSizeUsd (346-348)"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

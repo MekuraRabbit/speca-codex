@@ -1,0 +1,37 @@
+---
+title: "_getAssetPrice (Payment Abstraction V2 - PriceManager)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_load_streams: priceInfo = s_dataStreamsPrice[asset], feedInfo = s_feedInfo[asset]
+    q_load_streams --> q_set_primary: price = priceInfo.usdPrice, updatedAt = priceInfo.timestamp
+    q_set_primary --> q_check_stale: minTimestamp = block.timestamp - stalenessThreshold
+
+    q_check_stale --> q_check_fallback: updatedAt < minTimestamp (streams price stale)
+    q_check_stale --> q_validate: updatedAt >= minTimestamp (streams price fresh)
+
+    q_check_fallback --> q_validate: usdDataFeed == address(0) (no fallback configured)
+    q_check_fallback --> q_fetch_datafeed: usdDataFeed != address(0)
+
+    q_fetch_datafeed --> q_compare_timestamps: (answer, dataFeedUpdatedAt) = usdDataFeed.latestRoundData()
+    q_compare_timestamps --> q_use_datafeed: dataFeedUpdatedAt > updatedAt
+    q_compare_timestamps --> q_validate: dataFeedUpdatedAt <= updatedAt (streams is more recent)
+
+    q_use_datafeed --> q_scale_datafeed: price = answer, updatedAt = dataFeedUpdatedAt
+    q_scale_datafeed --> q_validate: scale price to 18 decimals
+
+    q_validate --> q_compute_valid: isZero = (price == 0), isStale = (updatedAt < minTimestamp)
+    q_compute_valid --> q_check_validation: isValid = !isZero AND !isStale
+
+    q_check_validation --> q_revert_zero: withValidation AND isZero
+    q_revert_zero --> [*]: revert ZeroFeedData()
+    q_check_validation --> q_revert_stale: withValidation AND isStale
+    q_revert_stale --> [*]: revert StaleFeedData()
+    q_check_validation --> [*]: return (price, updatedAt, isValid)
+
+    note right of q_check_fallback
+        INV-001: Data Streams price is prioritized over Data Feed price
+        INV-002: Fallback to Data Feed only when streams price is stale AND data feed is configured
+        INV-003: When falling back, the most recent timestamp wins (streams vs data feed)
+        INV-004: All prices are scaled to 18 decimals before return
+    end note

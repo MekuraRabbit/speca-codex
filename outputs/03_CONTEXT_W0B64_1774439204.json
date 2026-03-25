@@ -1,0 +1,35 @@
+{
+  "PROP-baseauction-inv-062": {
+    "property_id": "PROP-baseauction-inv-062",
+    "text": "Auction started with zero balance (race between checkUpkeep and performUpkeep) must revert.",
+    "type": "invariant",
+    "assertion": "performUpkeep: availableUsdValue < minAuctionSizeUsd => revert AmountBelowMinAuctionSize",
+    "severity": "MEDIUM",
+    "covers": "FN-performUpkeep",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.performUpkeep"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "indirect",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "performUpkeep",
+          "line_range": {
+            "start": 305,
+            "end": 370
+          },
+          "role": "primary",
+          "note": "lines 344-348: availableAssetUsdValue < minAuctionSizeUsd => revert AmountBelowMinAuctionSize"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

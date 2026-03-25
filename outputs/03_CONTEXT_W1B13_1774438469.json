@@ -1,0 +1,35 @@
+{
+  "PROP-baseauction-asm-001": {
+    "property_id": "PROP-baseauction-asm-001",
+    "text": "Only feeAggregator balance counted for eligible auction assets, not contract balance.",
+    "type": "assumption",
+    "assertion": "checkUpkeep reads feeAggregator.balanceOf(asset) not address(this).balanceOf(asset)",
+    "severity": "MEDIUM",
+    "covers": "FN-checkUpkeep",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.performUpkeep"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "indirect",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "checkUpkeep",
+          "line_range": {
+            "start": 216,
+            "end": 294
+          },
+          "role": "primary",
+          "note": "IERC20(asset).balanceOf(feeAggregator) at line 257 for eligible asset computation"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

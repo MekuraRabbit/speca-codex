@@ -1,0 +1,35 @@
+{
+  "PROP-baseauction-inv-025": {
+    "property_id": "PROP-baseauction-inv-025",
+    "text": "Auction balance available for bidding must equal actual ERC20 balance of contract.",
+    "type": "invariant",
+    "assertion": "availableBalance used in bid() == ERC20(asset).balanceOf(address(this))",
+    "severity": "HIGH",
+    "covers": "FN-bid",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.bid"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "bid",
+          "line_range": {
+            "start": 410,
+            "end": 458
+          },
+          "role": "primary",
+          "note": "availableBalance = IERC20(asset).balanceOf(address(this)) at line 437"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

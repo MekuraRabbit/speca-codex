@@ -1,0 +1,35 @@
+{
+  "PROP-baseauction-inv-006": {
+    "property_id": "PROP-baseauction-inv-006",
+    "text": "No new auctions started if assetOut price is invalid (checkUpkeep clears eligible list).",
+    "type": "invariant",
+    "assertion": "!isAssetOutPriceValid => eligibleAssetsIdx == 0 in checkUpkeep return",
+    "severity": "MEDIUM",
+    "covers": "FN-checkUpkeep",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.performUpkeep"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "indirect",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "checkUpkeep",
+          "line_range": {
+            "start": 216,
+            "end": 294
+          },
+          "role": "primary",
+          "note": "eligibleAssetsIdx reset to 0 at lines 271-273 when assetOut price invalid"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

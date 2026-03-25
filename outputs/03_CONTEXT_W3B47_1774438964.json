@@ -1,0 +1,35 @@
+{
+  "PROP-baseauction-inv-049": {
+    "property_id": "PROP-baseauction-inv-049",
+    "text": "Price query in bid() uses getAssetPrice(asset, true) not getAssetPrice(asset, false).",
+    "type": "invariant",
+    "assertion": "bid() calls getAssetPrice with withValidation=true => stale/zero prices revert",
+    "severity": "HIGH",
+    "covers": "FN-bid",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.bid"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "bid",
+          "line_range": {
+            "start": 410,
+            "end": 458
+          },
+          "role": "primary",
+          "note": "_getAssetPrice(asset, true) at line 429"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "PROP-baseauction-pre-010": {
+    "property_id": "PROP-baseauction-pre-010",
+    "text": "Bid function must check auction liveness before any price computation or transfer.",
+    "type": "pre-condition",
+    "assertion": "bid: auctionStart check precedes getAssetPrice and _getAssetOutAmount calls",
+    "severity": "MEDIUM",
+    "covers": "FN-bid",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.bid"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "bid",
+          "line_range": {
+            "start": 410,
+            "end": 458
+          },
+          "role": "primary",
+          "note": "lines 415-427: reentrancy guard and auctionStart check before _getAssetPrice at line 429"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

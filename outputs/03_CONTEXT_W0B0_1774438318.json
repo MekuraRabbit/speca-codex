@@ -1,0 +1,35 @@
+{
+  "PROP-baseauction-inv-001": {
+    "property_id": "PROP-baseauction-inv-001",
+    "text": "Reentrancy guard must prevent reentrant calls to bid() via callback execution.",
+    "type": "invariant",
+    "assertion": "forall call bid(asset,amt,data): s_entered==true during execution => nested bid() reverts",
+    "severity": "CRITICAL",
+    "covers": "FN-bid",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.bid"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "bid",
+          "line_range": {
+            "start": 410,
+            "end": 458
+          },
+          "role": "primary",
+          "note": "s_entered flag set at line 418 before external calls, cleared at line 457"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

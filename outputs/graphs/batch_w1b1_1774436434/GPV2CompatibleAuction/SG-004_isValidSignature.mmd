@@ -1,0 +1,59 @@
+---
+title: "isValidSignature (GPV2CompatibleAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_decode: order = abi.decode(signature, GPv2Order.Data)
+    q_decode --> q_reentrant_check: s_entered == false
+    q_reentrant_check --> q_err_reentrant: s_entered == true
+    q_err_reentrant --> [*]: revert ReentrantCall()
+    q_reentrant_check --> q_hash_check: hash == GPv2Order.hash(order, domainSeparator)
+    q_hash_check --> q_err_hash: hash != computed hash
+    q_err_hash --> [*]: revert InvalidOrderId(hash)
+    q_hash_check --> q_auction_check: auctionStart = s_auctionStarts[order.sellToken]
+    q_auction_check --> q_err_no_auction: auctionStart == 0
+    q_err_no_auction --> [*]: revert InvalidAuction(order.sellToken)
+    q_auction_check --> q_buytoken_check: order.buyToken == s_assetOut
+    q_buytoken_check --> q_err_buytoken: order.buyToken != s_assetOut
+    q_err_buytoken --> [*]: revert InvalidBuyToken(buyToken, assetOut)
+    q_buytoken_check --> q_receiver_check: order.receiver == address(this)
+    q_receiver_check --> q_err_receiver: order.receiver != address(this)
+    q_err_receiver --> [*]: revert InvalidReceiver(receiver, this)
+    q_receiver_check --> q_sell_amount_check: order.sellAmount != 0
+    q_sell_amount_check --> q_err_zero: order.sellAmount == 0
+    q_err_zero --> [*]: revert InvalidZeroAmount()
+    q_sell_amount_check --> q_balance_check: order.sellAmount <= balanceOf(this)
+    q_balance_check --> q_err_balance: order.sellAmount > balanceOf(this)
+    q_err_balance --> [*]: revert InsufficientAssetInBalance(...)
+    q_balance_check --> q_elapsed: elapsedTime = block.timestamp - auctionStart
+    q_elapsed --> q_duration_check: elapsedTime <= assetParams.auctionDuration
+    q_duration_check --> q_err_expired_auction: elapsedTime > auctionDuration
+    q_err_expired_auction --> [*]: revert InvalidAuction(order.sellToken)
+    q_duration_check --> q_price: minBuyAmount = _getAssetOutAmount(...)
+    q_price --> q_buy_check: order.buyAmount >= minBuyAmount
+    q_buy_check --> q_err_buy: order.buyAmount < minBuyAmount
+    q_err_buy --> [*]: revert InsufficientBuyAmount(buyAmount, minBuyAmount)
+    q_buy_check --> q_expiry_check: order.validTo >= block.timestamp
+    q_expiry_check --> q_err_order_expired: order.validTo < block.timestamp
+    q_err_order_expired --> [*]: revert ExpiredOrder(validTo, timestamp)
+    q_expiry_check --> q_fee_check: order.feeAmount == 0
+    q_fee_check --> q_err_fee: order.feeAmount > 0
+    q_err_fee --> [*]: revert InvalidFeeAmount()
+    q_fee_check --> q_kind_check: order.kind == KIND_SELL
+    q_kind_check --> q_err_kind: order.kind != KIND_SELL
+    q_err_kind --> [*]: revert InvalidOrderKind(kind)
+    q_kind_check --> q_partial_check: order.partiallyFillable == true
+    q_partial_check --> q_err_partial: order.partiallyFillable == false
+    q_err_partial --> [*]: revert OrderNotPartiallyFillable()
+    q_partial_check --> q_balance_marker: sellTokenBalance == BALANCE_ERC20 AND buyTokenBalance == BALANCE_ERC20
+    q_balance_marker --> q_err_marker: invalid token balance marker
+    q_err_marker --> [*]: revert InvalidTokenBalanceMarker()
+    q_balance_marker --> [*]: return IERC1271.isValidSignature.selector
+
+    note right of q_decode
+        INV-001: Order hash must match the GPv2 domain-separated hash of the decoded order
+        INV-002: Only active auctions (auctionStart != 0 and within duration) are valid
+        INV-003: Buy amount must meet minimum price calculated via Dutch auction decay curve
+        INV-004: Function is view-only; no state changes occur
+        INV-005: Reentrancy guard prevents validation during bid() execution
+    end note

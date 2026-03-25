@@ -1,0 +1,22 @@
+---
+title: "_setAssetOut (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_live: _whenNoLiveAuctions()
+    q_check_live --> q_revert_live: liveAuctionExists
+    q_revert_live --> q_error: revert LiveAuction()
+    q_check_live --> q_check_zero: no live auctions
+    q_check_zero --> q_revert_zero: assetOut == address(0)
+    q_revert_zero --> q_error: revert InvalidZeroAddress()
+    q_check_zero --> q_check_same: assetOut != address(0)
+    q_check_same --> q_revert_same: currentAssetOut == assetOut
+    q_revert_same --> q_error: revert ValueNotUpdated()
+    q_check_same --> q_update: currentAssetOut != assetOut
+    q_update --> [*]: s_assetOut = assetOut; delete s_assetParams[currentAssetOut]; emit AssetOutSet
+
+    note right of q_update
+        INV-013: Old assetOut params are deleted when assetOut changes
+    end note
+
+    q_error --> [*]

@@ -1,0 +1,15 @@
+---
+title: "invalidateOrders (Payment Abstraction V2 - GPV2CompatibleAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_access: onlyRole(ORDER_MANAGER_ROLE)
+    q_check_access --> q_iter: for orderUid in orderUids
+    q_iter --> q_invalidate: i_gpV2Settlement.invalidateOrder(orderUid)
+    q_invalidate --> q_iter: next order
+    q_iter --> [*]: all orders invalidated
+
+    note right of q_invalidate
+        INV-001: Only ORDER_MANAGER_ROLE (via WorkflowRouter) can invalidate CowSwap orders
+        INV-002: Delegates to GPv2Settlement contract for on-chain order cancellation
+    end note

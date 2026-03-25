@@ -1,0 +1,24 @@
+---
+title: "_call (Caller.sol)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_lowcall: (success, response) = target.call(data)
+    q_lowcall --> q_check_success: evaluate success
+    q_check_success --> q_return: success == true
+    q_check_success --> q_check_response: success == false
+    q_check_response --> q_bubble_revert: response.length > 0
+    q_check_response --> q_revert_generic: response.length == 0
+    q_bubble_revert --> [*]: revert(response)
+    q_revert_generic --> [*]: revert LowLevelCallFailed()
+    q_return --> [*]: return response
+
+    note right of q_lowcall
+        INV-001: target.call(data) performs arbitrary external call with no gas limit restriction
+        INV-002: return value success must be checked before using response
+    end note
+
+    note right of q_check_response
+        INV-003: if call reverts with data, original revert reason is bubbled up via assembly
+        INV-004: if call reverts without data, generic LowLevelCallFailed error is raised
+    end note

@@ -1,0 +1,13 @@
+---
+title: "_onAuctionStart (GPV2CompatibleAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_super: super._onAuctionStart(asset)
+    q_super --> q_approve: IERC20(asset).forceApprove(i_gpV2VaultRelayer, balanceOf(this))
+    q_approve --> [*]
+
+    note right of q_approve
+        INV-001: Vault relayer approval is set to full contract balance of the auctioned asset
+        INV-002: Approval must be granted before any CowSwap settlement can transfer tokens
+    end note

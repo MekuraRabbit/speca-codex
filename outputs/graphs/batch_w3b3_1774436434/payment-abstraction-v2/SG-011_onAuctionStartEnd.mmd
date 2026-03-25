@@ -1,0 +1,32 @@
+---
+title: "_onAuctionStart / _onAuctionEnd (Payment Abstraction V2 - GPV2CompatibleAuction)"
+---
+stateDiagram-v2
+    direction TB
+    state "Auction Start" as start_group {
+        [*] --> q_start_super: _onAuctionStart(asset)
+        q_start_super --> q_approve_relayer: super._onAuctionStart(asset)
+        q_approve_relayer --> q_start_done: forceApprove(gpV2VaultRelayer, balanceOf(this))
+    }
+
+    state "Auction End" as end_group {
+        [*] --> q_end_super: _onAuctionEnd(asset, hasFeeAggregator)
+        q_end_super --> q_return_assets: super._onAuctionEnd(asset, hasFeeAggregator)
+
+        q_return_assets --> q_return_to_agg: hasFeeAggregator AND assetBalance > 0
+        q_return_assets --> q_check_out_balance: no fee aggregator OR zero balance
+        q_return_to_agg --> q_check_out_balance: safeTransfer(feeAggregator, assetBalance)
+
+        q_check_out_balance --> q_transfer_out: assetOutBalance > 0
+        q_check_out_balance --> q_revoke: assetOutBalance == 0
+        q_transfer_out --> q_revoke: safeTransfer(assetOutReceiver, assetOutBalance)
+
+        q_revoke --> q_end_done: forceApprove(gpV2VaultRelayer, 0)
+    }
+
+    note right of q_approve_relayer
+        INV-001: CowSwap vault relayer approved for full asset balance at auction start
+        INV-002: Approval revoked to zero at auction end
+        INV-003: Remaining assets returned to FeeAggregator on end
+        INV-004: Accumulated assetOut (LINK) sent to assetOutReceiver on end
+    end note

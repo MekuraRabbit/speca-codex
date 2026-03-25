@@ -1,0 +1,35 @@
+{
+  "PROP-baseauction-inv-039": {
+    "property_id": "PROP-baseauction-inv-039",
+    "text": "Division by assetOutUsdPrice in getAssetOutAmount must not divide by zero.",
+    "type": "invariant",
+    "assertion": "getAssetOutAmount: assetOutUsdPrice > 0 (enforced by getAssetPrice withValidation=true)",
+    "severity": "HIGH",
+    "covers": "FN-getAssetOutAmount",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.bid"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "_getAssetOutAmount",
+          "line_range": {
+            "start": 777,
+            "end": 803
+          },
+          "role": "primary",
+          "note": "mulDivUp(..., assetOutUsdPrice) at line 802; protected by withValidation=true in bid() path via _getAssetPrice"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

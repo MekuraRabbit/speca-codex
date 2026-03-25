@@ -1,0 +1,44 @@
+---
+title: "checkUpkeep (Payment Abstraction V2)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_paused: whenNotPaused
+    q_check_paused --> q_check_asset_out: whenAssetOutConfigured
+    q_check_asset_out --> q_init_arrays: feeAggregator = s_feeAggregator, auctions = s_allowlistedAssets.values()
+    q_init_arrays --> q_iter: eligibleAssetsIdx = 0, endedAuctionsIdx = 0
+
+    q_iter --> q_check_decimals: for asset in auctions
+    q_check_decimals --> q_iter: assetParams.decimals == 0 (skip)
+    q_check_decimals --> q_get_price: assetParams.decimals != 0
+
+    q_get_price --> q_check_asset_out_price: asset == s_assetOut
+    q_check_asset_out_price --> q_check_live: isAssetOutPriceValid = isPriceValid
+
+    q_get_price --> q_check_live: asset != s_assetOut
+
+    q_check_live --> q_check_ended: auctionStart != 0 (live auction)
+    q_check_live --> q_check_eligible: auctionStart == 0 AND isPriceValid
+
+    q_check_ended --> q_add_ended: duration elapsed OR balance USD below minAuctionSize
+    q_check_ended --> q_iter: auction still live
+    q_add_ended --> q_iter: endedAuctions[endedAuctionsIdx++] = asset
+
+    q_check_eligible --> q_get_balance: availableBalance = balanceOf(feeAggregator)
+    q_get_balance --> q_check_min_size: availableAssetUsdValue = balance * price / 10^decimals
+    q_check_min_size --> q_add_eligible: availableAssetUsdValue >= minAuctionSizeUsd
+    q_check_min_size --> q_iter: below min auction size
+    q_add_eligible --> q_iter: eligibleAssets[eligibleAssetsIdx++] = AssetAmount
+
+    q_iter --> q_filter_asset_out: loop complete
+    q_filter_asset_out --> q_encode: if !isAssetOutPriceValid then eligibleAssetsIdx = 0
+    q_encode --> q_return_true: eligibleAssetsIdx > 0 OR endedAuctionsIdx > 0
+    q_encode --> q_return_false: both zero
+    q_return_true --> [*]: return (true, abi.encode(eligibleAssets, endedAuctions))
+    q_return_false --> [*]: return (false, empty)
+
+    note right of q_check_ended
+        INV-001: Auction end condition requires duration elapsed OR balance below minAuctionSizeUsd
+        INV-002: Asset out price validity gates all new auction starts
+        INV-003: Only assets with configured params (decimals != 0) are evaluated
+    end note

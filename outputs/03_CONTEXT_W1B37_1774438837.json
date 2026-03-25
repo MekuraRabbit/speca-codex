@@ -1,0 +1,35 @@
+{
+  "PROP-baseauction-inv-041": {
+    "property_id": "PROP-baseauction-inv-041",
+    "text": "checkUpkeep with no valid prices returns upkeepNeeded=false, preventing stale auction starts.",
+    "type": "invariant",
+    "assertion": "all prices invalid => eligibleAssets empty AND endedAuctions empty => upkeepNeeded=false",
+    "severity": "MEDIUM",
+    "covers": "FN-checkUpkeep",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.performUpkeep"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "indirect",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "checkUpkeep",
+          "line_range": {
+            "start": 216,
+            "end": 294
+          },
+          "role": "primary",
+          "note": "eligibleAssetsIdx reset to 0 at line 272 when assetOut price invalid; upkeepNeeded=true only if idx>0 (line 288)"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

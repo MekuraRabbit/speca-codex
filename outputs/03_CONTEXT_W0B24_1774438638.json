@@ -1,0 +1,44 @@
+{
+  "PROP-baseauction-inv-028": {
+    "property_id": "PROP-baseauction-inv-028",
+    "text": "Ended auction cleanup must delete s_auctionStarts entry and call _onAuctionEnd.",
+    "type": "post-condition",
+    "assertion": "forall performUpkeep ended: s_auctionStarts[asset] deleted AND _onAuctionEnd called",
+    "severity": "MEDIUM",
+    "covers": "FN-performUpkeep",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.performUpkeep"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "indirect",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "performUpkeep",
+          "line_range": {
+            "start": 305,
+            "end": 370
+          },
+          "role": "primary",
+          "note": "_onAuctionEnd at line 366, delete s_auctionStarts[asset] at line 367"
+        },
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "_onAuctionEnd",
+          "line_range": {
+            "start": 383,
+            "end": 397
+          },
+          "role": "callee"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

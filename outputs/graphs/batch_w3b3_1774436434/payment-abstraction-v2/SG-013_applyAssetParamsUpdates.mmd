@@ -1,0 +1,65 @@
+---
+title: "_applyAssetParamsUpdates (Payment Abstraction V2 - BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_empty: check adds.length and removes.length
+    q_check_empty --> q_revert_empty: both empty
+    q_revert_empty --> [*]: revert EmptyList()
+    q_check_empty --> q_iter_removes: at least one non-empty
+
+    q_iter_removes --> q_remove: for asset in removes
+    q_remove --> q_check_live_remove: check live auction
+    q_check_live_remove --> q_revert_live: (asset == assetOut AND _liveAuctionExists) OR s_auctionStarts[asset] != 0
+    q_revert_live --> [*]: revert LiveAuction()
+    q_check_live_remove --> q_check_has_params: no live auction for this asset
+    q_check_has_params --> q_revert_no_params: decimals == 0
+    q_revert_no_params --> [*]: revert AssetParamsNotSet()
+    q_check_has_params --> q_delete_params: params exist
+    q_delete_params --> q_iter_removes: delete s_assetParams[asset]
+
+    q_iter_removes --> q_iter_adds: removes complete
+    q_iter_adds --> q_add: for (asset, params) in adds
+    q_add --> q_check_live_add: check live auction
+    q_check_live_add --> q_revert_live_add: live auction exists for asset
+    q_revert_live_add --> [*]: revert LiveAuction()
+    q_check_live_add --> q_check_allowlist: no live auction
+
+    q_check_allowlist --> q_revert_not_listed: !s_allowlistedAssets.contains(asset)
+    q_revert_not_listed --> [*]: revert AssetNotAllowlisted()
+    q_check_allowlist --> q_validate_decimals: asset allowlisted
+
+    q_validate_decimals --> q_revert_decimals: params.decimals != IERC20Metadata.decimals()
+    q_revert_decimals --> [*]: revert InvalidAssetDecimals()
+    q_validate_decimals --> q_validate_min_size: decimals match
+
+    q_validate_min_size --> q_revert_zero: minAuctionSizeUsd == 0
+    q_revert_zero --> [*]: revert InvalidZeroValue()
+    q_validate_min_size --> q_check_is_asset_out: min size > 0
+
+    q_check_is_asset_out --> q_store: asset == s_assetOut (only needs minAuctionSize + decimals)
+    q_check_is_asset_out --> q_validate_duration: asset != s_assetOut
+
+    q_validate_duration --> q_revert_duration: auctionDuration == 0
+    q_revert_duration --> [*]: revert InvalidZeroValue()
+    q_validate_duration --> q_validate_ending: duration > 0
+
+    q_validate_ending --> q_revert_ending: endingPriceMultiplier < i_minPriceMultiplier
+    q_revert_ending --> [*]: revert InvalidEndingPriceMultiplier()
+    q_validate_ending --> q_validate_ordering: ending >= min
+
+    q_validate_ordering --> q_revert_ordering: endingPriceMultiplier > startingPriceMultiplier
+    q_revert_ordering --> [*]: revert StartingPriceMultiplierLowerThanEndingPriceMultiplier()
+    q_validate_ordering --> q_store: starting >= ending
+
+    q_store --> q_iter_adds: s_assetParams[asset] = assetParams
+
+    q_iter_adds --> [*]: all adds processed
+
+    note right of q_validate_ordering
+        INV-001: startingPriceMultiplier >= endingPriceMultiplier (price decays, never increases)
+        INV-002: endingPriceMultiplier >= i_minPriceMultiplier (max discount bounded)
+        INV-003: Asset params cannot be modified during live auctions
+        INV-004: Asset must be in allowlist (feed info configured) before params can be set
+        INV-005: Decimals are validated against actual ERC20 token decimals
+    end note

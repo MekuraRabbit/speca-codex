@@ -1,0 +1,54 @@
+---
+title: "_applyFeedInfoUpdates (Payment Abstraction V2 - PriceManager)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_empty: check adds.length and removes.length
+    q_check_empty --> q_revert_empty: both empty
+    q_revert_empty --> [*]: revert EmptyList()
+    q_check_empty --> q_iter_removes: at least one non-empty
+
+    q_iter_removes --> q_remove: for asset in removes
+    q_remove --> q_hook_remove: _onFeedInfoUpdate(asset, true)
+    q_hook_remove --> q_check_allowlisted: check s_allowlistedAssets.remove(asset)
+    q_check_allowlisted --> q_revert_not_allowed: not in set
+    q_revert_not_allowed --> [*]: revert AssetNotAllowlisted()
+    q_check_allowlisted --> q_cleanup: removed from set
+    q_cleanup --> q_iter_removes: delete feedId mapping, feedInfo, streamsPrice
+
+    q_iter_removes --> q_iter_adds: removes complete
+    q_iter_adds --> q_add: for feedInfo in adds
+    q_add --> q_hook_add: _onFeedInfoUpdate(asset, false)
+    q_hook_add --> q_validate_asset: check asset != address(0)
+    q_validate_asset --> q_revert_zero: asset == address(0)
+    q_revert_zero --> [*]: revert InvalidZeroAddress()
+
+    q_validate_asset --> q_validate_feed: asset valid
+    q_validate_feed --> q_revert_zero_val: stalenessThreshold == 0 AND both feedId and dataFeed zero
+    q_revert_zero_val --> [*]: revert InvalidZeroValue()
+    q_validate_feed --> q_check_streams: feed config valid
+
+    q_check_streams --> q_validate_version: dataStreamsFeedId != 0
+    q_check_streams --> q_store: dataStreamsFeedId == 0 (data feed only)
+
+    q_validate_version --> q_revert_decimals: dataStreamsFeedDecimals == 0
+    q_revert_decimals --> [*]: revert InvalidFeedDecimals()
+    q_validate_version --> q_check_version: decimals valid
+    q_check_version --> q_revert_version: version != 3
+    q_revert_version --> [*]: revert InvalidFeedVersion()
+    q_check_version --> q_check_rotation: version == 3
+
+    q_check_rotation --> q_handle_rotation: previousAsset != address(0) AND previousAsset != asset
+    q_check_rotation --> q_store: no rotation needed
+    q_handle_rotation --> q_store: clean up previous asset streams state
+
+    q_store --> q_iter_adds: s_feedInfo[asset] = feedInfo, update mappings
+
+    q_iter_adds --> [*]: all adds processed
+
+    note right of q_check_rotation
+        INV-001: Feed ID rotation cleans up previous asset state
+        INV-002: Previous asset must retain a data feed if its streams feed is rotated away
+        INV-003: Only Data Streams report v3 is supported
+        INV-004: _onFeedInfoUpdate hook allows BaseAuction to block changes during live auctions
+    end note

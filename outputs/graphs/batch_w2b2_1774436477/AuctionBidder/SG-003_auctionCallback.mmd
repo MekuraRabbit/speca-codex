@@ -1,0 +1,27 @@
+---
+title: "auctionCallback (AuctionBidder)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_guard: whenNotPaused
+    q_guard --> q_auth: msg.sender == address(s_auction) AND from == address(this)
+    q_auth --> q_revert: false
+    q_auth --> q_decode: true
+    q_revert --> [*]: revert AccessForbidden()
+    q_decode --> q_multicall: calls = abi.decode(data, Call[])
+    q_multicall --> q_approve: _multiCall(calls)
+    q_approve --> [*]: forceApprove(msg.sender, amountOut)
+
+    note right of q_auth
+        INV-001: Only the auction contract can invoke this callback
+        INV-002: from must be this contract (bid originated from this contract)
+    end note
+
+    note right of q_multicall
+        INV-003: _multiCall executes arbitrary external calls decoded from data
+        INV-004: Calls must succeed or entire transaction reverts
+    end note
+
+    note right of q_approve
+        INV-005: After solving, contract approves auction to pull exactly amountOut of assetOut
+    end note

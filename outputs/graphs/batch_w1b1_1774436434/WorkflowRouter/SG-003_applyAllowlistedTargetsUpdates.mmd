@@ -1,0 +1,43 @@
+---
+title: "_applyAllowlistedTargetsUpdates (WorkflowRouter)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_wf: check workflowId allowlisted
+    q_check_wf --> q_check_empty: s_allowlistedWorkflowIds.contains(workflowId)
+    q_check_wf --> q_revert_wf: workflowId not allowlisted
+    q_revert_wf --> [*]: revert WorkflowIdNotAllowlisted(workflowId)
+
+    q_check_empty --> q_iter_removes: removes.length > 0 OR adds.length > 0
+    q_check_empty --> q_revert_empty: removes.length == 0 AND adds.length == 0
+    q_revert_empty --> [*]: revert EmptyList()
+
+    q_iter_removes --> q_remove_target: i < removes.length
+    q_iter_removes --> q_iter_adds: i >= removes.length (done)
+
+    q_remove_target --> q_cast_selectors: target = removes[i]
+    q_cast_selectors --> q_remove_selectors: cast allowlistedSelectors bytes32[] to bytes4[] via assembly
+    q_remove_selectors --> q_remove_set: _applyAllowlistedSelectorsUpdates(workflowId, target, allSelectors, empty)
+    q_remove_set --> q_emit_target_remove: s_workflowInfos[workflowId].allowlistedTargets.remove(target)
+    q_emit_target_remove --> q_iter_removes: emit TargetRemovedFromAllowlist, i++
+
+    q_iter_adds --> q_add_target: i < adds.length
+    q_iter_adds --> [*]: i >= adds.length (done)
+
+    q_add_target --> q_check_zero_addr: target = adds[i].target
+    q_check_zero_addr --> q_add_set: target != address(0)
+    q_check_zero_addr --> q_revert_zero: target == address(0)
+    q_revert_zero --> [*]: revert InvalidZeroAddress()
+
+    q_add_set --> q_add_selectors: allowlistedTargets.add(target)
+    q_add_selectors --> q_iter_adds: _applyAllowlistedSelectorsUpdates(workflowId, target, empty, selectors), i++
+
+    note right of q_cast_selectors
+        INV-001: assembly cast bytes32[] to bytes4[] is safe because both are in-memory 32-byte slot arrays
+        INV-002: removing target first removes all its selectors via _applyAllowlistedSelectorsUpdates
+    end note
+
+    note right of q_add_set
+        INV-003: allowlistedTargets.add is idempotent (EnumerableSet)
+        INV-004: address(0) target is rejected
+    end note

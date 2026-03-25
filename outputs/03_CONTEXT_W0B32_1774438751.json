@@ -1,0 +1,35 @@
+{
+  "PROP-baseauction-inv-036": {
+    "property_id": "PROP-baseauction-inv-036",
+    "text": "performUpkeep endedAuctions must revert if asset has no active auction (auctionStart==0).",
+    "type": "pre-condition",
+    "assertion": "forall performUpkeep ended[j]: s_auctionStarts[asset]==0 => revert InvalidAuction",
+    "severity": "MEDIUM",
+    "covers": "FN-performUpkeep",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.performUpkeep"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "indirect",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "performUpkeep",
+          "line_range": {
+            "start": 305,
+            "end": 370
+          },
+          "role": "primary",
+          "note": "InvalidAuction revert at lines 362-364 in endedAuctions loop"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

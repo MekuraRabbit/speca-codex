@@ -1,0 +1,35 @@
+{
+  "PROP-baseauction-inv-005": {
+    "property_id": "PROP-baseauction-inv-005",
+    "text": "All rounding in assetOutAmount computation must round UP in favor of the protocol.",
+    "type": "invariant",
+    "assertion": "forall _getAssetOutAmount: actual_out >= floor_out (mulDivUp and mulWadUp used)",
+    "severity": "HIGH",
+    "covers": "FN-getAssetOutAmount",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.bid"
+      ],
+      "attacker_controlled": true,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "external-attack",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/BaseAuction.sol",
+          "symbol": "_getAssetOutAmount",
+          "line_range": {
+            "start": 777,
+            "end": 803
+          },
+          "role": "primary",
+          "note": "mulDivUp and mulWadUp at line 799, mulDivUp at line 802"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}

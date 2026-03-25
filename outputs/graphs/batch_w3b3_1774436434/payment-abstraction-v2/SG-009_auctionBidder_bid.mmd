@@ -1,0 +1,31 @@
+---
+title: "AuctionBidder.bid (Payment Abstraction V2)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_access: whenNotPaused, onlyRole(AUCTION_BIDDER_ROLE)
+    q_check_access --> q_load: auction = s_auction, assetOut = auction.getAssetOut()
+
+    q_load --> q_check_solution: check solution.length
+    q_check_solution --> q_with_callback: solution.length > 0
+    q_check_solution --> q_no_callback: solution.length == 0
+
+    q_with_callback --> q_encode_data: data = abi.encode(solution)
+    q_no_callback --> q_pre_approve: data = empty, forceApprove(auction, getAssetOutAmount)
+
+    q_encode_data --> q_call_bid: auction.bid(assetIn, amount, data)
+    q_pre_approve --> q_call_bid: auction.bid(assetIn, amount, empty)
+
+    q_call_bid --> q_check_residual: bid executed (asset received, callback invoked if data)
+    q_check_residual --> q_check_receiver: assetOutBalance = balanceOf(this)
+
+    q_check_receiver --> q_transfer_residual: assetOutBalance > 0 AND receiver != address(0)
+    q_check_receiver --> [*]: assetOutBalance == 0 OR receiver == address(0)
+    q_transfer_residual --> [*]: safeTransfer(receiver, assetOutBalance)
+
+    note right of q_call_bid
+        INV-001: When solution is provided, callback pattern is used (asset swap during callback)
+        INV-002: When no solution, pre-approves exact assetOutAmount before bid
+        INV-003: Residual assetOut (positive slippage) forwarded to configured receiver
+        INV-004: Only AUCTION_BIDDER_ROLE can trigger bid (trusted role via WorkflowRouter)
+    end note

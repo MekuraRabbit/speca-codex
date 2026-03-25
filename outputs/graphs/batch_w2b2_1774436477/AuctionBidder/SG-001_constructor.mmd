@@ -1,0 +1,17 @@
+---
+title: "constructor (AuctionBidder)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_init: PausableWithAccessControl(adminRoleTransferDelay, admin)
+    q_init --> q_set_auction: _setAuction(auction)
+    q_set_auction --> q_check_receiver: receiver != address(0)
+    q_set_auction --> q_final: receiver == address(0)
+    q_check_receiver --> q_set_receiver: _setReceiver(receiver)
+    q_set_receiver --> q_final
+    q_final --> [*]
+
+    note right of q_init
+        INV-001: admin must be non-zero (enforced by PausableWithAccessControl)
+        INV-002: auction must pass _setAuction validation before constructor completes
+    end note

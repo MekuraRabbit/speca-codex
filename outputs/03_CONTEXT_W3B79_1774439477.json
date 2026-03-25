@@ -1,0 +1,35 @@
+{
+  "PROP-baseauction-inv-074": {
+    "property_id": "PROP-baseauction-inv-074",
+    "text": "isValid flag must be false when price is zero OR timestamp is stale.",
+    "type": "invariant",
+    "assertion": "isValid = (price != 0) AND (updatedAt >= block.timestamp - stalenessThreshold)",
+    "severity": "MEDIUM",
+    "covers": "FN-getAssetPrice",
+    "reachability": {
+      "classification": "external-reachable",
+      "entry_points": [
+        "BaseAuction.performUpkeep"
+      ],
+      "attacker_controlled": false,
+      "bug_bounty_scope": "in-scope"
+    },
+    "exploitability": "indirect",
+    "code_scope": {
+      "locations": [
+        {
+          "file": "src/PriceManager.sol",
+          "symbol": "_getAssetPrice",
+          "line_range": {
+            "start": 372,
+            "end": 419
+          },
+          "role": "primary",
+          "note": "lines 404-406: isZero = price==0; isStale = updatedAt < minTimestamp; isValid = !isZero && !isStale"
+        }
+      ],
+      "resolution_status": "resolved",
+      "resolution_method": "grep_fallback"
+    }
+  }
+}
