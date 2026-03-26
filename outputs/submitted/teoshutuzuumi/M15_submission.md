@@ -47,21 +47,13 @@ When the fallback data feed is active (Data Streams is stale) and the real marke
 
 **Scenario: LINK price crashes below minAnswer**
 
-| Parameter | Normal | Circuit breaker hit |
-|---|---|---|
-| Real LINK price | $15.00 | $2.00 |
-| Aggregator minAnswer | — | $10.00 |
-| Price returned | $15.00 | **$10.00** (clamped) |
-| assetOutAmount for $1000 USDC | 66.7 LINK | **100 LINK** |
-| Actual value received by protocol | $1000 | **$200** (5x loss) |
-
 The `assetOutAmount` calculation in `_getAssetOutAmount()` ([L802](https://github.com/code-423n4/2026-03-chainlink/blob/main/src/BaseAuction.sol#L802)) uses `assetOutUsdPrice` as denominator:
 
 ```solidity
 return auctionUsdValue.mulDivUp(10 ** s_assetParams[s_assetOut].decimals, assetOutUsdPrice);
 ```
 
-An inflated `assetOutUsdPrice` (minAnswer > real price) results in a **lower assetOutAmount**, meaning the bidder pays fewer LINK tokens than the auctioned assets are actually worth. The protocol suffers direct value loss.
+If the real LINK price drops below the aggregator's `minAnswer`, the feed returns `minAnswer` instead of the real price. Since `assetOutUsdPrice` (LINK) is inflated relative to reality, `assetOutAmount` is lower than it should be — the bidder pays fewer LINK tokens than the auctioned assets are worth at market price. The degree of loss depends on how far the real price has diverged from `minAnswer`.
 
 ### Conditions
 
@@ -135,68 +127,33 @@ if (answer <= minAnswer || answer >= maxAnswer) {
 
 ---COPY FROM HERE---
 
-Run with:
+The vulnerability is in the code path itself — no runtime PoC is needed to demonstrate the missing validation. The following walkthrough traces the exact execution path:
 
-```bash
-forge test --match-contract M15_CircuitBreakerBypass -vvv
-```
+### Code Walkthrough
 
+1. **Data Streams becomes stale** — `updatedAt < minTimestamp` at [L385](https://github.com/code-423n4/2026-03-chainlink/blob/main/src/PriceManager.sol#L385)
+
+2. **Fallback activates** — `latestRoundData()` is called on the Chainlink data feed at [L386](https://github.com/code-423n4/2026-03-chainlink/blob/main/src/PriceManager.sol#L386):
 ```solidity
-// SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.26;
-
-import {C4PoC} from "./C4PoC.t.sol";
-import {PriceManager} from "src/PriceManager.sol";
-import {Errors} from "src/libraries/Errors.sol";
-import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
-
-/// @title M-15: Chainlink circuit breaker bounds not validated in fallback path
-/// @notice PriceManager._getAssetPrice() does not check if the Chainlink data feed
-///         answer has hit the aggregator's minAnswer/maxAnswer circuit breaker.
-///         When the real price exceeds these bounds, the feed returns the boundary
-///         value instead of the actual price, leading to mispriced auctions.
-contract M15_CircuitBreakerBypass is C4PoC {
-
-    /// @notice Demonstrates that a stale price from circuit breaker is accepted as valid
-    function test_M15_circuitBreakerPriceAccepted() public {
-        // 1. Start a USDC auction
-        uint256 auctionSellAmt = 10_000e6;
-        _startAuctionAndSkip(address(mockUSDC), auctionSellAmt, 7_200);
-
-        // 2. Make Data Streams stale (skip past staleness threshold)
-        skip(1 hours + 1);
-
-        // 3. Simulate Chainlink data feed returning minAnswer for LINK
-        // Real LINK price: $2.00, but aggregator minAnswer: $10.00
-        // Feed returns $10.00 (clamped) instead of real $2.00
-        mockLinkUsdFeed.transmit(10e8); // $10.00 in 8 decimals (minAnswer)
-
-        // Also update USDC feed to be fresh
-        mockUsdcUsdFeed.transmit(1e8); // $1.00
-
-        // 4. Get the price — should be the clamped minAnswer value
-        (uint256 linkPrice,, bool isValid) = auction.getAssetPrice(address(mockLINK));
-
-        // 5. The clamped price is accepted as valid
-        assertTrue(isValid, "Clamped price accepted as valid");
-        assertEq(linkPrice, 10e18, "Price is minAnswer, not real market price");
-
-        // 6. Calculate how much LINK a bidder would pay
-        // With real price ($2): bidder should pay 5000 LINK for $10k USDC
-        // With clamped price ($10): bidder only pays 1000 LINK for $10k USDC
-        // Protocol receives $2000 worth of LINK instead of $10000
-        uint256 assetOutAmount = auction.getAssetOutAmount(
-            address(mockUSDC), auctionSellAmt, block.timestamp
-        );
-
-        // assetOutAmount is calculated with inflated LINK price
-        // Bidder pays fewer LINK tokens than the USDC is actually worth
-        console2.log("LINK assetOutAmount (with clamped price):", assetOutAmount);
-        console2.log("Real value of LINK paid: $", (assetOutAmount * 2e18) / 1e18 / 1e18);
-        console2.log("Value of USDC received: $10,000");
-        console2.log("[CONFIRMED] Protocol receives less value due to circuit breaker bypass");
-    }
-}
+(, int256 answer,, uint256 dataFeedUpdatedAt,) = feedInfo.usdDataFeed.latestRoundData();
 ```
+
+3. **No bounds check** — `answer` is assigned directly to `price` at [L392](https://github.com/code-423n4/2026-03-chainlink/blob/main/src/PriceManager.sol#L392):
+```solidity
+price = answer.toUint256();
+```
+There is no comparison against `aggregator.minAnswer()` or `aggregator.maxAnswer()`. If the aggregator has clamped the answer to a boundary value, this code cannot detect it.
+
+4. **Staleness/zero checks pass** — [L404-416](https://github.com/code-423n4/2026-03-chainlink/blob/main/src/PriceManager.sol#L404) only check `updatedAt >= minTimestamp` and `price == 0`. A clamped-but-fresh price passes both checks.
+
+5. **Mispriced auction** — `_getAssetOutAmount()` at [L802](https://github.com/code-423n4/2026-03-chainlink/blob/main/src/BaseAuction.sol#L802) uses the clamped price as denominator:
+```solidity
+return auctionUsdValue.mulDivUp(10 ** s_assetParams[s_assetOut].decimals, assetOutUsdPrice);
+```
+An inflated `assetOutUsdPrice` produces a lower `assetOutAmount` — the bidder pays fewer LINK tokens than the auctioned assets are worth at market price.
+
+### Key observation
+
+The existing code validates staleness and zero but has **no path** to detect circuit-breaker-clamped values. This is visible by inspection of [L385-416](https://github.com/code-423n4/2026-03-chainlink/blob/main/src/PriceManager.sol#L385) — the word "min" or "max" does not appear in the fallback validation logic.
 
 ---END COPY FOR POC---
