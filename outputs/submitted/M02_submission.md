@@ -2,7 +2,7 @@
 
 ## Severity rating
 
-Medium
+Low
 
 ## Title
 
