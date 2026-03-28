@@ -1,0 +1,38 @@
+---
+title: "bid (BaseAuction - inherited by GPV2CompatibleAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_reentrant: s_entered == false
+    q_reentrant --> q_err_reentrant: s_entered == true
+    q_err_reentrant --> [*]: revert ReentrantCall()
+    q_reentrant --> q_lock: s_entered = true
+    q_lock --> q_load: load assetParams and auctionStart
+    q_load --> q_auction_valid: auctionStart != 0 AND elapsedTime <= auctionDuration
+    q_auction_valid --> q_err_auction: auctionStart == 0 OR elapsedTime > auctionDuration
+    q_err_auction --> [*]: revert InvalidAuction(asset)
+    q_auction_valid --> q_price: assetPrice = _getAssetPrice(asset, true)
+    q_price --> q_bid_value: bidUsdValue = (amount * assetPrice) / 10^decimals
+    q_bid_value --> q_min_bid: bidUsdValue >= s_minBidUsdValue
+    q_min_bid --> q_err_low: bidUsdValue < minBidUsdValue
+    q_err_low --> [*]: revert BidValueTooLow(bidUsdValue, minBidUsdValue)
+    q_min_bid --> q_balance: amount <= balanceOf(this)
+    q_balance --> q_err_high: amount > availableBalance
+    q_err_high --> [*]: revert BidAmountTooHigh(amount, availableBalance)
+    q_balance --> q_calc_out: assetOutAmount = _getAssetOutAmount(...)
+    q_calc_out --> q_transfer_in: IERC20(asset).safeTransfer(msg.sender, amount)
+    q_transfer_in --> q_callback_check: data.length != 0
+    q_callback_check --> q_callback: IAuctionCallback(msg.sender).auctionCallback(...)
+    q_callback --> q_pull: IERC20(assetOut).safeTransferFrom(msg.sender, this, assetOutAmount)
+    q_callback_check --> q_pull: data.length == 0
+    q_pull --> q_emit: emit AuctionBidSettled(msg.sender, asset, amount, assetOutAmount)
+    q_emit --> q_unlock: s_entered = false
+    q_unlock --> [*]
+
+    note right of q_lock
+        INV-001: Reentrancy lock is set before any external calls and cleared after
+        INV-002: Asset is transferred to bidder BEFORE assetOut is pulled (flash-loan pattern)
+        INV-003: Callback is invoked between asset transfer out and assetOut pull (potential reentrancy vector)
+        INV-004: bid USD value must exceed minimum threshold
+        INV-005: bid amount must not exceed contract balance of the auctioned asset
+    end note

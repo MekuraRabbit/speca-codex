@@ -1,0 +1,13 @@
+---
+title: "_onAuctionEnd (GPV2CompatibleAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_super: super._onAuctionEnd(asset, hasFeeAggregator)
+    q_super --> q_revoke: forceApprove(i_gpV2VaultRelayer, 0)
+    q_revoke --> [*]: return
+
+    note right of q_revoke
+        INV-001: Vault relayer allowance is revoked to zero on auction end
+        INV-002: Base _onAuctionEnd transfers remaining asset to feeAggregator and assetOut to receiver
+    end note

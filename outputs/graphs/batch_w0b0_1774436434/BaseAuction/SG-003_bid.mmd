@@ -1,0 +1,42 @@
+---
+title: "bid (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_reentrancy: check s_entered
+    q_reentrancy --> q_revert_reentrant: s_entered == true
+    q_revert_reentrant --> q_error: revert ReentrantCall()
+    q_reentrancy --> q_lock: s_entered == false
+    q_lock --> q_load: s_entered = true
+    q_load --> q_check_auction: load assetParams, auctionStart; elapsedTime = block.timestamp - auctionStart
+    q_check_auction --> q_revert_invalid: auctionStart == 0 OR elapsedTime > auctionDuration
+    q_revert_invalid --> q_error: revert InvalidAuction(asset)
+    q_check_auction --> q_get_price: auction is live
+    q_get_price --> q_check_min_bid: assetPrice = getAssetPrice(asset, true); bidUsdValue = amount * assetPrice / 10^decimals
+    q_check_min_bid --> q_revert_low: bidUsdValue < minBidUsdValue
+    q_revert_low --> q_error: revert BidValueTooLow
+    q_check_min_bid --> q_check_balance: bidUsdValue >= minBidUsdValue
+    q_check_balance --> q_revert_high: amount > availableBalance
+    q_revert_high --> q_error: revert BidAmountTooHigh
+    q_check_balance --> q_compute: amount <= availableBalance
+    q_compute --> q_transfer_out: assetOutAmount = _getAssetOutAmount(params, price, amount, elapsed, true)
+    q_transfer_out --> q_callback_check: safeTransfer(msg.sender, amount)
+    q_callback_check --> q_callback: data.length != 0
+    q_callback_check --> q_pull: data.length == 0
+    q_callback --> q_pull: auctionCallback(msg.sender, assetOut, assetOutAmount, data)
+    q_pull --> q_emit: safeTransferFrom(msg.sender, this, assetOutAmount)
+    q_emit --> q_unlock: emit AuctionBidSettled
+    q_unlock --> [*]: s_entered = false
+    q_error --> [*]
+
+    note right of q_transfer_out
+        INV-007: Asset transferred to bidder BEFORE pulling payment (callback pattern enables flash-loan-style bids)
+    end note
+
+    note right of q_lock
+        INV-008: Manual reentrancy guard via s_entered boolean flag
+    end note
+
+    note right of q_compute
+        INV-009: Price includes linear decay multiplier based on elapsed auction time
+    end note

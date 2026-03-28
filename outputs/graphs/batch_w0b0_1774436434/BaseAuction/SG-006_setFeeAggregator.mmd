@@ -1,0 +1,25 @@
+---
+title: "_setFeeAggregator (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_live: _whenNoLiveAuctions()
+    q_check_live --> q_revert_live: liveAuctionExists
+    q_revert_live --> q_error: revert LiveAuction()
+    q_check_live --> q_check_zero: no live auctions
+    q_check_zero --> q_revert_zero: feeAggregator == address(0)
+    q_revert_zero --> q_error: revert InvalidZeroAddress()
+    q_check_zero --> q_check_same: feeAggregator != address(0)
+    q_check_same --> q_revert_same: s_feeAggregator == feeAggregator
+    q_revert_same --> q_error: revert ValueNotUpdated()
+    q_check_same --> q_check_interface: values differ
+    q_check_interface --> q_revert_iface: feeAggregator != this AND !supportsInterface(IFeeAggregator)
+    q_revert_iface --> q_error: revert InvalidFeeAggregator
+    q_check_interface --> q_update: feeAggregator == this OR supportsInterface
+    q_update --> [*]: s_feeAggregator = feeAggregator; emit FeeAggregatorSet
+
+    note right of q_check_interface
+        INV-014: Self-reference (address(this)) bypasses interface check - allows standalone mode
+    end note
+
+    q_error --> [*]

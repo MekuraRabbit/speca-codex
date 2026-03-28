@@ -1,0 +1,30 @@
+---
+title: "getAssetOutAmount (Payment Abstraction V2)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_validate: validate preconditions
+    q_validate --> q_step1: amountIn > 0 AND assetInUsdPrice > 0
+    q_validate --> q_error: precondition violated
+    q_error --> [*]: revert
+
+    q_step1 --> q_step2: usdValue = mulDivUp(amountIn, assetInUsdPrice, 10^assetInDecimals)
+    q_step2 --> q_calc_multiplier: adjustedValue = mulWadUp(usdValue, priceMultiplier)
+
+    q_calc_multiplier --> q_elapsed: elapsed = block.timestamp - auctionStart
+    q_elapsed --> q_decay: decayRate = (startMultiplier - endMultiplier) / auctionDuration
+    q_decay --> q_price: priceMultiplier = startMultiplier - decayRate * elapsed
+    q_price --> q_clamp_high: priceMultiplier > startMultiplier
+    q_clamp_high --> q_step3: priceMultiplier = startMultiplier
+    q_price --> q_clamp_low: priceMultiplier < endMultiplier
+    q_clamp_low --> q_step3: priceMultiplier = endMultiplier
+    q_price --> q_step3: endMultiplier <= priceMultiplier <= startMultiplier
+
+    q_step3 --> [*]: assetOutAmount = mulDivUp(adjustedValue, 10^assetOutDecimals, assetOutUsdPrice)
+
+    note right of q_step1
+        INV-001: assetOutAmount >= 1 for all valid inputs (proven by rounding-up chain)
+        INV-002: priceMultiplier is bounded between endingPriceMultiplier and startingPriceMultiplier
+        INV-003: all rounding operations are in protocol favor (round up)
+        INV-004: decayRate is rounded down to avoid exceeding maximum discount
+    end note

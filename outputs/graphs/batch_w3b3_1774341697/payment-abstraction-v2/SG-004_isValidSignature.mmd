@@ -1,0 +1,38 @@
+---
+title: "isValidSignature (Payment Abstraction V2)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_decode: decode order from signature data
+    q_decode --> q_check_auction: extract (sellToken, buyToken, sellAmount, buyAmount, receiver)
+
+    q_check_auction --> q_invalid: no live auction for sellToken
+    q_check_auction --> q_check_sell_token: live auction exists
+
+    q_check_sell_token --> q_invalid: sellToken not in allowlistedAssets
+    q_check_sell_token --> q_check_buy_token: sellToken is allowlisted
+
+    q_check_buy_token --> q_invalid: buyToken != s_assetOut
+    q_check_buy_token --> q_check_receiver: buyToken == s_assetOut
+
+    q_check_receiver --> q_invalid: receiver != address(this)
+    q_check_receiver --> q_check_amount: receiver == address(this)
+
+    q_check_amount --> q_invalid: sellAmount == 0
+    q_check_amount --> q_check_price: sellAmount > 0
+
+    q_check_price --> q_calc_min: get current auction price via getAssetOutAmount
+    q_calc_min --> q_check_min_buy: minBuyAmount = getAssetOutAmount(sellAmount)
+
+    q_check_min_buy --> q_invalid: buyAmount < minBuyAmount
+    q_check_min_buy --> q_valid: buyAmount >= minBuyAmount
+
+    q_valid --> [*]: return EIP1271_MAGIC_VALUE
+    q_invalid --> [*]: return INVALID_SIGNATURE
+
+    note right of q_check_price
+        INV-012: isValidSignature enforces auction price as minimum buy amount
+        INV-013: only the auction contract itself can be the receiver
+        INV-014: buyToken must be s_assetOut (LINK)
+        INV-015: sellAmount must be > 0 to prevent zero-amount orders
+    end note

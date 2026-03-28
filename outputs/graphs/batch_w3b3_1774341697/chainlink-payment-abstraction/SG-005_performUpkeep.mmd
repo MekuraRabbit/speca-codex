@@ -1,0 +1,45 @@
+---
+title: "performUpkeep (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_init: require whenNotPaused, whenAssetOutConfigured, AUCTION_WORKER_ROLE
+    q_init --> q_decode: decode(eligibleAssets, endedAuctions)
+    q_decode --> q_get_assetout_price: eligibleAssets.length > 0
+    q_decode --> q_end_loop: eligibleAssets.length == 0
+    q_get_assetout_price --> q_check_feeagg: assetOutPrice = _getAssetPrice(assetOut, true)
+    q_check_feeagg --> q_transfer_from_agg: hasFeeAggregator AND eligibleAssets.length > 0
+    q_check_feeagg --> q_start_loop: no feeAggregator or no eligible
+    q_transfer_from_agg --> q_start_loop: feeAggregator.transferForSwap(this, eligibleAssets)
+    q_start_loop --> q_start_asset: i < eligibleAssets.length
+    q_start_loop --> q_end_loop: i >= eligibleAssets.length
+    q_start_asset --> q_revert_live: s_auctionStarts[asset] != 0
+    q_revert_live --> [*]: revert LiveAuction
+    q_start_asset --> q_check_params: auctionStarts == 0
+    q_check_params --> q_revert_no_params: decimals == 0
+    q_revert_no_params --> [*]: revert AssetParamsNotSet
+    q_check_params --> q_check_min_size: decimals != 0
+    q_check_min_size --> q_revert_below_min: availableAssetUsdValue < minAuctionSizeUsd
+    q_revert_below_min --> [*]: revert AmountBelowMinAuctionSize
+    q_check_min_size --> q_check_is_assetout: above minimum
+    q_check_is_assetout --> q_direct_transfer: asset == assetOut
+    q_direct_transfer --> q_start_loop: transfer all to assetOutReceiver
+    q_check_is_assetout --> q_set_auction_start: asset != assetOut
+    q_set_auction_start --> q_start_loop: s_auctionStarts[asset] = block.timestamp, emit AuctionStarted
+    q_end_loop --> q_end_asset: i < endedAuctions.length
+    q_end_loop --> [*]: i >= endedAuctions.length
+    q_end_asset --> q_revert_not_started: s_auctionStarts[asset] == 0
+    q_revert_not_started --> [*]: revert InvalidAuction
+    q_end_asset --> q_do_end: auctionStart != 0
+    q_do_end --> q_end_loop: _onAuctionEnd, delete s_auctionStarts[asset]
+
+    note right of q_start_asset
+        INV-001: Cannot start auction for asset with existing live auction
+        INV-002: Asset params must be configured before auction start
+        INV-003: Eligible asset USD value must exceed minAuctionSizeUsd
+    end note
+
+    note right of q_check_is_assetout
+        INV-004: AssetOut is never auctioned - transferred directly to assetOutReceiver
+        INV-005: Ended auctions return remaining balance to feeAggregator
+    end note

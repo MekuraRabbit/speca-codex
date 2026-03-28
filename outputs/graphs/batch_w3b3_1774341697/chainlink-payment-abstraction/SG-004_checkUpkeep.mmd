@@ -1,0 +1,35 @@
+---
+title: "checkUpkeep (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_init: require whenNotPaused, whenAssetOutConfigured
+    q_init --> q_loop: auctions = s_allowlistedAssets.values()
+    q_loop --> q_check_asset: i < auctions.length
+    q_loop --> q_check_assetout_valid: i >= auctions.length
+    q_check_asset --> q_skip: assetParams.decimals == 0
+    q_skip --> q_loop: continue (no params configured)
+    q_check_asset --> q_get_price: assetParams.decimals != 0
+    q_get_price --> q_set_assetout_valid: asset == s_assetOut
+    q_set_assetout_valid --> q_check_live: isAssetOutPriceValid = isPriceValid
+    q_get_price --> q_check_live: asset != s_assetOut
+    q_check_live --> q_check_ended: auctionStart != 0
+    q_check_live --> q_check_eligible: auctionStart == 0 AND isPriceValid
+    q_check_live --> q_loop: auctionStart == 0 AND NOT isPriceValid
+    q_check_ended --> q_mark_ended: duration elapsed OR balance below minAuctionSize
+    q_check_ended --> q_loop: auction still active
+    q_mark_ended --> q_loop: endedAuctions[idx++] = asset
+    q_check_eligible --> q_check_usd_value: availableBalance = balanceOf(feeAggregator)
+    q_check_usd_value --> q_mark_eligible: availableAssetUsdValue >= minAuctionSizeUsd
+    q_check_usd_value --> q_loop: below min size
+    q_mark_eligible --> q_loop: eligibleAssets[idx++] = (asset, availableBalance)
+    q_check_assetout_valid --> q_clear_eligible: NOT isAssetOutPriceValid
+    q_clear_eligible --> q_encode: eligibleAssetsIdx = 0
+    q_check_assetout_valid --> q_encode: isAssetOutPriceValid
+    q_encode --> [*]: return (upkeepNeeded, performData)
+
+    note right of q_check_ended
+        INV-001: Auction ends when duration elapsed OR remaining balance below minAuctionSizeUsd
+        INV-002: No new auctions started when assetOut price is invalid
+        INV-003: Eligible assets must have valid prices and USD value above minAuctionSizeUsd
+    end note

@@ -1,0 +1,15 @@
+---
+title: "supportsInterface (AuctionBidder)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check: interfaceId == IAuctionCallback.interfaceId
+    q_check --> q_return_true: true
+    q_check --> q_super: false
+    q_return_true --> [*]: return true
+    q_super --> [*]: return super.supportsInterface(interfaceId)
+
+    note right of q_check
+        INV-001: Contract declares support for IAuctionCallback interface
+        INV-002: Inherits additional interface support from PausableWithAccessControl
+    end note

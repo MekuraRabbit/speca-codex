@@ -1,0 +1,34 @@
+---
+title: "onReport (WorkflowRouter)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_extract: workflowId = bytes32(metadata[0..32])
+    q_extract --> q_check_zero: check workflowId
+    q_check_zero --> q_revert_zero: workflowId == bytes32(0)
+    q_revert_zero --> [*]: revert InvalidZeroValue()
+    q_check_zero --> q_check_allowlist: workflowId != bytes32(0)
+    q_check_allowlist --> q_revert_wf: !s_allowlistedWorkflowIds.contains(workflowId)
+    q_revert_wf --> [*]: revert WorkflowIdNotAllowlisted(workflowId)
+    q_check_allowlist --> q_decode: workflowId is allowlisted
+    q_decode --> q_extract_sel: (target, data) = abi.decode(report)
+    q_extract_sel --> q_check_selector: selector = mload(add(data, 32))
+    q_check_selector --> q_call: allowlistedSelectors[target].contains(selector)
+    q_check_selector --> q_check_target: !allowlistedSelectors[target].contains(selector)
+    q_check_target --> q_revert_target: !allowlistedTargets.contains(target)
+    q_revert_target --> [*]: revert TargetNotAllowlisted(workflowId, target)
+    q_check_target --> q_revert_sel: allowlistedTargets.contains(target)
+    q_revert_sel --> [*]: revert SelectorNotAllowlisted(workflowId, target, selector)
+    q_call --> [*]: _call(target, data)
+
+    note right of q_extract
+        INV-001: caller must have FORWARDER_ROLE (enforced by onlyRole modifier)
+        INV-002: contract must not be paused (enforced by whenNotPaused modifier)
+        INV-003: workflowId must be non-zero and allowlisted
+        INV-004: target+selector pair must be allowlisted for the workflowId
+    end note
+
+    note right of q_check_selector
+        INV-005: selector check precedes target check - if selector not allowlisted but target IS allowlisted, reverts SelectorNotAllowlisted
+        INV-006: if neither target nor selector allowlisted, reverts TargetNotAllowlisted (target checked second)
+    end note

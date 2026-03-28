@@ -1,0 +1,72 @@
+---
+title: "_applyFeedInfoUpdates (PriceManager)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_empty: adds.length == 0 and removes.length == 0?
+    q_check_empty --> q_revert_empty: true
+    q_revert_empty --> [*]: revert EmptyList()
+    q_check_empty --> q_remove_loop: false
+
+    q_remove_loop --> q_remove_hook: for i in 0..removes.length
+    q_remove_hook --> q_remove_allowlist: _onFeedInfoUpdate(asset, true)
+    q_remove_allowlist --> q_revert_not_allowed: !s_allowlistedAssets.remove(asset)
+    q_revert_not_allowed --> [*]: revert AssetNotAllowlisted(asset)
+    q_remove_allowlist --> q_cleanup: removed successfully
+    q_cleanup --> q_emit_remove: delete feedIdToAsset, feedInfo, dataStreamsPrice
+    q_emit_remove --> q_remove_loop: emit AssetRemovedFromAllowlist(asset), next i
+    q_remove_loop --> q_add_loop: all removes done
+
+    q_add_loop --> q_add_hook: for i in 0..adds.length
+    q_add_hook --> q_check_asset: _onFeedInfoUpdate(asset, false)
+    q_check_asset --> q_revert_zero_addr: asset == address(0)
+    q_revert_zero_addr --> [*]: revert InvalidZeroAddress()
+    q_check_asset --> q_check_config: asset != address(0)
+    q_check_config --> q_revert_zero_val: stalenessThreshold == 0 or (feedId == 0 and dataFeed == address(0))
+    q_revert_zero_val --> [*]: revert InvalidZeroValue()
+    q_check_config --> q_check_streams: valid config
+
+    q_check_streams --> q_validate_streams: dataStreamsFeedId != bytes32(0)
+    q_check_streams --> q_update_allowlist: dataStreamsFeedId == bytes32(0), skip streams validation
+
+    q_validate_streams --> q_revert_decimals: dataStreamsFeedDecimals == 0
+    q_revert_decimals --> [*]: revert InvalidFeedDecimals(feedId)
+    q_validate_streams --> q_check_version: decimals > 0
+    q_check_version --> q_revert_version: version != 3
+    q_revert_version --> [*]: revert InvalidFeedVersion(feedId, version)
+    q_check_version --> q_check_rotation: version == 3
+
+    q_check_rotation --> q_handle_rotation: previousAsset != address(0) and previousAsset != asset
+    q_check_rotation --> q_set_mapping: no rotation needed
+    q_handle_rotation --> q_revert_no_fallback: previousAsset.usdDataFeed == address(0)
+    q_revert_no_fallback --> [*]: revert InvalidZeroValue()
+    q_handle_rotation --> q_clear_prev: previousAsset has usdDataFeed fallback
+    q_clear_prev --> q_set_mapping: clear previousAsset streams state
+
+    q_set_mapping --> q_update_allowlist: s_dataStreamsFeedIdToAsset[feedId] = asset
+
+    q_update_allowlist --> q_emit_add: s_allowlistedAssets.add(asset) == true (new)
+    q_emit_add --> q_store_feed: emit AssetAddedToAllowlist(asset)
+    q_update_allowlist --> q_check_feedid_change: already allowlisted
+    q_check_feedid_change --> q_cleanup_old: existingFeedId != newFeedId
+    q_cleanup_old --> q_store_feed: delete old feedIdToAsset and dataStreamsPrice
+    q_check_feedid_change --> q_store_feed: feedId unchanged
+
+    q_store_feed --> q_emit_updated: s_feedInfo[asset] = feedInfo
+    q_emit_updated --> q_add_loop: emit FeedInfoUpdated(asset, feedInfo), next i
+    q_add_loop --> [*]: all adds done
+
+    note right of q_check_rotation
+        INV-001: feed ID rotation preserves price source for previous asset (requires usdDataFeed fallback)
+        INV-002: each dataStreamsFeedId maps to exactly one asset
+    end note
+
+    note right of q_validate_streams
+        INV-003: only Data Streams report v3 is supported
+        INV-004: dataStreamsFeedDecimals must be non-zero when streams feed is configured
+    end note
+
+    note right of q_check_config
+        INV-005: at least one price source required (dataStreamsFeedId or usdDataFeed)
+        INV-006: stalenessThreshold must be non-zero
+    end note

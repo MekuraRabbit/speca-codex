@@ -1,0 +1,29 @@
+---
+title: "_multiCall (Caller.sol)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_empty: check calls.length
+    q_check_empty --> q_revert_empty: calls.length == 0
+    q_check_empty --> q_alloc: calls.length > 0
+    q_revert_empty --> [*]: revert Errors.EmptyList()
+    q_alloc --> q_iter: returnData = new bytes[](calls.length), i = 0
+    q_iter --> q_call: i < calls.length
+    q_iter --> q_return: i >= calls.length
+    q_call --> q_increment: returnData[i] = _call(calls[i].target, calls[i].data)
+    q_increment --> q_iter: i = i + 1
+    q_return --> [*]: return returnData
+
+    note right of q_check_empty
+        INV-001: empty calls array is rejected with EmptyList revert
+    end note
+
+    note right of q_iter
+        INV-002: loop iterates exactly calls.length times
+        INV-003: each iteration delegates to _call which may revert, aborting entire multiCall
+        INV-004: no duplicate or reentry guard - if calls[i].target re-enters, state may be inconsistent
+    end note
+
+    note right of q_call
+        INV-005: returnData array indices map 1-to-1 with calls array indices
+    end note

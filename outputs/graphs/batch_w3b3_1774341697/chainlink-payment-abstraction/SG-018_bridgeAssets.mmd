@@ -1,0 +1,27 @@
+---
+title: "bridgeAssets (FeeAggregator)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_access: require whenNotPaused, BRIDGER_ROLE
+    q_check_access --> q_check_receiver: access granted
+    q_check_receiver --> q_revert_receiver: NOT s_allowlistedReceivers[chain].contains(bridgeReceiver)
+    q_revert_receiver --> [*]: revert ReceiverNotAllowlisted
+    q_check_receiver --> q_check_empty: receiver allowlisted
+    q_check_empty --> q_revert_empty: bridgeAssetAmounts.length == 0
+    q_revert_empty --> [*]: revert EmptyList
+    q_check_empty --> q_build_msg: not empty
+    q_build_msg --> q_get_fee: build CCIP message with allowlisted assets
+    q_get_fee --> q_check_balance: fees = ccipRouter.getFee()
+    q_check_balance --> q_revert_insufficient: fees > linkBalance
+    q_revert_insufficient --> [*]: revert InsufficientBalance
+    q_check_balance --> q_approve_link: sufficient balance
+    q_approve_link --> q_send: safeIncreaseAllowance(ccipRouter, fees)
+    q_send --> [*]: ccipRouter.ccipSend(destinationChain, message)
+
+    note right of q_build_msg
+        INV-001: Only allowlisted assets can be bridged
+        INV-002: Only allowlisted receivers on allowlisted chains can receive
+        INV-003: LINK token used for fee payment
+        INV-004: Each bridged asset approved to CCIP router individually
+    end note

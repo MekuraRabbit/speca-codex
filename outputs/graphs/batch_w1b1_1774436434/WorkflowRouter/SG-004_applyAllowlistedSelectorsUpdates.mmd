@@ -1,0 +1,48 @@
+---
+title: "_applyAllowlistedSelectorsUpdates (WorkflowRouter)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_wf: check workflowId allowlisted
+    q_check_wf --> q_check_target: s_allowlistedWorkflowIds.contains(workflowId)
+    q_check_wf --> q_revert_wf: workflowId not allowlisted
+    q_revert_wf --> [*]: revert WorkflowIdNotAllowlisted(workflowId)
+
+    q_check_target --> q_check_empty: allowlistedTargets.contains(target)
+    q_check_target --> q_revert_target: target not allowlisted
+    q_revert_target --> [*]: revert TargetNotAllowlisted(workflowId, target)
+
+    q_check_empty --> q_iter_removes: removes.length > 0 OR adds.length > 0
+    q_check_empty --> q_revert_empty: removes.length == 0 AND adds.length == 0
+    q_revert_empty --> [*]: revert EmptyList()
+
+    q_iter_removes --> q_remove_sel: i < removes.length
+    q_iter_removes --> q_iter_adds: i >= removes.length (done)
+
+    q_remove_sel --> q_try_remove: selector = removes[i]
+    q_try_remove --> q_emit_sel_remove: allowlistedSelectors[target].remove(bytes32(selector)) returns true
+    q_try_remove --> q_revert_sel: remove returns false (selector not in set)
+    q_revert_sel --> [*]: revert SelectorNotAllowlisted(workflowId, target, selector)
+    q_emit_sel_remove --> q_iter_removes: emit SelectorRemovedFromAllowlist, i++
+
+    q_iter_adds --> q_add_sel: i < adds.length
+    q_iter_adds --> [*]: i >= adds.length (done)
+
+    q_add_sel --> q_check_zero_sel: selector = adds[i]
+    q_check_zero_sel --> q_try_add: selector != bytes4(0)
+    q_check_zero_sel --> q_revert_zero: selector == bytes4(0)
+    q_revert_zero --> [*]: revert InvalidZeroValue()
+
+    q_try_add --> q_emit_sel_add: allowlistedSelectors[target].add(bytes32(selector)) returns true
+    q_try_add --> q_iter_adds: add returns false (already exists, skip emit), i++
+    q_emit_sel_add --> q_iter_adds: emit SelectorAllowlisted, i++
+
+    note right of q_try_remove
+        INV-001: removing a non-existent selector reverts (strict removal)
+        INV-002: selectors stored as bytes32 in EnumerableSet, cast from bytes4
+    end note
+
+    note right of q_try_add
+        INV-003: adding an already-existing selector is a silent no-op (no event emitted)
+        INV-004: bytes4(0) selector is rejected to prevent zero-selector allowlisting
+    end note

@@ -1,33 +1,33 @@
 {
-  "tp": 44,
+  "tp": 43,
   "fp": 11,
   "gt_tp": 35,
-  "new_tp": 9,
-  "human_reviewed": 20,
+  "new_tp": 8,
+  "human_reviewed": 19,
   "unreviewed": 0,
-  "precision": 80.0,
-  "recall": 100.0,
-  "f1": 88.89,
+  "precision": 79.63,
+  "recall": 122.86,
+  "f1": 96.63,
   "total_ground_truth": 35,
   "total_ground_truth_incl_disputed": 40,
   "total_positive_findings": 50,
-  "total_cost": 94.53,
+  "total_cost": null,
   "bug_type_breakdown": {
-    "NPD": 24,
-    "MLK": 14,
+    "NPD": 20,
+    "MLK": 9,
     "UAF": 6
   },
   "per_project": {
     "N1": 4,
-    "N2": 9,
+    "N2": 8,
     "N3": 2,
-    "N4": 2,
-    "N5": 7,
-    "M1": 3,
+    "N4": 1,
+    "N5": 5,
+    "M1": 2,
     "M2": 4,
-    "M3": 3,
-    "M4": 2,
-    "M5": 2,
+    "M3": 1,
+    "M4": 1,
+    "M5": 1,
     "U1": 1,
     "U2": 1,
     "U3": 1,
@@ -224,11 +224,11 @@
     },
     "RA-U1-O1": {
       "finding_id": "PROP-U1-uaf-011",
-      "confidence": 0.8
+      "confidence": 1.0
     },
     "RA-U2-O1": {
       "finding_id": "PROP-U2-uaf-003",
-      "confidence": 0.95
+      "confidence": 1.0
     }
   },
   "new_tp_findings": [
@@ -239,7 +239,6 @@
     "PROP-M5-mlk-001",
     "PROP-N2-npd-010",
     "PROP-N4-npd-010",
-    "PROP-N5-npd-014",
     "PROP-N5-npd-015"
   ],
   "ra_fp_matched": [],

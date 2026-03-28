@@ -1,0 +1,22 @@
+---
+title: "_getAssetOutAmount (Payment Abstraction V2)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_bound_time: elapsedTime = min(elapsedTime, auctionDuration)
+    q_bound_time --> q_compute_multiplier: compute priceMultiplier
+
+    q_compute_multiplier --> q_get_out_price: priceMultiplier = starting - (starting - ending) * elapsed / duration
+    q_get_out_price --> q_compute_usd: assetOutUsdPrice = _getAssetPrice(s_assetOut, withValidation)
+
+    q_compute_usd --> q_step1: step1 = mulDivUp(amountIn, assetInUsdPrice, 10^decimals)
+    q_step1 --> q_step2: step2 = mulWadUp(step1, priceMultiplier)
+    q_step2 --> q_step3: step3 = mulDivUp(step2, 10^assetOutDecimals, assetOutUsdPrice)
+    q_step3 --> [*]: return assetOutAmount (step3)
+
+    note right of q_compute_multiplier
+        INV-001: priceMultiplier is bounded between endingPriceMultiplier and startingPriceMultiplier
+        INV-002: All rounding operations use ceiling (mulDivUp, mulWadUp) in protocol favor
+        INV-003: assetOutAmount >= 1 for all valid inputs (amountIn > 0, prices > 0, decimals > 0)
+        INV-004: Linear decay curve P = Pmax - (Pmax - Pmin) * t / duration
+    end note

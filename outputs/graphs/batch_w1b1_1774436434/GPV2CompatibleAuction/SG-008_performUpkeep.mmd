@@ -1,0 +1,49 @@
+---
+title: "performUpkeep (BaseAuction - inherited by GPV2CompatibleAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_decode: decode eligibleAssets and endedAuctions from performData
+    q_decode --> q_assetout_price: eligibleAssets.length > 0
+    q_assetout_price --> q_get_price: assetOutPrice = _getAssetPrice(assetOut, true)
+    q_assetout_price --> q_transfer_check: eligibleAssets.length == 0
+    q_get_price --> q_transfer_check: hasFeeAggregator AND eligibleAssets.length > 0
+    q_transfer_check --> q_pull_funds: s_feeAggregator.transferForSwap(this, eligibleAssets)
+    q_transfer_check --> q_iter_eligible: no pull needed
+    q_pull_funds --> q_iter_eligible: i = 0
+    q_iter_eligible --> q_check_live: i < eligibleAssets.length
+    q_check_live --> q_err_live: s_auctionStarts[asset] != 0
+    q_err_live --> [*]: revert LiveAuction()
+    q_check_live --> q_check_params: assetDecimals != 0
+    q_check_params --> q_err_params: assetDecimals == 0
+    q_err_params --> [*]: revert AssetParamsNotSet(asset)
+    q_check_params --> q_check_usd: availableAssetUsdValue >= minAuctionSizeUsd
+    q_check_usd --> q_err_size: below minimum
+    q_err_size --> [*]: revert AmountBelowMinAuctionSize(...)
+    q_check_usd --> q_is_assetout: asset == s_assetOut
+    q_is_assetout --> q_forward: transfer all balance to assetOutReceiver
+    q_forward --> q_next_eligible: i = i + 1
+    q_is_assetout --> q_start_auction: s_auctionStarts[asset] = block.timestamp
+    q_start_auction --> q_on_start: _onAuctionStart(asset)
+    q_on_start --> q_emit_start: emit AuctionStarted(asset)
+    q_emit_start --> q_next_eligible: i = i + 1
+    q_next_eligible --> q_iter_eligible
+    q_iter_eligible --> q_iter_ended: i >= eligibleAssets.length, j = 0
+    q_iter_ended --> q_check_auction: j < endedAuctions.length
+    q_check_auction --> q_err_no_auction: s_auctionStarts[asset] == 0
+    q_err_no_auction --> [*]: revert InvalidAuction(asset)
+    q_check_auction --> q_on_end: _onAuctionEnd(asset, hasFeeAggregator)
+    q_on_end --> q_delete: delete s_auctionStarts[asset]
+    q_delete --> q_emit_end: emit AuctionEnded(asset)
+    q_emit_end --> q_next_ended: j = j + 1
+    q_next_ended --> q_iter_ended
+    q_iter_ended --> [*]: j >= endedAuctions.length
+
+    note right of q_decode
+        INV-001: Only AUCTION_WORKER_ROLE can call performUpkeep
+        INV-002: Cannot start auction if one is already live for the asset
+        INV-003: Asset params must be configured (decimals != 0)
+        INV-004: Asset USD value must meet minimum auction size
+        INV-005: If asset == assetOut, balance is forwarded to receiver instead of auctioning
+        INV-006: Ended auctions must have been started (auctionStart != 0)
+    end note

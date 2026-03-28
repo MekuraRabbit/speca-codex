@@ -1,0 +1,48 @@
+---
+title: "performUpkeep (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_decode: decode(performData) to eligibleAssets, endedAuctions
+    q_decode --> q_getprice: eligibleAssets.length > 0
+    q_decode --> q_end_loop: eligibleAssets.length == 0
+    q_getprice --> q_transfer_funds: assetOutPrice = getAssetPrice(assetOut, true)
+    q_transfer_funds --> q_start_loop: hasFeeAggregator ? feeAggregator.transferForSwap(this, eligibleAssets)
+    q_start_loop --> q_check_live: i = 0; i < eligibleAssets.length
+    q_check_live --> q_revert_live: s_auctionStarts[asset] != 0
+    q_revert_live --> q_error: revert LiveAuction()
+    q_check_live --> q_check_params: auctionStart == 0
+    q_check_params --> q_revert_params: assetDecimals == 0
+    q_revert_params --> q_error: revert AssetParamsNotSet(asset)
+    q_check_params --> q_get_asset_price: decimals configured
+    q_get_asset_price --> q_check_min_size: assetPrice fetched
+    q_check_min_size --> q_revert_size: availableAssetUsdValue < minAuctionSizeUsd
+    q_revert_size --> q_error: revert AmountBelowMinAuctionSize
+    q_check_min_size --> q_is_assetout: value >= minAuctionSizeUsd
+    q_is_assetout --> q_forward_assetout: asset == s_assetOut
+    q_forward_assetout --> q_next_start: transfer all balance to assetOutReceiver
+    q_is_assetout --> q_start_auction: asset != s_assetOut
+    q_start_auction --> q_next_start: s_auctionStarts[asset] = block.timestamp; emit AuctionStarted
+    q_next_start --> q_start_loop: i++
+    q_start_loop --> q_end_loop: i >= eligibleAssets.length
+    q_end_loop --> q_end_iter: j = 0; j < endedAuctions.length
+    q_end_iter --> q_check_end_valid: endedAuctions[j]
+    q_check_end_valid --> q_revert_invalid: s_auctionStarts[asset] == 0
+    q_revert_invalid --> q_error: revert InvalidAuction(asset)
+    q_check_end_valid --> q_do_end: auctionStart != 0
+    q_do_end --> q_next_end: _onAuctionEnd(asset); delete s_auctionStarts[asset]; emit AuctionEnded
+    q_next_end --> q_end_iter: j++
+    q_end_iter --> [*]: j >= endedAuctions.length
+    q_error --> [*]
+
+    note right of q_start_auction
+        INV-004: Auction start timestamp set to block.timestamp, used for price decay calculation
+    end note
+
+    note right of q_forward_assetout
+        INV-005: If eligible asset IS the assetOut, balance forwarded to receiver instead of starting auction
+    end note
+
+    note right of q_do_end
+        INV-006: _onAuctionEnd returns remaining asset to feeAggregator and assetOut to receiver
+    end note

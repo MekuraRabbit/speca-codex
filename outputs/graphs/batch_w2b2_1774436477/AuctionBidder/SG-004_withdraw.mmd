@@ -1,0 +1,20 @@
+---
+title: "withdraw (AuctionBidder)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_guard: onlyRole(DEFAULT_ADMIN_ROLE)
+    q_guard --> q_validate: to == address(0)
+    q_validate --> q_revert: true
+    q_validate --> q_iter: false
+    q_revert --> [*]: revert InvalidZeroAddress()
+    q_iter --> q_transfer: i < assetAmounts.length
+    q_iter --> q_final: i >= assetAmounts.length
+    q_transfer --> q_iter: safeTransfer(to, assetAmounts[i].amount); i++
+    q_final --> [*]
+
+    note right of q_iter
+        INV-001: All asset transfers go to the same destination address
+        INV-002: Loop processes every AssetAmount entry without early exit
+        INV-003: safeTransfer reverts on failure, ensuring atomicity
+    end note

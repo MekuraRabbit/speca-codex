@@ -1,0 +1,26 @@
+---
+title: "_setAuction (AuctionBidder)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_zero: auction == address(0)
+    q_check_zero --> q_revert_zero: true
+    q_check_zero --> q_check_interface: false
+    q_revert_zero --> [*]: revert InvalidZeroAddress()
+    q_check_interface --> q_revert_interface: !supportsInterface(IBaseAuction.interfaceId)
+    q_check_interface --> q_check_same: supportsInterface returns true
+    q_revert_interface --> [*]: revert InvalidAuctionContract(auction)
+    q_check_same --> q_revert_same: address(s_auction) == auction
+    q_check_same --> q_set: address(s_auction) != auction
+    q_revert_same --> [*]: revert ValueNotUpdated()
+    q_set --> q_emit: s_auction = IBaseAuction(auction)
+    q_emit --> [*]: emit AuctionContractSet(auction)
+
+    note right of q_check_interface
+        INV-001: Auction address must implement IBaseAuction via ERC-165
+        INV-002: Zero address is rejected before interface check
+    end note
+
+    note right of q_check_same
+        INV-003: Setting same auction address is rejected (no-op prevention)
+    end note

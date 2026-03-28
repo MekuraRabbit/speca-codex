@@ -1,0 +1,23 @@
+---
+title: "_setAuction (AuctionBidder)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_checkZero: auction == address(0)
+    q_checkZero --> q_revertZero: auction is zero
+    q_checkZero --> q_checkInterface: auction is non-zero
+    q_revertZero --> [*]: revert Errors.InvalidZeroAddress()
+    q_checkInterface --> q_revertInterface: !supportsInterface(IBaseAuction)
+    q_checkInterface --> q_checkDuplicate: supportsInterface(IBaseAuction)
+    q_revertInterface --> [*]: revert InvalidAuctionContract(auction)
+    q_checkDuplicate --> q_revertDuplicate: address(s_auction) == auction
+    q_checkDuplicate --> q_store: address(s_auction) != auction
+    q_revertDuplicate --> [*]: revert Errors.ValueNotUpdated()
+    q_store --> q_emit: s_auction = IBaseAuction(auction)
+    q_emit --> [*]: emit AuctionContractSet(auction)
+
+    note right of q_checkInterface
+        INV-001: auction must implement IBaseAuction (ERC-165 check)
+        INV-002: setting same auction address twice is rejected
+        INV-003: zero address is rejected before interface check
+    end note

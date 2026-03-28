@@ -1,0 +1,30 @@
+---
+title: "AuctionBidder.bid (Payment Abstraction V2)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_role: check caller role
+    q_check_role --> q_error_role: caller lacks AUCTION_BIDDER_ROLE
+    q_error_role --> [*]: revert "access denied"
+    q_check_role --> q_call_bid: caller has AUCTION_BIDDER_ROLE
+
+    q_call_bid --> q_auction_bid: call auction.bid(asset, amount, callbackData) with callback=true
+    q_auction_bid --> q_receive_assets: auction transfers auctioned assets to AuctionBidder
+
+    q_receive_assets --> q_callback: auction calls auctionCallback on AuctionBidder
+    q_callback --> q_exec_swap: decode and execute swap route on aggregator router
+    q_exec_swap --> q_approve: approve LINK proceeds to auction contract
+
+    q_approve --> q_auction_pulls: auction.transferFrom pulls required LINK
+
+    q_auction_pulls --> q_check_residual: check for positive slippage
+    q_check_residual --> q_transfer_residual: residual > 0
+    q_transfer_residual --> [*]: transfer residual to receiver (auction contract)
+    q_check_residual --> [*]: residual == 0
+
+    note right of q_exec_swap
+        INV-020: AuctionBidder executes arbitrary swap via aggregator router in callback
+        INV-021: positive slippage (residual) is forwarded to configured receiver
+        INV-022: swap route is provided off-chain by CRE workflow (not validated on-chain)
+        INV-023: AUCTION_BIDDER_ROLE gates access via WorkflowRouter
+    end note

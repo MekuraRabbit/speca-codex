@@ -1,0 +1,42 @@
+---
+title: "applyAllowlistedWorkflowsUpdates (WorkflowRouter)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_role: onlyRole(DEFAULT_ADMIN_ROLE)
+    q_check_role --> q_check_empty: caller is admin
+    q_check_role --> q_revert_role: caller lacks admin role
+    q_revert_role --> [*]: revert AccessControlUnauthorizedAccount()
+
+    q_check_empty --> q_iter_removes: removes.length > 0 OR adds.length > 0
+    q_check_empty --> q_revert_empty: removes.length == 0 AND adds.length == 0
+    q_revert_empty --> [*]: revert EmptyList()
+
+    q_iter_removes --> q_remove_wf: i < removes.length
+    q_iter_removes --> q_iter_adds: i >= removes.length (done)
+
+    q_remove_wf --> q_remove_targets: workflowId = removes[i]
+    q_remove_targets --> q_remove_id: _applyAllowlistedTargetsUpdates(workflowId, allTargets, empty)
+    q_remove_id --> q_emit_remove: s_allowlistedWorkflowIds.remove(workflowId)
+    q_emit_remove --> q_iter_removes: emit WorkflowIdRemovedFromAllowlist, i++
+
+    q_iter_adds --> q_add_wf: i < adds.length
+    q_iter_adds --> [*]: i >= adds.length (done)
+
+    q_add_wf --> q_check_zero: workflowId = adds[i].workflowId
+    q_check_zero --> q_add_id: workflowId != bytes32(0)
+    q_check_zero --> q_revert_zero: workflowId == bytes32(0)
+    q_revert_zero --> [*]: revert InvalidZeroValue()
+
+    q_add_id --> q_add_targets: s_allowlistedWorkflowIds.add(workflowId)
+    q_add_targets --> q_iter_adds: _applyAllowlistedTargetsUpdates(workflowId, empty, targetSelectors), i++
+
+    note right of q_remove_wf
+        INV-001: removing a workflowId first removes all its targets and selectors via _applyAllowlistedTargetsUpdates
+        INV-002: s_allowlistedWorkflowIds.remove returns bool but result is not checked (silent no-op if already removed)
+    end note
+
+    note right of q_add_id
+        INV-003: s_allowlistedWorkflowIds.add is idempotent (EnumerableSet), existing workflowId gets new targets appended
+        INV-004: workflowId zero is rejected but no uniqueness check across adds array
+    end note

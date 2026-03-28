@@ -1,0 +1,44 @@
+---
+title: "bid (Payment Abstraction V2)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_pause: whenNotPaused
+    q_check_pause --> q_check_reentrant: check s_entered
+    q_check_reentrant --> q_revert_reentrant: s_entered == true
+    q_revert_reentrant --> [*]: revert ReentrantCall()
+    q_check_reentrant --> q_set_entered: s_entered == false
+    q_set_entered --> q_load_params: s_entered = true
+
+    q_load_params --> q_check_auction: assetParams = s_assetParams[asset], auctionStart = s_auctionStarts[asset]
+    q_check_auction --> q_revert_invalid: auctionStart == 0 OR elapsedTime > auctionDuration
+    q_revert_invalid --> [*]: revert InvalidAuction()
+    q_check_auction --> q_get_price: auction is live
+
+    q_get_price --> q_check_bid_value: assetPrice = _getAssetPrice(asset, true)
+    q_check_bid_value --> q_revert_low_bid: bidUsdValue < minBidUsdValue
+    q_revert_low_bid --> [*]: revert BidValueTooLow()
+    q_check_bid_value --> q_check_balance: bidUsdValue >= minBidUsdValue
+
+    q_check_balance --> q_revert_high_bid: amount > availableBalance
+    q_revert_high_bid --> [*]: revert BidAmountTooHigh()
+    q_check_balance --> q_compute_out: amount <= availableBalance
+
+    q_compute_out --> q_transfer_in: assetOutAmount = _getAssetOutAmount(params, price, amount, elapsed, true)
+    q_transfer_in --> q_check_callback: safeTransfer(msg.sender, amount)
+
+    q_check_callback --> q_execute_callback: data.length != 0
+    q_check_callback --> q_pull_out: data.length == 0
+
+    q_execute_callback --> q_pull_out: auctionCallback(msg.sender, assetOut, assetOutAmount, data)
+    q_pull_out --> q_emit: safeTransferFrom(msg.sender, this, assetOutAmount)
+    q_emit --> q_clear_entered: emit AuctionBidSettled
+    q_clear_entered --> [*]: s_entered = false
+
+    note right of q_transfer_in
+        INV-001: Asset transferred to bidder BEFORE callback execution (flash-loan pattern)
+        INV-002: assetOutAmount pulled from bidder AFTER callback (bidder must approve)
+        INV-003: Reentrancy guard via s_entered flag prevents recursive bid calls
+        INV-004: bidUsdValue must exceed s_minBidUsdValue (dust protection)
+        INV-005: bid amount cannot exceed contract balance of asset
+    end note

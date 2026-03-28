@@ -1,0 +1,21 @@
+---
+title: "AuctionBidder.auctionCallback (Payment Abstraction V2)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_pause: whenNotPaused
+    q_check_pause --> q_check_caller: validate msg.sender and from
+    q_check_caller --> q_revert_access: msg.sender != s_auction OR from != address(this)
+    q_revert_access --> [*]: revert AccessForbidden()
+    q_check_caller --> q_decode: caller is auction and from is self
+
+    q_decode --> q_execute: calls = abi.decode(data, Call[])
+    q_execute --> q_approve: _multiCall(calls) (execute swap route)
+    q_approve --> [*]: forceApprove(msg.sender, amountOut)
+
+    note right of q_execute
+        INV-001: Only the auction contract can invoke the callback
+        INV-002: from must be the AuctionBidder itself (prevents spoofed origins)
+        INV-003: Arbitrary call execution via _multiCall (swap route from aggregator)
+        INV-004: Approval granted to auction contract to pull assetOut after swap
+    end note

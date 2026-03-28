@@ -1,0 +1,35 @@
+---
+title: "bid (AuctionBidder)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_access: whenNotPaused, onlyRole(AUCTION_BIDDER_ROLE)
+    q_access --> q_load: auction = s_auction
+    q_load --> q_getAssetOut: assetOut = auction.getAssetOut()
+    q_getAssetOut --> q_checkSolution: solution.length > 0
+    q_checkSolution --> q_encodeSolution: solution.length > 0
+    q_checkSolution --> q_approveDirectly: solution.length == 0
+    q_encodeSolution --> q_bid: data = abi.encode(solution)
+    q_approveDirectly --> q_bid: forceApprove(auction, getAssetOutAmount(assetIn, amount, block.timestamp))
+    q_bid --> q_checkBalance: auction.bid(assetIn, amount, data)
+    q_checkBalance --> q_checkReceiver: assetOutBalance > 0
+    q_checkBalance --> q_final: assetOutBalance == 0
+    q_checkReceiver --> q_transfer: receiver != address(0)
+    q_checkReceiver --> q_final: receiver == address(0)
+    q_transfer --> q_final: safeTransfer(receiver, assetOutBalance)
+    q_final --> [*]
+
+    note right of q_approveDirectly
+        INV-001: when no solution provided, contract pre-approves exact assetOut amount to auction
+        INV-002: approval uses block.timestamp for price calculation (Dutch auction decay)
+    end note
+
+    note right of q_checkBalance
+        INV-003: leftover assetOut balance after bid is forwarded to receiver if set
+        INV-004: if receiver is address(0), leftover tokens remain in contract
+    end note
+
+    note right of q_encodeSolution
+        INV-005: solution calls are executed via auctionCallback during auction.bid
+        INV-006: arbitrary external calls in solution introduce reentrancy surface
+    end note

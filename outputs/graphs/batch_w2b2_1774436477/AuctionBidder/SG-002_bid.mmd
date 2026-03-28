@@ -1,0 +1,36 @@
+---
+title: "bid (AuctionBidder)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_guard: whenNotPaused, onlyRole(AUCTION_BIDDER_ROLE)
+    q_guard --> q_load: auction = s_auction
+    q_load --> q_get_asset: assetOut = auction.getAssetOut()
+    q_get_asset --> q_check_solution: solution.length > 0
+    q_check_solution --> q_encode: true
+    q_check_solution --> q_approve: false
+    q_encode --> q_bid: data = abi.encode(solution)
+    q_approve --> q_bid: forceApprove(auction, getAssetOutAmount(assetIn, amount, block.timestamp))
+    q_bid --> q_balance: auction.bid(assetIn, amount, data)
+    q_balance --> q_check_bal: assetOutBalance = IERC20(assetOut).balanceOf(this)
+    q_check_bal --> q_check_receiver: assetOutBalance > 0
+    q_check_bal --> q_final: assetOutBalance == 0
+    q_check_receiver --> q_transfer: receiver != address(0)
+    q_check_receiver --> q_final: receiver == address(0)
+    q_transfer --> q_final: safeTransfer(receiver, assetOutBalance)
+    q_final --> [*]
+
+    note right of q_approve
+        INV-001: When no solution provided, contract pre-approves exact assetOut amount for auction
+        INV-002: forceApprove amount is based on getAssetOutAmount at block.timestamp
+    end note
+
+    note right of q_bid
+        INV-003: auction.bid may trigger auctionCallback if data is non-empty (re-entrant call)
+        INV-004: Callback executes arbitrary calls via _multiCall before returning
+    end note
+
+    note right of q_transfer
+        INV-005: Leftover assetOut tokens forwarded to receiver if set and balance > 0
+        INV-006: If receiver is address(0), leftover tokens remain in contract
+    end note
