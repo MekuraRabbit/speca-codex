@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N4-npd-004",
+      "classification": "vulnerability",
+      "code_path": "OpenNI2-FreenectDriver/extern/OpenNI-Linux-x64-2.2.0.33/Include/OpenNI.h::Device::createStream::L2619-2625",
+      "proof_trace": "Property fails under path where device initialization fails and createStream() is called. Caller lacks NULL check before dereferencing _getHandle() return value.",
+      "attack_scenario": "External callers trigger createStream() post-initialization failure causes NULL dereference in oniDeviceCreateStream().",
+      "checklist_id": "PROP-N4-npd-004"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 3,
+    "item_count": 1,
+    "timestamp": 1775567854,
+    "processed_ids": [
+      "PROP-N4-npd-004"
+    ]
+  }
+}

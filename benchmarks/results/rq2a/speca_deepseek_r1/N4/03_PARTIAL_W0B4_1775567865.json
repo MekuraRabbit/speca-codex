@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N4-npd-005",
+      "classification": "vulnerability",
+      "code_path": "src/registration.c::freenect_init_registration_table::L287-312",
+      "proof_trace": "The proof failed as there are no checks ensuring non-NULL values are passed in caller functions like freenect_init_registration(), causing potential NULL dereference crashes upon function invocation.",
+      "attack_scenario": "An attacker can force repeated initializations to trigger memory exhaustion, leading to malloc returning NULL and subsequent system crash via NULL dereference.",
+      "checklist_id": "PROP-N4-npd-005"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 4,
+    "item_count": 1,
+    "timestamp": 1775567865,
+    "processed_ids": [
+      "PROP-N4-npd-005"
+    ]
+  }
+}

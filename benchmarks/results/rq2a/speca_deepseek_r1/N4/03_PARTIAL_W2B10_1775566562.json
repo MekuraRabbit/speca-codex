@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "worker_id": 2,
+    "phase": "03",
+    "batch_index": 10,
+    "item_count": 1,
+    "timestamp": 1775566562,
+    "processed_ids": ["PROP-N4-npd-011"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-N4-npd-011",
+      "classification": "vulnerability",
+      "code_path": "wrappers/c_sync/libfreenect_sync.c::init_thread::L217-226",
+      "proof_trace": "init_thread calls freenect_init() without checking return value; if initialization fails (malloc or USB init failure), ctx remains NULL, causing NULL pointer dereference in freenect_select_subdevices.",
+      "attack_scenario": "When system memory is exhausted or USB initialization fails, any call to Kinect sync API triggers crash via NULL dereference.",
+      "checklist_id": "PROP-N4-npd-011"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "metadata": {
+    "worker_id": 2,
+    "phase": "03",
+    "batch_index": 6,
+    "item_count": 1,
+    "timestamp": 1775566562,
+    "processed_ids": ["PROP-N4-npd-007"],
+    "queue_file": "outputs/03_ASYNC_QUEUE_W2B6_1775566562.json",
+    "context_file": "outputs/03_CONTEXT_W2B6_1775566562.json",
+    "output_file": "outputs/03_PARTIAL_W2B6_1775566562.json",
+    "iteration": 6
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-N4-npd-007",
+      "classification": "not-a-vulnerability",
+      "code_path": "wrappers/cpp/libfreenect.hpp::getDepthFormat::L141-141",
+      "proof_trace": "getDepthFormat returns an enum value (freenect_depth_format), not a pointer, so dereferencing is impossible. The property's premise does not apply; the function is safe.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N4-npd-007"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "metadata": {
+    "worker_id": 1,
+    "phase": "03",
+    "item_ids": ["PROP-N4-npd-002"],
+    "total_items": 1,
+    "context_file": "outputs/03_CONTEXT_W1B1_1775566562.json",
+    "timestamp": 1775566562,
+    "iteration": 1,
+    "batch_size": 1,
+    "processed_ids": ["PROP-N4-npd-002"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-N4-npd-002",
+      "classification": "vulnerability",
+      "code_path": "fakenect/fakenect.c::get_data_size::L114-121",
+      "proof_trace": "get_data_size returns int used as malloc size in parse_line; malloc may return NULL on failure, but parse_line does not check for NULL before passing pointer to fread, leading to NULL pointer dereference.",
+      "attack_scenario": "Attacker provides malicious INDEX.txt file causing ftell to fail or malloc to fail, leading to crash when fakenect processes events.",
+      "checklist_id": "PROP-N4-npd-002"
+    }
+  ]
+}
