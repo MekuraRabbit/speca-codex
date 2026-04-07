@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U3-uaf-006",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/json.c::json_value_free_ex::L949-994",
+      "proof_trace": "The function performs a post-order traversal freeing child data before parent nodes. Each pointer is dereferenced only before being freed, and no pointer is freed twice due to the tree traversal algorithm. Parent pointer acyclicity is guaranteed by the parser.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U3-uaf-006"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 5,
+    "item_count": 1,
+    "timestamp": 1775602253,
+    "processed_ids": [
+      "PROP-U3-uaf-006"
+    ]
+  }
+}

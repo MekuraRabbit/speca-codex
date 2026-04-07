@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "worker_id": 1,
+    "phase": "03",
+    "item_ids": ["PROP-U3-uaf-010"],
+    "total_items": 1,
+    "context_file": "outputs/03_CONTEXT_W1B9_1775602232.json",
+    "timestamp": 1775602232,
+    "processed_ids": ["PROP-U3-uaf-010"],
+    "batch_index": 9
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-U3-uaf-010",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/cache.c::cache_clear::L120-145",
+      "proof_trace": "Property holds because pointer dereferences (entry->data, entry->key) occur before their corresponding frees, iteration macro ensures no post‑free access, and the free callback does not free keys, preventing double‑free.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U3-uaf-010"
+    }
+  ]
+}

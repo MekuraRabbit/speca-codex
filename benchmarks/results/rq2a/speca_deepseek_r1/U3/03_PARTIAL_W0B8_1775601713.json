@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "worker_id": 0,
+    "phase": "03",
+    "batch_index": 8,
+    "item_count": 1,
+    "timestamp": 1775601713,
+    "processed_ids": ["PROP-U3-uaf-009"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-U3-uaf-009",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/acl.c::acl_remove_ip::L553-568",
+      "proof_trace": "Property vacuously holds because acl_remove_ip contains no free() operations; the function only reads the input string and calls ipset remove functions which do not free any pointer passed to them.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U3-uaf-009"
+    }
+  ]
+}
