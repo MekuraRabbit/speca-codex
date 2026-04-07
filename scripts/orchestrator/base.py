@@ -23,6 +23,7 @@ from .paths import get_output_root
 from .queue import QueueManager
 from .batch import BatchStrategy, TokenBasedBatch, CountBasedBatch
 from .runner import ClaudeRunner, CircuitBreaker, CircuitBreakerTripped, BudgetExceeded
+from .api_runner import APIRunner
 from .watchdog import CostTracker
 
 
@@ -158,7 +159,7 @@ class BaseOrchestrator(ABC):
         # Components (runner is created lazily in run() after event loop starts)
         self.queue_manager = QueueManager(self.config)
         self.batch_strategy = self._create_batch_strategy()
-        self.runner: ClaudeRunner | None = None
+        self.runner: ClaudeRunner | APIRunner | None = None
         self.collector = ResultCollector(self.config)
         self.resume_manager = ResumeManager(self.config)
         
@@ -194,12 +195,24 @@ class BaseOrchestrator(ABC):
         """
         # Lazily create asyncio primitives now that the event loop is running
         self.semaphore = asyncio.Semaphore(self.max_concurrent)
-        self.runner = ClaudeRunner(
-            self.config,
-            self.semaphore,
-            circuit_breaker=self.circuit_breaker,
-            cost_tracker=self.cost_tracker,
-        )
+
+        # Select runner: API runner (for non-Claude models) vs Claude CLI
+        runner_type = os.environ.get("ORCHESTRATOR_RUNNER", "claude")
+        if runner_type == "api":
+            self.runner = APIRunner(
+                self.config,
+                self.semaphore,
+                circuit_breaker=self.circuit_breaker,
+                cost_tracker=self.cost_tracker,
+            )
+            print(f"  Runner: APIRunner ({os.environ.get('API_RUNNER_MODEL', 'deepseek/deepseek-r1')})")
+        else:
+            self.runner = ClaudeRunner(
+                self.config,
+                self.semaphore,
+                circuit_breaker=self.circuit_breaker,
+                cost_tracker=self.cost_tracker,
+            )
 
         print(f"\n{'='*60}")
         print(f"Phase {self.config.phase_id}: {self.config.name}")

@@ -1,0 +1,216 @@
+name: "RQ2a: 04 Evaluate & Visualize (DeepSeek R1)"
+
+on:
+  workflow_dispatch:
+    inputs:
+      projects:
+        description: 'Projects to evaluate (all = reset & re-evaluate everything)'
+        required: true
+        type: choice
+        options:
+          - all
+          - N1
+          - N2
+          - N3
+          - N4
+          - N5
+          - M1
+          - M2
+          - M2b
+          - M3
+          - M4
+          - M5
+          - U1
+          - U2
+          - U3
+          - U4
+          - U5
+      results_dir:
+        description: 'Path to SPECA results directory'
+        required: false
+        type: string
+        default: 'benchmarks/results/rq2a/speca_deepseek_r1'
+      model:
+        description: 'Claude model for LLM matching (haiku, sonnet, opus)'
+        required: false
+        type: string
+        default: 'haiku'
+      reparse:
+        description: 'Re-parse cached LLM responses (skip LLM calls)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  evaluate:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 1
+
+      - name: Setup Python + benchmark deps
+        run: uv sync --python 3.11 --group benchmark
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code
+        run: |
+          if command -v claude >/dev/null 2>&1; then
+            echo "claude already installed; skipping"
+          else
+            npm install -g @anthropic-ai/claude-code
+          fi
+
+      - name: Verify Phase 03 results exist
+        run: |
+          set -euo pipefail
+          RESULTS="${{ inputs.results_dir }}"
+          echo "=== Phase 03 results ==="
+          PROJECTS=0
+          for dir in "${RESULTS}"/*/; do
+            [ -d "$dir" ] || continue
+            PROJECT=$(basename "$dir")
+            COUNT=$(find "${dir}" -maxdepth 1 -name '03_PARTIAL_*.json' | wc -l)
+            if [ "${COUNT}" -gt 0 ]; then
+              echo "  ${PROJECT}: ${COUNT} audit results"
+              PROJECTS=$((PROJECTS + 1))
+            fi
+          done
+          if [ "${PROJECTS}" -eq 0 ]; then
+            echo "ERROR: No Phase 03 results found in ${RESULTS}/"
+            echo "Run rq2a-03-audit-map-deepseek-r1 workflow first."
+            exit 1
+          fi
+          echo "Total: ${PROJECTS} projects with results"
+
+      - name: "Evaluate: match findings against ground truth"
+        run: |
+          REPARSE_FLAG=""
+          if [ "${{ inputs.reparse }}" = "true" ]; then
+            REPARSE_FLAG="--reparse"
+          fi
+          PROJECTS_FLAG=""
+          if [ "${{ inputs.projects }}" != "all" ]; then
+            PROJECTS_FLAG="--projects ${{ inputs.projects }}"
+          fi
+          uv run python3 benchmarks/rq2a/evaluate.py \
+            --results-dir "${{ inputs.results_dir }}" \
+            --output "${{ inputs.results_dir }}/speca_summary.json" \
+            --update-ground-truth \
+            --update-baselines \
+            ${REPARSE_FLAG} \
+            ${PROJECTS_FLAG}
+        env:
+          CLAUDE_CODE_PERMISSIONS: bypassPermissions
+          RQ2A_MODEL: ${{ inputs.model }}
+
+      - name: "Visualize: regenerate figures with SPECA column"
+        run: |
+          uv run python3 benchmarks/rq2a/visualize.py \
+            --speca-results "${{ inputs.results_dir }}/speca_summary.json"
+
+      - name: Verify outputs
+        run: |
+          set -euo pipefail
+          echo "=== speca_summary.json ==="
+          cat "${{ inputs.results_dir }}/speca_summary.json"
+          echo ""
+          echo "=== Figures ==="
+          ls -la benchmarks/results/rq2a/figures/
+          COUNT=$(find benchmarks/results/rq2a/figures/ -maxdepth 1 -name '*.png' | wc -l)
+          echo "Total: ${COUNT} figures"
+          if [ "$COUNT" -lt 5 ]; then
+            echo "ERROR: Expected at least 5 figures"
+            exit 1
+          fi
+
+      - name: Push results to master
+        run: |
+          set -euo pipefail
+          git config --local user.name "Security Agent Bot"
+          git config --local user.email "bot@nyxfoundation.org"
+
+          git add \
+            "${{ inputs.results_dir }}/speca_summary.json" \
+            "${{ inputs.results_dir }}/llm_cache_recall.jsonl" \
+            "${{ inputs.results_dir }}/llm_cache_fp.jsonl" \
+            "${{ inputs.results_dir }}/llm_cache_ra_fp.jsonl" \
+            benchmarks/rq2a/ground_truth_bugs.yaml \
+            benchmarks/rq2a/published_baselines.yaml \
+            benchmarks/results/rq2a/figures/
+
+          if ! git diff --staged --quiet; then
+            git commit -m "rq2a: evaluate SPECA results [DeepSeek R1] — add metrics and figures"
+            PUSHED=false
+            for i in 1 2 3; do
+              if git pull --rebase origin master && git push origin master; then
+                echo "Pushed successfully"
+                PUSHED=true
+                break
+              fi
+              echo "Push failed, retrying... (attempt $i)"
+              sleep 5
+            done
+            if [ "$PUSHED" != "true" ]; then
+              echo "ERROR: Failed to push after 3 attempts"
+              exit 1
+            fi
+          else
+            echo "No changes to commit"
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          SUMMARY="${{ inputs.results_dir }}/speca_summary.json"
+          if [ -f "${SUMMARY}" ]; then
+            TP=$(jq '.tp' "${SUMMARY}")
+            FP=$(jq '.fp' "${SUMMARY}")
+            GT_TP=$(jq '.gt_tp // .tp' "${SUMMARY}")
+            NEW_TP=$(jq '.new_tp // 0' "${SUMMARY}")
+            REVIEWED=$(jq '.human_reviewed // 0' "${SUMMARY}")
+            UNREVIEWED=$(jq '.unreviewed // 0' "${SUMMARY}")
+            PREC=$(jq '.precision' "${SUMMARY}")
+            RECALL=$(jq '.recall' "${SUMMARY}")
+            F1=$(jq '.f1' "${SUMMARY}")
+            TOTAL=$(jq '.total_ground_truth' "${SUMMARY}")
+
+            echo "## RQ2a Evaluation Results (DeepSeek R1)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Ground Truth Bugs | ${TOTAL} |" >> $GITHUB_STEP_SUMMARY
+            echo "| True Positives (TP) | ${TP} (GT=${GT_TP}, new=${NEW_TP}) |" >> $GITHUB_STEP_SUMMARY
+            echo "| False Positives (FP) | ${FP} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Human Reviewed | ${REVIEWED} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Unreviewed | ${UNREVIEWED} |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Precision** | **${PREC}%** |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Recall** | **${RECALL}%** |" >> $GITHUB_STEP_SUMMARY
+            echo "| **F1** | **${F1}%** |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            echo "### Bug Type Breakdown" >> $GITHUB_STEP_SUMMARY
+            echo "| Type | Detected |" >> $GITHUB_STEP_SUMMARY
+            echo "|------|----------|" >> $GITHUB_STEP_SUMMARY
+            for BT in NPD MLK UAF; do
+              VAL=$(jq -r ".bug_type_breakdown.${BT} // 0" "${SUMMARY}")
+              echo "| ${BT} | ${VAL} |" >> $GITHUB_STEP_SUMMARY
+            done
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            MISSED=$(jq -r '.missed_bugs | length' "${SUMMARY}")
+            echo "### Missed Bugs (${MISSED})" >> $GITHUB_STEP_SUMMARY
+            jq -r '.missed_bugs[]' "${SUMMARY}" | while read -r BID; do
+              echo "- ${BID}" >> $GITHUB_STEP_SUMMARY
+            done
+          fi

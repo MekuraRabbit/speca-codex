@@ -1,0 +1,328 @@
+name: "RQ2a: 03 Audit Map (DeepSeek R1)"
+
+on:
+  workflow_dispatch:
+    inputs:
+      projects:
+        description: 'Project to audit'
+        required: true
+        type: choice
+        options:
+          - all
+          - N1
+          - N2
+          - N3
+          - N4
+          - N5
+          - M1
+          - M2
+          - M2b
+          - M3
+          - M4
+          - M5
+          - U1
+          - U2
+          - U3
+          - U4
+          - U5
+      workers:
+        description: 'Parallel workers per project'
+        required: false
+        type: number
+        default: 4
+      max_concurrent:
+        description: 'Max concurrent API calls per project'
+        required: false
+        type: number
+        default: 16
+
+permissions:
+  contents: write
+
+jobs:
+  # ------------------------------------------------------------------
+  # 1. Generate matrix & run pre-flight tests (once)
+  # ------------------------------------------------------------------
+  setup:
+    runs-on: self-hosted
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 1
+
+      - name: "Pre-flight: Schema & Config Tests"
+        run: uv run python3 -m pytest tests/ -v --tb=short
+
+      - name: Generate matrix
+        id: set-matrix
+        run: |
+          set -euo pipefail
+
+          ALL_PROJECTS=$(cat <<'ENDJSON'
+          [
+            {"id":"N1","file_suffix":"N1_sofa-pbrpc","target_repo":"baidu/sofa-pbrpc","target_commit":"d5ba564a2e62da1fd71bf763e0cfd6ba5b45245b","sparse_checkout":""},
+            {"id":"N2","file_suffix":"N2_ImageMagick_MagickCore","target_repo":"ImageMagick/ImageMagick","target_commit":"6e167ed083e252cb318b4db3316854be80de1693","sparse_checkout":""},
+            {"id":"N3","file_suffix":"N3_coturn_src_server","target_repo":"coturn/coturn","target_commit":"47008229cefaff6bfc4b231642d342f99712a5ad","sparse_checkout":""},
+            {"id":"N4","file_suffix":"N4_libfreenect","target_repo":"OpenKinect/libfreenect","target_commit":"d913755a25d09fbe2869a0d2acea78f589bfe6bf","sparse_checkout":""},
+            {"id":"N5","file_suffix":"N5_openldap","target_repo":"openldap/openldap","target_commit":"519e0c94c9f3804813f691de487283ad7586f510","sparse_checkout":""},
+            {"id":"M1","file_suffix":"M1_libsass","target_repo":"sass/libsass","target_commit":"4da7c4bd13b8e9e5cd034f358dceda0bbba917d2","sparse_checkout":""},
+            {"id":"M2","file_suffix":"M2_memcached","target_repo":"memcached/memcached","target_commit":"e15e1d6b967eed53ddcfd61c0c90c38d0b017996","sparse_checkout":""},
+            {"id":"M2b","file_suffix":"M2b_memcached","target_repo":"memcached/memcached","target_commit":"dfe439d4cba3748bad5b0c8adaf1b7fb0c98ea40","sparse_checkout":""},
+            {"id":"M3","file_suffix":"M3_linux_driver_net","target_repo":"torvalds/linux","target_commit":"4cd8371a234d051f9c9557fcbb1f8c523b1c0d10","sparse_checkout":"drivers/net/ethernet/netronome/nfp"},
+            {"id":"M4","file_suffix":"M4_linux_sound","target_repo":"torvalds/linux","target_commit":"1c4f29ec878bbf1cc0a1eb54ae7da5ff98e19641","sparse_checkout":"sound/soc/qcom/qdsp6"},
+            {"id":"M5","file_suffix":"M5_linux_mm","target_repo":"torvalds/linux","target_commit":"73b73bac90d97400e29e585c678c4d0ebfd2680d","sparse_checkout":"mm/damon"},
+            {"id":"U1","file_suffix":"U1_Redis","target_repo":"redis/redis","target_commit":"8fadebfcca0d514fd6949eaa72599ab5e163bd4c","sparse_checkout":""},
+            {"id":"U2","file_suffix":"U2_linux_drivers_peci","target_repo":"torvalds/linux","target_commit":"e79b548b7202bb3accdfe64f113129a4340bc2f9","sparse_checkout":"drivers/peci"},
+            {"id":"U3","file_suffix":"U3_shadowsocks-libev","target_repo":"shadowsocks/shadowsocks-libev","target_commit":"8e52029d311df3880ffb1c5bea922f6e0e3cecdd","sparse_checkout":""},
+            {"id":"U4","file_suffix":"U4_wabt-tool","target_repo":"WebAssembly/wabt","target_commit":"b2194657c4b9b90599ae02b36a02a10dbedc32c4","sparse_checkout":""},
+            {"id":"U5","file_suffix":"U5_icu_icu4c_source_i18n","target_repo":"unicode-org/icu","target_commit":"maint/maint-54","sparse_checkout":""}
+          ]
+          ENDJSON
+          )
+
+          FILTER="${{ inputs.projects }}"
+          if [ "${FILTER}" = "all" ] || [ -z "${FILTER}" ]; then
+            MATRIX="${ALL_PROJECTS}"
+          else
+            MATRIX=$(echo "${ALL_PROJECTS}" | jq -c --arg ids "${FILTER}" \
+              '[.[] | select(.id as $i | ($ids | split(",") | map(gsub("\\s+";"")) | index($i)))]')
+          fi
+
+          COUNT=$(echo "${MATRIX}" | jq length)
+          echo "Selected ${COUNT} projects:"
+          echo "${MATRIX}" | jq -r '.[].id'
+          echo "matrix={\"include\":$(echo "${MATRIX}" | jq -c '.')}" >> "$GITHUB_OUTPUT"
+
+  # ------------------------------------------------------------------
+  # 2. Audit each project in parallel
+  # ------------------------------------------------------------------
+  audit:
+    needs: setup
+    runs-on: self-hosted
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
+
+    env:
+      # Use API runner instead of Claude CLI (via OpenRouter)
+      ORCHESTRATOR_RUNNER: api
+      API_RUNNER_BASE_URL: https://openrouter.ai/api/v1
+      API_RUNNER_MODEL: deepseek/deepseek-r1
+      API_RUNNER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+
+    steps:
+      - name: Checkout SPECA
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 1
+
+      - name: Setup outputs
+        run: |
+          set -euo pipefail
+          mkdir -p outputs/logs
+
+          SUFFIX="${{ matrix.file_suffix }}"
+          cp "benchmarks/results/rq2a/speca/01e_PARTIAL_MANUAL_rq2a_${SUFFIX}.json" outputs/
+          cp "benchmarks/results/rq2a/speca/02c_PARTIAL_MANUAL_rq2a_${SUFFIX}.json" outputs/
+
+          echo "Copied 01e/02c for ${{ matrix.id }}:"
+          ls -la outputs/*.json
+
+      - name: Checkout target repository (full)
+        if: matrix.sparse_checkout == ''
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.target_repo }}
+          ref: ${{ matrix.target_commit }}
+          fetch-depth: 1
+          path: target_workspace
+          persist-credentials: false
+
+      - name: Checkout target repository (sparse — Linux kernel)
+        if: matrix.sparse_checkout != ''
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.target_repo }}
+          ref: ${{ matrix.target_commit }}
+          fetch-depth: 1
+          path: target_workspace
+          persist-credentials: false
+          sparse-checkout: ${{ matrix.sparse_checkout }}
+
+      - name: Create TARGET_INFO.json
+        run: |
+          set -euo pipefail
+          FULL_SHA=$(git -C target_workspace rev-parse HEAD)
+          SHORT_SHA="${FULL_SHA:0:7}"
+
+          cat > outputs/TARGET_INFO.json <<HEREDOC
+          {
+            "target_repo": "${{ matrix.target_repo }}",
+            "target_ref_type": "commit",
+            "target_ref_label": "${{ matrix.target_commit }}",
+            "target_commit": "${FULL_SHA}",
+            "target_commit_short": "${SHORT_SHA}"
+          }
+          HEREDOC
+
+          echo "TARGET_INFO.json:"
+          cat outputs/TARGET_INFO.json
+
+      - name: "Phase 03: Audit Map (${{ matrix.id }}) — DeepSeek R1"
+        run: |
+          uv run python3 scripts/run_phase.py \
+            --phase 03 \
+            --workers ${{ inputs.workers }} \
+            --max-concurrent ${{ inputs.max_concurrent }}
+
+      - name: Dump failure diagnostics
+        if: failure()
+        run: |
+          echo "=== Error logs ==="
+          for f in outputs/logs/03_*.error.log; do
+            [ -f "$f" ] || continue
+            echo "--- $(basename "$f") ---"
+            head -50 "$f"
+            echo ""
+          done | head -200
+
+          echo "=== Last log entries ==="
+          for f in outputs/logs/03_*.log.jsonl; do
+            [ -f "$f" ] || continue
+            echo "--- $(basename "$f") ---"
+            tail -5 "$f"
+          done | head -200
+
+      - name: Prepare results for upload
+        if: always()
+        run: |
+          mkdir -p upload/logs
+          cp outputs/03_PARTIAL_*.json upload/ 2>/dev/null || true
+          cp outputs/logs/03_* upload/logs/ 2>/dev/null || true
+          echo "${{ matrix.id }}" > upload/.project_id
+
+          echo "Results for ${{ matrix.id }}:"
+          ls -la upload/03_PARTIAL_*.json 2>/dev/null || echo "  (no results)"
+          ls -la upload/logs/ 2>/dev/null || echo "  (no logs)"
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rq2a-03-dsr1-${{ matrix.id }}
+          path: upload/
+          retention-days: 30
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## ${{ matrix.id }} — ${{ matrix.target_repo }}" >> $GITHUB_STEP_SUMMARY
+          echo "Commit: \`$(git -C target_workspace rev-parse --short HEAD)\`" >> $GITHUB_STEP_SUMMARY
+          RESULTS=$(ls outputs/03_PARTIAL_*.json 2>/dev/null | wc -l)
+          echo "Phase 03 outputs: **${RESULTS}** files" >> $GITHUB_STEP_SUMMARY
+
+  # ------------------------------------------------------------------
+  # 3. Collect all results and push to master
+  # ------------------------------------------------------------------
+  collect:
+    needs: audit
+    if: always()
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 1
+
+      - name: Configure Git
+        run: |
+          git config --local user.name "Security Agent Bot"
+          git config --local user.email "bot@nyxfoundation.org"
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: rq2a-03-dsr1-*
+          path: artifacts/
+
+      - name: Merge results into benchmarks
+        run: |
+          set -euo pipefail
+
+          echo "=== Merging results ==="
+          for dir in artifacts/rq2a-03-dsr1-*/; do
+            [ -d "$dir" ] || continue
+            PROJECT_ID=$(basename "$dir" | sed 's/^rq2a-03-dsr1-//')
+            TARGET="benchmarks/results/rq2a/speca_deepseek_r1/${PROJECT_ID}"
+
+            if [ -d "${TARGET}" ]; then
+              echo "Cleaning existing: ${TARGET}"
+              rm -rf "${TARGET}"
+            fi
+
+            mkdir -p "${TARGET}"
+
+            if [ -d "${dir}logs" ] && compgen -G "${dir}logs/*" >/dev/null 2>&1; then
+              mkdir -p "${TARGET}/logs"
+              cp "${dir}"logs/* "${TARGET}/logs/"
+            fi
+
+            if compgen -G "${dir}03_PARTIAL_*.json" >/dev/null 2>&1; then
+              cp "${dir}"03_PARTIAL_*.json "${TARGET}/"
+              echo "  ${PROJECT_ID}: $(ls "${TARGET}"/03_PARTIAL_*.json | wc -l) result files"
+            else
+              echo "  ${PROJECT_ID}: no results (job may have failed)"
+              FIRST_ERR=$(ls "${TARGET}"/logs/*.error.log 2>/dev/null | head -1)
+              if [ -n "${FIRST_ERR}" ]; then
+                echo "    First error log ($(basename "${FIRST_ERR}")):"
+                head -20 "${FIRST_ERR}" | sed 's/^/      /'
+              fi
+            fi
+          done
+
+      - name: Generate human review CSVs
+        run: |
+          uv run python3 benchmarks/rq2a/generate_human_review.py \
+            --results-dir benchmarks/results/rq2a/speca_deepseek_r1
+
+      - name: Push to master
+        run: |
+          set -euo pipefail
+          git add benchmarks/results/rq2a/speca_deepseek_r1/
+          if ! git diff --staged --quiet; then
+            git commit -m "rq2a: phase 03 audit map results [DeepSeek R1] (run ${{ github.run_id }}, attempt ${{ github.run_attempt }})"
+            for i in 1 2 3; do
+              if git pull --rebase origin master && git push origin master; then
+                echo "Pushed successfully"
+                break
+              fi
+              echo "Push failed, retrying... (attempt $i)"
+              sleep 5
+            done
+          else
+            echo "No changes to commit"
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## RQ2a Phase 03 — Collected Results (DeepSeek R1)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          TOTAL=0
+          for dir in benchmarks/results/rq2a/speca_deepseek_r1/*/; do
+            [ -d "$dir" ] || continue
+            PROJECT=$(basename "$dir")
+            COUNT=$(ls "${dir}"03_PARTIAL_*.json 2>/dev/null | wc -l)
+            if [ "${COUNT}" -gt 0 ]; then
+              echo "- **${PROJECT}**: ${COUNT} audit results" >> $GITHUB_STEP_SUMMARY
+              TOTAL=$((TOTAL + COUNT))
+            fi
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Total**: ${TOTAL} audit results across all projects" >> $GITHUB_STEP_SUMMARY

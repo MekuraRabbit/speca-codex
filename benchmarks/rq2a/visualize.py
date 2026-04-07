@@ -40,6 +40,7 @@ COLORS = {
     # SPECA model-specific colors
     "SPECA\n(Sonnet 4.5)": "#DD8452",
     "SPECA\n(Sonnet 4)": "#E8794A",
+    "SPECA\n(DeepSeek R1)": "#8B5CF6",
 }
 
 plt.rcParams.update({
