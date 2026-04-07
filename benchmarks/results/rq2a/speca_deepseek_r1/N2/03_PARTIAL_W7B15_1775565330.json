@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N2-npd-016",
+      "classification": "vulnerability",
+      "code_path": "MagickCore/effect.c::SpreadImage::L3743-3861",
+      "proof_trace": "AcquireRandomInfoThreadSet returns NULL when memory allocation fails, causing NULL dereference at line 3833-3834. No NULL check before dereference.",
+      "attack_scenario": "Remote attacker can cause memory exhaustion leading to NULL dereference and crash (denial of service).",
+      "checklist_id": "PROP-N2-npd-016"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 15,
+    "item_count": 1,
+    "timestamp": 1775565330,
+    "processed_ids": [
+      "PROP-N2-npd-016"
+    ]
+  }
+}

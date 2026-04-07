@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N2-npd-013",
+      "classification": "vulnerability",
+      "code_path": "MagickCore/morphology.c::ExpandMirrorKernelInfo::L2328-2351",
+      "proof_trace": "ExpandMirrorKernelInfo calls CloneKernelInfo which can return NULL on memory allocation failure, but fails to check the return value before passing it to RotateKernelInfo, which will dereference the NULL pointer.",
+      "attack_scenario": "A user provides a kernel with the '<' expansion flag, and under low memory conditions CloneKernelInfo returns NULL, causing RotateKernelInfo to dereference NULL and crash.",
+      "checklist_id": "PROP-N2-npd-013"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 12,
+    "item_count": 1,
+    "timestamp": 1775565248,
+    "processed_ids": [
+      "PROP-N2-npd-013"
+    ]
+  }
+}
