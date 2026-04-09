@@ -60,13 +60,22 @@ POSITIVE_CLASSIFICATIONS = {"vulnerability", "potential-vulnerability"}
 def call_llm(prompt: str) -> str:
     """Call Claude via CLI and return raw text response."""
     env = os.environ.copy()
-    for var in ("CLAUDECODE", "CLAUDE_CODE_SESSION_ID"):
-        env.pop(var, None)
+    for var in list(env):
+        if var.startswith("CLAUDE_CODE") or var == "CLAUDECODE":
+            env.pop(var, None)
 
     model = env.get("RQ2A_MODEL", "haiku")
-    command = ["claude", "--output-format", "json", "--model", model, "-p", prompt]
+    claude_bin = "claude.cmd" if os.name == "nt" else "claude"
+    system = ("You are a vulnerability matching assistant. "
+              "Given a known vulnerability and a list of audit findings, "
+              "determine if any finding matches the vulnerability. "
+              "Respond with JSON only: {\"match\": true|false, \"finding_index\": number|null, \"confidence\": 0.0-1.0}")
+    command = [claude_bin, "--output-format", "json", "--model", model,
+               "--system-prompt", system,
+               "--allowed-tools", "", "--no-session-persistence", "-p", "-"]
 
-    result = subprocess.run(command, check=False, capture_output=True, text=True, env=env)
+    result = subprocess.run(command, check=False, capture_output=True, text=True, env=env,
+                            input=prompt)
     if result.returncode != 0:
         print(f"  [llm] FAIL (rc={result.returncode}): {result.stderr[:200] if result.stderr else ''}")
         return ""
