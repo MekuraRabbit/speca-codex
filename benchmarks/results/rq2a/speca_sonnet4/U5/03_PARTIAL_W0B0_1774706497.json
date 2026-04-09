@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U5-uaf-001",
+      "classification": "vulnerability",
+      "code_path": "icu4c/source/i18n/zonemeta.cpp::createMetazoneMappings::L684-685",
+      "proof_trace": "Double-free occurs when UVector constructor fails: deleteOlsonToMetaMappingEntry(entry) at line 684 calls uprv_free(entry), then line 685 calls uprv_free(entry) again on the same pointer.",
+      "attack_scenario": "Trigger memory allocation failure during UVector construction to cause double-free, leading to heap corruption and potential arbitrary code execution.",
+      "checklist_id": "PROP-U5-uaf-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 0,
+    "item_count": 1,
+    "timestamp": 1774706497,
+    "processed_ids": [
+      "PROP-U5-uaf-001"
+    ]
+  }
+}

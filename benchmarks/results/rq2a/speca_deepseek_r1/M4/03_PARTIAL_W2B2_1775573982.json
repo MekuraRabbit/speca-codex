@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1775573982,
+    "processed_ids": ["PROP-M4-mlk-003"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-M4-mlk-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "sound/soc/qcom/qdsp6/q6asm.c::q6asm_audio_client_release::L548-562",
+      "proof_trace": "Function contains no memory allocations (kzalloc/kmalloc), only deallocates the audio_client container via kfree(ac). With zero allocations, property vacuously holds.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M4-mlk-003"
+    }
+  ]
+}

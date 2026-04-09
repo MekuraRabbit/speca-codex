@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 10,
+    "item_count": 1,
+    "timestamp": 1775571797,
+    "processed_ids": ["PROP-M1-mlk-011"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-011",
+      "classification": "vulnerability",
+      "code_path": "src/permutate.hpp::permutate::L21-69",
+      "proof_trace": "Early return at line 32 returns {} without deleting state allocated at line 27, violating the invariant that all allocation paths must be freed.",
+      "attack_scenario": "Attacker provides Sass with empty inner vector (e.g., empty selector list) causing permutate to leak heap memory each call.",
+      "checklist_id": "PROP-M1-mlk-011"
+    }
+  ]
+}

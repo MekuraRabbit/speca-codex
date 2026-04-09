@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M5-mlk-010",
+      "classification": "not-a-vulnerability",
+      "code_path": "mm/damon/reclaim.c::damon_reclaim_enabled_store::L374-388",
+      "proof_trace": "Function performs no dynamic allocations - param_set_bool parses parameters without allocation, schedule_delayed_work uses statically allocated damon_reclaim_timer structure. Property holds trivially as no allocations require freeing.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M5-mlk-010"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 9,
+    "item_count": 1,
+    "timestamp": 1774705276,
+    "processed_ids": [
+      "PROP-M5-mlk-010"
+    ]
+  }
+}

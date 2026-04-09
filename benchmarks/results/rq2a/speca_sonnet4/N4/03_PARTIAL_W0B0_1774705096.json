@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N4-npd-001",
+      "classification": "not-a-vulnerability",
+      "code_path": "fakenect/parson.c::json_serialize_to_file::L1440-1442",
+      "proof_trace": "All callers in the codebase properly check for NULL before dereference. The single caller at line 1440 immediately checks for NULL at line 1441 before any use.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N4-npd-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 0,
+    "item_count": 1,
+    "timestamp": 1774705096,
+    "processed_ids": [
+      "PROP-N4-npd-001"
+    ]
+  }
+}

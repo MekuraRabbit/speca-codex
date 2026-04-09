@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U4-uaf-008",
+      "classification": "vulnerability",
+      "code_path": "src/tools/wasm-opcodecnt.cc::ProgramMain::L217-264",
+      "proof_trace": "When read_file fails, data pointer remains uninitialized; delete[] is called at line 227, then again at line 263, causing double-free on uninitialized pointer.",
+      "attack_scenario": "Attacker provides invalid input file causing read_file to fail, triggering double-free which may lead to memory corruption.",
+      "checklist_id": "PROP-U4-uaf-008"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 7,
+    "item_count": 1,
+    "timestamp": 1775603181,
+    "processed_ids": [
+      "PROP-U4-uaf-008"
+    ]
+  }
+}

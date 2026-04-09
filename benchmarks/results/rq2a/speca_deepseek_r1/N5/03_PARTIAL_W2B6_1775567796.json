@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-007",
+      "classification": "vulnerability",
+      "code_path": "libraries/libldap/os-ip.c::ldap_is_write_ready::L1121-1146",
+      "proof_trace": "ldap_is_write_ready dereferences ld->ld_selectinfo without NULL check. This pointer is initialized in ldap_open but can become NULL during ldap_unbind or due to allocation failure. No lock protects concurrent access between ldap_unbind and ldap_is_write_ready.",
+      "attack_scenario": "Multi-threaded client: thread A calls ldap_unbind freeing ld_selectinfo while thread B concurrently executes ldap_result calling ldap_is_write_ready, causing NULL pointer dereference and crash.",
+      "checklist_id": "PROP-N5-npd-007"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 6,
+    "item_count": 1,
+    "timestamp": 1775567796,
+    "processed_ids": [
+      "PROP-N5-npd-007"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-003",
+      "classification": "vulnerability",
+      "code_path": "target_workspace/memcached.c::do_add_delta::L2324-2325",
+      "proof_trace": "Reference leak in error path - do_item_remove(it) only called when it->refcount == 1, but the matching do_item_get() call requires unconditional cleanup regardless of refcount value. All other functions in codebase call do_item_remove() unconditionally to release their reference.",
+      "attack_scenario": "Attacker triggers delta operations on unlinked items with refcount > 1 repeatedly, causing memory references to accumulate and leak, eventually leading to denial of service through memory exhaustion.",
+      "checklist_id": "PROP-M2b-mlk-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1774705075,
+    "processed_ids": [
+      "PROP-M2b-mlk-003"
+    ]
+  }
+}

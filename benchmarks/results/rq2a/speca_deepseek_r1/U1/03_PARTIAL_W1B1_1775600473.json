@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 1,
+    "item_count": 1,
+    "timestamp": 1775600473,
+    "processed_ids": ["PROP-U1-uaf-002"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-002",
+      "classification": "out-of-scope",
+      "code_path": "src/dict.c::freeCallback::L1155-1159",
+      "proof_trace": "freeCallback exists only within #ifdef DICT_BENCHMARK_MAIN block, which is compiled solely for the dict-benchmark test utility, not for the Redis server binary. The benchmark code contains a bug (passing integer as SDS pointer) but it is not part of the production attack surface.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-002"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U5-uaf-010",
+      "classification": "not-a-vulnerability",
+      "code_path": "icu4c/source/i18n/tznames.cpp::deleteTimeZoneNamesCacheEntry::L71-75",
+      "proof_trace": "Function implements correct deleter pattern with sequential cleanup: entry->names deleted L73, entry freed L74, function scope prevents further access. Hash table library ensures single invocation per object.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U5-uaf-010"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 9,
+    "item_count": 1,
+    "timestamp": 1774706529,
+    "processed_ids": [
+      "PROP-U5-uaf-010"
+    ]
+  }
+}

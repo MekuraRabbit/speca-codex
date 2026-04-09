@@ -1,0 +1,35 @@
+---
+title: "onReport (Payment Abstraction V2 - WorkflowRouter)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_access: whenNotPaused, onlyRole(FORWARDER_ROLE)
+    q_check_access --> q_extract_id: workflowId = bytes32(metadata[:32])
+
+    q_extract_id --> q_check_zero: validate workflowId
+    q_check_zero --> q_revert_zero: workflowId == bytes32(0)
+    q_revert_zero --> [*]: revert InvalidZeroValue()
+    q_check_zero --> q_check_allowlist: workflowId != 0
+
+    q_check_allowlist --> q_revert_not_allowed: !s_allowlistedWorkflowIds.contains(workflowId)
+    q_revert_not_allowed --> [*]: revert WorkflowIdNotAllowlisted()
+    q_check_allowlist --> q_decode_report: workflowId is allowlisted
+
+    q_decode_report --> q_extract_selector: (target, data) = abi.decode(report)
+    q_extract_selector --> q_check_selector: selector = first 4 bytes of data
+
+    q_check_selector --> q_check_target: !allowlistedSelectors[target].contains(selector)
+    q_check_target --> q_revert_target: !allowlistedTargets.contains(target)
+    q_revert_target --> [*]: revert TargetNotAllowlisted()
+    q_check_target --> q_revert_selector: target is allowed but selector is not
+    q_revert_selector --> [*]: revert SelectorNotAllowlisted()
+
+    q_check_selector --> q_call: selector is allowlisted
+    q_call --> [*]: _call(target, data)
+
+    note right of q_decode_report
+        INV-001: Three-level allowlist check (workflowId, target, selector)
+        INV-002: Only FORWARDER_ROLE can invoke onReport
+        INV-003: Router delegates execution via _call without holding funds
+        INV-004: WorkflowId extracted from first 32 bytes of metadata
+    end note

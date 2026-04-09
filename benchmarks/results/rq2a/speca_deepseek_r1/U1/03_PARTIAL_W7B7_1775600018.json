@@ -1,0 +1,21 @@
+{
+  "metadata": {
+    "worker_id": 7,
+    "phase": "03",
+    "batch_index": 7,
+    "item_count": 1,
+    "timestamp": 1775600018,
+    "processed_ids": ["PROP-U1-uaf-008"],
+    "iteration": 7
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-008",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/config.c::rewriteConfigReleaseState::L2103-2108",
+      "proof_trace": "Function frees lines, dicts, then state in order. No pointer dereferenced after being freed because dict destructors only free independent sds keys and list values, which do not reference lines or other freed fields. No double‑free because keys/values are distinct duplicates.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-008"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "worker_id": 0,
+    "phase": "03",
+    "batch_index": 8,
+    "item_count": 1,
+    "timestamp": 1775553721,
+    "processed_ids": ["PROP-N1-npd-009"],
+    "total_items": 1,
+    "context_file": "outputs/03_CONTEXT_W0B8_1775553721.json"
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-N1-npd-009",
+      "classification": "vulnerability",
+      "code_path": "src/sofa/pbrpc/rpc_client_impl.cc::SerializeToZeroCopyStream::L283-283",
+      "proof_trace": "The functions get_compressed_output_stream and get_compressed_input_stream can return NULL for invalid CompressType enum values, but the returned pointer is not checked before being passed to SerializeToZeroCopyStream/ParseFromZeroCopyStream, leading to null pointer dereference.",
+      "attack_scenario": "Attacker sends an RPC request with invalid compress_type value, causing get_compressed_input_stream to return NULL and subsequent ParseFromZeroCopyStream to dereference null pointer, crashing the process.",
+      "checklist_id": "PROP-N1-npd-009"
+    }
+  ]
+}

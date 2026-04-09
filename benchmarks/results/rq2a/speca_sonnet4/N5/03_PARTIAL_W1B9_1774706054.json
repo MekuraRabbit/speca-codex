@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-013",
+      "classification": "vulnerability",
+      "code_path": "libraries/libldap/fetch.c::ldif_open_url::L71-80",
+      "proof_trace": "ber_strdup() can return NULL on allocation failure but ldif_open_url() uses return value in strchr() and ldap_pvt_hex_unescape() without NULL check. ldap_pvt_hex_unescape() immediately dereferences NULL with *s at L1625.",
+      "attack_scenario": "Memory exhaustion during URL processing causes ber_strdup to fail, returning NULL which triggers segfault when strchr or ldap_pvt_hex_unescape dereferences the NULL pointer.",
+      "checklist_id": "PROP-N5-npd-013"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 9,
+    "item_count": 1,
+    "timestamp": 1774706054,
+    "processed_ids": [
+      "PROP-N5-npd-013"
+    ]
+  }
+}

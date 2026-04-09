@@ -1,0 +1,13 @@
+---
+title: "_onAuctionStart (GPV2CompatibleAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_super: super._onAuctionStart(asset)
+    q_super --> q_approve: forceApprove(i_gpV2VaultRelayer, balanceOf(this))
+    q_approve --> [*]: return
+
+    note right of q_approve
+        INV-001: Vault relayer approval equals full contract balance of auctioned asset
+        INV-002: Approval is set only when auction starts (not before)
+    end note

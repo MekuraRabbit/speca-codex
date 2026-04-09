@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U2-uaf-003",
+      "classification": "vulnerability",
+      "code_path": "drivers/peci/cpu.c::adev_release::L187-195",
+      "proof_trace": "Release callback adev_release() calls auxiliary_device_uninit() which by kernel convention calls put_device(), potentially freeing the adev struct container. Subsequent access to adev->name (L193) and adev (L194) becomes use-after-free.",
+      "attack_scenario": "Device cleanup triggers adev_release() callback, auxiliary_device_uninit() frees the container struct, then kfree(adev->name) and kfree(adev) access freed memory causing kernel corruption or crash.",
+      "checklist_id": "PROP-U2-uaf-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1774706277,
+    "processed_ids": [
+      "PROP-U2-uaf-003"
+    ]
+  }
+}

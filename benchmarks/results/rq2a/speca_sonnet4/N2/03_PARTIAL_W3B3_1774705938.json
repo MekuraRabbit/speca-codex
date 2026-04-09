@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N2-npd-004",
+      "classification": "not-a-vulnerability",
+      "code_path": "MagickCore/pixel-accessor.h::GetPixelWriteMask::L333-339",
+      "proof_trace": "GetPixelWriteMask() returns Quantum (numeric type), never NULL pointer. Property assumes pointer return requiring dereference, but function returns numeric value used in comparisons/assignments.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N2-npd-004"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 3,
+    "item_count": 1,
+    "timestamp": 1774705938,
+    "processed_ids": [
+      "PROP-N2-npd-004"
+    ]
+  }
+}

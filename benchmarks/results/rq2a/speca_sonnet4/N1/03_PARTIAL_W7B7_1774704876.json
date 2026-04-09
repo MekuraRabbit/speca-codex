@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N1-npd-008",
+      "classification": "potential-vulnerability",
+      "code_path": "src/sofa/pbrpc/compressed_stream.cc::get_compressed_output_stream::L37-66",
+      "proof_trace": "Function can return NULL if invalid CompressType hits default case and SCHECK(false) returns instead of terminating (e.g. with custom log handler). Callers directly use return value in scoped_ptr without NULL checking before calling os->Flush().",
+      "attack_scenario": "Attacker sends network message with invalid compression type value \u2192 SCHECK(false) returns \u2192 NULL returned \u2192 NULL pointer dereference crash in os->Flush().",
+      "checklist_id": "PROP-N1-npd-008"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 7,
+    "item_count": 1,
+    "timestamp": 1774704876,
+    "processed_ids": [
+      "PROP-N1-npd-008"
+    ]
+  }
+}

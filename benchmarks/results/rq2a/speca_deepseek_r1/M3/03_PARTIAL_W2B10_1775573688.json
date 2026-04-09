@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M3-mlk-011",
+      "classification": "vulnerability",
+      "code_path": "drivers/net/ethernet/netronome/nfp/nfpcore/nfp_cppcore.c::nfp_cpp_area_cache_add::L792-818",
+      "proof_trace": "Resource leak occurs when kzalloc fails: nfp_cpp_area_alloc succeeds but subsequent kzalloc failure path lacks area cleanup.",
+      "attack_scenario": "Repeated initialization under memory pressure leaks CPP areas, potentially exhausting kernel resources.",
+      "checklist_id": "PROP-M3-mlk-011"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 10,
+    "item_count": 1,
+    "timestamp": 1775573688,
+    "processed_ids": [
+      "PROP-M3-mlk-011"
+    ]
+  }
+}

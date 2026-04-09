@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U2-uaf-007",
+      "classification": "vulnerability",
+      "code_path": "drivers/peci/controller/peci-aspeed.c::aspeed_peci_reset_control_release::L475-478",
+      "proof_trace": "Race condition between device removal and I/O operations leads to UAF. aspeed_peci_check_idle() accesses priv->rst without synchronization while device removal can trigger devres cleanup and free the reset control. The device_unregister() call in unregister_controller() does not wait for pending aspeed_peci_xfer() operations.",
+      "attack_scenario": "Attacker triggers PECI I/O operation while simultaneously causing device removal (e.g., module unload), causing reset_control_assert() to dereference freed memory in aspeed_peci_check_idle().",
+      "checklist_id": "PROP-U2-uaf-007"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 6,
+    "item_count": 1,
+    "timestamp": 1774706284,
+    "processed_ids": [
+      "PROP-U2-uaf-007"
+    ]
+  }
+}

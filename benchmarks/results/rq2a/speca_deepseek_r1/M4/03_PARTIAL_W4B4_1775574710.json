@@ -1,0 +1,21 @@
+{
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 4,
+    "item_count": 1,
+    "timestamp": 1775574710,
+    "processed_ids": ["PROP-M4-mlk-005"],
+    "iteration": 4
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-M4-mlk-005",
+      "classification": "not-a-vulnerability",
+      "code_path": "sound/soc/qcom/qdsp6/audioreach.c::__audioreach_alloc_pkt::L197-231",
+      "proof_trace": "Function has a single allocation; the only error path is allocation failure where nothing was allocated. No other error paths exist after allocation, so property holds trivially.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M4-mlk-005"
+    }
+  ]
+}

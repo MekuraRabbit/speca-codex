@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "worker_id": 2,
+    "phase": "03",
+    "item_ids": ["PROP-N1-npd-011"],
+    "total_items": 1,
+    "context_file": "outputs/03_CONTEXT_W2B10_1775553721.json",
+    "batch_index": 10,
+    "timestamp": 1775553721,
+    "processed_ids": ["PROP-N1-npd-011"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-N1-npd-011",
+      "classification": "vulnerability",
+      "code_path": "src/sofa/pbrpc/pbjson.cc::parse_msg::L238-275",
+      "proof_trace": "parse_msg returns NULL on allocation failure or invalid protobuf descriptor, but callers pb2json, field2json, and json2string (via pb2json) dereference the pointer without checking, causing NULL pointer dereference.",
+      "attack_scenario": "Attacker can cause out-of-memory condition or provide malformed protobuf message to pb2json API, triggering crash.",
+      "checklist_id": "PROP-N1-npd-011"
+    }
+  ]
+}

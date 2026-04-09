@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "worker_id": 1,
+    "phase": "03",
+    "item_ids": ["PROP-M4-mlk-002"],
+    "total_items": 1,
+    "context_file": "outputs/03_CONTEXT_W1B1_1775573982.json",
+    "batch_index": 1,
+    "timestamp": 1775573982,
+    "processed_ids": ["PROP-M4-mlk-002"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-M4-mlk-002",
+      "classification": "not-a-vulnerability",
+      "code_path": "sound/soc/qcom/qdsp6/q6asm.c::q6asm_audio_client_free_buf::L372-382",
+      "proof_trace": "q6asm_audio_client_free_buf contains no memory allocations (only kfree). The property is vacuously true.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M4-mlk-002"
+    }
+  ]
+}

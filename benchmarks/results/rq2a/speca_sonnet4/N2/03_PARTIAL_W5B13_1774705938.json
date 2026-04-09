@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N2-npd-014",
+      "classification": "vulnerability",
+      "code_path": "MagickCore/morphology.c::ExpandRotateKernelInfo::L2424-2426",
+      "proof_trace": "CloneKernelInfo() can return NULL on memory allocation failure but ExpandRotateKernelInfo() passes the unchecked result directly to RotateKernelInfo() and SameKernelInfo(), both of which immediately dereference the parameter causing segmentation fault.",
+      "attack_scenario": "Attacker exhausts system memory to trigger CloneKernelInfo() allocation failure, causing NULL dereference in subsequent function calls leading to denial of service crash.",
+      "checklist_id": "PROP-N2-npd-014"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 13,
+    "item_count": 1,
+    "timestamp": 1774705938,
+    "processed_ids": [
+      "PROP-N2-npd-014"
+    ]
+  }
+}

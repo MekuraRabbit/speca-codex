@@ -1,0 +1,36 @@
+---
+title: "Auction Lifecycle (End-to-End Asset Flow)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_accumulate: Revenue tokens arrive at FeeAggregator
+    q_accumulate --> q_check_upkeep: checkUpkeep() evaluates all allowlisted assets
+    q_check_upkeep --> q_perform_start: eligible assets found (USD value >= minAuctionSize)
+    q_check_upkeep --> q_perform_end: auction duration elapsed or below dust threshold
+    q_perform_start --> q_pull_from_agg: performUpkeep() pulls assets from FeeAggregator
+    q_pull_from_agg --> q_auction_live: s_auctionStarts[asset] = block.timestamp
+    q_auction_live --> q_gpv2_approve: GPV2: approve vault relayer
+    q_gpv2_approve --> q_bidding: auction accepting bids
+    q_bidding --> q_direct_bid: bid() - direct bidder
+    q_bidding --> q_cow_bid: CowProtocol settlement via isValidSignature
+    q_direct_bid --> q_transfer_asset_out: bidder pays assetOut
+    q_cow_bid --> q_transfer_asset_out: solver pays assetOut
+    q_transfer_asset_out --> q_bidding: more inventory available
+    q_transfer_asset_out --> q_perform_end: inventory exhausted or duration elapsed
+    q_perform_end --> q_return_unsold: return remaining asset to FeeAggregator
+    q_return_unsold --> q_send_settlement: transfer assetOut to assetOutReceiver
+    q_send_settlement --> q_gpv2_revoke: GPV2: revoke vault relayer approval
+    q_gpv2_revoke --> [*]: auction cycle complete
+
+    note right of q_bidding
+        INV-001: Price decays linearly from startingPriceMultiplier to endingPriceMultiplier
+        INV-002: Bidders receive auctioned asset, pay in assetOut (settlement token)
+        INV-003: Callback mechanism allows bidders to source assetOut during bid
+        INV-004: Minimum bid USD value prevents dust bids
+    end note
+
+    note right of q_return_unsold
+        INV-005: Unsold assets always return to FeeAggregator
+        INV-006: Settlement tokens (assetOut) always go to assetOutReceiver
+        INV-007: No assets should be permanently stuck in the auction contract
+    end note

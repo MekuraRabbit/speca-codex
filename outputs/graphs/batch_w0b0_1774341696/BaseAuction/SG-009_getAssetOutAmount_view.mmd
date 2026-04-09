@@ -1,0 +1,19 @@
+---
+title: "getAssetOutAmount view (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_load: load assetInParams, auctionStart
+    q_load --> q_check_valid: validate auction state
+    q_check_valid --> q_return_zero: auctionStart == 0 OR auctionStart + duration below timestamp OR timestamp below auctionStart
+    q_return_zero --> [*]: return 0
+    q_check_valid --> q_cap_amount: auction is valid for timestamp
+    q_cap_amount --> q_get_price: amount = min(amount, availableBalance)
+    q_get_price --> q_compute: assetInUsdPrice = _getAssetPrice(assetIn, false)
+    q_compute --> [*]: return _getAssetOutAmount(params, price, amount, timestamp - auctionStart, false)
+
+    note right of q_check_valid
+        INV-001: Returns 0 for invalid auctions instead of reverting (view-safe)
+        INV-002: Amount is capped to available balance
+        INV-003: Price validation is disabled (withValidation = false)
+    end note

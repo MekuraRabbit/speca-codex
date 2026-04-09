@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N3-npd-011",
+      "classification": "vulnerability",
+      "code_path": "src/server/ns_turn_server.c::tcp_client_input_handler_rfc6062data::L1985-1986",
+      "proof_trace": "Variable 'ss' can be NULL when tc->owner is NULL, causing 'a' to be NULL and 'ss' to remain NULL. Lines 1985-1986 dereference 'ss' without NULL check, while line 1973 correctly checks 'ss' before use, indicating inconsistent protection.",
+      "attack_scenario": "If tc->owner becomes NULL through memory corruption or race conditions, the callback will crash at lines 1985-1986 when attempting to increment ss->peer_sent_packets and ss->peer_sent_bytes.",
+      "checklist_id": "PROP-N3-npd-011"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 10,
+    "item_count": 1,
+    "timestamp": 1774704926,
+    "processed_ids": [
+      "PROP-N3-npd-011"
+    ]
+  }
+}

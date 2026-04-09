@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-007",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/redis-cli.c::freeHintsCallback::L718-720",
+      "proof_trace": "freeHintsCallback only calls sdsfree, which dereferences pointer before free. The pointer is always a fresh allocation from hintsCallback, freed exactly once per call; no use-after-free.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-007"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 6,
+    "item_count": 1,
+    "timestamp": 1775600703,
+    "processed_ids": [
+      "PROP-U1-uaf-007"
+    ]
+  }
+}

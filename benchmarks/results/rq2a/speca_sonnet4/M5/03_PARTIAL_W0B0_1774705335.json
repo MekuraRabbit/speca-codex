@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M5-mlk-001",
+      "classification": "not-a-vulnerability",
+      "code_path": "mm/damon/core.c::damon_destroy_targets::L381-392",
+      "proof_trace": "Function makes no heap allocations that require cleanup - only declares stack variables and calls functions that free existing memory. Since no allocations are made by this function, no memory leaks are possible on error paths.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M5-mlk-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 0,
+    "item_count": 1,
+    "timestamp": 1774705335,
+    "processed_ids": [
+      "PROP-M5-mlk-001"
+    ]
+  }
+}

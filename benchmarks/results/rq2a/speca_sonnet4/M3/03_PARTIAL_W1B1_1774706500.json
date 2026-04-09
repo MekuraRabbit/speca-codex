@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M3-mlk-002",
+      "classification": "not-a-vulnerability",
+      "code_path": "drivers/net/ethernet/netronome/nfp/bpf/main.c::nfp_bpf_ndo_uninit::L430-435",
+      "proof_trace": "Property holds vacuously because the function makes zero allocations (no kzalloc/kmalloc calls) and has no error paths (void return, no branching). Cannot violate allocation-freeing requirement when no allocations exist.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M3-mlk-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 1,
+    "item_count": 1,
+    "timestamp": 1774706500,
+    "processed_ids": [
+      "PROP-M3-mlk-002"
+    ]
+  }
+}

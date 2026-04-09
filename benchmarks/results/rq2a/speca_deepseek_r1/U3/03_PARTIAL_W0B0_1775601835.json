@@ -1,0 +1,21 @@
+{
+  "metadata": {
+    "worker_id": 0,
+    "phase": "03",
+    "batch_index": 0,
+    "item_count": 1,
+    "timestamp": 1775601835,
+    "processed_ids": ["PROP-U3-uaf-001"],
+    "context_file": "outputs/03_CONTEXT_W0B0_1775601835.json"
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-U3-uaf-001",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/json.c::json_value_free::L997-1002",
+      "proof_trace": "The iterative tree traversal algorithm frees child allocations (string buffers, array/object value arrays) before parent nodes, and reads neither freed pointers nor parent pointers after they are freed. All pointer dereferences occur before the corresponding free, and each allocation is freed exactly once.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U3-uaf-001"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N2-npd-016",
+      "classification": "vulnerability",
+      "code_path": "MagickCore/effect.c::SpreadImage::L3800-3804",
+      "proof_trace": "AcquireRandomInfoThreadSet() can return NULL on memory allocation failure, but there is no NULL check before dereferencing random_info[0] at line 3804. The proof fails because the required NULL validation is completely absent.",
+      "attack_scenario": "External image processing request triggers memory pressure causing AcquireRandomInfoThreadSet() to return NULL, leading to immediate segmentation fault when GetRandomSecretKey() dereferences random_info[0].",
+      "checklist_id": "PROP-N2-npd-016"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 15,
+    "item_count": 1,
+    "timestamp": 1774705954,
+    "processed_ids": [
+      "PROP-N2-npd-016"
+    ]
+  }
+}

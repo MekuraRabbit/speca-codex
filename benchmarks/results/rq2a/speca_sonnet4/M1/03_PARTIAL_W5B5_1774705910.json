@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-006",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/sass_values.cpp::sass_make_error::L170-178",
+      "proof_trace": "All allocations are properly freed on error paths. Line 172 calloc failure requires no cleanup. Line 176 check correctly frees allocated struct v when message allocation handling fails. Memory management is complete and correct.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M1-mlk-006"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 5,
+    "item_count": 1,
+    "timestamp": 1774705910,
+    "processed_ids": [
+      "PROP-M1-mlk-006"
+    ]
+  }
+}

@@ -1,0 +1,61 @@
+---
+title: "isValidSignature (GPV2CompatibleAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_paused: require whenNotPaused
+    q_check_paused --> q_check_reentrant: not paused
+    q_check_reentrant --> q_revert_reentrant: s_entered == true
+    q_revert_reentrant --> [*]: revert ReentrantCall
+    q_check_reentrant --> q_decode: s_entered == false
+    q_decode --> q_verify_hash: order = decode(signature)
+    q_verify_hash --> q_revert_hash: hash != GPv2Order.hash(order, domainSeparator)
+    q_revert_hash --> [*]: revert InvalidOrderId
+    q_verify_hash --> q_check_auction: hash matches
+    q_check_auction --> q_revert_no_auction: auctionStart == 0
+    q_revert_no_auction --> [*]: revert InvalidAuction
+    q_check_auction --> q_check_buytoken: auctionStart != 0
+    q_check_buytoken --> q_revert_buytoken: buyToken != assetOut
+    q_revert_buytoken --> [*]: revert InvalidBuyToken
+    q_check_buytoken --> q_check_receiver: buyToken == assetOut
+    q_check_receiver --> q_revert_receiver: receiver != address(this)
+    q_revert_receiver --> [*]: revert InvalidReceiver
+    q_check_receiver --> q_check_sell_zero: receiver == address(this)
+    q_check_sell_zero --> q_revert_zero_amt: sellAmount == 0
+    q_revert_zero_amt --> [*]: revert InvalidZeroAmount
+    q_check_sell_zero --> q_check_balance: sellAmount > 0
+    q_check_balance --> q_revert_insufficient: sellAmount > balanceOf(this)
+    q_revert_insufficient --> [*]: revert InsufficientAssetInBalance
+    q_check_balance --> q_check_duration: sellAmount <= balance
+    q_check_duration --> q_revert_expired_auction: elapsedTime > auctionDuration
+    q_revert_expired_auction --> [*]: revert InvalidAuction
+    q_check_duration --> q_check_buy_amount: within duration
+    q_check_buy_amount --> q_revert_low_buy: buyAmount < minBuyAmount
+    q_revert_low_buy --> [*]: revert InsufficientBuyAmount
+    q_check_buy_amount --> q_check_validto: buyAmount >= minBuyAmount
+    q_check_validto --> q_revert_order_expired: validTo < block.timestamp
+    q_revert_order_expired --> [*]: revert ExpiredOrder
+    q_check_validto --> q_check_fee: not expired
+    q_check_fee --> q_revert_fee: feeAmount > 0
+    q_revert_fee --> [*]: revert InvalidFeeAmount
+    q_check_fee --> q_check_kind: feeAmount == 0
+    q_check_kind --> q_revert_kind: kind != KIND_SELL
+    q_revert_kind --> [*]: revert InvalidOrderKind
+    q_check_kind --> q_check_partial: kind == KIND_SELL
+    q_check_partial --> q_revert_not_partial: NOT partiallyFillable
+    q_revert_not_partial --> [*]: revert OrderNotPartiallyFillable
+    q_check_partial --> q_check_balance_type: partiallyFillable == true
+    q_check_balance_type --> q_revert_balance_type: NOT ERC20 balance type
+    q_revert_balance_type --> [*]: revert InvalidTokenBalanceMarker
+    q_check_balance_type --> [*]: return isValidSignature.selector
+
+    note right of q_check_buy_amount
+        INV-001: Order buy amount must meet current auction price curve
+        INV-002: Order must be a sell order and partially fillable
+        INV-003: Zero fee requirement prevents fee extraction attacks
+        INV-004: Receiver must be the auction contract itself (assetOut goes through auction)
+    end note
+
+    note right of q_check_reentrant
+        INV-005: Reentrancy check prevents bid() from triggering isValidSignature during callback
+    end note

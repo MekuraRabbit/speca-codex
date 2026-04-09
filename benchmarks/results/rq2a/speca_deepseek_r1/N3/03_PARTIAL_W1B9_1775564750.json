@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 9,
+    "item_count": 1,
+    "timestamp": 1775564750,
+    "processed_ids": ["PROP-N3-npd-010"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-N3-npd-010",
+      "classification": "vulnerability",
+      "code_path": "src/server/ns_turn_maps.c::get_string_list_header::L1049-1051",
+      "proof_trace": "get_string_list_header calls string_hash(key) which dereferences key without NULL check. When key is NULL, string_hash performs NULL pointer dereference at line 1039 (*str++). Callers ur_string_map_put/get/del do not validate key before passing.",
+      "attack_scenario": "Attacker can trigger crash via TURN authentication with empty username field, causing NULL pointer dereference in string_hash leading to denial of service.",
+      "checklist_id": "PROP-N3-npd-010"
+    }
+  ]
+}

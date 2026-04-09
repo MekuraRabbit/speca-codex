@@ -1,0 +1,45 @@
+---
+title: "onReport (WorkflowRouter)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_pause: whenNotPaused modifier
+    q_check_pause --> q_check_role: not paused
+    q_check_pause --> q_revert_pause: paused
+    q_revert_pause --> [*]: revert EnforcedPause()
+
+    q_check_role --> q_extract_id: caller has FORWARDER_ROLE
+    q_check_role --> q_revert_role: caller lacks FORWARDER_ROLE
+    q_revert_role --> [*]: revert AccessControlUnauthorizedAccount()
+
+    q_extract_id --> q_check_zero: workflowId = bytes32(metadata[0..32])
+    q_check_zero --> q_check_allowlist: workflowId != bytes32(0)
+    q_check_zero --> q_revert_zero: workflowId == bytes32(0)
+    q_revert_zero --> [*]: revert InvalidZeroValue()
+
+    q_check_allowlist --> q_decode_report: s_allowlistedWorkflowIds.contains(workflowId)
+    q_check_allowlist --> q_revert_wf: not allowlisted
+    q_revert_wf --> [*]: revert WorkflowIdNotAllowlisted(workflowId)
+
+    q_decode_report --> q_extract_selector: (target, data) = abi.decode(report)
+    q_extract_selector --> q_check_selector: selector = mload(add(data, 32))
+
+    q_check_selector --> q_call: allowlistedSelectors[target].contains(selector)
+    q_check_selector --> q_check_target: selector not in allowlist
+    q_check_target --> q_revert_target: target not in allowlistedTargets
+    q_revert_target --> [*]: revert TargetNotAllowlisted(workflowId, target)
+    q_check_target --> q_revert_selector: target is allowlisted but selector is not
+    q_revert_selector --> [*]: revert SelectorNotAllowlisted(workflowId, target, selector)
+
+    q_call --> [*]: _call(target, data)
+
+    note right of q_check_selector
+        INV-001: selector check implies target is allowlisted (allowlistedSelectors is subset of allowlistedTargets)
+        INV-002: only FORWARDER_ROLE can trigger external calls via _call
+        INV-003: workflowId must be non-zero and present in s_allowlistedWorkflowIds
+    end note
+
+    note right of q_call
+        INV-004: _call performs low-level call to target with data, inheriting WorkflowRouter msg.value
+        INV-005: target + selector must both be explicitly allowlisted for the workflowId
+    end note

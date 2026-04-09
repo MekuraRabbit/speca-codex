@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 5,
+    "item_count": 1,
+    "timestamp": 1775572728,
+    "processed_ids": ["PROP-M2b-mlk-006"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-006",
+      "classification": "not-a-vulnerability",
+      "code_path": "proxy_internal.c::add_delta::L439-439",
+      "proof_trace": "All allocations (do_item_alloc) occur only when refcount>1, and are freed via do_item_remove(new_it) after item_replace. Error paths return before any allocation or after freeing the original item with do_item_remove. No memory leak.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M2b-mlk-006"
+    }
+  ]
+}

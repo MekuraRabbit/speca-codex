@@ -1,0 +1,21 @@
+{
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "item_count": 1,
+    "processed_ids": ["PROP-N4-npd-010"],
+    "timestamp": 1775566562,
+    "batch_index": 9,
+    "iteration": 9
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-N4-npd-010",
+      "classification": "vulnerability",
+      "code_path": "wrappers/actionscript/server/freenect_network.c::freenect_network_initSocket::L186-215",
+      "proof_trace": "Caller freenect_network_init does not check the return value (error indicator) of freenect_network_initSocket before using the socket variable. The function returns 0 on success, -1/1 on error, but caller proceeds to freenect_network_wait which dereferences the potentially invalid socket.",
+      "attack_scenario": "Initialization fails (e.g., socket creation fails due to resource exhaustion or port already bound), but the library continues execution, leading to accept() on invalid socket descriptor causing undefined behavior or crash.",
+      "checklist_id": "PROP-N4-npd-010"
+    }
+  ]
+}

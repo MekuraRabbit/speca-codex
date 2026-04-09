@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-005",
+      "classification": "not-a-vulnerability",
+      "code_path": "libraries/libldap/add.c::ldap_build_add_req::L89-176",
+      "proof_trace": "Callers explicitly check `ber != NULL` before dereference and handle `ber = NULL` cases by returning/logging errors with no unsafe access.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N5-npd-005"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 4,
+    "item_count": 1,
+    "timestamp": 1775567579,
+    "processed_ids": [
+      "PROP-N5-npd-005"
+    ]
+  }
+}

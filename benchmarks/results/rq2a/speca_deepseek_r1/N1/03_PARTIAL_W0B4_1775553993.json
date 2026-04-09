@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N1-npd-005",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/sofa/pbrpc/rpc_listener.h::set_create_callback::L73-73",
+      "proof_trace": "The stored callback is a boost::function; its invocation at line 168 is guarded by an emptiness check (if (_create_callback)). No other dereferences exist. Property satisfied.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N1-npd-005"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 4,
+    "item_count": 1,
+    "timestamp": 1775553993,
+    "processed_ids": [
+      "PROP-N1-npd-005"
+    ]
+  }
+}

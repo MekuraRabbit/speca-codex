@@ -1,0 +1,29 @@
+---
+title: "onReport (WorkflowRouter)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_access: require whenNotPaused, FORWARDER_ROLE
+    q_check_access --> q_extract_workflow: access granted
+    q_extract_workflow --> q_check_zero_wf: workflowId = bytes32(metadata[:32])
+    q_check_zero_wf --> q_revert_zero: workflowId == bytes32(0)
+    q_revert_zero --> [*]: revert InvalidZeroValue
+    q_check_zero_wf --> q_check_allowlisted: workflowId != bytes32(0)
+    q_check_allowlisted --> q_revert_not_allowed: NOT s_allowlistedWorkflowIds.contains(workflowId)
+    q_revert_not_allowed --> [*]: revert WorkflowIdNotAllowlisted
+    q_check_allowlisted --> q_decode_report: workflow is allowlisted
+    q_decode_report --> q_extract_selector: (target, data) = decode(report)
+    q_extract_selector --> q_check_selector: selector = first 4 bytes of data
+    q_check_selector --> q_check_target: selector NOT allowlisted for target
+    q_check_target --> q_revert_target: target NOT allowlisted
+    q_revert_target --> [*]: revert TargetNotAllowlisted
+    q_check_target --> q_revert_selector: target allowlisted but selector not
+    q_revert_selector --> [*]: revert SelectorNotAllowlisted
+    q_check_selector --> q_call: selector allowlisted
+    q_call --> [*]: _call(target, data)
+
+    note right of q_check_selector
+        INV-001: Three-level access control: workflowId -> target -> selector
+        INV-002: Router does not hold funds, only routes calls
+        INV-003: Only FORWARDER_ROLE can submit reports (trusted automation)
+    end note

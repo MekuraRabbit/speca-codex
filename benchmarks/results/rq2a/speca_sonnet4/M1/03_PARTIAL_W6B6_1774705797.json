@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-007",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/sass_functions.cpp::sass_import_get_error_line::L201",
+      "proof_trace": "Function performs no memory allocations - it's a simple getter returning entry->line (primitive size_t). Property holds vacuously since universal quantification over empty allocation set is trivially true.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M1-mlk-007"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 6,
+    "item_count": 1,
+    "timestamp": 1774705797,
+    "processed_ids": [
+      "PROP-M1-mlk-007"
+    ]
+  }
+}

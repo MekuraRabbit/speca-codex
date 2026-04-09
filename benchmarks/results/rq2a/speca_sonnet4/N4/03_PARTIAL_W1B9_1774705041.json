@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N4-npd-010",
+      "classification": "vulnerability",
+      "code_path": "wrappers/actionscript/server/freenect_network.c::freenect_network_init::L48",
+      "proof_trace": "Function freenect_network_initSocket() returns error status codes but callers at lines 48 and 61 ignore return values completely. Socket initialization failures go undetected, causing subsequent network operations to use uninitialized socket values.",
+      "attack_scenario": "Network initialization fails due to resource exhaustion or permissions, but caller proceeds with uninitialized socket values, leading to crashes or undefined behavior in accept/read/write operations.",
+      "checklist_id": "PROP-N4-npd-010"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 9,
+    "item_count": 1,
+    "timestamp": 1774705041,
+    "processed_ids": [
+      "PROP-N4-npd-010"
+    ]
+  }
+}

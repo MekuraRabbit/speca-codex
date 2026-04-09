@@ -1,0 +1,19 @@
+---
+title: "constructor (PriceManager)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_validate: verifierProxy == address(0)?
+    q_validate --> q_revert: true
+    q_revert --> [*]: revert InvalidZeroAddress()
+    q_validate --> q_set_proxy: false
+    q_set_proxy --> q_check_feeds: i_streamsVerifierProxy = IVerifierProxy(verifierProxy)
+    q_check_feeds --> q_apply: feedsInfo.length > 0
+    q_check_feeds --> q_emit: feedsInfo.length == 0
+    q_apply --> q_emit: _applyFeedInfoUpdates(feedsInfo, [])
+    q_emit --> [*]: emit VerifierProxySet(verifierProxy)
+
+    note right of q_validate
+        INV-001: verifierProxy must not be zero address
+        INV-002: i_streamsVerifierProxy is immutable after construction
+    end note

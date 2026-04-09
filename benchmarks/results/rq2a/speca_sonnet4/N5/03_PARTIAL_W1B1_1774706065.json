@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-002",
+      "classification": "not-a-vulnerability",
+      "code_path": "libraries/librewrite/session.c::rewrite_session_find::L150-175",
+      "proof_trace": "All three callers (rewrite_session_var_set_f, rewrite_session_var_get, rewrite_session_delete) implement explicit NULL checks before dereferencing the return value. The property holds through proper defensive programming.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N5-npd-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 1,
+    "item_count": 1,
+    "timestamp": 1774706065,
+    "processed_ids": [
+      "PROP-N5-npd-002"
+    ]
+  }
+}

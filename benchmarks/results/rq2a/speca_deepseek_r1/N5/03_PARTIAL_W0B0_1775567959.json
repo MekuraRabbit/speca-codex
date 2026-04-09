@@ -1,0 +1,21 @@
+{
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 0,
+    "item_count": 1,
+    "timestamp": 1775567959,
+    "processed_ids": ["PROP-N5-npd-001"],
+    "context_file": "outputs/03_CONTEXT_W0B0_1775567959.json"
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-001",
+      "classification": "not-a-vulnerability",
+      "code_path": "libraries/libldap/request.c::ldap_send_initial_request::L116-174",
+      "proof_trace": "Function returns integer (ber_int_t), not a pointer, so NULL-check is impossible. All callers check for negative error returns via if(*msgidp < 0) and propagate ld->ld_errno appropriately.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N5-npd-001"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N2-npd-001",
+      "classification": "not-a-vulnerability",
+      "code_path": "MagickCore/blob.c::GetBlobStreamHandler::L1629-1636",
+      "proof_trace": "Both callers (QueueAuthenticPixelsStream and SyncAuthenticPixelsStream) properly check for NULL return value before any dereference. GetBlobStreamHandler can return NULL when image->blob->stream is NULL, but both callers handle this case correctly by throwing exceptions and returning early.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N2-npd-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 0,
+    "item_count": 1,
+    "timestamp": 1774706022,
+    "processed_ids": [
+      "PROP-N2-npd-001"
+    ]
+  }
+}

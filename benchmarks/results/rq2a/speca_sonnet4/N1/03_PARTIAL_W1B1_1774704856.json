@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N1-npd-002",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/sofa/pbrpc/compressed_stream.cc::get_compressed_input_stream::L16-35",
+      "proof_trace": "Function cannot return NULL in normal execution - all valid compression types return new objects, invalid cases call SCHECK(false) which aborts. Both callers explicitly check for CompressTypeNone and handle it separately, only calling this function with valid compression types.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N1-npd-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 1,
+    "item_count": 1,
+    "timestamp": 1774704856,
+    "processed_ids": [
+      "PROP-N1-npd-002"
+    ]
+  }
+}

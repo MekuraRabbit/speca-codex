@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-004",
+      "classification": "not-a-vulnerability",
+      "code_path": "memcached.c::do_add_delta::L2227-2338",
+      "proof_trace": "All allocations properly freed on error paths. do_item_get() allocation at L2237 cleaned by do_item_remove() calls at L2249/2254/2261/2308/2325/2335. do_item_alloc() allocation at L2306 cleaned by do_item_remove() at L2317. Reference counting ensures proper memory management.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M2b-mlk-004"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 3,
+    "item_count": 1,
+    "timestamp": 1774705000,
+    "processed_ids": [
+      "PROP-M2b-mlk-004"
+    ]
+  }
+}

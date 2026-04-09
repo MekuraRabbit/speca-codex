@@ -222,9 +222,9 @@ tools:
   # SPECA — to be filled after experiment
   speca:
     display_name: "SPECA"
-    tp: 35
+    tp: 32
     fp: 2
-    precision: 94.59
+    precision: 94.12
     recall: 88.57
     f1: 91.17
     notes: "SPECA automated evaluation (35 non-disputed GT bugs)"

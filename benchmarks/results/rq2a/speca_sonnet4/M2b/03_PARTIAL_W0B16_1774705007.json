@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-016",
+      "classification": "vulnerability",
+      "code_path": "assoc.c::assoc_get_iterator::L312-314",
+      "proof_trace": "Memory allocated via calloc() at line 305 is not freed when mutex_trylock fails at line 310, causing the function to return NULL without cleanup in the else block (lines 312-314). Proof failed: no free(iter) call exists in the failure path.",
+      "attack_scenario": "Any caller invoking assoc_get_iterator() while maintenance_lock is held will trigger mutex_trylock failure, causing memory leak of sizeof(struct assoc_iterator) bytes per failed call.",
+      "checklist_id": "PROP-M2b-mlk-016"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 16,
+    "item_count": 1,
+    "timestamp": 1774705007,
+    "processed_ids": [
+      "PROP-M2b-mlk-016"
+    ]
+  }
+}

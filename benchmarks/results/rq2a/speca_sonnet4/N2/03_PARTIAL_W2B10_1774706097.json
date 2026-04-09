@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N2-npd-011",
+      "classification": "not-a-vulnerability",
+      "code_path": "MagickCore/constitute.c::ReadImage::L493-497,L541-555",
+      "proof_trace": "NULL checks at lines 493 and 541 properly protect function pointer dereferences at lines 497 and 555. GetImageDecoder() consistently returns magick_info->decoder which cannot change between calls due to const parameter and read-only runtime access.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N2-npd-011"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 10,
+    "item_count": 1,
+    "timestamp": 1774706097,
+    "processed_ids": [
+      "PROP-N2-npd-011"
+    ]
+  }
+}

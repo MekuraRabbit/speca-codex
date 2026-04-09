@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N1-npd-004",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/sofa/pbrpc/rpc_endpoint.cc::ResolveAddress::L33-56",
+      "proof_trace": "Function dereferences endpoint pointer without NULL check, but all callers pass addresses of valid stack/heap objects, guaranteeing pointer non-NULL. No reachable attack path exists.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N1-npd-004"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 3,
+    "item_count": 1,
+    "timestamp": 1775554941,
+    "processed_ids": [
+      "PROP-N1-npd-004"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N4-npd-007",
+      "classification": "not-a-vulnerability",
+      "code_path": "wrappers/cpp/libfreenect.hpp::getDepthFormat::L141-143",
+      "proof_trace": "getDepthFormat() returns enum freenect_depth_format by value, not a pointer, so it cannot return NULL. Property incorrectly assumes pointer semantics for enum type.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N4-npd-007"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 6,
+    "item_count": 1,
+    "timestamp": 1774705053,
+    "processed_ids": [
+      "PROP-N4-npd-007"
+    ]
+  }
+}

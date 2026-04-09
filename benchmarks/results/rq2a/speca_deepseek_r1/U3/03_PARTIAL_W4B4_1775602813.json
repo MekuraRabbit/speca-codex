@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U3-uaf-005",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/acl.c::remove_from_block_list::L264-268",
+      "proof_trace": "Property holds: cache_remove() calls free_cb(tmp->key, tmp->data) before freeing tmp->key, and free_firewall_rule uses key only for constructing firewall commands via set_firewall_rule() before returning. No pointer is dereferenced after being freed in this execution path.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U3-uaf-005"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 4,
+    "item_count": 1,
+    "timestamp": 1775602813,
+    "processed_ids": [
+      "PROP-U3-uaf-005"
+    ]
+  }
+}

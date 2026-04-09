@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-011",
+      "classification": "vulnerability",
+      "code_path": "src/redis-benchmark.c::getRedisConfig::L284-290",
+      "proof_trace": "The pointer c is freed at line 284 via redisFree(c), then immediately dereferenced at lines 287-290 to access c->connection_type, c->tcp.host, c->tcp.port, and c->unix_sock.path fields. This is a classic use-after-free vulnerability where freed memory is accessed without any null checks or defensive programming.",
+      "attack_scenario": "An attacker can trigger failure conditions in getRedisConfig() to reach the fail: label, causing redisFree(c) followed by immediate dereference of freed memory, leading to undefined behavior and potential memory corruption.",
+      "checklist_id": "PROP-U1-uaf-011"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 10,
+    "item_count": 1,
+    "timestamp": 1774705598,
+    "processed_ids": [
+      "PROP-U1-uaf-011"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/module.c::RM_SetDisconnectCallback::L3611-3613",
+      "proof_trace": "Function performs single field assignment bc->disconnect_callback = callback. The bc structure lifecycle is properly managed - allocated in RM_BlockClient(), remains valid during blocking period, only freed after RM_UnblockClient() processing completes.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1774705691,
+    "processed_ids": [
+      "PROP-U1-uaf-003"
+    ]
+  }
+}

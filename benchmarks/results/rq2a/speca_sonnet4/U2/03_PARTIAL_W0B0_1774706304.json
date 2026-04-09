@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U2-uaf-001",
+      "classification": "not-a-vulnerability",
+      "code_path": "drivers/peci/controller/peci-aspeed.c::aspeed_peci_clk_release::L491-494",
+      "proof_trace": "Function only calls clk_disable_unprepare() once on the data parameter and returns immediately. No memory deallocation occurs, no pointer usage after the call, and devres framework ensures proper cleanup ordering.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U2-uaf-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 0,
+    "item_count": 1,
+    "timestamp": 1774706304,
+    "processed_ids": [
+      "PROP-U2-uaf-001"
+    ]
+  }
+}

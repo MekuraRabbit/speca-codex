@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U5-uaf-011",
+      "classification": "vulnerability",
+      "code_path": "icu4c/source/i18n/tznames_impl.cpp::createInstance::L1557",
+      "proof_trace": "Double-free vulnerability: line 1557 calls uprv_free(p) where p aliases regions pointer, causing regions to be freed twice (once in loop iteration when p==regions, again at line 1559). Should be uprv_free(*p) to free individual strings.",
+      "attack_scenario": "Malformed resource bundle data triggers region processing error, executing cleanup code path that double-frees regions array, potentially enabling code execution.",
+      "checklist_id": "PROP-U5-uaf-011"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 10,
+    "item_count": 1,
+    "timestamp": 1774706483,
+    "processed_ids": [
+      "PROP-U5-uaf-011"
+    ]
+  }
+}

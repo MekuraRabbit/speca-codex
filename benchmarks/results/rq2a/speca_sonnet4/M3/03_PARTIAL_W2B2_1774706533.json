@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M3-mlk-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "drivers/net/ethernet/netronome/nfp/devlink_param.c::nfp_devlink_params_unregister::L240-250",
+      "proof_trace": "Function contains no heap allocations requiring explicit freeing - only stack variables, properly managed NSP resources in called functions, and kernel API calls for cleanup.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M3-mlk-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1774706533,
+    "processed_ids": [
+      "PROP-M3-mlk-003"
+    ]
+  }
+}

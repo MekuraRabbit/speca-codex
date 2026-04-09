@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-010",
+      "classification": "potential-vulnerability",
+      "code_path": "src/sentinel.c::sentinelDiscardReplyCallback::L2354",
+      "proof_trace": "Refcount safeguards exist but free-context orchestration creates UAF attack surface under concurrent disconnects/reconnects.",
+      "attack_scenario": "Attacker triggers disconnect/reconnect surges forcing callback access at freed `link` struct.",
+      "checklist_id": "PROP-U1-uaf-010"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 9,
+    "item_count": 1,
+    "timestamp": 1775601577,
+    "processed_ids": [
+      "PROP-U1-uaf-010"
+    ]
+  }
+}

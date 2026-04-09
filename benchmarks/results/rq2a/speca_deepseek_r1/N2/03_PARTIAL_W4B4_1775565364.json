@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 4,
+    "item_count": 1,
+    "timestamp": 1775565364,
+    "processed_ids": ["PROP-N2-npd-005"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-N2-npd-005",
+      "classification": "not-a-vulnerability",
+      "code_path": "MagickCore/pixel-accessor.h::GetPixelWriteMask::L333-339",
+      "proof_trace": "All callers obtain pixel pointers via GetCacheViewVirtualPixels/GetCacheViewAuthenticPixels and check for NULL before calling GetPixelWriteMask. The dereference pixel[...] in GetPixelWriteMask is thus protected.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N2-npd-005"
+    }
+  ]
+}

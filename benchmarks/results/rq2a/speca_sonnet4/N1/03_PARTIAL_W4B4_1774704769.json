@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N1-npd-005",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/sofa/pbrpc/rpc_listener.h::set_create_callback::L73-76",
+      "proof_trace": "Function set_create_callback() returns void, not a pointer requiring null checks. The actual _create_callback member is properly null-checked before dereference at line 167. Property statement is based on incorrect understanding of function signature.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N1-npd-005"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 4,
+    "item_count": 1,
+    "timestamp": 1774704769,
+    "processed_ids": [
+      "PROP-N1-npd-005"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N3-npd-012",
+      "classification": "vulnerability",
+      "code_path": "src/server/ns_turn_maps.c::addr_list_add::L623-624",
+      "proof_trace": "realloc() on line 623 can return NULL on memory allocation failure, but line 624 immediately dereferences the result without NULL check, causing segmentation fault.",
+      "attack_scenario": "Attacker triggers memory exhaustion through repeated TURN operations, causing realloc() to fail and return NULL, leading to NULL pointer dereference crash.",
+      "checklist_id": "PROP-N3-npd-012"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 11,
+    "item_count": 1,
+    "timestamp": 1774704790,
+    "processed_ids": [
+      "PROP-N3-npd-012"
+    ]
+  }
+}

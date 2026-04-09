@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "worker_id": 1,
+    "phase": "03",
+    "batch_index": 17,
+    "item_count": 1,
+    "timestamp": 1775565067,
+    "processed_ids": ["PROP-N2-npd-018"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-N2-npd-018",
+      "classification": "vulnerability",
+      "code_path": "MagickCore/fx.c::AddNoiseImage::L322-377",
+      "proof_trace": "AcquireRandomInfoThreadSet returns NULL on memory allocation failure. AddNoiseImage does not check the return value before dereferencing random_info[id] at line 377 (and line 326 if OPENMP enabled), causing NULL pointer dereference.",
+      "attack_scenario": "Attacker causes memory exhaustion leading to allocation failure, triggering NULL dereference in AddNoiseImage and denial-of-service.",
+      "checklist_id": "PROP-N2-npd-018"
+    }
+  ]
+}

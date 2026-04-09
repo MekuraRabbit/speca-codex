@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U4-uaf-005",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/tools/wasm-interp.cc::ProgramMain::L1492-1492",
+      "proof_trace": "Pointer allocations are locally scoped: read_file returns heap buffer via new[], stored in Context::json_data or local data variable, and is deleted exactly once after all uses (destroy_context or read_module). No use-after-free or double-free occurs because each pointer's lifetime ends after its last dereference and before program exit.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U4-uaf-005"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 4,
+    "item_count": 1,
+    "timestamp": 1775602900,
+    "processed_ids": [
+      "PROP-U4-uaf-005"
+    ]
+  }
+}

@@ -1,0 +1,55 @@
+---
+title: "_applyAssetParamsUpdates (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_empty: adds.length == 0 AND removes.length == 0?
+    q_check_empty --> q_revert_empty: both empty
+    q_revert_empty --> [*]: revert EmptyList()
+    q_check_empty --> q_iter_removes: at least one non-empty
+    q_iter_removes --> q_check_remove_live: for i in 0..removes.length
+    q_check_remove_live --> q_revert_live: asset has live auction
+    q_revert_live --> [*]: revert LiveAuction()
+    q_check_remove_live --> q_check_remove_exists: no live auction
+    q_check_remove_exists --> q_revert_not_set: assetParams.decimals == 0
+    q_revert_not_set --> [*]: revert AssetParamsNotSet(asset)
+    q_check_remove_exists --> q_delete_params: assetParams.decimals != 0
+    q_delete_params --> q_iter_removes: delete s_assetParams[asset], emit AssetParamsRemoved
+    q_iter_removes --> q_iter_adds: removes loop complete
+    q_iter_adds --> q_check_add_live: for i in 0..adds.length
+    q_check_add_live --> q_revert_live2: asset has live auction
+    q_revert_live2 --> [*]: revert LiveAuction()
+    q_check_add_live --> q_check_allowlisted: no live auction
+    q_check_allowlisted --> q_revert_not_allowed: !s_allowlistedAssets.contains(asset)
+    q_revert_not_allowed --> [*]: revert AssetNotAllowlisted(asset)
+    q_check_allowlisted --> q_check_decimals: asset is allowlisted
+    q_check_decimals --> q_revert_decimals: params.decimals != actual decimals
+    q_revert_decimals --> [*]: revert InvalidAssetDecimals
+    q_check_decimals --> q_check_min_size: decimals match
+    q_check_min_size --> q_revert_zero: minAuctionSizeUsd == 0
+    q_revert_zero --> [*]: revert InvalidZeroValue()
+    q_check_min_size --> q_check_is_assetout: minAuctionSizeUsd > 0
+    q_check_is_assetout --> q_save: asset == s_assetOut (skip duration/multiplier checks)
+    q_check_is_assetout --> q_check_duration: asset != s_assetOut
+    q_check_duration --> q_revert_dur: auctionDuration == 0
+    q_revert_dur --> [*]: revert InvalidZeroValue()
+    q_check_duration --> q_check_ending_pm: auctionDuration > 0
+    q_check_ending_pm --> q_revert_ending: endingPriceMultiplier below i_minPriceMultiplier
+    q_revert_ending --> [*]: revert InvalidEndingPriceMultiplier
+    q_check_ending_pm --> q_check_starting_pm: endingPriceMultiplier >= i_minPriceMultiplier
+    q_check_starting_pm --> q_revert_starting: endingPriceMultiplier > startingPriceMultiplier
+    q_revert_starting --> [*]: revert StartingPriceMultiplierLowerThanEndingPriceMultiplier
+    q_check_starting_pm --> q_save: startingPriceMultiplier >= endingPriceMultiplier
+    q_save --> q_iter_adds: s_assetParams[asset] = assetParams, emit AssetParamsUpdated
+    q_iter_adds --> [*]: adds loop complete
+
+    note right of q_check_add_live
+        INV-001: Cannot modify asset params during live auction for that asset
+        INV-002: If asset is assetOut, any live auction blocks modification
+        INV-003: Asset must be in s_allowlistedAssets to have params set
+    end note
+
+    note right of q_check_starting_pm
+        INV-004: startingPriceMultiplier >= endingPriceMultiplier >= i_minPriceMultiplier
+        INV-005: auctionDuration must be non-zero for non-assetOut assets
+    end note

@@ -1,0 +1,17 @@
+---
+title: "constructor (GPV2CompatibleAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_validate: gpV2VaultRelayer != address(0) AND gpV2Settlement != address(0)
+    q_validate --> q_revert: gpV2VaultRelayer == address(0) OR gpV2Settlement == address(0)
+    q_revert --> [*]: revert InvalidZeroAddress()
+    q_validate --> q_store: validation passed
+    q_store --> q_emit1: i_gpV2VaultRelayer = gpV2VaultRelayer
+    q_emit1 --> q_emit2: emit GPV2VaultRelayerSet(gpV2VaultRelayer)
+    q_emit2 --> [*]: emit GPV2SettlementSet(gpV2Settlement)
+
+    note right of q_validate
+        INV-001: Both gpV2VaultRelayer and gpV2Settlement must be non-zero addresses
+        INV-002: i_gpV2VaultRelayer and i_gpV2Settlement are immutable after construction
+    end note

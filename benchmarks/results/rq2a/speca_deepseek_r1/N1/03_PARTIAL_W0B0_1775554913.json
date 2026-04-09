@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N1-npd-001",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/sofa/pbrpc/binary_rpc_request.cc::AssembleFailedResponse::L200",
+      "proof_trace": "All call sites safely handle false return from SerializeToZeroCopyStream by exiting immediately and avoiding buffer post-failure access.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N1-npd-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 0,
+    "item_count": 1,
+    "timestamp": 1775554913,
+    "processed_ids": [
+      "PROP-N1-npd-001"
+    ]
+  }
+}

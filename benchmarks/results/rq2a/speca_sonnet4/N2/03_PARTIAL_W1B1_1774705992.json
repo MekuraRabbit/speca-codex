@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N2-npd-002",
+      "classification": "out-of-scope",
+      "code_path": "MagickCore/log.c::ParseLogHandlers::L1664-1697",
+      "proof_trace": "ParseLogHandlers returns LogHandlerType enum (integer), not a pointer type that can be NULL. Property assumes pointer return type but function returns bitmask enum values (UndefinedHandler=0x0000, ConsoleHandler=0x0001, etc).",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N2-npd-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 1,
+    "item_count": 1,
+    "timestamp": 1774705992,
+    "processed_ids": [
+      "PROP-N2-npd-002"
+    ]
+  }
+}

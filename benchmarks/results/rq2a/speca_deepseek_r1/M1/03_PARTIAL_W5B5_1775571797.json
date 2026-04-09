@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 5,
+    "item_count": 1,
+    "timestamp": 1775571797,
+    "processed_ids": ["PROP-M1-mlk-006"],
+    "total_items": 1,
+    "context_file": "outputs/03_CONTEXT_W5B5_1775571797.json"
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-006",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/sass_values.cpp::sass_make_error::L170-178",
+      "proof_trace": "All allocations (calloc for Sass_Value and sass_copy_c_string for message) are freed on every error path: calloc failure returns NULL; msg NULL frees v; sass_copy_c_string exits program on OOM which reclaims all memory.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M1-mlk-006"
+    }
+  ]
+}

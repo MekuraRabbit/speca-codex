@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U5-uaf-006",
+      "classification": "not-a-vulnerability",
+      "code_path": "icu4c/source/i18n/collationruleparser.cpp::parseResetAndPosition::L171-203",
+      "proof_trace": "Function parseResetAndPosition contains zero calls to free/delete/uprv_free; universal quantifier 'forall free(p)' ranges over empty set, making property vacuously true. All pointer dereferences are on member pointers (rules, sink) assumed valid by caller contract.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U5-uaf-006"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 5,
+    "item_count": 1,
+    "timestamp": 1775603933,
+    "processed_ids": [
+      "PROP-U5-uaf-006"
+    ]
+  }
+}

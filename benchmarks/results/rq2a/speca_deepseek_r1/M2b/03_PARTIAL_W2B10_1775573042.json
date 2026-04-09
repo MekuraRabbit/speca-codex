@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-011",
+      "classification": "not-a-vulnerability",
+      "code_path": "memcached.c::server_sockets::L3622-3803",
+      "proof_trace": "All early-return paths after successful strdup() call free(list) before returning: lines 3660, 3668, 3676, 3692, 3713, 3718, 3737, 3749, 3766, 3785 each contain free(list); return 1;. The normal completion path frees at line 3799. The strdup failure case (list==NULL) returns without needing free.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M2b-mlk-011"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 10,
+    "item_count": 1,
+    "timestamp": 1775573042,
+    "processed_ids": [
+      "PROP-M2b-mlk-011"
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 7,
+    "item_count": 1,
+    "timestamp": 1775572728,
+    "processed_ids": ["PROP-M2b-mlk-008"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-008",
+      "classification": "vulnerability",
+      "code_path": "cache.c::do_cache_free::L119-128",
+      "proof_trace": "In debug builds (NDEBUG not defined), do_cache_free has two error paths where redzone validation fails: lines 119-121 and 126-128. On both paths, the function returns early without freeing the passed pointer 'ptr', leaking the underlying allocation.",
+      "attack_scenario": "An attacker can cause memory corruption leading to redzone mismatch; if SIGABRT is caught (as in testapp), the program continues and the allocation is leaked, leading to memory exhaustion over repeated attacks.",
+      "checklist_id": "PROP-M2b-mlk-008"
+    }
+  ]
+}

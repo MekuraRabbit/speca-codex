@@ -1,0 +1,19 @@
+{
+  "metadata": {
+    "worker_id": 5,
+    "phase": "03",
+    "item_count": 1,
+    "processed_ids": ["PROP-N2-npd-014"],
+    "timestamp": 1775564495
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-N2-npd-014",
+      "classification": "vulnerability",
+      "code_path": "MagickCore/morphology.c::ExpandRotateKernelInfo::L2414-2433",
+      "proof_trace": "ExpandRotateKernelInfo calls CloneKernelInfo which can return NULL on memory allocation failure; the NULL is not checked before being passed to RotateKernelInfo and SameKernelInfo, causing NULL pointer dereference.",
+      "attack_scenario": "Attacker can trigger ExpandRotateKernelInfo via crafted kernel input; under memory pressure CloneKernelInfo fails returning NULL, leading to crash.",
+      "checklist_id": "PROP-N2-npd-014"
+    }
+  ]
+}

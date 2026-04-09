@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U4-uaf-002",
+      "classification": "potential-vulnerability",
+      "code_path": "target_workspace/src/tools/wasm-link.cc::ProgramMain::L813-817",
+      "proof_trace": "Raw pointer 'b' is used after being transferred to unique_ptr ownership via emplace_back(). This violates memory safety principles and creates fragile code that could lead to UAF if vector reallocation occurs.",
+      "attack_scenario": "If the vector reallocates between emplace_back() and read_binary_linker() calls, the raw pointer becomes dangling and accessing it causes use-after-free.",
+      "checklist_id": "PROP-U4-uaf-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 1,
+    "item_count": 1,
+    "timestamp": 1774705672,
+    "processed_ids": [
+      "PROP-U4-uaf-002"
+    ]
+  }
+}

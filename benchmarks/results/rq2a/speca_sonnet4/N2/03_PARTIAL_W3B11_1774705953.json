@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N2-npd-012",
+      "classification": "vulnerability",
+      "code_path": "MagickCore/threshold.c::RandomThresholdImage::L2075-2078",
+      "proof_trace": "AcquireRandomInfoThreadSet() can return NULL on memory allocation failure, but random_info[0] is dereferenced at L2078 without NULL check. Additional dereference at L2127 also unprotected.",
+      "attack_scenario": "Attacker triggers memory pressure causing AcquireRandomInfoThreadSet() to return NULL, leading to segmentation fault via null pointer dereference at GetRandomSecretKey(random_info[0]).",
+      "checklist_id": "PROP-N2-npd-012"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 11,
+    "item_count": 1,
+    "timestamp": 1774705953,
+    "processed_ids": [
+      "PROP-N2-npd-012"
+    ]
+  }
+}

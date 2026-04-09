@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N1-npd-009",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/sofa/pbrpc/rpc_client_impl.cc::CallMethod::L283-283",
+      "proof_trace": "SerializeToZeroCopyStream() returns bool (true/false) indicating serialization success, not a pointer that could be NULL. The property is based on a false premise about the API's return type.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N1-npd-009"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 8,
+    "item_count": 1,
+    "timestamp": 1774704782,
+    "processed_ids": [
+      "PROP-N1-npd-009"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U5-uaf-005",
+      "classification": "not-a-vulnerability",
+      "code_path": "icu4c/source/i18n/collationfastlatin.cpp::lookupUTF8::L797-817",
+      "proof_trace": "Function performs no dynamic memory management and makes no calls that could free its pointer parameters. Pointer lifetimes are managed by caller's reference counting system, ensuring table and s8 parameters remain valid throughout atomic function execution.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U5-uaf-005"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 4,
+    "item_count": 1,
+    "timestamp": 1774706668,
+    "processed_ids": [
+      "PROP-U5-uaf-005"
+    ]
+  }
+}

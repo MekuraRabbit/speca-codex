@@ -1,0 +1,23 @@
+{
+  "metadata": {
+    "worker_id": 3,
+    "phase": "03",
+    "item_ids": ["PROP-M1-mlk-004"],
+    "total_items": 1,
+    "context_file": "outputs/03_CONTEXT_W3B3_1775571797.json",
+    "batch_index": 3,
+    "timestamp": 1775571797,
+    "processed_ids": ["PROP-M1-mlk-004"],
+    "processing_time_ms": 0
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-004",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/source_map.cpp::add_close_mapping::L181-184",
+      "proof_trace": "Function contains no dynamic memory allocations; all objects are stack-based with automatic destruction via RAII, including on exception paths.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M1-mlk-004"
+    }
+  ]
+}

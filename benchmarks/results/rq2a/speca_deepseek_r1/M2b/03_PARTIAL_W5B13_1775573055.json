@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 13,
+    "item_count": 1,
+    "timestamp": 1775573055,
+    "processed_ids": ["PROP-M2b-mlk-013"],
+    "context_file": "outputs/03_CONTEXT_W5B13_1775573055.json",
+    "queue_file": "outputs/03_ASYNC_QUEUE_W5B13_1775573055.json"
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-013",
+      "classification": "vulnerability",
+      "code_path": "extstore.c::_evict_page::L429-463",
+      "proof_trace": "calloc allocates st.page_data at line 432; neither return path frees it, causing memory leak.",
+      "attack_scenario": "Repeated eviction attempts via extstore_write_request lead to unbounded memory exhaustion.",
+      "checklist_id": "PROP-M2b-mlk-013"
+    }
+  ]
+}

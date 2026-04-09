@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 10,
+    "item_count": 1,
+    "timestamp": 1775600018,
+    "processed_ids": ["PROP-U1-uaf-011"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-011",
+      "classification": "vulnerability",
+      "code_path": "src/redis-benchmark.c::getRedisConfig::L239-239",
+      "proof_trace": "After redisFree(c) at line 284, the fail path dereferences c->connection_type, c->tcp.host, c->tcp.port, and c->unix_sock.path (lines 287-290), causing use-after-free.",
+      "attack_scenario": "Attacker can cause connection failure (e.g., refuse connection) leading to goto fail, triggering use-after-free that may crash or leak memory.",
+      "checklist_id": "PROP-U1-uaf-011"
+    }
+  ]
+}

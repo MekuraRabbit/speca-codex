@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 8,
+    "item_count": 1,
+    "timestamp": 1775602678,
+    "processed_ids": ["PROP-U4-uaf-009"],
+    "context_file": "outputs/03_CONTEXT_W0B8_1775602678.json",
+    "queue_file": "outputs/03_ASYNC_QUEUE_W0B8_1775602678.json"
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-U4-uaf-009",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/tools/wasm2wast.cc::ProgramMain::L98-136",
+      "proof_trace": "Pointer 'data' allocated by read_file is used only as input to read_binary_ir before delete[]; no references are retained, and control flow ensures delete occurs after all uses.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U4-uaf-009"
+    }
+  ]
+}

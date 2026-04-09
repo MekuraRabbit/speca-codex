@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U4-uaf-007",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/tools/wasm-objdump.cc::dump_file::L130-131",
+      "proof_trace": "Memory is freed via delete[] on L130 and function returns immediately on L131 with no subsequent pointer dereferences. All execution paths lead to the same cleanup sequence.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U4-uaf-007"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 6,
+    "item_count": 1,
+    "timestamp": 1774705505,
+    "processed_ids": [
+      "PROP-U4-uaf-007"
+    ]
+  }
+}

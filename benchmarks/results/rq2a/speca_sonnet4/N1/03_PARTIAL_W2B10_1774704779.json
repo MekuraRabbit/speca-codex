@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N1-npd-011",
+      "classification": "vulnerability",
+      "code_path": "src/sofa/pbrpc/pbjson.cc::pb2json::L523-525",
+      "proof_trace": "parse_msg() can return NULL in multiple conditions (descriptor NULL, allocation failure, reflection NULL) but pb2json() dereferences the result without NULL checks at lines 524-525. json2string() also dereferences the NULL pointer at line 516.",
+      "attack_scenario": "Attacker sends malformed protobuf message causing GetDescriptor() to return NULL, leading to parse_msg() returning NULL, which pb2json() passes to json2string() causing segmentation fault.",
+      "checklist_id": "PROP-N1-npd-011"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 10,
+    "item_count": 1,
+    "timestamp": 1774704779,
+    "processed_ids": [
+      "PROP-N1-npd-011"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U4-uaf-008",
+      "classification": "vulnerability",
+      "code_path": "src/tools/wasm-opcodecnt.cc::ProgramMain::L227,L263",
+      "proof_trace": "Double-free vulnerability: when read_file() fails, data is deleted at line 227, then execution continues and data is deleted again unconditionally at line 263. No return statement or null-pointer check prevents the second deletion.",
+      "attack_scenario": "If file reading fails, the same memory is freed twice causing heap corruption that could lead to crashes or exploitation via heap manipulation.",
+      "checklist_id": "PROP-U4-uaf-008"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 7,
+    "item_count": 1,
+    "timestamp": 1774705468,
+    "processed_ids": [
+      "PROP-U4-uaf-008"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-005",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/rax.c::raxFreeWithCallback::L1240-1244",
+      "proof_trace": "Proof holds: depth-first traversal ensures children are freed before parents, each pointer is accessed only while valid and freed exactly once, no storage of freed pointers for later use.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-005"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 4,
+    "item_count": 1,
+    "timestamp": 1774705651,
+    "processed_ids": [
+      "PROP-U1-uaf-005"
+    ]
+  }
+}

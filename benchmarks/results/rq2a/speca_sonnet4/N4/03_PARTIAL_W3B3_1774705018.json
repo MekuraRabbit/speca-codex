@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N4-npd-004",
+      "classification": "out-of-scope",
+      "code_path": "OpenNI2-FreenectDriver/extern/OpenNI-Linux-x64-2.2.0.33/Include/OpenNI.h::_getHandle::L1400",
+      "proof_trace": "Code is located in external library directory (extern/OpenNI-Linux-x64-2.2.0.33/) rather than core libfreenect codebase.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N4-npd-004"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 3,
+    "item_count": 1,
+    "timestamp": 1774705018,
+    "processed_ids": [
+      "PROP-N4-npd-004"
+    ]
+  }
+}

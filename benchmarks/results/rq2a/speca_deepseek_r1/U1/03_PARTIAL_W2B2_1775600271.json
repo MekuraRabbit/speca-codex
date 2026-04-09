@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-003",
+      "classification": "vulnerability",
+      "code_path": "src/module.c::RM_SetDisconnectCallback::L3611-3613",
+      "proof_trace": "RM_SetDisconnectCallback dereferences bc pointer without validation. bc can be freed in moduleHandleBlockedClients after RM_UnblockClient, and module can call RM_SetDisconnectCallback after freeing, causing use-after-free. No mechanism ensures bc remains valid.",
+      "attack_scenario": "Malicious module can call RM_SetDisconnectCallback after unblocking client, causing memory corruption and potentially arbitrary code execution.",
+      "checklist_id": "PROP-U1-uaf-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1775600271,
+    "processed_ids": [
+      "PROP-U1-uaf-003"
+    ]
+  }
+}

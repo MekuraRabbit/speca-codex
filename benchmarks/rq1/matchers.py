@@ -37,6 +37,9 @@ def load_csv_issues(
     severity_filter: set[str] | None = None,
 ) -> list[Issue]:
     import csv
+    import sys
+
+    csv.field_size_limit(sys.maxsize)
 
     issues: list[Issue] = []
     with path.open("r", encoding="utf-8", newline="") as handle:
@@ -93,16 +96,38 @@ def extract_audit_items(
 
 
 def call_llm(prompt: str) -> str:
+    import shutil
+    import tempfile
+
     env = os.environ.copy()
     for var in ("CLAUDECODE", "CLAUDE_CODE_SESSION_ID"):
         env.pop(var, None)
 
     model = env.get("RQ1_MODEL", "haiku")
-    command = ["claude", "--output-format", "json", "--model", model, "-p", prompt]
+    claude_bin = shutil.which("claude") or "claude"
 
-    result = subprocess.run(
-        command, check=False, capture_output=True, text=True, env=env,
-    )
+    # Write prompt to temp file to avoid Windows command-line length limits
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".txt", encoding="utf-8", delete=False,
+    ) as tmp:
+        tmp.write(prompt)
+        tmp_path = tmp.name
+
+    try:
+        if os.name == "nt":
+            # On Windows, use temp file + shell to avoid 32KB command-line limit
+            command = f'type "{tmp_path}" | "{claude_bin}" --output-format json --model {model}'
+            result = subprocess.run(
+                command, check=False, capture_output=True, env=env,
+                shell=True, encoding="utf-8", errors="replace",
+            )
+        else:
+            command = [claude_bin, "--output-format", "json", "--model", model, "-p", prompt]
+            result = subprocess.run(
+                command, check=False, capture_output=True, text=True, env=env,
+            )
+    finally:
+        os.unlink(tmp_path)
     if result.returncode != 0:
         print(f"[rq1] call_llm failed (rc={result.returncode}): {result.stderr[:300] if result.stderr else ''}")
         return ""

@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "worker_id": 1,
+    "phase": "03",
+    "batch_index": 9,
+    "item_count": 1,
+    "timestamp": 1775566992,
+    "processed_ids": ["PROP-N5-npd-013"],
+    "context_file": "outputs/03_CONTEXT_W1B9_1775566992.json",
+    "queue_file": "outputs/03_ASYNC_QUEUE_W1B9_1775566992.json"
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-013",
+      "classification": "vulnerability",
+      "code_path": "libraries/liblber/memory.c::ber_strdup_x::L628-628",
+      "proof_trace": "Property requires all callers to NULL-check ber_strdup_x result before dereference. Counterexample: ldif_open_url (fetch.c:71) does not check return value before passing to strchr (line 76) and ldap_pvt_hex_unescape (line 80), leading to NULL pointer dereference on allocation failure.",
+      "attack_scenario": "Attacker submits LDIF file with 'include:' directive, causing memory exhaustion; ber_strdup returns NULL, leading to crash via strchr(NULL) or dereference in ldap_pvt_hex_unescape.",
+      "checklist_id": "PROP-N5-npd-013"
+    }
+  ]
+}

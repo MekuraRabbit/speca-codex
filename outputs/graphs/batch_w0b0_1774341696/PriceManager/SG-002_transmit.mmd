@@ -1,0 +1,47 @@
+---
+title: "transmit (PriceManager)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_role: onlyRole(PRICE_ADMIN_ROLE)
+    q_check_role --> q_check_empty: authorized
+    q_check_role --> q_revert_role: unauthorized
+    q_revert_role --> [*]: revert AccessControlUnauthorizedAccount
+    q_check_empty --> q_revert_empty: unverifiedReports.length == 0
+    q_revert_empty --> [*]: revert EmptyList()
+    q_check_empty --> q_validate_loop: unverifiedReports.length > 0
+    q_validate_loop --> q_decode: for i in 0..unverifiedReports.length
+    q_decode --> q_check_allowlist: dataStreamsFeedId = bytes32(reportData)
+    q_check_allowlist --> q_revert_feed: s_dataStreamsFeedIdToAsset[feedId] == address(0)
+    q_revert_feed --> [*]: revert FeedNotAllowlisted(feedId)
+    q_check_allowlist --> q_validate_loop: feedId is allowlisted, next i
+    q_validate_loop --> q_verify_bulk: all reports validated
+    q_verify_bulk --> q_process_loop: verifiedReports = verifierProxy.verifyBulk(reports)
+    q_process_loop --> q_decode_report: for i in 0..verifiedReports.length
+    q_decode_report --> q_check_stale: report = abi.decode(verifiedReports[i])
+    q_check_stale --> q_revert_stale: observationsTimestamp < block.timestamp - stalenessThreshold
+    q_revert_stale --> [*]: revert StaleFeedData()
+    q_check_stale --> q_scale: not stale
+    q_scale --> q_scale_up: feedDecimals < 18
+    q_scale --> q_scale_down: feedDecimals > 18
+    q_scale --> q_check_zero: feedDecimals == 18
+    q_scale_up --> q_check_zero: usdPrice = usdPrice * 10^(18 - feedDecimals)
+    q_scale_down --> q_check_zero: usdPrice = usdPrice / 10^(feedDecimals - 18)
+    q_check_zero --> q_revert_zero: usdPrice == 0
+    q_revert_zero --> [*]: revert ZeroFeedData()
+    q_check_zero --> q_store: usdPrice != 0
+    q_store --> q_emit: s_dataStreamsPrice[asset] = (usdPrice, timestamp)
+    q_emit --> q_process_loop: emit PriceTransmitted(asset, usdPrice), next i
+    q_process_loop --> [*]: all reports processed
+
+    note right of q_check_stale
+        INV-001: report.observationsTimestamp >= block.timestamp - stalenessThreshold
+        INV-002: usdPrice is scaled to exactly 18 decimals before storage
+        INV-003: usdPrice must be non-zero after scaling
+        INV-004: report.price is cast from int192 to uint256 (negative prices revert via SafeCast)
+    end note
+
+    note right of q_validate_loop
+        INV-005: all feed IDs must be allowlisted before bulk verification
+        INV-006: verification fee payment is assumed waived (no LINK transfer)
+    end note

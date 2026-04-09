@@ -1,0 +1,24 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N1-npd-002",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/sofa/pbrpc/compressed_stream.cc::get_compressed_input_stream::L16-35",
+      "proof_trace": "get_compressed_input_stream() cannot return NULL in normal execution: all valid CompressType enum values (CompressTypeNone, CompressTypeGzip, CompressTypeZlib, CompressTypeLZ4) return newly allocated stream objects. The default case calls SCHECK(false) which invokes the FATAL log handler and aborts the process before any NULL return can propagate. Both callers in binary_rpc_request.cc and rpc_client_impl.cc check for CompressTypeNone before calling, further narrowing the reachable enum range. Manual reconstruction from DeepSeek R1 log analysis (30 turns, no Write produced).",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N1-npd-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 1,
+    "item_count": 1,
+    "timestamp": 1775554130,
+    "processed_ids": [
+      "PROP-N1-npd-002"
+    ],
+    "manual_reconstruction": true,
+    "reconstruction_reason": "DeepSeek R1 exhausted 30 turns analyzing compressed_stream.cc without producing Write output. Classification derived from log analysis (files read: compressed_stream.cc, binary_rpc_request.cc, rpc_client_impl.cc, compressed_stream.h, common.h, common.cc) and cross-validated against Sonnet 4 result (not-a-vulnerability) and RepoAudit ground truth (RA-N1-FP1: non-reproducible FP)."
+  }
+}

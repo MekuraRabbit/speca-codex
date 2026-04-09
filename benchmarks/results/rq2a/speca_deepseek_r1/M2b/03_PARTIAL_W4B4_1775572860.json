@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 4,
+    "item_count": 1,
+    "timestamp": 1775572860,
+    "processed_ids": ["PROP-M2b-mlk-005"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-005",
+      "classification": "not-a-vulnerability",
+      "code_path": "memcached.c::do_add_delta::L2227-2337",
+      "proof_trace": "Only allocation is do_item_alloc at line 2306. On allocation failure, do_item_remove(it) cleans up the original item reference. On success, do_item_remove(new_it) at line 2317 releases the new item. All error paths before allocation call do_item_remove(it). The function guarantees every acquired item reference is released via do_item_remove, which frees slab memory when refcount reaches zero.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M2b-mlk-005"
+    }
+  ]
+}

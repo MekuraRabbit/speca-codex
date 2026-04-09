@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-002",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/emitter.cpp::add_close_mapping::L54-55",
+      "proof_trace": "Function uses RAII and standard library containers (std::vector) with automatic memory management. No manual allocations exist that require explicit cleanup on error paths. All memory is managed automatically by C++ stack unwinding and vector destructor.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M1-mlk-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 1,
+    "item_count": 1,
+    "timestamp": 1774705857,
+    "processed_ids": [
+      "PROP-M1-mlk-002"
+    ]
+  }
+}

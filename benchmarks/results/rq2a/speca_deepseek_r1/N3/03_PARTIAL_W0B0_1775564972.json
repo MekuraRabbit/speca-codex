@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N3-npd-001",
+      "classification": "vulnerability",
+      "code_path": "src/server/ns_turn_allocation.c::allocation_add_permission::L386-449",
+      "proof_trace": "Caller allocation_get_new_ch_info does not NULL-check return value of allocation_add_permission before dereferencing (lines 332, 334). allocation_add_permission can return NULL due to malloc/realloc failure.",
+      "attack_scenario": "Attacker sends repeated STUN ChannelBind requests causing memory exhaustion; malloc fails returning NULL, leading to NULL pointer dereference.",
+      "checklist_id": "PROP-N3-npd-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 0,
+    "item_count": 1,
+    "timestamp": 1775564972,
+    "processed_ids": [
+      "PROP-N3-npd-001"
+    ]
+  }
+}

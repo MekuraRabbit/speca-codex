@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N2-npd-008",
+      "classification": "not-a-vulnerability",
+      "code_path": "MagickCore/xml-tree.c::ParseProcessingInstructions::L1607-1682",
+      "proof_trace": "ParseProcessingInstructions returns void, not a pointer, so there is no return value to NULL-check. All memory allocation failures inside the function are properly handled with ThrowFatalException for unrecoverable errors.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N2-npd-008"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 7,
+    "item_count": 1,
+    "timestamp": 1775565313,
+    "processed_ids": [
+      "PROP-N2-npd-008"
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "worker_id": 0,
+    "phase": "03",
+    "batch_index": 4,
+    "item_count": 1,
+    "timestamp": 1775565307,
+    "processed_ids": ["PROP-N3-npd-005"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-N3-npd-005",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/server/ns_turn_server.c::client_to_be_allocated_timeout_handler::L4228-4228",
+      "proof_trace": "Function returns void, no return value to dereference. Callback checks arg != NULL before any dereference of arg, satisfying the property.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N3-npd-005"
+    }
+  ]
+}

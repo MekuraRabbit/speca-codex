@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N2-npd-018",
+      "classification": "vulnerability",
+      "code_path": "MagickCore/fx.c::AddNoiseImage::L322-326",
+      "proof_trace": "AcquireRandomInfoThreadSet() can return NULL on memory allocation failure, but random_info[0] is dereferenced at line 326 without NULL check. Memory allocation can fail under low-memory conditions leading to segmentation fault.",
+      "attack_scenario": "Attacker triggers memory exhaustion during image processing, causing AcquireRandomInfoThreadSet() to return NULL and crashing the application when random_info[0] is accessed.",
+      "checklist_id": "PROP-N2-npd-018"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 17,
+    "item_count": 1,
+    "timestamp": 1774705964,
+    "processed_ids": [
+      "PROP-N2-npd-018"
+    ]
+  }
+}

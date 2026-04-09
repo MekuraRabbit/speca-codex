@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U2-uaf-006",
+      "classification": "not-a-vulnerability",
+      "code_path": "drivers/peci/sysfs.c::remove_store::L52-67",
+      "proof_trace": "Device pointer is not accessed after peci_device_destroy() call on line 64. Function only executes 'return count' afterward with no dereference of the potentially freed pointer.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U2-uaf-006"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 5,
+    "item_count": 1,
+    "timestamp": 1774706284,
+    "processed_ids": [
+      "PROP-U2-uaf-006"
+    ]
+  }
+}

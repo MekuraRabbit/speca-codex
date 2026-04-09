@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M4-mlk-007",
+      "classification": "not-a-vulnerability",
+      "code_path": "sound/soc/qcom/qdsp6/q6afe-dai.c::msm_dai_q6_dai_probe::L680-693",
+      "proof_trace": "The only allocation is via q6afe_port_get_from_id, which either returns an error (no allocation) or a valid port. On error, probe returns without storing; on success, ownership transfers to dai_data->port array which is later freed by remove. No leak on any error path.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M4-mlk-007"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 6,
+    "item_count": 1,
+    "timestamp": 1775574403,
+    "processed_ids": [
+      "PROP-M4-mlk-007"
+    ]
+  }
+}

@@ -1,0 +1,50 @@
+---
+title: "performUpkeep (Payment Abstraction V2)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_access: whenNotPaused, whenAssetOutConfigured, onlyRole(AUCTION_WORKER_ROLE)
+    q_check_access --> q_decode: (eligibleAssets, endedAuctions) = abi.decode(performData)
+
+    q_decode --> q_validate_asset_out_price: eligibleAssets.length > 0
+    q_decode --> q_check_fee_agg: eligibleAssets.length == 0
+    q_validate_asset_out_price --> q_check_fee_agg: assetOutPrice = _getAssetPrice(assetOut, true)
+
+    q_check_fee_agg --> q_transfer_from_agg: hasFeeAggregator AND eligibleAssets.length > 0
+    q_check_fee_agg --> q_iter_eligible: no transfer needed
+    q_transfer_from_agg --> q_iter_eligible: feeAggregator.transferForSwap(this, eligibleAssets)
+
+    q_iter_eligible --> q_start_check: for asset in eligibleAssets
+    q_start_check --> q_revert_live: s_auctionStarts[asset] != 0
+    q_revert_live --> [*]: revert LiveAuction()
+    q_start_check --> q_check_params: auctionStarts == 0
+    q_check_params --> q_revert_params: assetDecimals == 0
+    q_revert_params --> [*]: revert AssetParamsNotSet()
+    q_check_params --> q_get_asset_price: decimals configured
+
+    q_get_asset_price --> q_check_min_usd: assetPrice fetched, validate amount USD
+    q_check_min_usd --> q_revert_below: availableAssetUsdValue < minAuctionSizeUsd
+    q_revert_below --> [*]: revert AmountBelowMinAuctionSize()
+    q_check_min_usd --> q_is_asset_out: value >= minAuctionSizeUsd
+
+    q_is_asset_out --> q_direct_transfer: asset == s_assetOut
+    q_direct_transfer --> q_iter_eligible: safeTransfer(assetOutReceiver, balance)
+
+    q_is_asset_out --> q_start_auction: asset != s_assetOut
+    q_start_auction --> q_iter_eligible: s_auctionStarts[asset] = block.timestamp, _onAuctionStart(asset)
+
+    q_iter_eligible --> q_iter_ended: eligible loop complete
+    q_iter_ended --> q_end_check: for asset in endedAuctions
+    q_end_check --> q_revert_no_auction: s_auctionStarts[asset] == 0
+    q_revert_no_auction --> [*]: revert InvalidAuction()
+    q_end_check --> q_end_auction: auction exists
+    q_end_auction --> q_iter_ended: _onAuctionEnd(asset), delete s_auctionStarts[asset]
+
+    q_iter_ended --> [*]: all ended auctions processed
+
+    note right of q_start_auction
+        INV-001: Only one live auction per asset at any time
+        INV-002: Asset out received in performUpkeep is forwarded directly to assetOutReceiver
+        INV-003: Eligible asset USD value must meet minAuctionSizeUsd threshold
+        INV-004: performUpkeep does NOT re-check duration/balance for ended auctions (allows forced endings by trusted worker)
+    end note

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M3-mlk-006",
+      "classification": "not-a-vulnerability",
+      "code_path": "drivers/net/ethernet/netronome/nfp/flower/offload.c::nfp_flower_del_offload::L1498-1560",
+      "proof_trace": "Property holds vacuously as nfp_flower_del_offload() makes no direct memory allocations. Function only frees previously allocated memory (lines 1552-1558) and calls cleanup functions. No allocations exist that could leak on error paths.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M3-mlk-006"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 5,
+    "item_count": 1,
+    "timestamp": 1774706570,
+    "processed_ids": [
+      "PROP-M3-mlk-006"
+    ]
+  }
+}

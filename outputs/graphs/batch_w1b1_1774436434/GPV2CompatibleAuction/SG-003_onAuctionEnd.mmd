@@ -1,0 +1,13 @@
+---
+title: "_onAuctionEnd (GPV2CompatibleAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_super: super._onAuctionEnd(asset, hasFeeAggregator)
+    q_super --> q_revoke: IERC20(asset).forceApprove(i_gpV2VaultRelayer, 0)
+    q_revoke --> [*]
+
+    note right of q_revoke
+        INV-001: Vault relayer approval is revoked (set to 0) when auction ends
+        INV-002: No residual approval remains after auction termination
+    end note

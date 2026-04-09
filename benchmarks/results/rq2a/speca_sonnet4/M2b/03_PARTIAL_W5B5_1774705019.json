@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-006",
+      "classification": "vulnerability",
+      "code_path": "memcached.c::do_add_delta::L2324-2327",
+      "proof_trace": "Memory leak occurs when item has unexpected refcount state: allocated item 'it' from do_item_get() is only freed if refcount==1, leaving unfreed references when refcount!=1 on error path.",
+      "attack_scenario": "Race condition where item becomes unlinked with refcount>1 between retrieval and validation, causing accumulated memory leak leading to service degradation.",
+      "checklist_id": "PROP-M2b-mlk-006"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 5,
+    "item_count": 1,
+    "timestamp": 1774705019,
+    "processed_ids": [
+      "PROP-M2b-mlk-006"
+    ]
+  }
+}

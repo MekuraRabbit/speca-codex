@@ -1,0 +1,21 @@
+{
+  "metadata": {
+    "worker_id": 0,
+    "phase": "03",
+    "batch_index": 8,
+    "item_count": 1,
+    "timestamp": 1775567293,
+    "processed_ids": ["PROP-N5-npd-009"],
+    "context_file": "outputs/03_CONTEXT_W0B8_1775567293.json"
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-009",
+      "classification": "not-a-vulnerability",
+      "code_path": "libraries/librewrite/session.c::rewrite_session_init::L75-144",
+      "proof_trace": "All callers either check for NULL (rewrite_session_var_set_f) or ignore the return value without dereferencing it (rewrite.c, rwm.c, conn.c). Subsequent session lookups via rewrite_session_find handle NULL returns appropriately.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N5-npd-009"
+    }
+  ]
+}

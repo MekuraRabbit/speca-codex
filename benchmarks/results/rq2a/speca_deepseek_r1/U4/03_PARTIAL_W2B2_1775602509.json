@@ -1,0 +1,24 @@
+{
+  "metadata": {
+    "worker_id": 2,
+    "phase": "03",
+    "item_ids": [
+      "PROP-U4-uaf-003"
+    ],
+    "total_items": 1,
+    "context_file": "outputs/03_CONTEXT_W2B2_1775602509.json",
+    "timestamp": 1775602509,
+    "batch_index": 2,
+    "processed_ids": ["PROP-U4-uaf-003"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-U4-uaf-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/tools/wasm-interp.cc::putback_char::L536-541",
+      "proof_trace": "Context is stack-allocated in read_and_run_spec_json, lives for the entire parse; filename pointer is from argv and remains valid for program lifetime; json_data is freed only after parse_commands returns, well after any putback_char calls.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U4-uaf-003"
+    }
+  ]
+}

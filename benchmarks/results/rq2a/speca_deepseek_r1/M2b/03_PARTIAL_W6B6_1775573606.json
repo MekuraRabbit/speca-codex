@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-007",
+      "classification": "not-a-vulnerability",
+      "code_path": "proxy_tls.c::SSL_is_init_finished::L130-130",
+      "proof_trace": "SSL_is_init_finished is an OpenSSL predicate that returns an integer and does not allocate memory that the caller must free. No allocations occur in the call site, so the property holds vacuously.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M2b-mlk-007"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 6,
+    "item_count": 1,
+    "timestamp": 1775573606,
+    "processed_ids": [
+      "PROP-M2b-mlk-007"
+    ]
+  }
+}

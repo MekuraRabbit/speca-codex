@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 11,
+    "item_count": 1,
+    "timestamp": 1775564575,
+    "processed_ids": ["PROP-N3-npd-012"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-N3-npd-012",
+      "classification": "vulnerability",
+      "code_path": "src/server/ns_turn_maps.c::addr_list_add::L597-630",
+      "proof_trace": "Property fails because realloc at line 623 can return NULL; line 624 dereferences slh->extra_list without NULL check, causing undefined behavior. No guard ensures non-NULL pointer before array access.",
+      "attack_scenario": "Memory exhaustion leads to realloc failure, causing NULL pointer dereference and crash (DoS).",
+      "checklist_id": "PROP-N3-npd-012"
+    }
+  ]
+}

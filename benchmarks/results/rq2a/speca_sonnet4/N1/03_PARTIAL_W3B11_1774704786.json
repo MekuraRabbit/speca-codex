@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N1-npd-012",
+      "classification": "vulnerability",
+      "code_path": "src/sofa/pbrpc/pbjson.cc::parse_msg::L269-270",
+      "proof_trace": "field2json() can return NULL when repeated=false and field type is MESSAGE (line 214 calls parse_msg which returns NULL for invalid descriptors). parse_msg() dereferences the result immediately at line 270 (*field_json) without any NULL check.",
+      "attack_scenario": "Attacker provides protobuf message with nested MESSAGE field having invalid/corrupted descriptor, causing parse_msg() to return NULL which gets dereferenced in the calling parse_msg(), resulting in segmentation fault.",
+      "checklist_id": "PROP-N1-npd-012"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 11,
+    "item_count": 1,
+    "timestamp": 1774704786,
+    "processed_ids": [
+      "PROP-N1-npd-012"
+    ]
+  }
+}

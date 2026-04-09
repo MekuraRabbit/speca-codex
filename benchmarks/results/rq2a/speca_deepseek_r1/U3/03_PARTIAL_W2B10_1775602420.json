@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U3-uaf-011",
+      "classification": "vulnerability",
+      "code_path": "src/local.c::remote_recv_cb::L800-871",
+      "proof_trace": "In remote_recv_cb's send error path (line 856-859), close_and_free_remote(remote) frees the remote struct, but no return statement follows, causing execution to continue to line 870 where setsockopt(remote->fd, ...) dereferences the freed pointer.",
+      "attack_scenario": "Client disconnects while server is sending response, causing send() to fail with an error, triggering the use-after-free of remote->fd via setsockopt after free.",
+      "checklist_id": "PROP-U3-uaf-011"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 10,
+    "item_count": 1,
+    "timestamp": 1775602420,
+    "processed_ids": [
+      "PROP-U3-uaf-011"
+    ]
+  }
+}

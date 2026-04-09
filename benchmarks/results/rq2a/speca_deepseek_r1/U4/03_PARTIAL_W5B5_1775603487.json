@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U4-uaf-006",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/tools/wasm-link.cc::ProgramMain::L795-824",
+      "proof_trace": "The data pointer allocated by read_file is owned by LinkerInputBinary, which frees it in its destructor after all uses (during perform_link). All dereferences of binary->data occur within perform_link, before the destructor runs.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U4-uaf-006"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 5,
+    "item_count": 1,
+    "timestamp": 1775603487,
+    "processed_ids": [
+      "PROP-U4-uaf-006"
+    ]
+  }
+}

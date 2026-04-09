@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M4-mlk-011",
+      "classification": "vulnerability",
+      "code_path": "sound/soc/qcom/qdsp6/q6apm.c::q6apm_get_audioreach_graph::L75-80",
+      "proof_trace": "Memory allocated by audioreach_alloc_graph_pkt() at line 66 and stored in graph->graph is not freed when idr_alloc() fails at line 75. The error path at line 78 only calls kfree(graph) but omits kfree(graph->graph), causing a memory leak.",
+      "attack_scenario": "An attacker can repeatedly trigger idr_alloc failures by exhausting the ID space, causing memory leaks with each failure that could lead to system memory exhaustion.",
+      "checklist_id": "PROP-M4-mlk-011"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 10,
+    "item_count": 1,
+    "timestamp": 1774706298,
+    "processed_ids": [
+      "PROP-M4-mlk-011"
+    ]
+  }
+}

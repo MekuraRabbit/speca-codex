@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-006",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/redis-benchmark.c::freeRedisConfig::L293-297",
+      "proof_trace": "1) Pointers (save, appendonly, cfg) are dereferenced ONLY before their respective cleanup. 2) Callers never retain/leak pointer references post-free. 3) Cleanup occurs only at program-termination boundaries.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-006"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 5,
+    "item_count": 1,
+    "timestamp": 1775602148,
+    "processed_ids": [
+      "PROP-U1-uaf-006"
+    ]
+  }
+}

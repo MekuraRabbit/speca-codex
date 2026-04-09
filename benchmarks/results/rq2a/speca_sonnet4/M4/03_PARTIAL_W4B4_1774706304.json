@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M4-mlk-005",
+      "classification": "not-a-vulnerability",
+      "code_path": "sound/soc/qcom/qdsp6/audioreach.c::__audioreach_alloc_pkt::L197-232",
+      "proof_trace": "Function has zero error paths after successful allocation; all post-allocation operations are safe field assignments that cannot fail. Property assumes error paths that do not exist.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M4-mlk-005"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 4,
+    "item_count": 1,
+    "timestamp": 1774706304,
+    "processed_ids": [
+      "PROP-M4-mlk-005"
+    ]
+  }
+}

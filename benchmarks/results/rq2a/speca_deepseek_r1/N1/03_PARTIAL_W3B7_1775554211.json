@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 7,
+    "item_count": 1,
+    "timestamp": 1775554211,
+    "processed_ids": ["PROP-N1-npd-008"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-N1-npd-008",
+      "classification": "vulnerability",
+      "code_path": "src/sofa/pbrpc/compressed_stream.cc::get_compressed_output_stream::L37-66",
+      "proof_trace": "Callers assume get_compressed_output_stream never returns NULL, but invalid compress_type leads to SCHECK(false) which may not abort if log handler is disabled, resulting in NULL return. No NULL check before dereference in rpc_client_impl.cc and binary_rpc_request.cc.",
+      "attack_scenario": "Attacker sends RPC with invalid compress_type (e.g., 999), causing SCHECK(false) to log and continue (if log handler disabled), returning NULL. Subsequent SerializeToZeroCopyStream(NULL) crashes process.",
+      "checklist_id": "PROP-N1-npd-008"
+    }
+  ]
+}

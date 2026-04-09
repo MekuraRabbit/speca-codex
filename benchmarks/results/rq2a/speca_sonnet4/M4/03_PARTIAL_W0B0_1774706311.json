@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M4-mlk-001",
+      "classification": "vulnerability",
+      "code_path": "sound/soc/qcom/qdsp6/q6asm.c::q6asm_audio_client_release::L548-562",
+      "proof_trace": "Port buffers allocated in q6asm_map_memory_regions (line 516) via kzalloc are stored in ac->port[dir].buf but never freed in q6asm_audio_client_release. The release function only frees the main audio_client structure, leaking the port buffer allocations.",
+      "attack_scenario": "Attacker repeatedly allocates audio clients with port buffers and calls q6asm_audio_client_free, causing port buffer memory to accumulate until system memory exhaustion occurs.",
+      "checklist_id": "PROP-M4-mlk-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 0,
+    "item_count": 1,
+    "timestamp": 1774706311,
+    "processed_ids": [
+      "PROP-M4-mlk-001"
+    ]
+  }
+}

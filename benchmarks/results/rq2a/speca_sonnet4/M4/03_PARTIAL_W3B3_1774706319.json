@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M4-mlk-004",
+      "classification": "not-a-vulnerability",
+      "code_path": "sound/soc/qcom/qdsp6/q6asm.c::q6asm_stream_remove_silence::L1346-1361",
+      "proof_trace": "All allocations are properly freed on every path. Memory allocated at L1346 is unconditionally freed at L1361 regardless of apr_send_pkt() success/failure. Allocation failure (NULL) is checked and returns immediately before any cleanup is needed.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M4-mlk-004"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 3,
+    "item_count": 1,
+    "timestamp": 1774706319,
+    "processed_ids": [
+      "PROP-M4-mlk-004"
+    ]
+  }
+}

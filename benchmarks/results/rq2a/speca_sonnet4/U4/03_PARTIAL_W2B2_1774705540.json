@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U4-uaf-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/tools/wasm-interp.cc::putback_char::L536-541",
+      "proof_trace": "putback_char() only manipulates integer offset and copies struct values, never dereferencing json_data pointer. Function executes synchronously during parsing before destroy_context() frees memory.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U4-uaf-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1774705540,
+    "processed_ids": [
+      "PROP-U4-uaf-003"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-014",
+      "classification": "vulnerability",
+      "code_path": "proxy_config.c::proxy_init_startfiles::L419-428",
+      "proof_trace": "Multiple allocations (flist, db, db->buf, db->fname) leak on error paths. Function returns -1 without cleanup when allocations fail at lines 419-422 or 426-429, leaving previously allocated memory unreachable.",
+      "attack_scenario": "Attacker triggers allocation failures during proxy reconfiguration through resource exhaustion, causing cumulative memory leaks that worsen with each failed restart attempt.",
+      "checklist_id": "PROP-M2b-mlk-014"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 14,
+    "item_count": 1,
+    "timestamp": 1774705048,
+    "processed_ids": [
+      "PROP-M2b-mlk-014"
+    ]
+  }
+}

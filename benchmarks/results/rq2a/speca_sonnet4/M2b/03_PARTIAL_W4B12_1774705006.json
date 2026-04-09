@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-017",
+      "classification": "vulnerability",
+      "code_path": "memcached.c::main::L6089-6140",
+      "proof_trace": "Memory allocated at L6089 is never freed when portnumber_file is NULL and either server_sockets() call fails (L6113 or L6132 exit paths), bypassing cleanup code at L6139-6140.",
+      "attack_scenario": "Set MEMCACHED_PORT_FILENAME to trigger allocation, cause fopen() failure (portnumber_file=NULL), then trigger socket creation failure to hit exit() without cleanup.",
+      "checklist_id": "PROP-M2b-mlk-017"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 12,
+    "item_count": 1,
+    "timestamp": 1774705006,
+    "processed_ids": [
+      "PROP-M2b-mlk-017"
+    ]
+  }
+}

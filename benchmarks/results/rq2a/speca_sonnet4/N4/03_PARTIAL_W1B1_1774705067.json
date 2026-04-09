@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N4-npd-002",
+      "classification": "potential-vulnerability",
+      "code_path": "fakenect/fakenect.c::parse_line::L141",
+      "proof_trace": "Property statement is semantically incorrect (get_data_size returns int, not pointer), but real issue exists: get_data_size can return -1 on ftell error, which gets cast to huge unsigned value when passed to malloc at line 143.",
+      "attack_scenario": "Attacker provides corrupted file causing ftell to fail, leading to malloc with massive size allocation.",
+      "checklist_id": "PROP-N4-npd-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 1,
+    "item_count": 1,
+    "timestamp": 1774705067,
+    "processed_ids": [
+      "PROP-N4-npd-002"
+    ]
+  }
+}

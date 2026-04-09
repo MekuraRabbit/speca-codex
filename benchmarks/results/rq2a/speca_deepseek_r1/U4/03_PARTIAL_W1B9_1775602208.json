@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 9,
+    "item_count": 1,
+    "timestamp": 1775602208,
+    "processed_ids": ["PROP-U4-uaf-010"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-U4-uaf-010",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/tools/wast-desugar.cc::ProgramMain::L80-112",
+      "proof_trace": "The only dynamically allocated pointer (Script*) is used before delete and deleted exactly once. No use-after-free or double-free possible.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U4-uaf-010"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M5-mlk-008",
+      "classification": "not-a-vulnerability",
+      "code_path": "mm/damon/ops-common.c::damon_get_page::L22-34",
+      "proof_trace": "Property holds because all execution paths properly manage page references: early returns acquire no reference, success path with non-LRU pages calls put_page() to deallocate, and valid LRU pages transfer ownership to caller who must deallocate.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M5-mlk-008"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 7,
+    "item_count": 1,
+    "timestamp": 1774705278,
+    "processed_ids": [
+      "PROP-M5-mlk-008"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "worker_id": 0,
+    "phase": "03",
+    "item_ids": ["PROP-M4-mlk-009"],
+    "total_items": 1,
+    "context_file": "outputs/03_CONTEXT_W0B8_1775573982.json",
+    "timestamp": 1775573982,
+    "batch_index": 8,
+    "processed_ids": ["PROP-M4-mlk-009"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-M4-mlk-009",
+      "classification": "vulnerability",
+      "code_path": "sound/soc/qcom/qdsp6/q6apm-dai.c::q6apm_dai_open::L233-309",
+      "proof_trace": "Error cleanup path only calls kfree(prtd) but leaks prtd->graph when q6apm_graph_open succeeded. Four constraint-check error paths after successful graph allocation don't call q6apm_graph_close.",
+      "attack_scenario": "Repeated device open attempts with invalid hardware parameters cause q6apm_graph_open allocations to leak, leading to memory exhaustion.",
+      "checklist_id": "PROP-M4-mlk-009"
+    }
+  ]
+}

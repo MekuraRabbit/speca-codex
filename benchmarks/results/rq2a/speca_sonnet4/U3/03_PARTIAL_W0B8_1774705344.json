@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U3-uaf-009",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/acl.c::acl_remove_ip::L553-567",
+      "proof_trace": "Function uses only stack-allocated variables with no heap allocation or deallocation. All pointer usage occurs within function scope before automatic stack cleanup.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U3-uaf-009"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 8,
+    "item_count": 1,
+    "timestamp": 1774705344,
+    "processed_ids": [
+      "PROP-U3-uaf-009"
+    ]
+  }
+}

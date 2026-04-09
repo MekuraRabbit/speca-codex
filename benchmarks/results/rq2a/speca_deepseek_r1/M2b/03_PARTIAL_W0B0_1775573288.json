@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "worker_id": 0,
+    "phase": "03",
+    "item_ids": ["PROP-M2b-mlk-001"],
+    "context_file": "outputs/03_CONTEXT_W0B0_1775573288.json",
+    "timestamp": 1775573288,
+    "batch_index": 0,
+    "batch_size": 1,
+    "processed_ids": ["PROP-M2b-mlk-001"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-001",
+      "classification": "not-a-vulnerability",
+      "code_path": "cache.c::cache_destroy::L56-65",
+      "proof_trace": "Cache_destroy unconditionally frees all elements in its internal STAILQ linked list via `free`, destroys the mutex lock, and cleans remaining cache metadata. There are no error paths or conditions that skip any deallocations.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M2b-mlk-001"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N4-npd-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/loader.c::upload_cemd_data::L341-419",
+      "proof_trace": "Function returns int, not pointer, so NULL-checking is semantically invalid. No callers found in codebase, making the property vacuously true but specification incorrect.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N4-npd-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1774705055,
+    "processed_ids": [
+      "PROP-N4-npd-003"
+    ]
+  }
+}

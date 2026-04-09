@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U2-uaf-008",
+      "classification": "not-a-vulnerability",
+      "code_path": "drivers/peci/core.c::peci_controller_dev_release::L19-26",
+      "proof_trace": "All controller pointer uses (lines 23-24) occur before kfree(controller) on line 25. Function terminates immediately after freeing with no subsequent code that could access the freed pointer.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U2-uaf-008"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 7,
+    "item_count": 1,
+    "timestamp": 1774706315,
+    "processed_ids": [
+      "PROP-U2-uaf-008"
+    ]
+  }
+}

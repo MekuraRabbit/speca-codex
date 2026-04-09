@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "worker_id": 4,
+    "phase": "03",
+    "item_ids": ["PROP-M3-mlk-005"],
+    "total_items": 1,
+    "timestamp": 1775572993,
+    "processed_ids": ["PROP-M3-mlk-005"],
+    "batch_index": 4,
+    "iteration": 4
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-M3-mlk-005",
+      "classification": "not-a-vulnerability",
+      "code_path": "drivers/net/ethernet/netronome/nfp/flower/lag_conf.c::nfp_flower_lag_get_output_id::L185-199",
+      "proof_trace": "Function performs no dynamic allocations; property holds vacuously.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M3-mlk-005"
+    }
+  ]
+}

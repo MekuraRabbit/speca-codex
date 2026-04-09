@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M5-mlk-003",
+      "classification": "vulnerability",
+      "code_path": "mm/damon/sysfs.c::damon_sysfs_target_release::L1338-1341",
+      "proof_trace": "Function only frees main struct via kfree() but never frees target->regions allocated in add_dirs. When kobject refcount drops to zero through sysfs operations, release is called directly bypassing rm_dirs cleanup.",
+      "attack_scenario": "Attacker triggers sysfs operations causing kobject reference drops, leading to release function calls that leak target->regions allocations, eventually exhausting kernel memory.",
+      "checklist_id": "PROP-M5-mlk-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1774705266,
+    "processed_ids": [
+      "PROP-M5-mlk-003"
+    ]
+  }
+}

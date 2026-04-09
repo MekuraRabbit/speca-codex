@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M3-mlk-001",
+      "classification": "not-a-vulnerability",
+      "code_path": "drivers/net/ethernet/netronome/nfp/abm/qdisc.c::nfp_abm_qdisc_offload_stop::L119-135",
+      "proof_trace": "Property premise is invalid: nfp_abm_qdisc_offload_stop contains no memory allocations to track. Function only performs conditional logging, type checking, and statistics reset operations.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M3-mlk-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 0,
+    "item_count": 1,
+    "timestamp": 1774706474,
+    "processed_ids": [
+      "PROP-M3-mlk-001"
+    ]
+  }
+}

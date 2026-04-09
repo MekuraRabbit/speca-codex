@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N3-npd-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/server/ns_turn_maps.c::ur_addr_map_get::L858-862",
+      "proof_trace": "The only caller of addr_list_get_const() properly NULL-checks the return value with if(elem) before dereferencing elem->value. The static function has internal linkage with a single verified call site that implements correct defensive programming.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N3-npd-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1774704793,
+    "processed_ids": [
+      "PROP-N3-npd-003"
+    ]
+  }
+}

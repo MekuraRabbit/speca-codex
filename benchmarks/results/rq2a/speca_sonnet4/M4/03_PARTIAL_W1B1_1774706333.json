@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M4-mlk-002",
+      "classification": "not-a-vulnerability",
+      "code_path": "sound/soc/qcom/qdsp6/q6asm.c::q6asm_audio_client_free_buf::L372-382",
+      "proof_trace": "Function makes no heap allocations (only stack variable 'unsigned long flags') and has no error paths, making the property vacuously true. Single linear execution path: lock \u2192 clear \u2192 free \u2192 unlock.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M4-mlk-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 1,
+    "item_count": 1,
+    "timestamp": 1774706333,
+    "processed_ids": [
+      "PROP-M4-mlk-002"
+    ]
+  }
+}

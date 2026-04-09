@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N1-npd-003",
+      "classification": "vulnerability",
+      "code_path": "src/sofa/pbrpc/rpc_endpoint.cc::ResolveAddress::L42",
+      "proof_trace": "ResolveAddress functions accept RpcEndpoint* parameter but unconditionally dereference it at line 42 (*endpoint = it->endpoint()) without NULL validation. All ResolveAddress variants eventually reach this vulnerable dereference.",
+      "attack_scenario": "Attacker calls RpcClientImpl::ResolveAddress with nullptr as second parameter, causing segmentation fault when code dereferences the NULL pointer at rpc_endpoint.cc:42.",
+      "checklist_id": "PROP-N1-npd-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1774704809,
+    "processed_ids": [
+      "PROP-N1-npd-003"
+    ]
+  }
+}

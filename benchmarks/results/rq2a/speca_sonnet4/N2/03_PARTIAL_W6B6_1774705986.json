@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N2-npd-007",
+      "classification": "out-of-scope",
+      "code_path": "MagickCore/pixel-accessor.h::GetPixelWriteMask::L333-339",
+      "proof_trace": "Property is fundamentally invalid: GetPixelWriteMask returns Quantum (numeric type), not a pointer, so NULL checking and dereference are impossible. All callers correctly use return value as numeric.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N2-npd-007"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 6,
+    "item_count": 1,
+    "timestamp": 1774705986,
+    "processed_ids": [
+      "PROP-N2-npd-007"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U4-uaf-001",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/tools/wasm-interp.cc::destroy_context::L1466-1468",
+      "proof_trace": "Property holds: json_data is accessed during parse_commands (L1486) before destroy_context (L1488) frees it. Function returns immediately after destroy_context with no further json_data access possible. Sequential execution ensures no use-after-free.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U4-uaf-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 0,
+    "item_count": 1,
+    "timestamp": 1774705628,
+    "processed_ids": [
+      "PROP-U4-uaf-001"
+    ]
+  }
+}

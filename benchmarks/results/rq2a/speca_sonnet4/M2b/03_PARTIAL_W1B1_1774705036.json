@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-002",
+      "classification": "not-a-vulnerability",
+      "code_path": "crawler.c::lru_crawler_close_client::L131-137",
+      "proof_trace": "The function performs no allocations itself, only cleanup of pre-existing c->buf via free() on line 135. Sequential execution with no error paths ensures proper cleanup.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M2b-mlk-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 1,
+    "item_count": 1,
+    "timestamp": 1774705036,
+    "processed_ids": [
+      "PROP-M2b-mlk-002"
+    ]
+  }
+}

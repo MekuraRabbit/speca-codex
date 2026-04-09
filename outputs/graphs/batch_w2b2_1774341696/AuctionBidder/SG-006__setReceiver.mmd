@@ -1,0 +1,16 @@
+---
+title: "_setReceiver (AuctionBidder)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_checkDuplicate: receiver == s_receiver
+    q_checkDuplicate --> q_revert: receiver unchanged
+    q_checkDuplicate --> q_store: receiver changed
+    q_revert --> [*]: revert Errors.ValueNotUpdated()
+    q_store --> q_emit: s_receiver = receiver
+    q_emit --> [*]: emit ReceiverSet(receiver)
+
+    note right of q_checkDuplicate
+        INV-001: receiver can be set to address(0) to disable forwarding
+        INV-002: setting same receiver address is rejected
+    end note

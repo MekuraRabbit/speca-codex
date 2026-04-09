@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-007",
+      "classification": "out-of-scope",
+      "code_path": "libraries/libldap/os-ip.c::ldap_is_write_ready::L1121-1146",
+      "proof_trace": "Function returns int, not pointer - NULL-check and dereference operations are semantically inapplicable to integer return values. Property specification is fundamentally incorrect.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N5-npd-007"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 6,
+    "item_count": 1,
+    "timestamp": 1774706047,
+    "processed_ids": [
+      "PROP-N5-npd-007"
+    ]
+  }
+}

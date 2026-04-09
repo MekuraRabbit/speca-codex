@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-005",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/rax.c::raxFreeWithCallback::L1240-1244",
+      "proof_trace": "Property holds because raxRecursiveFree depth-first traversal ensures each node is accessed only before its own free; child pointers are read from parent memory before child free; raxGetData reads auxiliary pointer before free. No pointer dereferenced after free, no double-free.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-005"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 4,
+    "item_count": 1,
+    "timestamp": 1775600891,
+    "processed_ids": [
+      "PROP-U1-uaf-005"
+    ]
+  }
+}

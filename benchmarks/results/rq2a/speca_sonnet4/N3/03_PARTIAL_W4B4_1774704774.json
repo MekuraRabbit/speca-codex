@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N3-npd-005",
+      "classification": "out-of-scope",
+      "code_path": "src/server/ns_turn_server.c::client_to_be_allocated_timeout_handler::L4228-4229",
+      "proof_trace": "Property claims NULL-checking is required for return value of client_to_be_allocated_timeout_handler(), but this function returns void, not a pointer. Type system mismatch makes property inapplicable to actual code.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N3-npd-005"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 4,
+    "item_count": 1,
+    "timestamp": 1774704774,
+    "processed_ids": [
+      "PROP-N3-npd-005"
+    ]
+  }
+}

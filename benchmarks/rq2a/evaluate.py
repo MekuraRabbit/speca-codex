@@ -575,7 +575,14 @@ def evaluate(results_dir: Path, output_path: Path, reparse: bool = False,
 
     # ── Step 2: Human review + FP detection ─────────────────────────
     matched_pids = {m["finding_id"] for m in recall_matches.values() if m.get("finding_id")}
-    unmatched = [f for f in all_positive if f.get("property_id") not in matched_pids]
+    # Deduplicate by property_id (re-run partials can produce duplicate findings)
+    _seen_unmatched: set[str] = set()
+    unmatched: list[dict] = []
+    for f in all_positive:
+        pid = f.get("property_id", "")
+        if pid not in matched_pids and pid not in _seen_unmatched:
+            _seen_unmatched.add(pid)
+            unmatched.append(f)
 
     # Load human review verdicts
     human_verdicts = load_human_review(results_dir)

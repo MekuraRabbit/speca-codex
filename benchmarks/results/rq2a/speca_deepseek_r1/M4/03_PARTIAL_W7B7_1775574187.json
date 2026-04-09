@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "worker_id": 7,
+    "phase": "03",
+    "batch_index": 7,
+    "item_count": 1,
+    "timestamp": 1775574187,
+    "processed_ids": ["PROP-M4-mlk-008"],
+    "context_file": "outputs/03_CONTEXT_W7B7_1775574187.json",
+    "queue_file": "outputs/03_ASYNC_QUEUE_W7B7_1775574187.json"
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-M4-mlk-008",
+      "classification": "not-a-vulnerability",
+      "code_path": "sound/soc/qcom/qdsp6/q6afe.c::q6afe_cdc_dma_port_prepare::L1463-1476",
+      "proof_trace": "Function contains no dynamic memory allocations; property vacuously satisfied.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M4-mlk-008"
+    }
+  ]
+}

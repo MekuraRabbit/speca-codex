@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M4-mlk-010",
+      "classification": "not-a-vulnerability",
+      "code_path": "sound/soc/qcom/qdsp6/q6apm-lpass-dais.c::q6apm_lpass_dai_dev_probe::L220-240",
+      "proof_trace": "All allocations use device-managed framework (devm_kzalloc, devm_snd_soc_register_component) which guarantees automatic cleanup on probe failure. No manual allocations require explicit freeing.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M4-mlk-010"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 9,
+    "item_count": 1,
+    "timestamp": 1774706317,
+    "processed_ids": [
+      "PROP-M4-mlk-010"
+    ]
+  }
+}

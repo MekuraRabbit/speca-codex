@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M4-mlk-008",
+      "classification": "not-a-vulnerability",
+      "code_path": "sound/soc/qcom/qdsp6/q6afe.c::q6afe_cdc_dma_port_prepare::L1463-1476",
+      "proof_trace": "Property holds vacuously: function performs no dynamic memory allocations, only sets fields in existing structures. Universal quantification over empty allocation set is trivially true.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M4-mlk-008"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 7,
+    "item_count": 1,
+    "timestamp": 1774706342,
+    "processed_ids": [
+      "PROP-M4-mlk-008"
+    ]
+  }
+}

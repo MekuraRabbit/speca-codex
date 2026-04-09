@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M5-mlk-006",
+      "classification": "not-a-vulnerability",
+      "code_path": "mm/damon/dbgfs.c::__damon_dbgfs_init::L1028-1052",
+      "proof_trace": "All allocations are properly freed on the single error path (kmalloc_array failure at L1045-1048). debugfs_remove(dbgfs_root) recursively cleans up all debugfs resources created earlier, and the failed kmalloc_array requires no cleanup since allocation never succeeded.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M5-mlk-006"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 5,
+    "item_count": 1,
+    "timestamp": 1774705346,
+    "processed_ids": [
+      "PROP-M5-mlk-006"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-012",
+      "classification": "vulnerability",
+      "code_path": "src/permutate.hpp::permutateAlt::L79-84",
+      "proof_trace": "Memory allocated at L79 but early return at L84 bypasses cleanup at L129, causing memory leak when input contains empty vector.",
+      "attack_scenario": "Attacker calls permutateAlt() with vector containing empty sub-vector, triggering early return and leaking allocated state memory.",
+      "checklist_id": "PROP-M1-mlk-012"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 11,
+    "item_count": 1,
+    "timestamp": 1774705773,
+    "processed_ids": [
+      "PROP-M1-mlk-012"
+    ]
+  }
+}

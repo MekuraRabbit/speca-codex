@@ -7,6 +7,7 @@ SPECA results are optionally overlaid when available.
 Usage:
     uv run python3 benchmarks/rq2a/visualize.py
     uv run python3 benchmarks/rq2a/visualize.py --speca-results path/to/speca_summary.json
+    uv run python3 benchmarks/rq2a/visualize.py --speca-multi "Sonnet 4.5=path1.json" "Sonnet 4=path2.json"
 """
 
 import argparse
@@ -36,6 +37,10 @@ COLORS = {
     "CodeGuru": "#64B5CD",
     "Single-fn\nLLM": "#AAAAAA",
     "SPECA": "#DD8452",
+    # SPECA model-specific colors
+    "SPECA\n(Sonnet 4.5)": "#DD8452",
+    "SPECA\n(Sonnet 4)": "#E8794A",
+    "SPECA\n(DeepSeek R1)": "#8B5CF6",
 }
 
 plt.rcParams.update({
@@ -63,8 +68,31 @@ def load_speca(path: str | None) -> dict | None:
         return json.load(f)
 
 
+def load_speca_multi(specs: list[str] | None) -> list[tuple[str, dict]]:
+    """Load multiple SPECA results as (label, data) pairs.
+
+    Each spec is "Label=path/to/summary.json".
+    """
+    if not specs:
+        return []
+    results = []
+    for spec in specs:
+        if "=" not in spec:
+            print(f"[WARN] Invalid --speca-multi format (need Label=path): {spec}")
+            continue
+        label, path = spec.split("=", 1)
+        p = Path(path)
+        if not p.exists():
+            print(f"[WARN] SPECA results not found: {p}")
+            continue
+        with open(p) as f:
+            data = json.load(f)
+        results.append((label.strip(), data))
+    return results
+
+
 # ── Figure 1: Precision Comparison (bar chart) ─────────────────────
-def fig1_precision(data: dict, speca: dict | None):
+def fig1_precision(data: dict, speca_list: list[tuple[str, dict]]):
     """Bar chart comparing precision across all tools."""
     tools = data["tools"]
 
@@ -90,11 +118,13 @@ def fig1_precision(data: dict, speca: dict | None):
             precisions.append(p)
             colors.append(COLORS.get(label, "#999999"))
 
-    # Add SPECA if available
-    if speca and speca.get("precision") is not None:
-        names.append("SPECA")
-        precisions.append(speca["precision"])
-        colors.append(COLORS["SPECA"])
+    # Add SPECA variants
+    for label, sdata in speca_list:
+        if sdata.get("precision") is not None:
+            display = f"SPECA\n({label})"
+            names.append(display)
+            precisions.append(sdata["precision"])
+            colors.append(COLORS.get(display, "#DD8452"))
 
     fig, ax = plt.subplots(figsize=(10, 5))
     x = np.arange(len(names))
@@ -121,7 +151,7 @@ def fig1_precision(data: dict, speca: dict | None):
 
 
 # ── Figure 2: TP / FP Comparison (grouped bar) ─────────────────────
-def fig2_tp_fp(data: dict, speca: dict | None):
+def fig2_tp_fp(data: dict, speca_list: list[tuple[str, dict]]):
     """Grouped bar chart of TP and FP counts."""
     tools_data = data["tools"]
 
@@ -142,8 +172,9 @@ def fig2_tp_fp(data: dict, speca: dict | None):
         if tp is not None:
             entries.append((label, tp, fp if fp else 0))
 
-    if speca and speca.get("tp") is not None:
-        entries.append(("SPECA", speca["tp"], speca.get("fp", 0)))
+    for label, sdata in speca_list:
+        if sdata.get("tp") is not None:
+            entries.append((f"SPECA\n({label})", sdata["tp"], sdata.get("fp", 0)))
 
     names = [e[0] for e in entries]
     tps = [e[1] for e in entries]
@@ -179,7 +210,7 @@ def fig2_tp_fp(data: dict, speca: dict | None):
 
 
 # ── Figure 3: Bug Type Breakdown (stacked bar) ─────────────────────
-def fig3_bug_type(data: dict, speca: dict | None):
+def fig3_bug_type(data: dict, speca_list: list[tuple[str, dict]]):
     """Stacked bar showing TP breakdown by bug type (NPD/MLK/UAF)."""
     projects = data["projects"]
 
@@ -204,13 +235,14 @@ def fig3_bug_type(data: dict, speca: dict | None):
     mlk_vals.append(0)
     uaf_vals.append(0)
 
-    # SPECA if available
-    if speca and "bug_type_breakdown" in speca:
-        labels.append("SPECA")
-        bt = speca["bug_type_breakdown"]
-        npd_vals.append(bt.get("NPD", 0))
-        mlk_vals.append(bt.get("MLK", 0))
-        uaf_vals.append(bt.get("UAF", 0))
+    # SPECA variants
+    for label, sdata in speca_list:
+        if "bug_type_breakdown" in sdata:
+            labels.append(f"SPECA\n({label})")
+            bt = sdata["bug_type_breakdown"]
+            npd_vals.append(bt.get("NPD", 0))
+            mlk_vals.append(bt.get("MLK", 0))
+            uaf_vals.append(bt.get("UAF", 0))
 
     x = np.arange(len(labels))
     w = 0.5
@@ -241,7 +273,7 @@ def fig3_bug_type(data: dict, speca: dict | None):
 
 
 # ── Figure 4: Per-Project Detection Heatmap ─────────────────────────
-def fig4_per_project(data: dict, speca: dict | None):
+def fig4_per_project(data: dict, speca_list: list[tuple[str, dict]]):
     """Heatmap: projects × tools detection matrix."""
     projects = data["projects"]
     proj_names = [p["name"] for p in projects]
@@ -249,8 +281,9 @@ def fig4_per_project(data: dict, speca: dict | None):
 
     # Build matrix: rows=projects, cols=tools
     tool_cols = ["RepoAudit\n(Claude 3.5)", "Meta Infer", "CodeGuru"]
-    if speca and "per_project" in speca:
-        tool_cols.append("SPECA")
+    for label, sdata in speca_list:
+        if "per_project" in sdata:
+            tool_cols.append(f"SPECA\n({label})")
 
     n_proj = len(projects)
     n_tools = len(tool_cols)
@@ -260,17 +293,16 @@ def fig4_per_project(data: dict, speca: dict | None):
         total_tp = p["old_tp"] + p["new_tp"][0]
         # RepoAudit
         matrix[i, 0] = total_tp
-        # Meta Infer: only NPD, and only 7 TP across compilable projects
-        # (approximation: mark as detected if NPD project)
-        # For exact data we'd need per-project Infer results
-        # For now, leave as 0 unless we can derive it
         # CodeGuru: 0 TP everywhere
         matrix[i, 2] = 0
 
-    # Fill SPECA column from per_project data
-    if speca and "per_project" in speca:
-        for i, p in enumerate(projects):
-            matrix[i, n_tools - 1] = speca["per_project"].get(p["id"], 0)
+    # Fill SPECA columns
+    speca_col_start = 3
+    for si, (label, sdata) in enumerate(speca_list):
+        if "per_project" in sdata:
+            col = speca_col_start + si
+            for i, p in enumerate(projects):
+                matrix[i, col] = sdata["per_project"].get(p["id"], 0)
 
     fig, ax = plt.subplots(figsize=(8, 10))
     im = ax.imshow(matrix, cmap="YlOrRd", aspect="auto", vmin=0, vmax=max(8, matrix.max()))
@@ -298,7 +330,7 @@ def fig4_per_project(data: dict, speca: dict | None):
 
 
 # ── Figure 5: Cost Efficiency ──────────────────────────────────────
-def fig5_cost(data: dict, speca: dict | None):
+def fig5_cost(data: dict, speca_list: list[tuple[str, dict]]):
     """Scatter plot: cost vs bugs detected."""
     tools = data["tools"]
 
@@ -324,13 +356,17 @@ def fig5_cost(data: dict, speca: dict | None):
     ax.annotate("0 TP\n~$50", (50, 0),
                 textcoords="offset points", xytext=(10, 5), fontsize=9)
 
-    # SPECA if available
-    if speca and speca.get("tp") is not None and speca.get("total_cost") is not None:
-        ax.scatter(speca["total_cost"], speca["tp"], s=250, c=COLORS["SPECA"],
-                   edgecolor="black", zorder=5, marker="*", label="SPECA")
-        ax.annotate(f"{speca['tp']} TP\n${speca['total_cost']:.0f}",
-                    (speca["total_cost"], speca["tp"]),
-                    textcoords="offset points", xytext=(10, -5), fontsize=9)
+    # SPECA variants
+    max_cost = total_cost
+    for label, sdata in speca_list:
+        if sdata.get("tp") is not None and sdata.get("total_cost") is not None:
+            ax.scatter(sdata["total_cost"], sdata["tp"], s=250,
+                       c=COLORS.get(f"SPECA\n({label})", "#DD8452"),
+                       edgecolor="black", zorder=5, marker="*", label=f"SPECA ({label})")
+            ax.annotate(f"{sdata['tp']} TP\n${sdata['total_cost']:.0f}",
+                        (sdata["total_cost"], sdata["tp"]),
+                        textcoords="offset points", xytext=(10, -5), fontsize=9)
+            max_cost = max(max_cost, sdata["total_cost"])
 
     ax.set_xlabel("Total Cost (USD)")
     ax.set_ylabel("True Positives")
@@ -338,7 +374,7 @@ def fig5_cost(data: dict, speca: dict | None):
     ax.legend(loc="upper left", fontsize=9)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    ax.set_xlim(-5, max(60, total_cost + 20))
+    ax.set_xlim(-5, max(60, max_cost + 20))
 
     out = FIGURES_DIR / "rq2a_cost_efficiency.png"
     fig.savefig(out)
@@ -350,7 +386,7 @@ def fig5_cost(data: dict, speca: dict | None):
 GROUND_TRUTH_PATH = SCRIPT_DIR / "ground_truth_bugs.yaml"
 
 
-def fig6_bug_detection_matrix(data: dict, speca: dict | None):
+def fig6_bug_detection_matrix(data: dict, speca_list: list[tuple[str, dict]]):
     """Heatmap: individual bugs × tools detection matrix (Issue #96 spec).
 
     Disputed bugs (no exploit path) are shown with a distinct "TN" marker
@@ -366,14 +402,21 @@ def fig6_bug_detection_matrix(data: dict, speca: dict | None):
     bugs = gt["bugs"]
     tool_names = ["RepoAudit\n(Claude 3.5)", "Meta Infer", "CodeGuru"]
     tool_keys = ["repoaudit_claude35", "meta_infer", "amazon_codeguru"]
-    if speca:
-        tool_names.append("SPECA")
-        tool_keys.append("speca")
+    # Add all SPECA model variants as separate columns
+    for speca_label, speca_data in speca_list:
+        tool_names.append(f"SPECA\n({speca_label})")
+        tool_keys.append(f"speca:{speca_label}")
+    speca = speca_list[0][1] if speca_list else None
 
     n_bugs = len(bugs)
     n_tools = len(tool_names)
     # Matrix values: 0=miss, 0.15=disputed TN, 0.5=unknown, 1=detected
     matrix = np.zeros((n_bugs, n_tools))
+
+    # Build per-SPECA-model detected bug sets from summaries
+    speca_detected: dict[str, set[str]] = {}
+    for speca_label, speca_data in speca_list:
+        speca_detected[speca_label] = set(speca_data.get("detected_bugs", []))
 
     disputed_rows = set()
     bug_labels = []
@@ -386,19 +429,27 @@ def fig6_bug_detection_matrix(data: dict, speca: dict | None):
         bug_labels.append(label)
         det = bug.get("detected_by", {})
         for j, key in enumerate(tool_keys):
-            val = det.get(key)
-            if val is True:
-                matrix[i, j] = 1
-            elif val is False:
-                # Disputed + not detected by SPECA → TN (distinct from miss)
-                if is_disputed and key == "speca":
-                    matrix[i, j] = 0.15
+            if key.startswith("speca:"):
+                # SPECA model variant — use summary's detected_bugs list
+                model_label = key.split(":", 1)[1]
+                detected_set = speca_detected.get(model_label, set())
+                if bug["id"] in detected_set:
+                    matrix[i, j] = 1
+                elif is_disputed:
+                    matrix[i, j] = 0.15  # disputed TN
                 else:
                     matrix[i, j] = 0
             else:
-                matrix[i, j] = 0.5  # unknown/null
+                val = det.get(key)
+                if val is True:
+                    matrix[i, j] = 1
+                elif val is False:
+                    matrix[i, j] = 0
+                else:
+                    matrix[i, j] = 0.5  # unknown/null
 
-    fig, ax = plt.subplots(figsize=(8, 14))
+    fig_width = 8 + max(0, (n_tools - 4) * 1.5)
+    fig, ax = plt.subplots(figsize=(fig_width, 14))
 
     cmap = plt.cm.colors.ListedColormap(["#F0F0F0", "#E8F5E9", "#DDDDDD", "#4C72B0"])
     bounds = [0, 0.1, 0.3, 0.75, 1.0]
@@ -453,7 +504,7 @@ def fig6_bug_detection_matrix(data: dict, speca: dict | None):
 
 
 # ── LaTeX Table: Tool Comparison ─────────────────────────────────
-def generate_latex_table(data: dict, speca: dict | None):
+def generate_latex_table(data: dict, speca_list: list[tuple[str, dict]]):
     """Generate rq2a_table.tex (Issue #96 spec)."""
     tools = data["tools"]
 
@@ -477,10 +528,12 @@ def generate_latex_table(data: dict, speca: dict | None):
         source = t.get("source", "")
         rows.append(f"    {label} & {tp} & {fp} & {prec_s} & {source} \\\\")
 
-    if speca and speca.get("tp") is not None:
-        prec_s = f"{speca['precision']:.2f}\\%" if speca.get("precision") is not None else "---"
-        rows.append(f"    \\textbf{{SPECA}} & \\textbf{{{speca['tp']}}} & \\textbf{{{speca.get('fp', '---')}}} & \\textbf{{{prec_s}}} & This study \\\\")
-    else:
+    for label, sdata in speca_list:
+        if sdata.get("tp") is not None:
+            prec_s = f"{sdata['precision']:.2f}\\%" if sdata.get("precision") is not None else "---"
+            rows.append(f"    \\textbf{{SPECA ({label})}} & \\textbf{{{sdata['tp']}}} & \\textbf{{{sdata.get('fp', '---')}}} & \\textbf{{{prec_s}}} & This study \\\\")
+
+    if not speca_list:
         rows.append("    \\textbf{SPECA} & \\textbf{TBD} & \\textbf{TBD} & \\textbf{TBD} & This study \\\\")
 
     latex = (
@@ -508,28 +561,39 @@ def generate_latex_table(data: dict, speca: dict | None):
 def main():
     parser = argparse.ArgumentParser(description="RQ2a visualization")
     parser.add_argument("--speca-results", type=str, default=None,
-                        help="Path to SPECA results JSON")
+                        help="Path to single SPECA results JSON (backward compat)")
+    parser.add_argument("--speca-multi", nargs="+", metavar="LABEL=PATH",
+                        help='Multiple SPECA results: "Sonnet 4.5=path1.json" "Sonnet 4=path2.json"')
     args = parser.parse_args()
 
     FIGURES_DIR.mkdir(parents=True, exist_ok=True)
 
     print("Loading baselines...")
     data = load_baselines()
-    speca = load_speca(args.speca_results)
 
-    if speca:
-        print(f"  SPECA results loaded: TP={speca.get('tp')}, FP={speca.get('fp')}")
+    # Build speca_list from either --speca-multi or --speca-results
+    speca_list: list[tuple[str, dict]] = []
+    if args.speca_multi:
+        speca_list = load_speca_multi(args.speca_multi)
+    elif args.speca_results:
+        speca = load_speca(args.speca_results)
+        if speca:
+            speca_list = [("default", speca)]
+
+    if speca_list:
+        for label, sdata in speca_list:
+            print(f"  SPECA ({label}): TP={sdata.get('tp')}, FP={sdata.get('fp')}, Precision={sdata.get('precision')}")
     else:
         print("  SPECA results not available — generating baselines-only figures")
 
     print("\nGenerating figures...")
-    fig1_precision(data, speca)
-    fig2_tp_fp(data, speca)
-    fig3_bug_type(data, speca)
-    fig4_per_project(data, speca)
-    fig5_cost(data, speca)
-    fig6_bug_detection_matrix(data, speca)
-    generate_latex_table(data, speca)
+    fig1_precision(data, speca_list)
+    fig2_tp_fp(data, speca_list)
+    fig3_bug_type(data, speca_list)
+    fig4_per_project(data, speca_list)
+    fig5_cost(data, speca_list)
+    fig6_bug_detection_matrix(data, speca_list)
+    generate_latex_table(data, speca_list)
 
     n_figs = len(list(FIGURES_DIR.glob("*.png")))
     n_tex = len(list(FIGURES_DIR.glob("*.tex")))

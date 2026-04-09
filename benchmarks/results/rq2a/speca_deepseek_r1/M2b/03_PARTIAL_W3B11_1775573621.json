@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-012",
+      "classification": "vulnerability",
+      "code_path": "memcached.c::main::L5179-5611",
+      "proof_trace": "The subopts buffer allocated via strdup() on line 5179 is only freed at line 5611, which occurs strictly after the while-loop. However, many validation failures inside the switch statement return directly, leaking the allocated buffer.",
+      "attack_scenario": "Attacker can trigger repeated memory leaks by supplying invalid suboptions (e.g., missing arguments) via -o command line flag, causing premature exit paths within the suboption handler.",
+      "checklist_id": "PROP-M2b-mlk-012"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 11,
+    "item_count": 1,
+    "timestamp": 1775573621,
+    "processed_ids": [
+      "PROP-M2b-mlk-012"
+    ]
+  }
+}

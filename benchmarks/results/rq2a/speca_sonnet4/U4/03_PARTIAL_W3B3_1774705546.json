@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U4-uaf-004",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/tools/wasm-link.cc::write_section_payload::L217-218",
+      "proof_trace": "LinkerInputBinary objects stored as unique_ptr in Context::inputs remain alive during entire linking process. Section->binary pointers are stable and data buffer freed only in destructor after processing completes. Proper lifetime management prevents UAF.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U4-uaf-004"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 3,
+    "item_count": 1,
+    "timestamp": 1774705546,
+    "processed_ids": [
+      "PROP-U4-uaf-004"
+    ]
+  }
+}

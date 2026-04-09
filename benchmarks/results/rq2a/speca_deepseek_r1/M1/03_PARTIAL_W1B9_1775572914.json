@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-010",
+      "classification": "vulnerability",
+      "code_path": "src/c2ast.cpp::c2ast::L11-62",
+      "proof_trace": "The c2ast function allocates List and Map objects via SASS_MEMORY_NEW before recursively processing their elements. If a nested element (e.g., an error value) triggers an exception via the error() function, the allocated container pointer is lost, causing a memory leak. No RAII wrapper or cleanup exists on this error path.",
+      "attack_scenario": "A custom C function returns a Sass list containing an error value. When libsass converts the value via c2ast, the recursion encounters the error, throws an exception, and leaks the memory of the partially constructed list.",
+      "checklist_id": "PROP-M1-mlk-010"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 9,
+    "item_count": 1,
+    "timestamp": 1775572914,
+    "processed_ids": [
+      "PROP-M1-mlk-010"
+    ]
+  }
+}

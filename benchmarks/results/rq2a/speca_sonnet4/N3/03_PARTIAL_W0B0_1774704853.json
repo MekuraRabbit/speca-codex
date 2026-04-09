@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N3-npd-001",
+      "classification": "vulnerability",
+      "code_path": "src/server/ns_turn_allocation.c::allocation_get_new_ch_info::L324-334",
+      "proof_trace": "Function allocation_add_permission() can return NULL when parameters are invalid, but caller at line 324 dereferences the result on line 334 without NULL check. This violates the required NULL-check invariant.",
+      "attack_scenario": "Attacker sends malformed TURN channel bind message causing allocation_add_permission() to return NULL, leading to null pointer dereference crash when tinfo->chns is accessed.",
+      "checklist_id": "PROP-N3-npd-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 0,
+    "item_count": 1,
+    "timestamp": 1774704853,
+    "processed_ids": [
+      "PROP-N3-npd-001"
+    ]
+  }
+}

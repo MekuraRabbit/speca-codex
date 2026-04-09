@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-010",
+      "classification": "not-a-vulnerability",
+      "code_path": "memcached.c::flag_enabled_disabled::L3969-3971",
+      "proof_trace": "Function performs no dynamic memory allocation - only returns string literals from data section. Property holds vacuously since there are zero allocations to free.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M2b-mlk-010"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 9,
+    "item_count": 1,
+    "timestamp": 1774705000,
+    "processed_ids": [
+      "PROP-M2b-mlk-010"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-004",
+      "classification": "not-a-vulnerability",
+      "code_path": "clients/tools/ldapsearch.c::print_entry::L1933-2039",
+      "proof_trace": "Property is semantically invalid - print_entry() returns void, not a pointer that can be NULL-checked or dereferenced. The function signature is 'static void print_entry(LDAP *ld, LDAPMessage *entry, int attrsonly)' and the single caller at line 1808 correctly treats it as void.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N5-npd-004"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 3,
+    "item_count": 1,
+    "timestamp": 1774706081,
+    "processed_ids": [
+      "PROP-N5-npd-004"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-015",
+      "classification": "vulnerability",
+      "code_path": "restart.c::restart_get_kv::L141-211",
+      "proof_trace": "getline() allocates memory for local 'line' variable (L154), but RESTART_NOTAG path (L175) and EOF error path (L210) return without freeing this memory, causing definite memory leaks in error conditions.",
+      "attack_scenario": "Attacker provides malformed metadata files with invalid tags to trigger repeated RESTART_NOTAG conditions, causing memory leaks that accumulate to memory exhaustion.",
+      "checklist_id": "PROP-M2b-mlk-015"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 15,
+    "item_count": 1,
+    "timestamp": 1774704999,
+    "processed_ids": [
+      "PROP-M2b-mlk-015"
+    ]
+  }
+}

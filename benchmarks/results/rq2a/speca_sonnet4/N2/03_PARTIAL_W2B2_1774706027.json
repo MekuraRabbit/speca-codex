@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N2-npd-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "MagickCore/xml-tree.c::GetXMLTreeProcessingInstructions::L1078-1102",
+      "proof_trace": "Function never returns NULL - it returns valid pointer to either sentinel array {NULL} or actual data. Zero callers exist in codebase. Property assumes NULL return is possible, but function follows valid C pattern of returning pointer to null-terminated array.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N2-npd-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1774706027,
+    "processed_ids": [
+      "PROP-N2-npd-003"
+    ]
+  }
+}

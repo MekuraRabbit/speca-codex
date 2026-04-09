@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U4-uaf-007",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/tools/wasm-objdump.cc::ProgramMain::L134-134",
+      "proof_trace": "Single allocation per file via read_file, single delete after all uses in dump_file; all error paths either skip allocation or delete exactly once; no other allocations or global pointer storage.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U4-uaf-007"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 6,
+    "item_count": 1,
+    "timestamp": 1775602882,
+    "processed_ids": [
+      "PROP-U4-uaf-007"
+    ]
+  }
+}

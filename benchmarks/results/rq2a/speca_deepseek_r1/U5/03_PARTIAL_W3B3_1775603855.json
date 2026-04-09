@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U5-uaf-004",
+      "classification": "not-a-vulnerability",
+      "code_path": "icu4c/source/i18n/collationbuilder.cpp::getSpecialResetPosition::L472-635",
+      "proof_trace": "No pointer is dereferenced after being freed; all accesses go through UVector64::elementAti which uses the current internal pointer updated after any reallocation, no raw pointer is cached across modifications, and parsing is single-threaded.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U5-uaf-004"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 3,
+    "item_count": 1,
+    "timestamp": 1775603855,
+    "processed_ids": [
+      "PROP-U5-uaf-004"
+    ]
+  }
+}

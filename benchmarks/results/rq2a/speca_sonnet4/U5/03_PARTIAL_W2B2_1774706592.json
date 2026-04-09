@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U5-uaf-003",
+      "classification": "vulnerability",
+      "code_path": "icu4c/source/i18n/region.cpp::cleanupRegionData::L325-344",
+      "proof_trace": "Cleanup function deletes pointers but doesn't nullify them (lines 328, 333, 337, 341). If called multiple times, subsequent calls check non-null dangling pointers and attempt double-delete, causing undefined behavior. Classic use-after-free via double-delete pattern.",
+      "attack_scenario": "Attacker triggers multiple cleanup calls through library shutdown/restart sequences or error conditions, causing double-delete of availableRegions/hashtables leading to heap corruption and potential RCE.",
+      "checklist_id": "PROP-U5-uaf-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1774706592,
+    "processed_ids": [
+      "PROP-U5-uaf-003"
+    ]
+  }
+}

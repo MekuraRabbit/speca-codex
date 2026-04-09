@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U3-uaf-002",
+      "classification": "vulnerability",
+      "code_path": "src/local.c::free_connections::L237-246",
+      "proof_trace": "Use-after-free in free_remote() when called from free_connections(). After close_and_free_server() frees the server memory, remote->server still points to freed memory, which is then dereferenced in free_remote() when setting remote->server->remote = NULL.",
+      "attack_scenario": "Attacker triggers cleanup conditions through external callbacks, causing free_connections() to execute and corrupt freed memory via the use-after-free, potentially leading to code execution.",
+      "checklist_id": "PROP-U3-uaf-002"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 1,
+    "item_count": 1,
+    "timestamp": 1774705352,
+    "processed_ids": [
+      "PROP-U3-uaf-002"
+    ]
+  }
+}

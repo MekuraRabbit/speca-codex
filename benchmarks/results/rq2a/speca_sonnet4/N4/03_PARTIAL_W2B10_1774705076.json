@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N4-npd-011",
+      "classification": "vulnerability",
+      "code_path": "wrappers/c_sync/libfreenect_sync.c::init_thread::L220-224",
+      "proof_trace": "freenect_init() can fail and set ctx=NULL (malloc failure, USB init failure), but init_thread() ignores return value and passes potentially NULL ctx to freenect_select_subdevices() which immediately dereferences ctx->enabled_subdevices without NULL check.",
+      "attack_scenario": "When freenect_init() fails due to USB issues or memory exhaustion, ctx becomes NULL, causing segmentation fault in freenect_select_subdevices() when accessed via public APIs like freenect_sync_get_video().",
+      "checklist_id": "PROP-N4-npd-011"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 10,
+    "item_count": 1,
+    "timestamp": 1774705076,
+    "processed_ids": [
+      "PROP-N4-npd-011"
+    ]
+  }
+}

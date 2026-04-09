@@ -1,0 +1,24 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N1-npd-010",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/sofa/pbrpc/string_utils.cc::decode_url::L495",
+      "proof_trace": "decode_url() returns std::string by value, which cannot be NULL. The property assumes a pointer return type that does not match the actual function signature. NULL pointer dereference is structurally impossible for value-type returns in C++. DeepSeek R1 spent 49 turns grepping for try_start_send pointer-return patterns without finding any. Manual reconstruction from log analysis.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N1-npd-010"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 6,
+    "item_count": 1,
+    "timestamp": 1775554025,
+    "processed_ids": [
+      "PROP-N1-npd-010"
+    ],
+    "manual_reconstruction": true,
+    "reconstruction_reason": "DeepSeek R1 exhausted 49 turns analyzing rpc_server_message_stream.h and rpc_server_stream.h without producing Write output. Classification derived from log analysis (extensive grep for try_start_send NULL/pointer returns found none) and cross-validated against Sonnet 4 result (out-of-scope: returns std::string by value, cannot be NULL)."
+  }
+}

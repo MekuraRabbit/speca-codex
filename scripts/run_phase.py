@@ -136,6 +136,7 @@ async def run_phase(
     target_layer: str | None = None,
     out_of_scope_layers: list[str] | None = None,
     min_severity: str | None = None,
+    model: str | None = None,
 ) -> bool:
     """Run a single phase with all checks and cleanup."""
     print(f"\n{'#'*60}")
@@ -178,6 +179,12 @@ async def run_phase(
             
         orchestrator = create_orchestrator(phase_id, num_workers, max_concurrent)
 
+        # Override model from CLI if provided
+        if model is not None:
+            prev = orchestrator.config.model
+            orchestrator.config.model = model
+            print(f"  --model override: {prev} -> {model}")
+
         # Override min_severity from CLI if provided
         if min_severity is not None and orchestrator.config.min_severity is not None:
             print(f"  --min-severity override: {orchestrator.config.min_severity} -> {min_severity}")
@@ -208,6 +215,7 @@ async def run_pipeline(
     target_layer: str | None = None,
     out_of_scope_layers: list[str] | None = None,
     min_severity: str | None = None,
+    model: str | None = None,
     target_phase: str | None = None,
 ) -> dict[str, bool]:
     """Run a pipeline of multiple phases."""
@@ -220,6 +228,7 @@ async def run_pipeline(
             target_layer=target_layer,
             out_of_scope_layers=out_of_scope_layers,
             min_severity=min_severity,
+            model=model,
         )
         results[phase_id] = success
         if not success and stop_on_failure:
@@ -263,6 +272,15 @@ def main():
              "Written into outputs/TARGET_INFO.json when phase 02c is included.",
     )
 
+    # Model override
+    parser.add_argument(
+        "--model",
+        default=None,
+        help="Override the Claude model for all phases in this run. "
+             "Accepts any model string supported by Claude CLI (e.g. 'claude-3-5-sonnet-20241022', 'sonnet'). "
+             "Default comes from PhaseConfig.",
+    )
+
     # Severity gate
     parser.add_argument(
         "--min-severity",
@@ -291,6 +309,8 @@ def main():
     print(f"  Force: {args.force}")
     print(f"  Output Dir: {get_output_root()}")
     print(f"  Phases: {phases}")
+    if args.model:
+        print(f"  Model: {args.model}")
     if args.min_severity:
         print(f"  Min Severity: {args.min_severity}")
 
@@ -311,6 +331,7 @@ def main():
             target_layer=args.target_layer,
             out_of_scope_layers=args.out_of_scope_layers,
             min_severity=args.min_severity,
+            model=args.model,
             target_phase=args.target if args.target else None,
         )
     )

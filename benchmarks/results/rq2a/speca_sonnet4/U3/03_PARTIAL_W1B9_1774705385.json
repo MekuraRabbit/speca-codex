@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U3-uaf-010",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/cache.c::cache_clear::L120-146",
+      "proof_trace": "Property holds because HASH_ITER macro ensures tmp contains next element before entry deletion occurs, and all memory accesses (lines 133-140) happen before ss_free(entry) on line 141. Standard uthash safe deletion pattern used correctly.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U3-uaf-010"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 9,
+    "item_count": 1,
+    "timestamp": 1774705385,
+    "processed_ids": [
+      "PROP-U3-uaf-010"
+    ]
+  }
+}

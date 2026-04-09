@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U3-uaf-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/server.c::block_list_clear_cb::L1043-1047",
+      "proof_trace": "Property holds because cache_clear frees key only after free_cb returns, free_cb does not store key pointer, and single-threaded event loop prevents concurrent modification.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U3-uaf-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1775602139,
+    "processed_ids": [
+      "PROP-U3-uaf-003"
+    ]
+  }
+}

@@ -1,0 +1,28 @@
+---
+title: "WorkflowRouter.onReport (Payment Abstraction V2)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_forwarder: check caller
+    q_check_forwarder --> q_error_forwarder: caller lacks FORWARDER_ROLE
+    q_error_forwarder --> [*]: revert "access denied"
+    q_check_forwarder --> q_decode: caller has FORWARDER_ROLE
+
+    q_decode --> q_extract: decode (workflowId, payload)
+    q_extract --> q_route: lookup target contract and function by workflowId
+
+    q_route --> q_auction_perform: workflowId == auctionManager
+    q_route --> q_auction_transmit: workflowId == priceManager
+    q_route --> q_bidder_bid: workflowId == auctionBidder
+    q_route --> q_error_unknown: workflowId not registered
+
+    q_auction_perform --> [*]: call auction.performUpkeep(payload)
+    q_auction_transmit --> [*]: call auction.transmit(payload)
+    q_bidder_bid --> [*]: call auctionBidder.bid(payload)
+    q_error_unknown --> [*]: revert "unknown workflow"
+
+    note right of q_route
+        INV-028: WorkflowRouter validates workflowId before routing
+        INV-029: only FORWARDER_ROLE (CRE forwarder) can call onReport
+        INV-030: routing is deterministic - one workflowId maps to one target
+    end note

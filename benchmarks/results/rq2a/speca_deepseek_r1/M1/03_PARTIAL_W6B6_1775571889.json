@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "worker_id": 6,
+    "phase": "03",
+    "item_ids": ["PROP-M1-mlk-007"],
+    "total_items": 1,
+    "context_file": "outputs/03_CONTEXT_W6B6_1775571889.json",
+    "processed_ids": ["PROP-M1-mlk-007"],
+    "timestamp": 1775571889,
+    "batch_index": 6
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-007",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/sass_functions.cpp::sass_import_get_error_line::L201-201",
+      "proof_trace": "Function contains no allocations; property vacuously holds.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M1-mlk-007"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-006",
+      "classification": "not-a-vulnerability",
+      "code_path": "libraries/libldap/addentry.c::ldap_add_result_entry::L61-72",
+      "proof_trace": "The function ldap_add_result_entry() returns void, not a pointer. There is no return value to NULL-check or dereference. Property is based on incorrect assumption about function signature.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N5-npd-006"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 5,
+    "item_count": 1,
+    "timestamp": 1774706063,
+    "processed_ids": [
+      "PROP-N5-npd-006"
+    ]
+  }
+}

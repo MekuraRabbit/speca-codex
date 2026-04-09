@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-018",
+      "classification": "not-a-vulnerability",
+      "code_path": "clients/tools/ldapvc.c::handle_private_option::L167-244",
+      "proof_trace": "Property holds trivially because there are no dereferences of ber_strdup() results within handle_private_option() scope. The function only assigns results to global variables and continues without dereferencing them.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N5-npd-018"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 14,
+    "item_count": 1,
+    "timestamp": 1774706156,
+    "processed_ids": [
+      "PROP-N5-npd-018"
+    ]
+  }
+}

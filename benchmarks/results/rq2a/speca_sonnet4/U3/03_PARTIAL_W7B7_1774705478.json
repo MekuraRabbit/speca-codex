@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U3-uaf-008",
+      "classification": "vulnerability",
+      "code_path": "src/resolv.c::resolv_cancel::L223",
+      "proof_trace": "resolv_cancel() incorrectly calls ss_free() on dns_query structures at line 223, but these are allocated and owned by libudns which expects to free them in dns_end_query() or dns_close(). This causes double-free when the program later shuts down.",
+      "attack_scenario": "Client triggers DNS resolution then disconnects, causing close_and_free_server() \u2192 resolv_cancel() \u2192 ss_free() of libudns-owned memory, leading to heap corruption on program shutdown.",
+      "checklist_id": "PROP-U3-uaf-008"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 7,
+    "item_count": 1,
+    "timestamp": 1774705478,
+    "processed_ids": [
+      "PROP-U3-uaf-008"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M4-mlk-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "sound/soc/qcom/qdsp6/q6asm.c::q6asm_audio_client_release::L548-562",
+      "proof_trace": "Property holds vacuously - the function contains zero heap allocations, only local variables, pointer operations, and one deallocation (kfree). No allocations exist within the function scope to leak on error paths.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M4-mlk-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1774706303,
+    "processed_ids": [
+      "PROP-M4-mlk-003"
+    ]
+  }
+}

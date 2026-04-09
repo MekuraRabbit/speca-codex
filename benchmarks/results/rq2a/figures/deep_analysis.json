@@ -1,0 +1,656 @@
+{
+  "detection_matrix": {
+    "matrix": [
+      {
+        "id": "RA-N1-O1",
+        "project": "sofa-pbrpc",
+        "bug_type": "NPD",
+        "source": "old",
+        "disputed": false,
+        "inter_procedural": true,
+        "RepoAudit": "detected",
+        "Infer": "missed",
+        "CodeGuru": "missed",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-N1-N1",
+        "project": "sofa-pbrpc",
+        "bug_type": "NPD",
+        "source": "new",
+        "disputed": false,
+        "inter_procedural": true,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "n/a",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-N1-N2",
+        "project": "sofa-pbrpc",
+        "bug_type": "NPD",
+        "source": "new",
+        "disputed": false,
+        "inter_procedural": true,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "n/a",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-N1-N3",
+        "project": "sofa-pbrpc",
+        "bug_type": "NPD",
+        "source": "new",
+        "disputed": false,
+        "inter_procedural": true,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "n/a",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-N2-O1",
+        "project": "ImageMagick/MagickCore",
+        "bug_type": "NPD",
+        "source": "old",
+        "disputed": false,
+        "inter_procedural": false,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "missed",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-N2-O2",
+        "project": "ImageMagick/MagickCore",
+        "bug_type": "NPD",
+        "source": "old",
+        "disputed": false,
+        "inter_procedural": true,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "n/a",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-N2-O3",
+        "project": "ImageMagick/MagickCore",
+        "bug_type": "NPD",
+        "source": "old",
+        "disputed": false,
+        "inter_procedural": true,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "n/a",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-N2-O4",
+        "project": "ImageMagick/MagickCore",
+        "bug_type": "NPD",
+        "source": "old",
+        "disputed": false,
+        "inter_procedural": true,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "n/a",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-N2-O5",
+        "project": "ImageMagick/MagickCore",
+        "bug_type": "NPD",
+        "source": "old",
+        "disputed": false,
+        "inter_procedural": false,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "n/a",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-N2-O6",
+        "project": "ImageMagick/MagickCore",
+        "bug_type": "NPD",
+        "source": "old",
+        "disputed": false,
+        "inter_procedural": false,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "n/a",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-N2-O7",
+        "project": "ImageMagick/MagickCore",
+        "bug_type": "NPD",
+        "source": "old",
+        "disputed": false,
+        "inter_procedural": false,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "n/a",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-N2-N1",
+        "project": "ImageMagick/MagickCore",
+        "bug_type": "NPD",
+        "source": "new",
+        "disputed": false,
+        "inter_procedural": true,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "n/a",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-N3-O1",
+        "project": "coturn/src/server",
+        "bug_type": "NPD",
+        "source": "old",
+        "disputed": false,
+        "inter_procedural": true,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "missed",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-N3-N1",
+        "project": "coturn/src/server",
+        "bug_type": "NPD",
+        "source": "new",
+        "disputed": false,
+        "inter_procedural": false,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "n/a",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-N4-O1",
+        "project": "libfreenect",
+        "bug_type": "NPD",
+        "source": "old",
+        "disputed": false,
+        "inter_procedural": true,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "missed",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-N5-O1",
+        "project": "openldap",
+        "bug_type": "NPD",
+        "source": "old",
+        "disputed": false,
+        "inter_procedural": true,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "missed",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-N5-N1",
+        "project": "openldap",
+        "bug_type": "NPD",
+        "source": "new",
+        "disputed": false,
+        "inter_procedural": true,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "n/a",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-N5-N2",
+        "project": "openldap",
+        "bug_type": "NPD",
+        "source": "new",
+        "disputed": false,
+        "inter_procedural": true,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "n/a",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-N5-N3",
+        "project": "openldap",
+        "bug_type": "NPD",
+        "source": "new",
+        "disputed": false,
+        "inter_procedural": true,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "n/a",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-N5-N4",
+        "project": "openldap",
+        "bug_type": "NPD",
+        "source": "new",
+        "disputed": false,
+        "inter_procedural": true,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "n/a",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-N5-N5",
+        "project": "openldap",
+        "bug_type": "NPD",
+        "source": "new",
+        "disputed": true,
+        "inter_procedural": true,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "n/a",
+        "SPECA": "missed"
+      },
+      {
+        "id": "RA-M1-O1",
+        "project": "libsass",
+        "bug_type": "MLK",
+        "source": "old",
+        "disputed": false,
+        "inter_procedural": false,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "missed",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-M1-N1",
+        "project": "libsass",
+        "bug_type": "MLK",
+        "source": "new",
+        "disputed": false,
+        "inter_procedural": false,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "n/a",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-M1-N2",
+        "project": "libsass",
+        "bug_type": "MLK",
+        "source": "new",
+        "disputed": true,
+        "inter_procedural": true,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "n/a",
+        "SPECA": "missed"
+      },
+      {
+        "id": "RA-M2-O1",
+        "project": "memcached",
+        "bug_type": "MLK",
+        "source": "old",
+        "disputed": true,
+        "inter_procedural": false,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "missed",
+        "SPECA": "missed"
+      },
+      {
+        "id": "RA-M2-N1",
+        "project": "memcached",
+        "bug_type": "MLK",
+        "source": "new",
+        "disputed": true,
+        "inter_procedural": false,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "n/a",
+        "SPECA": "missed"
+      },
+      {
+        "id": "RA-M2-N2",
+        "project": "memcached",
+        "bug_type": "MLK",
+        "source": "new",
+        "disputed": true,
+        "inter_procedural": false,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "n/a",
+        "SPECA": "missed"
+      },
+      {
+        "id": "RA-M2-N3",
+        "project": "memcached",
+        "bug_type": "MLK",
+        "source": "new",
+        "disputed": false,
+        "inter_procedural": true,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "n/a",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-M2-N4",
+        "project": "memcached",
+        "bug_type": "MLK",
+        "source": "new",
+        "disputed": false,
+        "inter_procedural": true,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "n/a",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-M2-N5",
+        "project": "memcached",
+        "bug_type": "MLK",
+        "source": "new",
+        "disputed": false,
+        "inter_procedural": true,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "n/a",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-M2-N6",
+        "project": "memcached",
+        "bug_type": "MLK",
+        "source": "new",
+        "disputed": false,
+        "inter_procedural": false,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "n/a",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-M3-O1",
+        "project": "linux/driver/net",
+        "bug_type": "MLK",
+        "source": "old",
+        "disputed": false,
+        "inter_procedural": false,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "missed",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-M4-O1",
+        "project": "linux/sound",
+        "bug_type": "MLK",
+        "source": "old",
+        "disputed": false,
+        "inter_procedural": false,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "missed",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-M5-O1",
+        "project": "linux/mm",
+        "bug_type": "MLK",
+        "source": "old",
+        "disputed": false,
+        "inter_procedural": false,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "missed",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-U1-O1",
+        "project": "Redis",
+        "bug_type": "UAF",
+        "source": "old",
+        "disputed": false,
+        "inter_procedural": false,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "missed",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-U2-O1",
+        "project": "linux/drivers/peci",
+        "bug_type": "UAF",
+        "source": "old",
+        "disputed": false,
+        "inter_procedural": false,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "missed",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-U3-O1",
+        "project": "shadowsocks-libev",
+        "bug_type": "UAF",
+        "source": "old",
+        "disputed": false,
+        "inter_procedural": false,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "missed",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-U4-O1",
+        "project": "wabt-tool",
+        "bug_type": "UAF",
+        "source": "old",
+        "disputed": false,
+        "inter_procedural": false,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "missed",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-U5-O1",
+        "project": "icu/icu4c/source/i18n",
+        "bug_type": "UAF",
+        "source": "old",
+        "disputed": false,
+        "inter_procedural": false,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "missed",
+        "SPECA": "detected"
+      },
+      {
+        "id": "RA-U5-N1",
+        "project": "icu/icu4c/source/i18n",
+        "bug_type": "UAF",
+        "source": "new",
+        "disputed": false,
+        "inter_procedural": true,
+        "RepoAudit": "detected",
+        "Infer": "n/a",
+        "CodeGuru": "n/a",
+        "SPECA": "detected"
+      }
+    ],
+    "tools": [
+      "RepoAudit",
+      "Infer",
+      "CodeGuru",
+      "SPECA"
+    ]
+  },
+  "comparison_table": {
+    "comparison_table": [
+      {
+        "tool": "RepoAudit (DeepSeek R1)",
+        "tp": 41,
+        "fp": 6,
+        "precision": 87.23,
+        "recall": null,
+        "f1": null,
+        "source": "Table 8, v3"
+      },
+      {
+        "tool": "RepoAudit (Claude 3.7 Sonnet)",
+        "tp": 40,
+        "fp": 5,
+        "precision": 88.89,
+        "recall": null,
+        "f1": null,
+        "source": "Table 9, v3"
+      },
+      {
+        "tool": "RepoAudit (o3-mini)",
+        "tp": 36,
+        "fp": 9,
+        "precision": 80.0,
+        "recall": null,
+        "f1": null,
+        "source": "Table 10, v3"
+      },
+      {
+        "tool": "RepoAudit (Claude 3.5 Sonnet)",
+        "tp": 40,
+        "fp": 11,
+        "precision": 78.43,
+        "recall": null,
+        "f1": null,
+        "source": "Table 2, v3"
+      },
+      {
+        "tool": "Meta Infer",
+        "tp": 7,
+        "fp": 2,
+        "precision": 77.78,
+        "recall": null,
+        "f1": null,
+        "source": "Section 4.4, v3"
+      },
+      {
+        "tool": "Amazon CodeGuru",
+        "tp": 0,
+        "fp": 18,
+        "precision": 0.0,
+        "recall": null,
+        "f1": null,
+        "source": "Section 4.4, v3"
+      },
+      {
+        "tool": "SPECA",
+        "tp": 35,
+        "fp": 2,
+        "precision": 94.59,
+        "recall": 88.57,
+        "f1": 91.17,
+        "source": "This study"
+      }
+    ]
+  },
+  "bug_type_breakdown": {
+    "RepoAudit": {
+      "NPD": {
+        "detected": 20,
+        "total": 20
+      },
+      "MLK": {
+        "detected": 9,
+        "total": 9
+      },
+      "UAF": {
+        "detected": 6,
+        "total": 6
+      }
+    },
+    "Infer": {
+      "NPD": {
+        "detected": 0,
+        "total": 1
+      }
+    },
+    "CodeGuru": {
+      "NPD": {
+        "detected": 0,
+        "total": 5
+      },
+      "MLK": {
+        "detected": 0,
+        "total": 4
+      },
+      "UAF": {
+        "detected": 0,
+        "total": 5
+      }
+    },
+    "SPECA": {
+      "NPD": {
+        "detected": 20,
+        "total": 20
+      },
+      "MLK": {
+        "detected": 9,
+        "total": 9
+      },
+      "UAF": {
+        "detected": 6,
+        "total": 6
+      }
+    }
+  },
+  "disputed_bugs": {
+    "total_disputed": 5,
+    "bugs": [
+      {
+        "id": "RA-N5-N5",
+        "project": "openldap",
+        "description": "NULL from ber_strdup() for SASL options (mech/realm/authcid/authzid/secprops), fixed via ITS#10309 MR748",
+        "dispute_reason": "",
+        "repoaudit_detected": true,
+        "speca_detected": false
+      },
+      {
+        "id": "RA-M1-N2",
+        "project": "libsass",
+        "description": "Import entry and source file not deleted before exception throw, causing leak on recovery",
+        "dispute_reason": "PR #3192 is still open (never merged). The exception thrown at L295 in register_resource() is caught inside sass_parse_block() (sass_context.cpp:L199, which has catch(...) + throw() specifier). The exception never escapes the C API boundary. sass_compile_context() unconditionally calls sass_delete_compiler() \u2192 ~Context(), and the destructor correctly frees both resources[] (loop-1) and import_stack[] (loop-2, via sass_import_take_source + sass_delete_import). The PR describes a hypothetical leak \"if client code captures and tries to recover from the exception\", but this scenario cannot occur through the C API. Defensive coding improvement, not an exploitable leak.",
+        "repoaudit_detected": true,
+        "speca_detected": false
+      },
+      {
+        "id": "RA-M2-O1",
+        "project": "memcached",
+        "description": "strdup() allocated pointer 'list' not freed on early return when invalid IPv6 address detected",
+        "dispute_reason": "",
+        "repoaudit_detected": true,
+        "speca_detected": false
+      },
+      {
+        "id": "RA-M2-N1",
+        "project": "memcached",
+        "description": "subopts_orig allocated via strdup() never freed before function returns",
+        "dispute_reason": "",
+        "repoaudit_detected": true,
+        "speca_detected": false
+      },
+      {
+        "id": "RA-M2-N2",
+        "project": "memcached",
+        "description": "temp_portnumber_filename from malloc() not freed when portnumber_file is NULL",
+        "dispute_reason": "",
+        "repoaudit_detected": true,
+        "speca_detected": false
+      }
+    ],
+    "speca_tn_count": 5,
+    "summary": "SPECA correctly classifies disputed bugs as non-exploitable (TN), while RepoAudit uses code-quality criteria that flag them as TP."
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M4-mlk-009",
+      "classification": "vulnerability",
+      "code_path": "sound/soc/qcom/qdsp6/q6apm-dai.c::q6apm_dai_open::L305-308",
+      "proof_trace": "Graph resources allocated by q6apm_graph_open() (line 257) are not freed on error paths after line 257. Error cleanup only calls kfree(prtd) but missing required q6apm_graph_close(prtd->graph) as done in normal cleanup.",
+      "attack_scenario": "Attacker triggers PCM constraint failures after q6apm_graph_open succeeds, causing repeated graph resource leaks leading to memory exhaustion.",
+      "checklist_id": "PROP-M4-mlk-009"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 8,
+    "item_count": 1,
+    "timestamp": 1774706286,
+    "processed_ids": [
+      "PROP-M4-mlk-009"
+    ]
+  }
+}

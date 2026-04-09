@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2-mlk-011",
+      "classification": "vulnerability",
+      "code_path": "memcached.c::server_sockets::L4647,L4665",
+      "proof_trace": "Memory allocated by strdup() at line 4629 is not freed on error return paths at lines 4647 (invalid IPv6) and 4665 (invalid port). Normal path correctly frees at line 4678.",
+      "attack_scenario": "Attacker sends malformed interface strings with invalid IPv6 format or non-numeric ports repeatedly, causing memory leaks that accumulate to denial of service.",
+      "checklist_id": "PROP-M2-mlk-011"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 0,
+    "item_count": 1,
+    "timestamp": 1774705181,
+    "processed_ids": [
+      "PROP-M2-mlk-011"
+    ]
+  }
+}

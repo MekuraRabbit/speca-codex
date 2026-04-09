@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N1-npd-006",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/sofa/pbrpc/rpc_message_stream.h::try_start_send::L481-541",
+      "proof_trace": "try_start_send() returns bool, not a pointer, so there is no NULL return value to check. All callers either ignore the bool return value or propagate it; none dereference it as a pointer. The property assertion incorrectly assumes try_start_send returns a pointer.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N1-npd-006"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 5,
+    "item_count": 1,
+    "timestamp": 1775554924,
+    "processed_ids": [
+      "PROP-N1-npd-006"
+    ]
+  }
+}

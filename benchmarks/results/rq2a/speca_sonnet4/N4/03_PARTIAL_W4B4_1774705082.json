@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N4-npd-005",
+      "classification": "vulnerability",
+      "code_path": "src/registration.c::freenect_init_registration_table::L289-292",
+      "proof_trace": "malloc() return values at lines 289-290 are dereferenced by memset() at lines 291-292 and by array access at lines 296, 300-301 without NULL checks. Memory allocation can fail causing immediate segfault.",
+      "attack_scenario": "Attacker triggers depth mode initialization when system memory is low, causing malloc to fail and segfault the application when memset or array access occurs.",
+      "checklist_id": "PROP-N4-npd-005"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 4,
+    "item_count": 1,
+    "timestamp": 1774705082,
+    "processed_ids": [
+      "PROP-N4-npd-005"
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "metadata": {
+    "worker_id": 6,
+    "phase": "03",
+    "item_ids": ["PROP-M3-mlk-007"],
+    "total_items": 1,
+    "context_file": "outputs/03_CONTEXT_W6B6_1775573148.json",
+    "timestamp": 1775573148,
+    "iteration": 6,
+    "batch_size": 1,
+    "processed_ids": ["PROP-M3-mlk-007"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-M3-mlk-007",
+      "classification": "not-a-vulnerability",
+      "code_path": "drivers/net/ethernet/netronome/nfp/flower/tunnel_conf.c::__nfp_tun_del_route_from_cache::L373-386",
+      "proof_trace": "Function contains no memory allocations; property vacuously holds.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M3-mlk-007"
+    }
+  ]
+}

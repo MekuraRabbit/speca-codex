@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U3-uaf-004",
+      "classification": "potential-vulnerability",
+      "code_path": "src/udprelay.c::cache_insert_pattern::L638-640",
+      "proof_trace": "Cache insertion followed by immediate remote_ctx access creates race condition risk. While LRU eviction should not evict newly inserted entries, cache_insert can trigger free_cb callbacks that could theoretically affect memory safety.",
+      "attack_scenario": "If cache eviction triggers unexpected behavior or race conditions during cache_insert, subsequent access to remote_ctx->io and remote_ctx->watcher could dereference freed memory, leading to crashes or code execution.",
+      "checklist_id": "PROP-U3-uaf-004"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 3,
+    "item_count": 1,
+    "timestamp": 1774705369,
+    "processed_ids": [
+      "PROP-U3-uaf-004"
+    ]
+  }
+}

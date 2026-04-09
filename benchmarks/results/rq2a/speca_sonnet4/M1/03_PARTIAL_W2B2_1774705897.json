@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/parser.cpp::parse_definition::L384-398",
+      "proof_trace": "Memory allocations use SharedImpl smart pointers (Parameters_Obj, Block_Obj) that inherit from SharedObj. Exception-based error paths trigger C++ stack unwinding, which automatically calls smart pointer destructors via RAII, ensuring proper memory cleanup without manual intervention.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M1-mlk-003"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1774705897,
+    "processed_ids": [
+      "PROP-M1-mlk-003"
+    ]
+  }
+}

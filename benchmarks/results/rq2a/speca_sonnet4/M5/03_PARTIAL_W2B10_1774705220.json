@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M5-mlk-011",
+      "classification": "vulnerability",
+      "code_path": "mm/damon/reclaim.c::damon_reclaim_init::L438-439",
+      "proof_trace": "Memory leak: ctx allocated via damon_new_ctx() on L434 is never freed when damon_select_ops() fails on L438, causing direct return -EINVAL on L439. Other error paths properly call damon_destroy_ctx().",
+      "attack_scenario": "Module loading triggers memory leak when damon_select_ops fails, leaking kernel memory allocated by kzalloc in damon_new_ctx.",
+      "checklist_id": "PROP-M5-mlk-011"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 10,
+    "item_count": 1,
+    "timestamp": 1774705220,
+    "processed_ids": [
+      "PROP-M5-mlk-011"
+    ]
+  }
+}

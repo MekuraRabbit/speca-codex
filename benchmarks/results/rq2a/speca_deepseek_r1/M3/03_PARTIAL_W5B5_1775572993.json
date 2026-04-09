@@ -1,0 +1,21 @@
+{
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 5,
+    "item_count": 1,
+    "timestamp": 1775572993,
+    "processed_ids": ["PROP-M3-mlk-006"],
+    "context_file": "outputs/03_CONTEXT_W5B5_1775572993.json"
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-M3-mlk-006",
+      "classification": "vulnerability",
+      "code_path": "drivers/net/ethernet/netronome/nfp/flower/offload.c::nfp_flower_del_offload::L1498-1560",
+      "proof_trace": "The function fails to call nfp_tunnel_del_ipv4_off() and nfp_tunnel_put_ipv6_off() on the error path when nfp_modify_flow_metadata() returns an error (line 1527-1528). Tunnel entry reference counts are not decremented, causing a memory leak that can lead to resource exhaustion.",
+      "attack_scenario": "An attacker can repeatedly trigger flow deletion while racing with stats cleanup to cause nfp_modify_flow_metadata() to fail, leaking tunnel entry references each time and eventually exhausting tunnel table memory.",
+      "checklist_id": "PROP-M3-mlk-006"
+    }
+  ]
+}

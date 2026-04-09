@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-008",
+      "classification": "vulnerability",
+      "code_path": "cache.c::cache_free::L108-112",
+      "proof_trace": "Mutex lock acquired in cache_free() is never released when do_cache_free() returns early on redzone validation failures (lines 121, 128). The unlock at line 111 is bypassed, causing resource leak.",
+      "attack_scenario": "Attacker provides corrupted memory to cache_free(), triggering redzone validation failure and early return, leaving mutex locked and causing deadlock on subsequent cache operations.",
+      "checklist_id": "PROP-M2b-mlk-008"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 7,
+    "item_count": 1,
+    "timestamp": 1774704987,
+    "processed_ids": [
+      "PROP-M2b-mlk-008"
+    ]
+  }
+}

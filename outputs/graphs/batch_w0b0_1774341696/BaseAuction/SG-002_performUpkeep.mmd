@@ -1,0 +1,45 @@
+---
+title: "performUpkeep (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_decode: decode performData into eligibleAssets, endedAuctions
+    q_decode --> q_get_out_price: eligibleAssets.length > 0
+    q_get_out_price --> q_check_fee_agg: assetOutPrice = _getAssetPrice(assetOut, true)
+    q_decode --> q_check_fee_agg: eligibleAssets.length == 0
+    q_check_fee_agg --> q_transfer_funds: hasFeeAggregator AND eligibleAssets.length > 0
+    q_transfer_funds --> q_iter_eligible: feeAggregator.transferForSwap(this, eligibleAssets)
+    q_check_fee_agg --> q_iter_eligible: !hasFeeAggregator OR eligibleAssets.length == 0
+    q_iter_eligible --> q_check_live: for i in 0..eligibleAssets.length
+    q_check_live --> q_revert_live: s_auctionStarts[asset] != 0
+    q_revert_live --> [*]: revert LiveAuction()
+    q_check_live --> q_check_params: s_auctionStarts[asset] == 0
+    q_check_params --> q_revert_params: assetDecimals == 0
+    q_revert_params --> [*]: revert AssetParamsNotSet(asset)
+    q_check_params --> q_get_asset_price: assetDecimals != 0
+    q_get_asset_price --> q_check_min_size: get asset price
+    q_check_min_size --> q_revert_size: availableAssetUsdValue below minAuctionSizeUsd
+    q_revert_size --> [*]: revert AmountBelowMinAuctionSize
+    q_check_min_size --> q_is_assetout: availableAssetUsdValue >= minAuctionSizeUsd
+    q_is_assetout --> q_transfer_out: asset == s_assetOut
+    q_transfer_out --> q_iter_eligible: transfer full balance to assetOutReceiver
+    q_is_assetout --> q_start_auction: asset != s_assetOut
+    q_start_auction --> q_iter_eligible: s_auctionStarts[asset] = block.timestamp, emit AuctionStarted
+    q_iter_eligible --> q_iter_ended: eligible loop complete
+    q_iter_ended --> q_check_ended_valid: for i in 0..endedAuctions.length
+    q_check_ended_valid --> q_revert_invalid: s_auctionStarts[asset] == 0
+    q_revert_invalid --> [*]: revert InvalidAuction(asset)
+    q_check_ended_valid --> q_end_auction: s_auctionStarts[asset] != 0
+    q_end_auction --> q_iter_ended: _onAuctionEnd(asset), delete s_auctionStarts[asset], emit AuctionEnded
+    q_iter_ended --> [*]: ended loop complete
+
+    note right of q_start_auction
+        INV-001: Only non-assetOut assets with no live auction can start new auctions
+        INV-002: auctionStart is set to block.timestamp on start
+        INV-003: Funds are pulled from feeAggregator before auction starts
+    end note
+
+    note right of q_end_auction
+        INV-004: Ended auction must have non-zero auctionStart
+        INV-005: auctionStart is deleted on end
+    end note

@@ -1,0 +1,25 @@
+---
+title: "bid (AuctionBidder)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_access: require whenNotPaused, AUCTION_BIDDER_ROLE
+    q_check_access --> q_get_auction: auction = s_auction
+    q_get_auction --> q_get_assetout: assetOut = auction.getAssetOut()
+    q_get_assetout --> q_check_solution: check solution.length
+    q_check_solution --> q_encode_solution: solution.length > 0
+    q_check_solution --> q_pre_approve: solution.length == 0
+    q_pre_approve --> q_call_bid: forceApprove(auction, getAssetOutAmount(assetIn, amount, block.timestamp))
+    q_encode_solution --> q_call_bid: data = encode(solution)
+    q_call_bid --> q_check_leftover: auction.bid(assetIn, amount, data)
+    q_check_leftover --> q_check_receiver: assetOutBalance > 0
+    q_check_leftover --> [*]: assetOutBalance == 0
+    q_check_receiver --> q_transfer_leftover: receiver != address(0)
+    q_check_receiver --> [*]: receiver == address(0)
+    q_transfer_leftover --> [*]: safeTransfer(receiver, assetOutBalance)
+
+    note right of q_check_solution
+        INV-001: With solution, callback executes arbitrary calls to source assetOut
+        INV-002: Without solution, pre-approves exact assetOutAmount before bidding
+        INV-003: Leftover assetOut is forwarded to configured receiver
+    end note

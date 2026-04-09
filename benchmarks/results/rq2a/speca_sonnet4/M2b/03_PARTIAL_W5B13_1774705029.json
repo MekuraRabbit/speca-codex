@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-013",
+      "classification": "vulnerability",
+      "code_path": "extstore.c::_evict_page::L432-463",
+      "proof_trace": "Memory allocated via calloc() at line 432 is never freed on any return path. Function has two exit paths (break at L449, normal end at L463) but neither calls free(st.page_data), violating the API contract and causing a memory leak.",
+      "attack_scenario": "Repeated calls to _evict_page() will continuously allocate memory without freeing it, leading to memory exhaustion and potential denial of service.",
+      "checklist_id": "PROP-M2b-mlk-013"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 13,
+    "item_count": 1,
+    "timestamp": 1774705029,
+    "processed_ids": [
+      "PROP-M2b-mlk-013"
+    ]
+  }
+}

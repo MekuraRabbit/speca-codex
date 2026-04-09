@@ -1,0 +1,13 @@
+---
+title: "getAllowlistedSelectors (WorkflowRouter)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_load: allowlistedSelectors = s_workflowInfos[workflowId].allowlistedSelectors[target].values()
+    q_load --> q_cast: assembly cast bytes32[] to bytes4[]
+    q_cast --> [*]: return selectors
+
+    note right of q_cast
+        INV-001: assembly cast bytes32[] to bytes4[] reuses same memory pointer, caller sees only lower 4 bytes per slot
+        INV-002: if workflowId or target not allowlisted, returns empty array (no revert)
+    end note

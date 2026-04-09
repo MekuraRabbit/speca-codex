@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "worker_id": 0,
+    "phase": "03",
+    "item_ids": ["PROP-M2b-mlk-016"],
+    "total_items": 1,
+    "context_file": "outputs/03_CONTEXT_W0B16_1775573041.json",
+    "batch_index": 16,
+    "timestamp": 1775573041,
+    "processed_ids": ["PROP-M2b-mlk-016"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-016",
+      "classification": "vulnerability",
+      "code_path": "assoc.c::assoc_get_iterator::L304-315",
+      "proof_trace": "Function allocates iter via calloc; if mutex_trylock fails, returns NULL without freeing iter, causing memory leak.",
+      "attack_scenario": "When hash table expansion holds maintenance lock, repeated crawler runs leak memory each time, potentially leading to memory exhaustion over time.",
+      "checklist_id": "PROP-M2b-mlk-016"
+    }
+  ]
+}

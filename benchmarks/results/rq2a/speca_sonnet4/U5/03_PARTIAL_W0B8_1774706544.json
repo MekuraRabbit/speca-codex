@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U5-uaf-009",
+      "classification": "not-a-vulnerability",
+      "code_path": "icu4c/source/i18n/transreg.cpp::deleteEntry::L507-509",
+      "proof_trace": "The deleteEntry function is protected by registry mutex and the reget() function includes explicit null-checking (line 547) to handle race conditions between get/reget operations. The code comments acknowledge the potential race but implement defensive handling.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U5-uaf-009"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 8,
+    "item_count": 1,
+    "timestamp": 1774706544,
+    "processed_ids": [
+      "PROP-U5-uaf-009"
+    ]
+  }
+}

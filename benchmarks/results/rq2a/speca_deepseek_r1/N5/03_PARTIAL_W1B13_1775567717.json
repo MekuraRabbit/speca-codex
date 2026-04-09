@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-017",
+      "classification": "vulnerability",
+      "code_path": "clients/tools/common.c::tool_args::L415-415",
+      "proof_trace": "Property requires NULL-check of ber_strdup result before strlen. Counterexample: password argument case 'w' stores ber_strdup result into passwd.bv_val and immediately calls strlen on it (line 990) without checking for NULL, causing NULL pointer dereference on allocation failure.",
+      "attack_scenario": "Attacker supplies a large password argument causing memory exhaustion; ber_strdup returns NULL, leading to crash via strlen(NULL) and denial of service.",
+      "checklist_id": "PROP-N5-npd-017"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 13,
+    "item_count": 1,
+    "timestamp": 1775567717,
+    "processed_ids": [
+      "PROP-N5-npd-017"
+    ]
+  }
+}

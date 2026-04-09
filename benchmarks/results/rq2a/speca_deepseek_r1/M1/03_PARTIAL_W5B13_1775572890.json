@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-014",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/context.cpp::register_resource::L238-315",
+      "proof_trace": "Property holds because destructor always calls sass_import_take_source before sass_delete_import, nullifying the import's source pointer. Resources loop frees the memory once; import cleanup frees NULL. No double-free or leak occurs even when exception is thrown before sass_import_take_source in register_resource.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M1-mlk-014"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 13,
+    "item_count": 1,
+    "timestamp": 1775572890,
+    "processed_ids": [
+      "PROP-M1-mlk-014"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N2-npd-015",
+      "classification": "vulnerability",
+      "code_path": "MagickCore/statistic.c::EvaluateImages::L506-511",
+      "proof_trace": "AcquireRandomInfoThreadSet() can return NULL on memory allocation failure, but result is used directly at line 511 via GetRandomSecretKey(random_info[0]) without NULL check. GetRandomSecretKey() accesses random_info->secret_key causing NULL pointer dereference.",
+      "attack_scenario": "Attacker triggers memory allocation failure (e.g., via large image processing), causing AcquireRandomInfoThreadSet() to return NULL, leading to crash when GetRandomSecretKey() dereferences NULL pointer at line 511.",
+      "checklist_id": "PROP-N2-npd-015"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 14,
+    "item_count": 1,
+    "timestamp": 1774705942,
+    "processed_ids": [
+      "PROP-N2-npd-015"
+    ]
+  }
+}

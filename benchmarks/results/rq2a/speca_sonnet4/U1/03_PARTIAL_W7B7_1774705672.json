@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-008",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/config.c::rewriteConfigReleaseState::L2103-2108",
+      "proof_trace": "Function properly frees resources in correct order (members first, then struct) and is called only once with immediate return after cleanup. No use-after-free occurs within the function or by its caller.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-008"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 7,
+    "item_count": 1,
+    "timestamp": 1774705672,
+    "processed_ids": [
+      "PROP-U1-uaf-008"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M3-mlk-011",
+      "classification": "vulnerability",
+      "code_path": "drivers/net/ethernet/netronome/nfp/nfpcore/nfp_cppcore.c::nfp_cpp_area_cache_add::L792-818",
+      "proof_trace": "Area allocated via nfp_cpp_area_alloc() at line 800-801 but not freed when subsequent kzalloc() fails at line 806-807. Function returns -ENOMEM without calling nfp_cpp_area_free(area), creating resource leak.",
+      "attack_scenario": "Driver initialization under memory pressure causes kzalloc() to fail while area allocation succeeds, leaking allocated areas on each failure during nfp6000_init().",
+      "checklist_id": "PROP-M3-mlk-011"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 10,
+    "item_count": 1,
+    "timestamp": 1774706452,
+    "processed_ids": [
+      "PROP-M3-mlk-011"
+    ]
+  }
+}

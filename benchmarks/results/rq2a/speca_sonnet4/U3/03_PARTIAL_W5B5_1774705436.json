@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U3-uaf-006",
+      "classification": "vulnerability",
+      "code_path": "src/json.c::json_value_free_ex::L960",
+      "proof_trace": "Function assumes tree structure but doesn't validate against shared references. When JSON contains shared json_value objects, the same object gets processed multiple times, causing line 960 `value->type` to dereference freed memory after the shared object was freed in a previous iteration.",
+      "attack_scenario": "Attacker provides JSON with shared references (e.g., array elements pointing to same object). First traversal frees the shared object, second traversal accesses freed memory.",
+      "checklist_id": "PROP-U3-uaf-006"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 5,
+    "batch_index": 5,
+    "item_count": 1,
+    "timestamp": 1774705436,
+    "processed_ids": [
+      "PROP-U3-uaf-006"
+    ]
+  }
+}

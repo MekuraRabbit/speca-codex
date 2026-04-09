@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-014",
+      "classification": "vulnerability",
+      "code_path": "libraries/libldap/fetch.c::ldif_open_url::L71-80",
+      "proof_trace": "ber_strdup can return NULL on memory allocation failure; ldif_open_url proceeds to call strchr(p, '/') and ldap_pvt_hex_unescape(p) without checking for NULL, causing null pointer dereference.",
+      "attack_scenario": "Attacker supplies LDIF file with include: directive; when system memory exhausted, ber_strdup fails returning NULL, leading to crash via null pointer dereference in strchr or ldap_pvt_hex_unescape.",
+      "checklist_id": "PROP-N5-npd-014"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 10,
+    "item_count": 1,
+    "timestamp": 1775567952,
+    "processed_ids": [
+      "PROP-N5-npd-014"
+    ]
+  }
+}

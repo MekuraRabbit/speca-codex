@@ -1,0 +1,21 @@
+{
+  "metadata": {
+    "worker_id": 1,
+    "phase": "03",
+    "batch_index": 1,
+    "item_count": 1,
+    "timestamp": 1775603565,
+    "processed_ids": ["PROP-U5-uaf-002"],
+    "iteration": 1
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-U5-uaf-002",
+      "classification": "not-a-vulnerability",
+      "code_path": "icu4c/source/i18n/collationroot.cpp::uprv_collation_root_cleanup::L40-44",
+      "proof_trace": "Property holds because uprv_collation_root_cleanup only calls SharedObject::clearPtr(rootSingleton), which invokes removeRef() before any deletion and sets pointer to NULL without dereferencing after free. No other pointer dereferences exist in the function.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U5-uaf-002"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+---
+title: "_getAssetOutAmount (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_clamp: elapsedTime = min(elapsedTime, auctionDuration)
+    q_clamp --> q_multiplier: compute priceMultiplier
+    q_multiplier --> q_get_assetout_price: priceMultiplier = start - (start - end) * elapsed / duration
+    q_get_assetout_price --> q_usd_value: assetOutUsdPrice = getAssetPrice(s_assetOut, withValidation)
+    q_usd_value --> q_convert: auctionUsdValue = amountIn * assetInPrice / 10^decimals * priceMultiplier (roundUp)
+    q_convert --> [*]: return auctionUsdValue * 10^assetOutDecimals / assetOutUsdPrice (roundUp)
+
+    note right of q_multiplier
+        INV-015: Linear decay from startingPriceMultiplier to endingPriceMultiplier over auctionDuration
+    end note
+
+    note right of q_usd_value
+        INV-016: mulDivUp and mulWadUp used - rounds UP in favor of protocol (bidder pays more)
+    end note
+
+    note right of q_convert
+        INV-017: Final conversion also rounds UP - bidder always pays ceiling amount
+    end note

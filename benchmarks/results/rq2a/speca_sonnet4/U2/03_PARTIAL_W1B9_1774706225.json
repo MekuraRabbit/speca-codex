@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U2-uaf-010",
+      "classification": "not-a-vulnerability",
+      "code_path": "drivers/peci/controller/peci-aspeed.c::devm_aspeed_peci_reset_control_deassert::L480-489",
+      "proof_trace": "Function never frees the rst pointer - only calls standard kernel reset APIs (reset_control_deassert/assert) that manipulate hardware state without deallocating memory. All pointer dereferences occur before any cleanup operations.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U2-uaf-010"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 1,
+    "batch_index": 9,
+    "item_count": 1,
+    "timestamp": 1774706225,
+    "processed_ids": [
+      "PROP-U2-uaf-010"
+    ]
+  }
+}

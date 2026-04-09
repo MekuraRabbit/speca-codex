@@ -1,0 +1,24 @@
+---
+title: "_call (Caller)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_call: (success, response) = target.call(data)
+    q_call --> q_check_success: evaluate success
+    q_check_success --> q_return: success == true
+    q_check_success --> q_check_response: success == false
+    q_check_response --> q_bubble_revert: response.length > 0
+    q_check_response --> q_revert_generic: response.length == 0
+    q_bubble_revert --> [*]: revert(response)
+    q_revert_generic --> [*]: revert LowLevelCallFailed()
+    q_return --> [*]: return response
+
+    note right of q_call
+        INV-001: target receives exact calldata without modification
+        INV-002: return value is raw bytes from external call
+    end note
+
+    note right of q_check_response
+        INV-003: failed calls always revert - never return silently
+        INV-004: original revert reason is preserved when response.length > 0
+    end note

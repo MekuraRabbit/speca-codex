@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U5-uaf-007",
+      "classification": "not-a-vulnerability",
+      "code_path": "icu4c/source/i18n/remtrans.cpp::RemoveTransliterator_create::L27-31",
+      "proof_trace": "RemoveTransliterator_create contains no free/delete operations; the function only returns a new object. The property forbids use-after-free for any pointer freed within the function, which holds vacuously as there are no such frees.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U5-uaf-007"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 6,
+    "item_count": 1,
+    "timestamp": 1775604092,
+    "processed_ids": [
+      "PROP-U5-uaf-007"
+    ]
+  }
+}

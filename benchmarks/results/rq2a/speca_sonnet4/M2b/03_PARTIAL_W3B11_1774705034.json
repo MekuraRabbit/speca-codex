@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M2b-mlk-012",
+      "classification": "vulnerability",
+      "code_path": "memcached.c::main::L5179",
+      "proof_trace": "subopts_orig allocated via strdup() at L5179 but dozens of return statements between L5195-5603 exit before free() at L5611. Any sub-option validation failure leaks the allocated memory.",
+      "attack_scenario": "Attacker provides invalid sub-option values (e.g. hashpower=1, slab_automove=999) causing main() to return early and leak strdup() allocated memory.",
+      "checklist_id": "PROP-M2b-mlk-012"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 11,
+    "item_count": 1,
+    "timestamp": 1774705034,
+    "processed_ids": [
+      "PROP-M2b-mlk-012"
+    ]
+  }
+}

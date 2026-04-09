@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U2-uaf-001",
+      "classification": "not-a-vulnerability",
+      "code_path": "drivers/peci/controller/peci-aspeed.c::aspeed_peci_clk_release::L491-491",
+      "proof_trace": "The function aspeed_peci_clk_release() calls clk_disable_unprepare() on a given clock pointer; it does not free any pointers and the device resource framework ensures safe cleanup. clk_disable_unprepare is designed to not produce use-after-free conditions.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U2-uaf-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 0,
+    "item_count": 1,
+    "timestamp": 1775601676,
+    "processed_ids": [
+      "PROP-U2-uaf-001"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N2-npd-017",
+      "classification": "vulnerability",
+      "code_path": "MagickCore/random-private.h::DestroyRandomInfoThreadSet::L39-50",
+      "proof_trace": "Function only protects against NULL input with assert() which is compiled out in release builds when NDEBUG is defined. AcquireRandomInfoThreadSet() can return NULL on memory allocation failure, but callers pass this directly to DestroyRandomInfoThreadSet() causing NULL dereference in loop.",
+      "attack_scenario": "Trigger memory allocation failure in AcquireRandomInfoThreadSet(), causing NULL return that gets passed to DestroyRandomInfoThreadSet() where it dereferences NULL in the loop condition.",
+      "checklist_id": "PROP-N2-npd-017"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 16,
+    "item_count": 1,
+    "timestamp": 1774705940,
+    "processed_ids": [
+      "PROP-N2-npd-017"
+    ]
+  }
+}

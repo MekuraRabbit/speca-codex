@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-009",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/ast_sel_weave.cpp::getChunks::L162-189",
+      "proof_trace": "All allocations use RAII and reference counting - stack objects (chunk1, chunk2, choice1, choice2) automatically destroyed on scope exit, std::vector manages internal storage, SelectorComponentObj uses LibSass SharedImpl reference counting. C++ guarantees destructors called during exception unwinding.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M1-mlk-009"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 8,
+    "item_count": 1,
+    "timestamp": 1774705893,
+    "processed_ids": [
+      "PROP-M1-mlk-009"
+    ]
+  }
+}

@@ -1,0 +1,49 @@
+---
+title: "_applyAssetParamsUpdates (BaseAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_access: require whenNotPaused, ASSET_ADMIN_ROLE
+    q_check_access --> q_check_empty: access granted
+    q_check_empty --> q_revert_empty: adds.length == 0 AND removes.length == 0
+    q_revert_empty --> [*]: revert EmptyList
+    q_check_empty --> q_remove_loop: not empty
+    q_remove_loop --> q_remove_item: i < removes.length
+    q_remove_loop --> q_add_loop: i >= removes.length
+    q_remove_item --> q_check_live_remove: check for live auctions
+    q_check_live_remove --> q_revert_live: (asset == assetOut AND liveAuctionExists) OR auctionStarts[asset] != 0
+    q_revert_live --> [*]: revert LiveAuction
+    q_check_live_remove --> q_check_set: no live auction conflict
+    q_check_set --> q_revert_not_set: assetParams.decimals == 0
+    q_revert_not_set --> [*]: revert AssetParamsNotSet
+    q_check_set --> q_delete: params exist
+    q_delete --> q_remove_loop: delete s_assetParams[asset]
+    q_add_loop --> q_add_item: i < adds.length
+    q_add_loop --> [*]: i >= adds.length
+    q_add_item --> q_check_live_add: check for live auctions
+    q_check_live_add --> q_revert_live_add: live auction conflict
+    q_revert_live_add --> [*]: revert LiveAuction
+    q_check_live_add --> q_check_allowlisted: no conflict
+    q_check_allowlisted --> q_revert_not_allowed: NOT s_allowlistedAssets.contains(asset)
+    q_revert_not_allowed --> [*]: revert AssetNotAllowlisted
+    q_check_allowlisted --> q_validate_decimals: asset is allowlisted
+    q_validate_decimals --> q_revert_decimals: params.decimals != IERC20Metadata.decimals()
+    q_revert_decimals --> [*]: revert InvalidAssetDecimals
+    q_validate_decimals --> q_validate_params: decimals match
+    q_validate_params --> q_check_not_assetout: asset != assetOut
+    q_validate_params --> q_store: asset == assetOut (only minAuctionSizeUsd needed)
+    q_check_not_assetout --> q_validate_multipliers: validate auction params
+    q_validate_multipliers --> q_revert_ending: endingPriceMultiplier < minPriceMultiplier
+    q_revert_ending --> [*]: revert InvalidEndingPriceMultiplier
+    q_validate_multipliers --> q_check_start_end: valid ending multiplier
+    q_check_start_end --> q_revert_start: endingPriceMultiplier > startingPriceMultiplier
+    q_revert_start --> [*]: revert StartingPriceMultiplierLowerThanEndingPriceMultiplier
+    q_check_start_end --> q_store: valid multiplier order
+    q_store --> q_add_loop: s_assetParams[asset] = assetParams
+
+    note right of q_validate_multipliers
+        INV-001: endingPriceMultiplier >= minPriceMultiplier (global floor)
+        INV-002: startingPriceMultiplier >= endingPriceMultiplier (price decays, never rises)
+        INV-003: Cannot modify asset params during live auctions for that asset
+        INV-004: Asset decimals must match on-chain ERC20 decimals
+    end note

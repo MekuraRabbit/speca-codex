@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-008",
+      "classification": "not-a-vulnerability",
+      "code_path": "libraries/libldap/rdwr.c::ldap_pvt_thread_rdwr_writers::L424-439",
+      "proof_trace": "Function returns int (number of active writer threads), not a pointer that can be NULL or dereferenced. Property requests NULL-checking before dereferencing an integer value, which is semantically impossible.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N5-npd-008"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 7,
+    "batch_index": 7,
+    "item_count": 1,
+    "timestamp": 1774706057,
+    "processed_ids": [
+      "PROP-N5-npd-008"
+    ]
+  }
+}

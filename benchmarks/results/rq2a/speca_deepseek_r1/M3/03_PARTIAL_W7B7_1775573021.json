@@ -1,0 +1,23 @@
+{
+  "metadata": {
+    "worker_id": 7,
+    "phase": "03",
+    "item_ids": ["PROP-M3-mlk-008"],
+    "total_items": 1,
+    "context_file": "outputs/03_CONTEXT_W7B7_1775573021.json",
+    "timestamp": 1775573021,
+    "iteration": 7,
+    "processed_ids": ["PROP-M3-mlk-008"],
+    "batch_index": 7
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-M3-mlk-008",
+      "classification": "not-a-vulnerability",
+      "code_path": "drivers/net/ethernet/netronome/nfp/flower/offload.c::nfp_flower_setup_indr_tc_release::L1791-1797",
+      "proof_trace": "Function contains no allocations; property is vacuously satisfied. The only two operations (list_del and kfree) are unconditional and cannot fail.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-M3-mlk-008"
+    }
+  ]
+}

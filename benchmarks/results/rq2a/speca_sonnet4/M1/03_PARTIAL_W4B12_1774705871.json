@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M1-mlk-013",
+      "classification": "vulnerability",
+      "code_path": "src/context.cpp::register_resource::L295-296",
+      "proof_trace": "Throw at L295 bypasses mandatory cleanup at L308-311, causing Sass_Import_Entry memory leak. Exception caught by C API callers leaves Context alive with leaked resources.",
+      "attack_scenario": "Provide SASS source with circular imports to trigger import loop detection, causing throw that bypasses sass_delete_import() cleanup and leaks memory.",
+      "checklist_id": "PROP-M1-mlk-013"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 12,
+    "item_count": 1,
+    "timestamp": 1774705871,
+    "processed_ids": [
+      "PROP-M1-mlk-013"
+    ]
+  }
+}

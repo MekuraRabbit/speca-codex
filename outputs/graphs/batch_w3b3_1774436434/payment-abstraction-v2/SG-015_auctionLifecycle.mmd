@@ -1,0 +1,50 @@
+---
+title: "Auction Lifecycle End-to-End (Payment Abstraction V2)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_idle: No active auction
+
+    q_idle --> q_check_upkeep: CRE workflow triggers checkUpkeep
+    q_check_upkeep --> q_idle: upkeepNeeded == false
+    q_check_upkeep --> q_route_start: upkeepNeeded == true (eligible assets found)
+
+    q_route_start --> q_perform_start: WorkflowRouter.onReport routes to performUpkeep
+    q_perform_start --> q_pull_assets: feeAggregator.transferForSwap(auction, assets)
+    q_pull_assets --> q_set_start: s_auctionStarts[asset] = block.timestamp
+    q_set_start --> q_approve_cowswap: forceApprove(gpV2VaultRelayer, balance)
+    q_approve_cowswap --> q_live: Auction is LIVE
+
+    q_live --> q_price_push: Price manager workflow pushes streams prices
+    q_price_push --> q_live: transmit() stores fresh prices
+
+    q_live --> q_cowswap_bid: CowSwap solver calls settlement
+    q_cowswap_bid --> q_validate_sig: isValidSignature validates order
+    q_validate_sig --> q_cowswap_settle: order valid, vault relayer pulls asset
+    q_cowswap_settle --> q_live: partial fill, auction continues
+
+    q_live --> q_direct_bid: External bidder calls bid()
+    q_direct_bid --> q_transfer_asset: asset transferred to bidder
+    q_transfer_asset --> q_callback: optional callback execution
+    q_callback --> q_pull_link: safeTransferFrom(bidder, auction, assetOutAmount)
+    q_pull_link --> q_live: bid settled, auction continues
+
+    q_live --> q_solver_bid: AuctionBidder.bid via WorkflowRouter
+    q_solver_bid --> q_execute_swap: callback executes aggregator swap route
+    q_execute_swap --> q_live: bid settled via AuctionBidder
+
+    q_live --> q_check_end: CRE workflow triggers checkUpkeep
+    q_check_end --> q_perform_end: duration elapsed OR balance below min
+    q_perform_end --> q_return_remaining: remaining asset to feeAggregator
+    q_return_remaining --> q_send_link: assetOut (LINK) to assetOutReceiver
+    q_send_link --> q_revoke: revoke CowSwap vault relayer approval
+    q_revoke --> q_idle: Auction ENDED, s_auctionStarts[asset] = 0
+
+    note right of q_live
+        INV-001: Three concurrent bidding paths (CowSwap solvers, direct bidders, AuctionBidder)
+        INV-002: Price decays linearly from startingPriceMultiplier to endingPriceMultiplier
+        INV-003: All bid paths enforce same price curve via _getAssetOutAmount
+        INV-004: Auction can end by duration timeout OR balance below minAuctionSizeUsd
+        INV-005: Remaining assets always returned to FeeAggregator on end
+        INV-006: LINK proceeds always sent to assetOutReceiver on end
+    end note

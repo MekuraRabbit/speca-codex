@@ -1,0 +1,16 @@
+---
+title: "supportsInterface (WorkflowRouter)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_parent: super.supportsInterface(interfaceId)
+    q_check_parent --> q_return_true: parent returns true
+    q_check_parent --> q_check_receiver: parent returns false
+    q_check_receiver --> q_return_true: interfaceId == type(IReceiver).interfaceId
+    q_check_receiver --> q_return_false: no match
+    q_return_true --> [*]: return true
+    q_return_false --> [*]: return false
+
+    note right of q_check_receiver
+        INV-001: supports IReceiver interface in addition to PausableWithAccessControl interfaces
+    end note

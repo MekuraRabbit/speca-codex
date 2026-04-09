@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-014",
+      "classification": "vulnerability",
+      "code_path": "libraries/libldap/fetch.c::ldif_open_url::L71-76",
+      "proof_trace": "ber_strdup() at line 71 can return NULL if malloc fails, but there is no NULL check before strchr() is called at line 76 via the conversion loop that starts at line 75. This causes undefined behavior when strchr() receives a NULL pointer.",
+      "attack_scenario": "On Windows builds, provide a file:// URL under memory pressure conditions to trigger malloc failure in ber_strdup(), causing NULL pointer dereference in strchr() during path separator conversion.",
+      "checklist_id": "PROP-N5-npd-014"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 10,
+    "item_count": 1,
+    "timestamp": 1774706081,
+    "processed_ids": [
+      "PROP-N5-npd-014"
+    ]
+  }
+}

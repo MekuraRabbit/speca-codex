@@ -1,0 +1,40 @@
+---
+title: "checkUpkeep (BaseAuction - inherited by GPV2CompatibleAuction)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_init: load feeAggregator, allowlisted assets
+    q_init --> q_iter: i = 0
+    q_iter --> q_load_asset: i < auctions.length
+    q_load_asset --> q_skip: assetParams.decimals == 0
+    q_skip --> q_next: skip unconfigured asset
+    q_load_asset --> q_get_price: _getAssetPrice(asset, false)
+    q_get_price --> q_check_assetout: asset == s_assetOut
+    q_check_assetout --> q_save_price_valid: isAssetOutPriceValid = isPriceValid
+    q_check_assetout --> q_check_live: auctionStart != 0
+    q_save_price_valid --> q_check_live: auctionStart != 0
+    q_check_live --> q_check_ended: auctionStart + duration < timestamp OR balance USD < minAuctionSize
+    q_check_ended --> q_add_ended: condition met
+    q_add_ended --> q_next: endedAuctions[idx++] = asset
+    q_check_ended --> q_next: auction still live
+    q_check_live --> q_check_eligible: auctionStart == 0 AND isPriceValid
+    q_check_eligible --> q_check_usd: availableAssetUsdValue >= minAuctionSizeUsd
+    q_check_usd --> q_add_eligible: eligibleAssets[idx++] = (asset, balance)
+    q_add_eligible --> q_next
+    q_check_usd --> q_next: below min auction size
+    q_check_eligible --> q_next: price not valid
+    q_next --> q_iter: i = i + 1
+    q_iter --> q_assetout_gate: i >= auctions.length
+    q_assetout_gate --> q_clear_eligible: isAssetOutPriceValid == false
+    q_clear_eligible --> q_encode: eligibleAssetsIdx = 0
+    q_assetout_gate --> q_encode: isAssetOutPriceValid == true
+    q_encode --> q_return_true: eligibleAssetsIdx > 0 OR endedAuctionsIdx > 0
+    q_return_true --> [*]: return (true, abi.encode(eligibleAssets, endedAuctions))
+    q_encode --> [*]: return (false, empty bytes)
+
+    note right of q_init
+        INV-001: No auctions are started if assetOut price is invalid
+        INV-002: Auctions end when duration elapsed OR remaining balance USD < minAuctionSize
+        INV-003: Only assets with configured params (decimals != 0) are considered
+        INV-004: Eligible assets must have valid price and USD balance above minAuctionSizeUsd
+    end note

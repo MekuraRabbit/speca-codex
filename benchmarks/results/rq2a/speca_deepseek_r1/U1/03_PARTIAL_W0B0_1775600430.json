@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U1-uaf-001",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/config.c::rewriteConfigClientoutputbufferlimitOption::L2012-2038",
+      "proof_trace": "All pointers are string literals or SDS strings properly managed; getClientTypeName returns static strings for valid j values; no dynamic allocation that could be freed and later dereferenced.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U1-uaf-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 0,
+    "item_count": 1,
+    "timestamp": 1775600430,
+    "processed_ids": [
+      "PROP-U1-uaf-001"
+    ]
+  }
+}

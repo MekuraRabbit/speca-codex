@@ -1,0 +1,20 @@
+---
+title: "auctionCallback (AuctionBidder)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_check_paused: require whenNotPaused
+    q_check_paused --> q_check_caller: not paused
+    q_check_caller --> q_revert_forbidden: msg.sender != s_auction OR from != address(this)
+    q_revert_forbidden --> [*]: revert AccessForbidden
+    q_check_caller --> q_decode: authorized caller
+    q_decode --> q_multicall: calls = decode(data)
+    q_multicall --> q_approve: _multiCall(calls)
+    q_approve --> [*]: forceApprove(msg.sender, amountOut)
+
+    note right of q_multicall
+        INV-001: Only the configured auction contract can invoke callback
+        INV-002: from must be this contract (self-initiated bid only)
+        INV-003: Arbitrary calls executed via _multiCall to source settlement asset
+        INV-004: Approval granted to auction contract for exact amountOut after solution execution
+    end note

@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-008",
+      "classification": "not-a-vulnerability",
+      "code_path": "libraries/libldap/rdwr.c::ldap_pvt_thread_rdwr_writers::L424-439",
+      "proof_trace": "Function returns int, not a pointer; NULL-checking of return value is nonsensical. Debug assertions check parameters; function is only compiled for debugging (LDAP_RDWR_DEBUG).",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N5-npd-008"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 7,
+    "item_count": 1,
+    "timestamp": 1775567857,
+    "processed_ids": [
+      "PROP-N5-npd-008"
+    ]
+  }
+}

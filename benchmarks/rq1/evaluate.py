@@ -217,7 +217,7 @@ def compute_precision(labels_csv_path: Path) -> dict:
     # Human labels (if filled in)
     human_tp = sum(1 for r in rows if (r.get("human_label") or "").strip().lower() in ("tp", "true", "1", "yes"))
     human_fp = sum(1 for r in rows if (r.get("human_label") or "").strip().lower() in ("fp", "false", "0", "no"))
-    human_unlabeled = auto_unknown - human_tp - human_fp
+    human_unlabeled = max(0, auto_unknown - human_tp - human_fp)
 
     # All TP: tp + tp_info + potential-info + fixed + partially_fixed + human_tp
     auto_tp_total = auto_tp + auto_tp_info + auto_tp_other

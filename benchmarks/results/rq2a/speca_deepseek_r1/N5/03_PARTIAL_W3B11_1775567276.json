@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-N5-npd-015",
+      "classification": "vulnerability",
+      "code_path": "libraries/libldap/url.c::ldap_pvt_hex_unescape::L16161-1616",
+      "proof_trace": "ber_strdup can return NULL on memory allocation failure; ldif_open_url does not check before passing to ldap_pvt_hex_unescape, which dereferences NULL in its loop.",
+      "attack_scenario": "Remote attacker can send an LDIF file with include directive causing memory exhaustion, leading to NULL pointer dereference and crash.",
+      "checklist_id": "PROP-N5-npd-015"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 3,
+    "batch_index": 11,
+    "item_count": 1,
+    "timestamp": 1775567276,
+    "processed_ids": [
+      "PROP-N5-npd-015"
+    ]
+  }
+}

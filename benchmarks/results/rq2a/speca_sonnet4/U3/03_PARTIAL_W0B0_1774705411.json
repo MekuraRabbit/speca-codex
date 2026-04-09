@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U3-uaf-001",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/json.c::json_value_free_ex::L990-992",
+      "proof_trace": "Post-order traversal algorithm correctly saves current node pointer, moves to parent, then frees saved pointer. No dereferencing occurs after free() call. Each node freed exactly once via length decrementing mechanism.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U3-uaf-001"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 0,
+    "batch_index": 0,
+    "item_count": 1,
+    "timestamp": 1774705411,
+    "processed_ids": [
+      "PROP-U3-uaf-001"
+    ]
+  }
+}

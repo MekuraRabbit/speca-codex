@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "phase": "03",
+    "worker_id": 2,
+    "batch_index": 10,
+    "item_count": 1,
+    "timestamp": 1775574575,
+    "processed_ids": ["PROP-M5-mlk-011"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-M5-mlk-011",
+      "classification": "vulnerability",
+      "code_path": "mm/damon/reclaim.c::damon_reclaim_init::L432-455",
+      "proof_trace": "When damon_select_ops() fails at line 439, damon_reclaim_init() returns -EINVAL without calling damon_destroy_ctx(ctx), leaking the allocated context. This contrasts with damon_lru_sort_init() which properly cleans up on the same error path.",
+      "attack_scenario": "Module load triggers damon_reclaim_init(); if DAMON_OPS_PADDR operations aren't registered, damon_select_ops() fails, causing memory leak of ctx allocation.",
+      "checklist_id": "PROP-M5-mlk-011"
+    }
+  ]
+}

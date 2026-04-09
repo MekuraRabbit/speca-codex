@@ -1,0 +1,25 @@
+---
+title: "_multiCall (Caller)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_validate: check calls.length
+    q_validate --> q_revert_empty: calls.length == 0
+    q_revert_empty --> [*]: revert EmptyList()
+    q_validate --> q_init_array: calls.length > 0
+    q_init_array --> q_iter: returnData = new bytes[](calls.length); i = 0
+    q_iter --> q_call: i < calls.length
+    q_call --> q_store: returnData[i] = _call(calls[i].target, calls[i].data)
+    q_store --> q_iter: i = i + 1
+    q_iter --> q_return: i >= calls.length
+    q_return --> [*]: return returnData
+
+    note right of q_validate
+        INV-001: empty calls array is rejected - never executes zero calls
+    end note
+
+    note right of q_iter
+        INV-002: all calls execute sequentially in order 0..calls.length-1
+        INV-003: if any _call reverts, entire multiCall reverts (no partial execution returned)
+        INV-004: returnData.length == calls.length on successful completion
+    end note

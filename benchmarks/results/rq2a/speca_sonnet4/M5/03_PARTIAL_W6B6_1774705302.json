@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-M5-mlk-007",
+      "classification": "vulnerability",
+      "code_path": "mm/damon/lru_sort.c::damon_lru_sort_apply_parameters::L393-401",
+      "proof_trace": "First allocation succeeds and is added to context (line 396), but if second allocation fails (line 399-401), function returns -ENOMEM without freeing the first scheme. Memory leak occurs because first scheme remains in context without cleanup.",
+      "attack_scenario": "Attacker triggers memory pressure during second allocation by consuming available memory before module parameter store operation, causing repeated scheme structure leaks.",
+      "checklist_id": "PROP-M5-mlk-007"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 6,
+    "batch_index": 6,
+    "item_count": 1,
+    "timestamp": 1774705302,
+    "processed_ids": [
+      "PROP-M5-mlk-007"
+    ]
+  }
+}

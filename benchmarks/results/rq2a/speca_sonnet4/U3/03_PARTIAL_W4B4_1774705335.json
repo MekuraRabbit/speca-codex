@@ -1,0 +1,22 @@
+{
+  "audit_items": [
+    {
+      "property_id": "PROP-U3-uaf-005",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/acl.c::remove_from_block_list::L264-268",
+      "proof_trace": "Memory safety is enforced by cache_remove's callback mechanism. The free_firewall_rule callback only reads the key pointer content via set_firewall_rule, which performs immediate string parsing and command execution without storing any references. Memory is freed only after all usage completes.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-U3-uaf-005"
+    }
+  ],
+  "metadata": {
+    "phase": "03",
+    "worker_id": 4,
+    "batch_index": 4,
+    "item_count": 1,
+    "timestamp": 1774705335,
+    "processed_ids": [
+      "PROP-U3-uaf-005"
+    ]
+  }
+}

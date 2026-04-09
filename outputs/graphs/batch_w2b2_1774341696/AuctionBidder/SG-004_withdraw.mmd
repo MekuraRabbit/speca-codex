@@ -1,0 +1,19 @@
+---
+title: "withdraw (AuctionBidder)"
+---
+stateDiagram-v2
+    direction TB
+    [*] --> q_access: onlyRole(DEFAULT_ADMIN_ROLE)
+    q_access --> q_validateTo: to == address(0)
+    q_validateTo --> q_revert: to is zero
+    q_validateTo --> q_iter: to is non-zero
+    q_revert --> [*]: revert Errors.InvalidZeroAddress()
+    q_iter --> q_transfer: i < assetAmounts.length
+    q_iter --> q_final: i >= assetAmounts.length
+    q_transfer --> q_iter: safeTransfer(to, assetAmounts[i].amount); i++
+    q_final --> [*]
+
+    note right of q_iter
+        INV-001: all assets transferred to same destination address
+        INV-002: loop iterates over all provided asset-amount pairs
+    end note

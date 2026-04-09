@@ -240,3 +240,6 @@ outputs/.mcp_configs/
 web/node_modules/
 web/dist/
 !web/src/lib/
+
+# Friend's submission drafts — NEVER commit
+outputs/submitted/friend/

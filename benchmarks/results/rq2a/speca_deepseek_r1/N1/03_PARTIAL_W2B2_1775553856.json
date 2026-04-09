@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "worker_id": 2,
+    "phase": "03",
+    "batch_index": 2,
+    "item_count": 1,
+    "timestamp": 1775553856,
+    "processed_ids": ["PROP-N1-npd-003"]
+  },
+  "audit_items": [
+    {
+      "property_id": "PROP-N1-npd-003",
+      "classification": "not-a-vulnerability",
+      "code_path": "src/sofa/pbrpc/rpc_client_impl.cc::ResolveAddress::L358-362",
+      "proof_trace": "ResolveAddress dereferences endpoint pointer without NULL check, but all internal callers pass address of stack/member objects (never NULL). The endpoint parameter is an output parameter; API contract expects non-NULL. No internal caller passes NULL, and external misuse would be API contract violation, not exploitable vulnerability.",
+      "attack_scenario": "",
+      "checklist_id": "PROP-N1-npd-003"
+    }
+  ]
+}

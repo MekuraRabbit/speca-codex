@@ -29,6 +29,24 @@ _SURVIVED_VERDICTS = {
 }
 
 
+def _load_target_info(results_dir: Path) -> dict[str, dict]:
+    """Load TARGET_INFO.json per branch → {branch: {repo, commit}}."""
+    info: dict[str, dict] = {}
+    for sub in sorted(results_dir.iterdir()):
+        ti = sub / "TARGET_INFO.json"
+        if sub.is_dir() and ti.exists():
+            try:
+                data = json.loads(ti.read_text(encoding="utf-8"))
+                commit = str(data.get("target_commit") or "")
+                info[sub.name] = {
+                    "repo": str(data.get("target_repo") or ""),
+                    "commit": commit[:10] if commit else "",
+                }
+            except (json.JSONDecodeError, OSError):
+                pass
+    return info
+
+
 def _classify_verdict(verdict: str) -> str:
     """Classify a verdict as 'survived' or 'filtered'."""
     v = (verdict or "").strip()
@@ -45,15 +63,18 @@ def _classify_verdict(verdict: str) -> str:
 
 def load_phase04_verdicts(
     results_dir: Path, branches: list[str],
-) -> tuple[dict[str, dict], list[str], list[str]]:
+) -> tuple[dict[str, dict], dict[tuple[str, str], dict], list[str], list[str]]:
     """Load Phase 04 reviewed_items from all branches.
 
     Returns:
         verdicts: {property_id: {review_verdict, classification, branch, ...}}
+            (last-write-wins when same pid appears on multiple branches)
+        verdicts_by_branch: {(property_id, branch): {...}} — collision-safe
         branches_with_04: branch names that had 04_*.json files
         branches_without_04: branch names that had no 04_*.json files
     """
     verdicts: dict[str, dict] = {}
+    verdicts_by_branch: dict[tuple[str, str], dict] = {}
     branches_with_04: list[str] = []
     branches_without_04: list[str] = []
     for branch in branches:
@@ -77,7 +98,7 @@ def load_phase04_verdicts(
                 if not pid:
                     continue
                 verdict = item.get("review_verdict", "")
-                verdicts[pid] = {
+                entry = {
                     "review_verdict": verdict,
                     "classification": _classify_verdict(verdict),
                     "adjusted_severity": item.get("adjusted_severity", ""),
@@ -85,11 +106,13 @@ def load_phase04_verdicts(
                     "branch": branch,
                     "source_file": fpath.name,
                 }
-    return verdicts, branches_with_04, branches_without_04
+                verdicts[pid] = entry
+                verdicts_by_branch[(pid, branch)] = entry
+    return verdicts, verdicts_by_branch, branches_with_04, branches_without_04
 
 
 def verdict_breakdown(
-    verdicts: dict[str, dict],
+    verdicts_by_branch: dict[tuple[str, str], dict],
     total_findings: int,
     branches_with_04: list[str],
     branches_without_04: list[str],
@@ -98,17 +121,17 @@ def verdict_breakdown(
     by_verdict: dict[str, int] = {}
     survived = 0
     filtered = 0
-    for info in verdicts.values():
+    for info in verdicts_by_branch.values():
         v = info["review_verdict"] or "(empty)"
         by_verdict[v] = by_verdict.get(v, 0) + 1
         if info["classification"] == "filtered":
             filtered += 1
         else:
             survived += 1
-    unreviewed = max(0, total_findings - len(verdicts))
+    unreviewed = max(0, total_findings - len(verdicts_by_branch))
     return {
         "total_findings": total_findings,
-        "total_reviewed": len(verdicts),
+        "total_reviewed": len(verdicts_by_branch),
         "unreviewed": unreviewed,
         "by_verdict": dict(sorted(by_verdict.items())),
         "survived": survived,
@@ -207,7 +230,7 @@ def _compute_precision_from_rows(rows: list[dict]) -> dict:
 
     human_tp = sum(1 for r in rows if (r.get("human_label") or "").strip().lower() in ("tp", "true", "1", "yes"))
     human_fp = sum(1 for r in rows if (r.get("human_label") or "").strip().lower() in ("fp", "false", "0", "no"))
-    human_unlabeled = auto_unknown - human_tp - human_fp
+    human_unlabeled = max(0, auto_unknown - human_tp - human_fp)
 
     auto_tp_total = auto_tp + auto_tp_info + auto_tp_other
     auto_fp_total = auto_fp_invalid + auto_fp_review
@@ -354,6 +377,7 @@ def compute_efficiency(results_dir: Path) -> dict:
 def compare_metrics(
     results_dir: Path,
     verdicts: dict[str, dict],
+    verdicts_by_branch: dict[tuple[str, str], dict] | None = None,
 ) -> dict:
     """Compare Phase 03 baseline metrics with post-Phase-04-filter metrics."""
     summary = _load_evaluation_summary(results_dir)
@@ -366,11 +390,29 @@ def compare_metrics(
     phase03_total = phase03_precision.get("total_findings", len(all_rows))
     recall_matches = summary.get("matches", {})  # {issue_id: {finding_id, confidence}}
 
-    # Filtered property_ids
-    filtered_pids = {pid for pid, info in verdicts.items() if info["classification"] == "filtered"}
+    # Build filtered pairs: use (finding_id, repo) when verdicts_by_branch available
+    if verdicts_by_branch:
+        # Map branch → repo using TARGET_INFO.json
+        target_info = _load_target_info(results_dir)
+        filtered_pairs: set[tuple[str, str]] = set()
+        for (pid, branch), info in verdicts_by_branch.items():
+            if info["classification"] == "filtered":
+                repo = target_info.get(branch, {}).get("repo", "")
+                filtered_pairs.add((pid, repo))
 
-    # --- Post-filter findings ---
-    surviving_rows = [r for r in all_rows if r.get("finding_id") not in filtered_pids]
+        # Filter CSV rows by (finding_id, repo) pair
+        surviving_rows = [
+            r for r in all_rows
+            if (r.get("finding_id", ""), r.get("repo", "")) not in filtered_pairs
+        ]
+
+        # For recall check, a finding is filtered if ANY of its (pid, repo) pairs is filtered
+        filtered_pids_for_recall = {pid for pid, _repo in filtered_pairs}
+    else:
+        # Fallback: filter by property_id only (backward compat)
+        filtered_pids = {pid for pid, info in verdicts.items() if info["classification"] == "filtered"}
+        surviving_rows = [r for r in all_rows if r.get("finding_id") not in filtered_pids]
+        filtered_pids_for_recall = filtered_pids
 
     # --- Post-filter recall ---
     # Check which recalled issues still have at least one surviving finding
@@ -379,7 +421,7 @@ def compare_metrics(
     surviving_matches: dict[str, dict] = {}
     for issue_id, match_info in recall_matches.items():
         fid = match_info.get("finding_id", "")
-        if fid not in filtered_pids:
+        if fid not in filtered_pids_for_recall:
             surviving_matches[issue_id] = match_info
         else:
             lost_recall_issues.append(issue_id)
@@ -397,7 +439,7 @@ def compare_metrics(
     # --- Deltas ---
     p03_auto = phase03_precision.get("precision_auto", 0.0)
 
-    comparison = {
+    comparison: dict = {
         "phase_03": {
             "total_findings": phase03_total,
             "recall": phase03_recall,
@@ -420,7 +462,114 @@ def compare_metrics(
             "f1_delta": round(phase04_f1 - phase03_f1, 4),
         },
     }
+
+    # --- Ground truth analysis ---
+    gt = _compute_ground_truth_analysis(all_rows, verdicts)
+    if gt:
+        comparison["ground_truth_analysis"] = gt
+
     return comparison
+
+
+def _compute_ground_truth_analysis(
+    all_rows: list[dict],
+    verdicts: dict[str, dict],
+) -> dict | None:
+    """Cross-reference Phase 04 verdicts against human_label ground truth.
+
+    Returns None if no human labels exist.
+    """
+    # Normalize human labels
+    _TP_LABELS = {"tp", "true", "1", "yes"}
+    _FP_LABELS = {"fp", "false", "0", "no"}
+
+    def _normalize_human(raw: str) -> str:
+        """Return 'tp', 'fp', or the raw string (for extended labels)."""
+        s = raw.strip().lower()
+        if s in _TP_LABELS:
+            return "tp"
+        if s in _FP_LABELS:
+            return "fp"
+        return s  # e.g. "valid spec deviation ...", free-text annotations
+
+    # Collect rows with human labels
+    labeled_rows = []
+    for row in all_rows:
+        hl = (row.get("human_label") or "").strip()
+        if not hl:
+            continue
+        labeled_rows.append({
+            "finding_id": row.get("finding_id", ""),
+            "auto_label": row.get("auto_label", ""),
+            "human_label": _normalize_human(hl),
+            "human_label_raw": hl,
+        })
+
+    if not labeled_rows:
+        return None
+
+    # Label distribution
+    label_counts: dict[str, int] = {}
+    for r in labeled_rows:
+        lbl = r["human_label"]
+        label_counts[lbl] = label_counts.get(lbl, 0) + 1
+
+    # Build confusion matrix: verdict × ground truth
+    # verdict categories: DISPUTED_FP, CONFIRMED_*, PASS_THROUGH, etc., unreviewed
+    confusion: dict[str, dict[str, int]] = {}
+    for r in labeled_rows:
+        fid = r["finding_id"]
+        v_info = verdicts.get(fid)
+        verdict_cat = v_info["review_verdict"] if v_info else "(unreviewed)"
+        gt_label = r["human_label"]
+
+        if verdict_cat not in confusion:
+            confusion[verdict_cat] = {}
+        confusion[verdict_cat][gt_label] = confusion[verdict_cat].get(gt_label, 0) + 1
+
+    # DISPUTED_FP filter effectiveness
+    disputed_rows = [r for r in labeled_rows if verdicts.get(r["finding_id"], {}).get("classification") == "filtered"]
+    disputed_correct = sum(1 for r in disputed_rows if r["human_label"] == "fp")
+    disputed_wrong = sum(1 for r in disputed_rows if r["human_label"] == "tp")
+    disputed_other = len(disputed_rows) - disputed_correct - disputed_wrong
+    disputed_precision = round(disputed_correct / len(disputed_rows), 4) if disputed_rows else 0.0
+
+    # Per-verdict TP rate: for each verdict, what fraction of labeled items are TP?
+    verdict_tp_rates: dict[str, dict] = {}
+    for verdict_cat, gt_counts in confusion.items():
+        total = sum(gt_counts.values())
+        tp_count = gt_counts.get("tp", 0)
+        verdict_tp_rates[verdict_cat] = {
+            "total": total,
+            "tp": tp_count,
+            "tp_rate": round(tp_count / total, 4) if total else 0.0,
+        }
+
+    # Per-label filter rate: for each ground truth label, what fraction was filtered?
+    label_filter_rates: dict[str, dict] = {}
+    for lbl in sorted(label_counts.keys()):
+        lbl_rows = [r for r in labeled_rows if r["human_label"] == lbl]
+        lbl_filtered = sum(1 for r in lbl_rows if verdicts.get(r["finding_id"], {}).get("classification") == "filtered")
+        label_filter_rates[lbl] = {
+            "total": len(lbl_rows),
+            "filtered": lbl_filtered,
+            "filter_rate": round(lbl_filtered / len(lbl_rows), 4) if lbl_rows else 0.0,
+        }
+
+    return {
+        "labeled_count": len(labeled_rows),
+        "label_distribution": dict(sorted(label_counts.items())),
+        "filter_effectiveness": {
+            "total_filtered": len(disputed_rows),
+            "correct_fp": disputed_correct,
+            "wrong_tp": disputed_wrong,
+            "other": disputed_other,
+            "filter_precision": disputed_precision,
+        },
+        "confusion_matrix": {k: dict(sorted(v.items())) for k, v in sorted(confusion.items())},
+        "verdict_tp_rates": dict(sorted(verdict_tp_rates.items())),
+        "label_filter_rates": label_filter_rates,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -441,7 +590,7 @@ def run(results_dir: Path, collection_summary_path: Path | None = None) -> dict:
     print(f"[phase04] branches: {', '.join(branches)}")
 
     # 1. Load verdicts
-    verdicts, branches_with_04, branches_without_04 = load_phase04_verdicts(results_dir, branches)
+    verdicts, verdicts_by_branch, branches_with_04, branches_without_04 = load_phase04_verdicts(results_dir, branches)
 
     # Count total Phase 03 findings across all branches for unreviewed tracking
     total_findings = 0
@@ -457,7 +606,7 @@ def run(results_dir: Path, collection_summary_path: Path | None = None) -> dict:
             items = data.get("audit_items", [])
             total_findings += len(items)
 
-    breakdown = verdict_breakdown(verdicts, total_findings, branches_with_04, branches_without_04)
+    breakdown = verdict_breakdown(verdicts_by_branch, total_findings, branches_with_04, branches_without_04)
     print(
         f"[phase04] {breakdown['total_reviewed']} reviewed / {breakdown['unreviewed']} unreviewed (as-is) / "
         f"{breakdown['total_findings']} total findings"
@@ -480,7 +629,7 @@ def run(results_dir: Path, collection_summary_path: Path | None = None) -> dict:
     update_labels_csv(results_dir, verdicts)
 
     # 4. Compare metrics
-    comparison = compare_metrics(results_dir, verdicts)
+    comparison = compare_metrics(results_dir, verdicts, verdicts_by_branch)
 
     # 5. Compute efficiency metrics
     efficiency = compute_efficiency(results_dir)
