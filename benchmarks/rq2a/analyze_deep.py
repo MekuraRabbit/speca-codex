@@ -29,9 +29,9 @@ BASELINES_PATH = SCRIPT_DIR / "published_baselines.yaml"
 GT_PATH = SCRIPT_DIR / "ground_truth_bugs.yaml"
 SPECA_SUMMARY = SCRIPT_DIR.parent / "results" / "rq2a" / "speca" / "speca_summary.json"
 SPECA_SUMMARIES = {
-    "Sonnet 4.5": SCRIPT_DIR.parent / "results" / "rq2a" / "speca" / "speca_summary.json",
-    "Sonnet 4": SCRIPT_DIR.parent / "results" / "rq2a" / "speca_sonnet4" / "speca_summary.json",
     "DeepSeek R1": SCRIPT_DIR.parent / "results" / "rq2a" / "speca_deepseek_r1" / "speca_summary.json",
+    "Sonnet 4": SCRIPT_DIR.parent / "results" / "rq2a" / "speca_sonnet4" / "speca_summary.json",
+    "Sonnet 4.5": SCRIPT_DIR.parent / "results" / "rq2a" / "speca" / "speca_summary.json",
 }
 FIGURES_DIR = SCRIPT_DIR.parent / "results" / "rq2a" / "figures"
 
@@ -290,9 +290,14 @@ def _load_speca_summaries() -> dict[str, dict]:
 
 
 def plot_precision_recall_scatter(baselines: dict, output_dir: Path) -> Path:
-    """Scatter plot: precision vs recall for all tools, with SPECA metrics table."""
+    """Scatter plot: precision vs GT coverage for all tools.
+
+    Approach B: Replace raw recall with GT coverage (capped at 100%).
+    Table shows GT coverage + additional TP beyond GT set.
+    """
     tools_data = baselines.get("tools", {})
     speca_models = _load_speca_summaries()
+    gt_total = 35  # non-disputed ground truth bugs
 
     fig, ax = plt.subplots(figsize=(10, 7.5))
 
@@ -311,39 +316,35 @@ def plot_precision_recall_scatter(baselines: dict, output_dir: Path) -> Path:
         "DeepSeek R1": "#8B5CF6",
     }
 
-    # Plot baseline tools using legend (not per-point labels) to avoid overlap
+    # Plot baseline tools
     for key, tool in tools_data.items():
         if key == "speca":
             continue
         precision = tool.get("precision", 0)
         tp = tool.get("tp", 0)
-        recall = tool.get("recall")
         name = tool.get("display_name", key)
 
-        if recall is None:
-            recall_val = min(tp / 35, 1.0) if tp > 0 else 0
-        else:
-            recall_val = recall / 100 if recall > 1 else recall
-
+        # GT coverage: min(tp, gt_total) / gt_total, capped at 1.0
+        gt_coverage = min(tp, gt_total) / gt_total if gt_total > 0 else 0
         prec_val = precision / 100 if precision > 1 else precision
 
         color = tool_colors.get(key, "#999")
-        ax.scatter(recall_val, prec_val, c=color, s=180, zorder=5,
+        ax.scatter(gt_coverage, prec_val, c=color, s=180, zorder=5,
                    edgecolors="white", linewidth=1.5, label=name)
 
-    # Plot each SPECA model variant as stars
+    # Plot SPECA model variants as stars
     for label, sdata in speca_models.items():
         prec = sdata.get("precision", 0)
-        rec = sdata.get("recall", 0)
+        gt_tp = sdata.get("gt_tp", 0)
         prec_val = prec / 100 if prec > 1 else prec
-        rec_val = min(rec / 100 if rec > 1 else rec, 1.0)
+        gt_coverage = min(gt_tp / gt_total, 1.0) if gt_total > 0 else 0
 
         color = speca_colors.get(label, "#DD8452")
-        ax.scatter(rec_val, prec_val, c=color, s=350, zorder=6,
+        ax.scatter(gt_coverage, prec_val, c=color, s=350, zorder=6,
                    edgecolors="white", linewidth=2, marker="*",
                    label=f"SPECA ({label})")
 
-    # F1 contour lines
+    # F1 contour lines (using GT coverage as recall proxy)
     for f1 in [0.3, 0.5, 0.7, 0.9]:
         r_vals = np.linspace(0.01, 1.0, 100)
         with np.errstate(divide="ignore", invalid="ignore"):
@@ -355,42 +356,44 @@ def plot_precision_recall_scatter(baselines: dict, output_dir: Path) -> Path:
             ax.text(r_vals[valid][mid_idx], p_vals[valid][mid_idx] + 0.02,
                     f"F1={f1}", fontsize=7, color="#bbb")
 
-    ax.set_xlabel("Recall")
+    ax.set_xlabel("GT Coverage (ground truth bugs detected / 35)")
     ax.set_ylabel("Precision")
-    ax.set_title("RQ2a: Precision vs Recall\n(RepoAudit 15-Project Benchmark)")
+    ax.set_title("RQ2a: Precision vs GT Coverage\n(RepoAudit 15-Project Benchmark)")
     ax.set_xlim(-0.05, 1.1)
     ax.set_ylim(-0.05, 1.1)
     ax.grid(alpha=0.3)
 
-    # Legend in upper-left (empty region)
     ax.legend(loc="center left", fontsize=7.5, framealpha=0.9,
               edgecolor="#CCCCCC", markerscale=0.8,
               bbox_to_anchor=(0.0, 0.5))
 
-    # SPECA metrics table below the chart
+    # SPECA metrics table with GT coverage + additional TP
     if speca_models:
-        col_labels = ["Model", "TP", "FP", "Precision", "Recall*"]
+        col_labels = ["Model", "GT Match", "Additional TP", "FP", "Precision", "GT Coverage"]
         table_data = []
         cell_colors = []
         for label, sdata in speca_models.items():
-            rec = sdata.get("recall", 0)
+            gt_tp = sdata.get("gt_tp", 0)
+            new_tp = sdata.get("new_tp", 0)
+            gt_cov = gt_tp / gt_total * 100 if gt_total > 0 else 0
             table_data.append([
                 f"SPECA ({label})",
-                str(sdata.get("tp", "—")),
+                f"{gt_tp}/{gt_total}",
+                str(new_tp),
                 str(sdata.get("fp", "—")),
                 f"{sdata.get('precision', 0):.1f}%",
-                f"{rec:.1f}%",
+                f"{gt_cov:.1f}%",
             ])
             c = speca_colors.get(label, "#DD8452")
-            cell_colors.append([c + "30", "#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF"])
+            cell_colors.append([c + "30"] + ["#FFFFFF"] * 5)
 
         tbl = fig.axes[0].table(
             cellText=table_data,
             colLabels=col_labels,
             cellColours=cell_colors,
-            colColours=["#E0E0E0"] * 5,
+            colColours=["#E0E0E0"] * 6,
             loc="bottom",
-            bbox=[0.15, -0.28, 0.7, 0.18],
+            bbox=[0.08, -0.30, 0.84, 0.18],
         )
         tbl.auto_set_font_size(False)
         tbl.set_fontsize(8.5)
@@ -401,10 +404,11 @@ def plot_precision_recall_scatter(baselines: dict, output_dir: Path) -> Path:
                 cell.set_text_props(fontweight="bold")
 
         fig.text(0.5, 0.005,
-                 "* Recall >100% = SPECA found additional true bugs beyond the ground truth set (new_tp)",
+                 "GT Coverage = ground truth bugs detected / 35 non-disputed bugs. "
+                 "Additional TP = new bugs discovered beyond the ground truth set.",
                  ha="center", fontsize=7, style="italic", color="#666666")
 
-    fig.subplots_adjust(bottom=0.28)
+    fig.subplots_adjust(bottom=0.30)
     out = output_dir / "rq2a_precision_recall_scatter.png"
     fig.savefig(out, dpi=150, bbox_inches="tight")
     plt.close(fig)

@@ -135,7 +135,7 @@ def _chart_phase_comparison(
     bars2 = ax.bar(x + width / 2, phase04_vals, width, label="Phase 04 (After FP Filter)", color="#e8913a")
 
     ax.set_ylabel("Score")
-    ax.set_title(f"SPECA — Phase 03 vs Phase 04\n({_AI_MODEL})")
+    ax.set_title(f"SPECA — Phase 03 vs Phase 04\n({_AI_MODEL}, Precision = non-FP rate)")
     ax.set_xticks(x)
     ax.set_xticklabels(metrics)
     ax.set_ylim(0, 1.15)

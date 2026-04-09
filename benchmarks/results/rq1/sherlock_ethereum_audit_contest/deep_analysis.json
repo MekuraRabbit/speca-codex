@@ -1,64 +1,15 @@
 {
   "fp_taxonomy": {
-    "total_fp": 36,
+    "total_fp": 13,
     "by_root_cause": {
-      "Trust Boundary Misunderstanding": 9,
-      "Code Reading Error": 8,
-      "Spec Misinterpretation": 6,
-      "Multi-Layer Defense": 6,
-      "Design Choice": 4,
-      "Out-of-Scope": 2,
-      "Not Exploitable": 1
+      "Code Reading Error": 6,
+      "Trust Boundary Misunderstanding": 6,
+      "Spec Misinterpretation": 1
     },
     "details": [
       {
-        "finding_id": "PROP-5a6a79d5-inv-008",
-        "root_cause": "Design Choice",
-        "repo": "alloy"
-      },
-      {
-        "finding_id": "PROP-57888860-inv-053",
-        "root_cause": "Code Reading Error",
-        "repo": "c-kzg"
-      },
-      {
-        "finding_id": "PROP-6a4369e9-inv-037",
-        "root_cause": "Out-of-Scope",
-        "repo": "c-kzg"
-      },
-      {
-        "finding_id": "PROP-57888860-post-001",
-        "root_cause": "Out-of-Scope",
-        "repo": "c-kzg"
-      },
-      {
-        "finding_id": "PROP-6a4369e9-inv-018",
-        "root_cause": "Trust Boundary Misunderstanding",
-        "repo": "grandine"
-      },
-      {
-        "finding_id": "PROP-6a4369e9-asm-002",
-        "root_cause": "Trust Boundary Misunderstanding",
-        "repo": "grandine"
-      },
-      {
-        "finding_id": "PROP-57888860-pre-003",
-        "root_cause": "Spec Misinterpretation",
-        "repo": "grandine"
-      },
-      {
-        "finding_id": "PROP-56ad1eb2-inv-005",
-        "root_cause": "Spec Misinterpretation",
-        "repo": "grandine"
-      },
-      {
-        "finding_id": "PROP-57888860-inv-025",
-        "root_cause": "Spec Misinterpretation",
-        "repo": "grandine"
-      },
-      {
         "finding_id": "PROP-6a4369e9-inv-010",
-        "root_cause": "Trust Boundary Misunderstanding",
+        "root_cause": "Code Reading Error",
         "repo": "lighthouse"
       },
       {
@@ -67,59 +18,14 @@
         "repo": "lighthouse"
       },
       {
-        "finding_id": "PROP-6a4369e9-inv-011",
-        "root_cause": "Multi-Layer Defense",
-        "repo": "lighthouse"
-      },
-      {
-        "finding_id": "PROP-6a4369e9-post-003",
-        "root_cause": "Trust Boundary Misunderstanding",
-        "repo": "lighthouse"
-      },
-      {
-        "finding_id": "PROP-6a4369e9-inv-036",
-        "root_cause": "Spec Misinterpretation",
-        "repo": "lighthouse"
-      },
-      {
         "finding_id": "PROP-57888860-asm-003",
         "root_cause": "Trust Boundary Misunderstanding",
         "repo": "lighthouse"
       },
       {
-        "finding_id": "PROP-6a4369e9-inv-026",
-        "root_cause": "Multi-Layer Defense",
-        "repo": "lighthouse"
-      },
-      {
-        "finding_id": "PROP-6a4369e9-asm-001",
-        "root_cause": "Trust Boundary Misunderstanding",
-        "repo": "lighthouse"
-      },
-      {
-        "finding_id": "PROP-6a4369e9-inv-039",
-        "root_cause": "Design Choice",
-        "repo": "lighthouse"
-      },
-      {
-        "finding_id": "PROP-57888860-inv-028",
-        "root_cause": "Multi-Layer Defense",
-        "repo": "lighthouse"
-      },
-      {
         "finding_id": "PROP-6a4369e9-inv-008",
-        "root_cause": "Multi-Layer Defense",
+        "root_cause": "Code Reading Error",
         "repo": "lighthouse"
-      },
-      {
-        "finding_id": "PROP-6a4369e9-pre-008",
-        "root_cause": "Design Choice",
-        "repo": "lodestar"
-      },
-      {
-        "finding_id": "PROP-6a4369e9-inv-036",
-        "root_cause": "Spec Misinterpretation",
-        "repo": "nimbus"
       },
       {
         "finding_id": "PROP-6a4369e9-inv-008",
@@ -137,27 +43,17 @@
         "repo": "nimbus"
       },
       {
-        "finding_id": "PROP-57888860-pre-002",
-        "root_cause": "Code Reading Error",
-        "repo": "nimbus"
-      },
-      {
         "finding_id": "PROP-57888860-pre-007",
         "root_cause": "Code Reading Error",
         "repo": "nimbus"
       },
       {
-        "finding_id": "PROP-6a4369e9-inv-011",
-        "root_cause": "Code Reading Error",
-        "repo": "nimbus"
-      },
-      {
         "finding_id": "PROP-6a4369e9-asm-003",
-        "root_cause": "Code Reading Error",
+        "root_cause": "Trust Boundary Misunderstanding",
         "repo": "nimbus"
       },
       {
-        "finding_id": "PROP-6a4369e9-post-003",
+        "finding_id": "PROP-57888860-inv-027",
         "root_cause": "Trust Boundary Misunderstanding",
         "repo": "nimbus"
       },
@@ -167,39 +63,23 @@
         "repo": "prysm"
       },
       {
-        "finding_id": "PROP-ff7df16a-post-001",
-        "root_cause": "Not Exploitable",
-        "repo": "prysm"
-      },
-      {
-        "finding_id": "PROP-6a4369e9-pre-008",
-        "root_cause": "Design Choice",
+        "finding_id": "PROP-57888860-inv-027",
+        "root_cause": "Trust Boundary Misunderstanding",
         "repo": "prysm"
       },
       {
         "finding_id": "PROP-56ad1eb2-inv-027",
         "root_cause": "Spec Misinterpretation",
         "repo": "prysm"
-      },
-      {
-        "finding_id": "PROP-ff7df16a-inv-020",
-        "root_cause": "Multi-Layer Defense",
-        "repo": "reth"
-      },
-      {
-        "finding_id": "PROP-ff7df16a-inv-011",
-        "root_cause": "Multi-Layer Defense",
-        "repo": "reth"
       }
     ]
   },
   "threat_model_mismatch": {
     "threat_model_distribution": {
-      "Unclassified": 18,
-      "P2P Network Attacker": 12,
-      "EL / Semi-Trusted Boundary": 5,
-      "External Dependency": 2,
-      "Fork / Future Upgrade": 2
+      "Unclassified": 6,
+      "P2P Network Attacker": 5,
+      "Fork / Future Upgrade": 2,
+      "EL / Semi-Trusted Boundary": 1
     },
     "summary": "FPs are concentrated in Trust Boundary and Scope mismatches, not random hallucinations."
   },
@@ -208,18 +88,18 @@
       "alloy": {
         "phase_03": {
           "total": 3,
-          "tp": 2,
-          "fp": 1,
-          "other": 0,
-          "precision": 0.6666666666666666,
+          "tp": 1,
+          "fp": 0,
+          "other": 2,
+          "precision": 0.3333333333333333,
           "findings_per_issue": 3.0
         },
         "phase_04": {
           "total": 3,
-          "tp": 2,
-          "fp": 1,
-          "other": 0,
-          "precision": 0.6666666666666666,
+          "tp": 1,
+          "fp": 0,
+          "other": 2,
+          "precision": 0.3333333333333333,
           "findings_per_issue": 3.0
         },
         "issues_found": 1,
@@ -228,18 +108,18 @@
       "c-kzg": {
         "phase_03": {
           "total": 5,
-          "tp": 2,
-          "fp": 3,
-          "other": 0,
-          "precision": 0.4,
+          "tp": 1,
+          "fp": 0,
+          "other": 4,
+          "precision": 0.2,
           "findings_per_issue": 5.0
         },
         "phase_04": {
           "total": 5,
-          "tp": 2,
-          "fp": 3,
-          "other": 0,
-          "precision": 0.4,
+          "tp": 1,
+          "fp": 0,
+          "other": 4,
+          "precision": 0.2,
           "findings_per_issue": 5.0
         },
         "issues_found": 1,
@@ -248,18 +128,18 @@
       "grandine": {
         "phase_03": {
           "total": 12,
-          "tp": 7,
-          "fp": 5,
-          "other": 0,
-          "precision": 0.5833333333333334,
+          "tp": 4,
+          "fp": 0,
+          "other": 8,
+          "precision": 0.3333333333333333,
           "findings_per_issue": 4.0
         },
         "phase_04": {
           "total": 11,
-          "tp": 6,
-          "fp": 5,
-          "other": 0,
-          "precision": 0.5454545454545454,
+          "tp": 4,
+          "fp": 0,
+          "other": 7,
+          "precision": 0.36363636363636365,
           "findings_per_issue": 3.6666666666666665
         },
         "issues_found": 3,
@@ -268,18 +148,18 @@
       "lighthouse": {
         "phase_03": {
           "total": 24,
-          "tp": 12,
-          "fp": 12,
-          "other": 0,
-          "precision": 0.5,
+          "tp": 5,
+          "fp": 4,
+          "other": 15,
+          "precision": 0.20833333333333334,
           "findings_per_issue": 8.0
         },
         "phase_04": {
           "total": 22,
-          "tp": 11,
-          "fp": 11,
-          "other": 0,
-          "precision": 0.5,
+          "tp": 5,
+          "fp": 4,
+          "other": 13,
+          "precision": 0.22727272727272727,
           "findings_per_issue": 7.333333333333333
         },
         "issues_found": 3,
@@ -288,18 +168,18 @@
       "lodestar": {
         "phase_03": {
           "total": 9,
-          "tp": 7,
-          "fp": 2,
-          "other": 0,
-          "precision": 0.7777777777777778,
+          "tp": 3,
+          "fp": 1,
+          "other": 5,
+          "precision": 0.3333333333333333,
           "findings_per_issue": 9.0
         },
         "phase_04": {
           "total": 8,
-          "tp": 7,
-          "fp": 1,
-          "other": 0,
-          "precision": 0.875,
+          "tp": 3,
+          "fp": 0,
+          "other": 5,
+          "precision": 0.375,
           "findings_per_issue": 8.0
         },
         "issues_found": 1,
@@ -308,18 +188,18 @@
       "nethermind": {
         "phase_03": {
           "total": 5,
-          "tp": 4,
-          "fp": 1,
-          "other": 0,
-          "precision": 0.8,
+          "tp": 1,
+          "fp": 0,
+          "other": 4,
+          "precision": 0.2,
           "findings_per_issue": 5.0
         },
         "phase_04": {
           "total": 2,
-          "tp": 2,
+          "tp": 1,
           "fp": 0,
-          "other": 0,
-          "precision": 1.0,
+          "other": 1,
+          "precision": 0.5,
           "findings_per_issue": 2.0
         },
         "issues_found": 1,
@@ -328,18 +208,18 @@
       "nimbus": {
         "phase_03": {
           "total": 14,
-          "tp": 5,
-          "fp": 9,
-          "other": 0,
-          "precision": 0.35714285714285715,
+          "tp": 4,
+          "fp": 6,
+          "other": 4,
+          "precision": 0.2857142857142857,
           "findings_per_issue": 4.666666666666667
         },
         "phase_04": {
           "total": 14,
-          "tp": 5,
-          "fp": 9,
-          "other": 0,
-          "precision": 0.35714285714285715,
+          "tp": 4,
+          "fp": 6,
+          "other": 4,
+          "precision": 0.2857142857142857,
           "findings_per_issue": 4.666666666666667
         },
         "issues_found": 3,
@@ -348,18 +228,18 @@
       "prysm": {
         "phase_03": {
           "total": 25,
-          "tp": 17,
-          "fp": 8,
-          "other": 0,
-          "precision": 0.68,
+          "tp": 5,
+          "fp": 4,
+          "other": 16,
+          "precision": 0.2,
           "findings_per_issue": 8.333333333333334
         },
         "phase_04": {
           "total": 20,
-          "tp": 16,
-          "fp": 4,
-          "other": 0,
-          "precision": 0.8,
+          "tp": 5,
+          "fp": 3,
+          "other": 12,
+          "precision": 0.25,
           "findings_per_issue": 6.666666666666667
         },
         "issues_found": 3,
@@ -368,17 +248,17 @@
       "reth": {
         "phase_03": {
           "total": 4,
-          "tp": 1,
-          "fp": 3,
-          "other": 0,
-          "precision": 0.25,
+          "tp": 0,
+          "fp": 1,
+          "other": 3,
+          "precision": 0.0,
           "findings_per_issue": null
         },
         "phase_04": {
           "total": 2,
           "tp": 0,
-          "fp": 2,
-          "other": 0,
+          "fp": 0,
+          "other": 2,
           "precision": 0.0,
           "findings_per_issue": null
         },
@@ -410,12 +290,12 @@
       "phase_03_findings": 102,
       "phase_04_findings": 88,
       "findings_removed": 14,
-      "total_tp": 58,
+      "total_tp": 25,
       "total_issues": 17,
       "phase_03_findings_per_issue": 6.0,
       "phase_04_findings_per_issue": 5.176470588235294,
-      "phase_03_review_needed_for_1tp": 1.7586206896551724,
-      "phase_04_review_needed_for_1tp": 1.5172413793103448
+      "phase_03_review_needed_for_1tp": 4.08,
+      "phase_04_review_needed_for_1tp": 3.52
     }
   },
   "cross_implementation_reuse": {
@@ -423,25 +303,25 @@
     "multi_repo_families": 5,
     "multi_repo_families_detail": {
       "5a6a79d5": [
+        "reth",
         "nethermind",
-        "alloy",
-        "reth"
+        "alloy"
       ],
       "57888860": [
+        "rust-eth-kzg",
         "grandine",
         "nimbus",
-        "c-kzg",
         "lighthouse",
         "prysm",
-        "rust-eth-kzg"
+        "c-kzg"
       ],
       "6a4369e9": [
         "grandine",
         "nimbus",
-        "c-kzg",
         "lighthouse",
-        "lodestar",
-        "prysm"
+        "prysm",
+        "c-kzg",
+        "lodestar"
       ],
       "56ad1eb2": [
         "grandine",
@@ -532,29 +412,28 @@
         "203"
       ],
       "PROP-5a6a79d5-inv": [
+        "176",
         "210",
-        "371",
-        "176"
+        "371"
       ]
     },
     "summary": "5 property families span multiple implementations, demonstrating cross-implementation reuse."
   },
   "clusters": {
     "one_bug_many_properties": {
-      "count": 12,
+      "count": 11,
       "issues": {
-        "11": 8,
-        "18": 7,
-        "34": 6,
         "308": 4,
-        "92": 2,
-        "317": 2,
-        "250": 2,
-        "389": 2,
-        "239": 2,
+        "331": 4,
+        "169": 3,
+        "369": 2,
+        "251": 2,
+        "304": 2,
+        "209": 2,
+        "398": 2,
         "381": 2,
-        "222": 2,
-        "94": 2
+        "96": 2,
+        "394": 2
       }
     },
     "one_property_many_issues": {
@@ -571,19 +450,11 @@
       }
     },
     "cross_implementation_issues": {
-      "count": 9,
+      "count": 11,
       "issues": {
-        "92": [
+        "169": [
           "grandine",
-          "lighthouse"
-        ],
-        "317": [
-          "grandine",
-          "reth"
-        ],
-        "11": [
-          "grandine",
-          "lighthouse",
+          "lodestar",
           "prysm"
         ],
         "308": [
@@ -592,25 +463,41 @@
           "nimbus",
           "prysm"
         ],
-        "389": [
+        "369": [
           "lighthouse",
-          "prysm"
+          "nimbus"
         ],
-        "34": [
+        "251": [
+          "lighthouse",
+          "nimbus"
+        ],
+        "331": [
           "lighthouse",
           "lodestar",
           "prysm"
         ],
-        "239": [
+        "304": [
           "lighthouse",
           "prysm"
+        ],
+        "209": [
+          "lighthouse",
+          "lodestar"
+        ],
+        "398": [
+          "lighthouse",
+          "nimbus"
         ],
         "381": [
           "lodestar",
           "prysm"
         ],
-        "222": [
+        "96": [
           "lodestar",
+          "prysm"
+        ],
+        "394": [
+          "nimbus",
           "prysm"
         ]
       }
@@ -619,31 +506,19 @@
   "ablation": {
     "gate_effectiveness": {
       "Trust Boundary": {
-        "total_filtered": 4,
-        "correct_fp": 3,
+        "total_filtered": 21,
+        "correct_fp": 6,
         "wrong_tp": 1,
-        "precision": 0.75
+        "precision": 0.2857142857142857
       },
-      "Code Verification": {
-        "total_filtered": 2,
-        "correct_fp": 1,
-        "wrong_tp": 1,
-        "precision": 0.5
-      },
-      "Scope": {
+      "Dead Code": {
         "total_filtered": 2,
         "correct_fp": 2,
         "wrong_tp": 0,
         "precision": 1.0
       },
-      "Spec Cross-Reference": {
-        "total_filtered": 1,
-        "correct_fp": 0,
-        "wrong_tp": 1,
-        "precision": 0.0
-      },
-      "Exploitability": {
-        "total_filtered": 1,
+      "Scope": {
+        "total_filtered": 7,
         "correct_fp": 0,
         "wrong_tp": 1,
         "precision": 0.0
@@ -652,27 +527,27 @@
     "property_type_ablation": {
       "post": {
         "total": 5,
-        "tp": 1,
-        "fp": 4,
-        "precision": 0.2
+        "tp": 2,
+        "fp": 0,
+        "precision": 1.0
       },
       "inv": {
         "total": 67,
-        "tp": 45,
-        "fp": 22,
-        "precision": 0.6716417910447762
+        "tp": 18,
+        "fp": 9,
+        "precision": 0.6666666666666666
       },
       "asm": {
         "total": 5,
         "tp": 0,
-        "fp": 5,
+        "fp": 3,
         "precision": 0.0
       },
       "pre": {
         "total": 11,
-        "tp": 6,
-        "fp": 5,
-        "precision": 0.5454545454545454
+        "tp": 5,
+        "fp": 1,
+        "precision": 0.8333333333333334
       }
     }
   }

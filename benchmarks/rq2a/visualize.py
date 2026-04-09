@@ -88,7 +88,23 @@ def load_speca_multi(specs: list[str] | None) -> list[tuple[str, dict]]:
         with open(p) as f:
             data = json.load(f)
         results.append((label.strip(), data))
-    return results
+    return _sort_speca_list(results)
+
+
+# Canonical ordering for SPECA model variants
+_SPECA_ORDER = ["DeepSeek R1", "Sonnet 4", "Sonnet 4.5"]
+
+
+def _sort_speca_list(lst: list[tuple[str, dict]]) -> list[tuple[str, dict]]:
+    """Sort SPECA variants into canonical order: DR1 → S4 → S4.5."""
+    def _key(item: tuple[str, dict]) -> int:
+        label = item[0]
+        # Check most-specific names first to avoid "Sonnet 4" matching "Sonnet 4.5"
+        for i, name in reversed(list(enumerate(_SPECA_ORDER))):
+            if name in label:
+                return i
+        return len(_SPECA_ORDER)
+    return sorted(lst, key=_key)
 
 
 # ── Figure 1: Precision Comparison (bar chart) ─────────────────────
@@ -152,44 +168,66 @@ def fig1_precision(data: dict, speca_list: list[tuple[str, dict]]):
 
 # ── Figure 2: TP / FP Comparison (grouped bar) ─────────────────────
 def fig2_tp_fp(data: dict, speca_list: list[tuple[str, dict]]):
-    """Grouped bar chart of TP and FP counts."""
-    tools_data = data["tools"]
+    """Grouped bar chart of TP and FP counts.
 
-    entries = []
-    # Only tools with known TP/FP
-    for key, label in [
-        ("repoaudit_claude37_sonnet", "RepoAudit\n(Claude 3.7)"),
+    Order: baselines first, then SPECA variants (DR1 → S4 → S4.5).
+    TP bars split into GT match (blue) and new bugs (green) where data available.
+    """
+    tools_data = data["tools"]
+    gt_total = 35  # non-disputed ground truth bugs
+
+    # Build entries: (label, gt_tp, new_tp, fp)
+    entries: list[tuple[str, int, int, int]] = []
+
+    # Baselines
+    baseline_order = [
         ("repoaudit_deepseek_r1", "RepoAudit\n(DeepSeek R1)"),
+        ("repoaudit_claude37_sonnet", "RepoAudit\n(Claude 3.7)"),
         ("repoaudit_claude35_sonnet", "RepoAudit\n(Claude 3.5)"),
         ("repoaudit_o3_mini", "RepoAudit\n(o3-mini)"),
         ("meta_infer", "Meta Infer"),
         ("amazon_codeguru", "CodeGuru"),
         ("single_function_llm", "Single-fn\nLLM"),
-    ]:
-        t = tools_data[key]
+    ]
+    for key, label in baseline_order:
+        t = tools_data.get(key, {})
         tp = t.get("tp")
-        fp = t.get("fp", 0)
         if tp is not None:
-            entries.append((label, tp, fp if fp else 0))
+            entries.append((label, min(tp, gt_total), max(0, tp - gt_total), t.get("fp", 0)))
 
+    # SPECA variants (already sorted: DR1 → S4 → S4.5)
     for label, sdata in speca_list:
         if sdata.get("tp") is not None:
-            entries.append((f"SPECA\n({label})", sdata["tp"], sdata.get("fp", 0)))
+            entries.append((f"SPECA\n({label})", sdata.get("gt_tp", min(sdata["tp"], gt_total)),
+                            sdata.get("new_tp", max(0, sdata["tp"] - gt_total)), sdata.get("fp", 0)))
 
     names = [e[0] for e in entries]
-    tps = [e[1] for e in entries]
-    fps = [e[2] for e in entries]
+    gt_tps = [e[1] for e in entries]
+    new_tps = [e[2] for e in entries]
+    fps = [e[3] for e in entries]
 
-    fig, ax = plt.subplots(figsize=(12, 5))
+    fig, ax = plt.subplots(figsize=(14, 6))
     x = np.arange(len(names))
     w = 0.35
-    bars_tp = ax.bar(x - w / 2, tps, w, label="True Positives (TP)", color="#4C72B0", edgecolor="white")
+
+    # Stacked TP: GT match (blue) + new bugs (green)
+    bars_gt = ax.bar(x - w / 2, gt_tps, w, label="TP: GT Match", color="#4C72B0", edgecolor="white")
+    ax.bar(x - w / 2, new_tps, w, bottom=gt_tps, label="TP: New Bugs", color="#2ecc71", edgecolor="white")
     bars_fp = ax.bar(x + w / 2, fps, w, label="False Positives (FP)", color="#C44E52", edgecolor="white")
 
-    for bar, val in zip(bars_tp, tps):
-        if val > 0:
-            ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.5,
-                    str(val), ha="center", va="bottom", fontsize=10, fontweight="bold")
+    # Set ylim with headroom for annotations
+    max_val = max(max(g + n for g, n in zip(gt_tps, new_tps)), max(fps)) if fps else 0
+    ax.set_ylim(0, max_val * 1.15)
+
+    # TP total labels
+    for i, (gt, new) in enumerate(zip(gt_tps, new_tps)):
+        total = gt + new
+        if total > 0:
+            bar_x = x[i] - w / 2
+            label_text = str(total) if new == 0 else f"{gt}+{new}"
+            ax.text(bar_x + w / 2, total + 0.5, label_text,
+                    ha="center", va="bottom", fontsize=9, fontweight="bold")
+
     for bar, val in zip(bars_fp, fps):
         if val > 0:
             ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.5,
@@ -199,12 +237,12 @@ def fig2_tp_fp(data: dict, speca_list: list[tuple[str, dict]]):
     ax.set_xticklabels(names, fontsize=9)
     ax.set_ylabel("Count")
     ax.set_title("RQ2a: True Positives vs False Positives\n(RepoAudit 15-Project Benchmark)")
-    ax.legend(loc="upper right")
+    ax.legend(loc="upper right", fontsize=9)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
 
     out = FIGURES_DIR / "rq2a_tp_fp_comparison.png"
-    fig.savefig(out)
+    fig.savefig(out, bbox_inches="tight")
     plt.close(fig)
     print(f"  [OK] {out}")
 
@@ -273,8 +311,40 @@ def fig3_bug_type(data: dict, speca_list: list[tuple[str, dict]]):
 
 
 # ── Figure 4: Per-Project Detection Heatmap ─────────────────────────
+
+GT_BUGS_PATH = SCRIPT_DIR / "ground_truth_bugs.yaml"
+
+
+def _load_meta_infer_per_project(projects: list[dict]) -> dict[str, int]:
+    """Load Meta Infer per-project TP counts from ground_truth_bugs.yaml.
+
+    Falls back to zero if data is missing. Meta Infer detects NPD only.
+    """
+    if not GT_BUGS_PATH.exists():
+        return {}
+    with open(GT_BUGS_PATH) as f:
+        gt = yaml.safe_load(f)
+    bugs = gt.get("bugs", [])
+
+    # Map project IDs (N1, N2, ...) to Meta Infer TP counts
+    id_to_count: dict[str, int] = {}
+    for bug in bugs:
+        det = bug.get("detected_by", {})
+        if det.get("meta_infer") is True:
+            bug_id = bug.get("id", "")
+            # Extract project ID: RA-N1-O1 → N1
+            parts = bug_id.split("-")
+            if len(parts) >= 2:
+                proj_id = parts[1]
+                id_to_count[proj_id] = id_to_count.get(proj_id, 0) + 1
+    return id_to_count
+
+
 def fig4_per_project(data: dict, speca_list: list[tuple[str, dict]]):
-    """Heatmap: projects × tools detection matrix."""
+    """Heatmap: projects × tools detection matrix.
+
+    Meta Infer data sourced from ground_truth_bugs.yaml per-bug detections.
+    """
     projects = data["projects"]
     proj_names = [p["name"] for p in projects]
     proj_types = [p["bug_type"] for p in projects]
@@ -289,10 +359,15 @@ def fig4_per_project(data: dict, speca_list: list[tuple[str, dict]]):
     n_tools = len(tool_cols)
     matrix = np.zeros((n_proj, n_tools))
 
+    # Meta Infer per-project from ground truth
+    infer_counts = _load_meta_infer_per_project(projects)
+
     for i, p in enumerate(projects):
         total_tp = p["old_tp"] + p["new_tp"][0]
         # RepoAudit
         matrix[i, 0] = total_tp
+        # Meta Infer — from ground truth per-bug data
+        matrix[i, 1] = infer_counts.get(p["id"], 0)
         # CodeGuru: 0 TP everywhere
         matrix[i, 2] = 0
 
@@ -303,6 +378,14 @@ def fig4_per_project(data: dict, speca_list: list[tuple[str, dict]]):
             col = speca_col_start + si
             for i, p in enumerate(projects):
                 matrix[i, col] = sdata["per_project"].get(p["id"], 0)
+
+    # Warn if Meta Infer total doesn't match expected
+    infer_total = int(matrix[:, 1].sum())
+    expected_infer = data.get("tools", {}).get("meta_infer", {}).get("tp", 7)
+    if infer_total != expected_infer:
+        print(f"  [WARN] Meta Infer heatmap total={infer_total}, "
+              f"expected={expected_infer}. "
+              f"Populate meta_infer detections in ground_truth_bugs.yaml.")
 
     fig, ax = plt.subplots(figsize=(8, 10))
     im = ax.imshow(matrix, cmap="YlOrRd", aspect="auto", vmin=0, vmax=max(8, matrix.max()))
@@ -515,6 +598,120 @@ def fig6_bug_detection_matrix(data: dict, speca_list: list[tuple[str, dict]]):
     print(f"  [OK] {out}")
 
 
+# ── Figure 8: Symmetric Model Comparison ──────────────────────────
+def fig_symmetric_comparison(data: dict, speca_list: list[tuple[str, dict]]):
+    """Grouped bar chart: same-LLM symmetric comparison.
+
+    Pair 1: DeepSeek R1 (RepoAudit vs SPECA)
+    Pair 2: Latest models (RepoAudit Claude 3.7 vs SPECA Sonnet 4.5)
+    TP split: GT match (blue) + new bugs (green). FP: red.
+    """
+    tools_data = data["tools"]
+    gt_total = 35
+
+    # Find SPECA variants
+    speca_dr1 = None
+    speca_s45 = None
+    for label, sdata in speca_list:
+        if "DeepSeek" in label or "deepseek" in label or "R1" in label or "DR1" in label:
+            speca_dr1 = (label, sdata)
+        elif "4.5" in label or "Sonnet 4.5" in label:
+            speca_s45 = (label, sdata)
+
+    # Build pairs: (pair_label, tool1_data, tool2_data)
+    # Each tool: (name, gt_tp, new_tp, fp, precision)
+    pairs = []
+
+    # Pair 1: DeepSeek R1
+    ra_dr1 = tools_data.get("repoaudit_deepseek_r1", {})
+    if ra_dr1.get("tp") is not None and speca_dr1:
+        sd = speca_dr1[1]
+        pairs.append((
+            "DeepSeek R1",
+            ("RepoAudit\n(DR1)", min(ra_dr1["tp"], gt_total),
+             max(0, ra_dr1["tp"] - gt_total), ra_dr1.get("fp", 0),
+             ra_dr1.get("precision", 0)),
+            (f"SPECA\n(DR1)", sd.get("gt_tp", min(sd.get("tp", 0), gt_total)),
+             sd.get("new_tp", max(0, sd.get("tp", 0) - gt_total)),
+             sd.get("fp", 0), sd.get("precision", 0)),
+        ))
+
+    # Pair 2: Latest models
+    ra_c37 = tools_data.get("repoaudit_claude37_sonnet", {})
+    if ra_c37.get("tp") is not None and speca_s45:
+        sd = speca_s45[1]
+        pairs.append((
+            "Latest Models",
+            ("RepoAudit\n(Claude 3.7)", min(ra_c37["tp"], gt_total),
+             max(0, ra_c37["tp"] - gt_total), ra_c37.get("fp", 0),
+             ra_c37.get("precision", 0)),
+            (f"SPECA\n(Sonnet 4.5)", sd.get("gt_tp", min(sd.get("tp", 0), gt_total)),
+             sd.get("new_tp", max(0, sd.get("tp", 0) - gt_total)),
+             sd.get("fp", 0), sd.get("precision", 0)),
+        ))
+
+    if not pairs:
+        print("  [SKIP] rq2a_symmetric_comparison.png (insufficient SPECA data)")
+        return
+
+    # Layout: grouped bars for each pair
+    n_pairs = len(pairs)
+    fig, axes = plt.subplots(1, n_pairs, figsize=(6 * n_pairs, 5.5), sharey=True)
+    if n_pairs == 1:
+        axes = [axes]
+
+    for ax, (pair_label, t1, t2) in zip(axes, pairs):
+        # t1, t2 = (name, gt_tp, new_tp, fp, precision)
+        tools = [t1, t2]
+        names = [t[0] for t in tools]
+        gt_tps = [t[1] for t in tools]
+        new_tps = [t[2] for t in tools]
+        fps_vals = [t[3] for t in tools]
+        precs = [t[4] for t in tools]
+
+        x = np.arange(len(names))
+        w = 0.35
+
+        # GT match (blue) + new bugs (green) stacked
+        ax.bar(x - w / 2, gt_tps, w, color="#4C72B0", edgecolor="white", label="GT Match")
+        ax.bar(x - w / 2, new_tps, w, bottom=gt_tps, color="#2ecc71",
+               edgecolor="white", label="New Bugs")
+        ax.bar(x + w / 2, fps_vals, w, color="#C44E52", edgecolor="white", label="FP")
+
+        # Annotations: TP total
+        for i in range(len(names)):
+            total_tp = gt_tps[i] + new_tps[i]
+            if total_tp > 0:
+                label_text = str(total_tp) if new_tps[i] == 0 else f"{gt_tps[i]}+{new_tps[i]}"
+                ax.text(x[i] - w / 2, total_tp + 0.8, label_text,
+                        ha="center", va="bottom", fontsize=10, fontweight="bold")
+            if fps_vals[i] > 0:
+                ax.text(x[i] + w / 2, fps_vals[i] + 0.8, str(fps_vals[i]),
+                        ha="center", va="bottom", fontsize=10, fontweight="bold")
+            # Precision annotation above the bars
+            prec_val = precs[i]
+            max_h = max(total_tp, fps_vals[i])
+            ax.text(x[i], max_h + 3.5, f"P={prec_val:.1f}%", ha="center",
+                    fontsize=9, fontweight="bold", color="#555")
+
+        ax.set_xticks(x)
+        ax.set_xticklabels(names, fontsize=10)
+        ax.set_title(f"Pair: {pair_label}", fontsize=11, fontweight="bold")
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+
+    axes[0].set_ylabel("Count")
+    axes[0].legend(fontsize=8, loc="upper right")
+
+    fig.suptitle("Symmetric Model Comparison: Same LLM Backbone", fontsize=13, fontweight="bold")
+    fig.tight_layout(rect=[0, 0.05, 1, 0.93])
+
+    out = FIGURES_DIR / "rq2a_symmetric_comparison.png"
+    fig.savefig(out, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  [OK] {out}")
+
+
 # ── LaTeX Table: Tool Comparison ─────────────────────────────────
 def generate_latex_table(data: dict, speca_list: list[tuple[str, dict]]):
     """Generate rq2a_table.tex (Issue #96 spec)."""
@@ -605,6 +802,7 @@ def main():
     fig4_per_project(data, speca_list)
     fig5_cost(data, speca_list)
     fig6_bug_detection_matrix(data, speca_list)
+    fig_symmetric_comparison(data, speca_list)
     generate_latex_table(data, speca_list)
 
     n_figs = len(list(FIGURES_DIR.glob("*.png")))

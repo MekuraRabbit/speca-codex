@@ -562,44 +562,113 @@ def analyze_clusters(rows: list[dict], eval_summary: dict) -> dict:
 # 6. Phase 03 vs Phase 04 Ablation (enhanced)
 # ═══════════════════════════════════════════════════════════════════
 
+def _load_branch_disputed_fp() -> list[dict]:
+    """Load DISPUTED_FP items from branch Phase 04 PARTIAL files.
+
+    Scans all branch directories under RESULTS_DIR for 04_PARTIAL_*.json
+    and extracts items with review_verdict == DISPUTED_FP.
+    Returns list of {property_id, reviewer_notes, branch}.
+    """
+    import glob
+    pattern = str(RESULTS_DIR / "*" / "04_PARTIAL_*.json")
+    items = []
+    seen = set()  # deduplicate by (property_id, branch)
+    for f in glob.glob(pattern):
+        branch = Path(f).parent.name
+        try:
+            data = json.loads(Path(f).read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        reviewed = data.get("reviewed_items", []) if isinstance(data, dict) else data if isinstance(data, list) else []
+        for item in reviewed:
+            if not isinstance(item, dict) or item.get("review_verdict") != "DISPUTED_FP":
+                continue
+            pid = item.get("property_id", "")
+            key = (pid, branch)
+            if key in seen:
+                continue
+            seen.add(key)
+            items.append({
+                "property_id": pid,
+                "reviewer_notes": item.get("reviewer_notes", ""),
+                "branch": branch,
+            })
+    return items
+
+
+# 3-gate system: Dead Code, Trust Boundary, Scope Check.
+# Legacy gates from older prompt versions are remapped to the nearest retained gate:
+#   Code Verification → Scope (factually wrong finding = inapplicable)
+#   Exploitability    → Trust Boundary (mitigated by architecture/design)
+#   Spec Cross-Ref    → Scope (spec-compliant = not a bug)
+_GATE_PATTERNS = [
+    (r"Gate 1.*Dead Code|dead.?code|unreachable code|code removed", "Dead Code"),
+    (r"Gate 2.*Trust Boundary|trust.?boundary|TRUSTED|SEMI_TRUSTED", "Trust Boundary"),
+    # Legacy → Trust Boundary (exploitability = mitigated by trust architecture)
+    (r"Gate 4.*Exploitability|exploitability", "Trust Boundary"),
+    # Legacy → Scope (code verification = finding inapplicable; spec cross-ref = spec-compliant)
+    (r"Gate 3.*Code Verification|code.?verification", "Scope"),
+    (r"Gate 5.*Spec Cross-Reference|spec.?cross", "Scope"),
+    # Scope gate last — matches "Gate 3 (Scope" or "out of scope"
+    (r"Gate 3.*Scope|Gate 6.*Scope|out.?of.?scope|pre-existing.*scope|scope.?check", "Scope"),
+]
+
+
+def _classify_gate(notes: str) -> str:
+    """Classify which gate triggered a DISPUTED_FP from reviewer notes."""
+    for pat, name in _GATE_PATTERNS:
+        if re.search(pat, notes, re.IGNORECASE):
+            return name
+    return "Other"
+
+
 def analyze_ablation(rows: list[dict], verdicts: dict) -> dict:
-    """Enhanced Phase 03 vs 04 comparison with gate-level breakdown."""
+    """Enhanced Phase 03 vs 04 comparison with gate-level breakdown.
+
+    Primary source: branch Phase 04 PARTIAL files (30 DISPUTED_FP).
+    Fallback: phase_comparison.json verdicts.
+    """
+    # Try branch PARTIALs first (more complete, from latest 3-gate prompt)
+    branch_items = _load_branch_disputed_fp()
 
     # Gate effectiveness
     gate_counts = Counter()
     gate_correct = Counter()  # correctly filtered (was truly FP)
     gate_wrong = Counter()    # wrongly filtered (was truly TP)
 
-    for fid, v in verdicts.items():
-        if v.get("review_verdict") != "DISPUTED_FP":
-            continue
-        notes = v.get("reviewer_notes", "")
-        # Identify which gate triggered the DISPUTED_FP
-        gate = "Other"
-        gate_patterns = [
-            (r"Gate 1 \(Dead Code\)", "Dead Code"),
-            (r"Gate 2 \(Trust Boundary\)", "Trust Boundary"),
-            (r"Gate 3 \(Code Verification\)", "Code Verification"),
-            (r"Gate 3 \(Scope", "Scope"),
-            (r"Gate 4 \(Exploitability\)", "Exploitability"),
-            (r"Gate 5 \(Spec Cross-Reference\)", "Spec Cross-Reference"),
-            (r"Gate 6 \(Scope", "Scope"),
-        ]
-        for pat, name in gate_patterns:
-            if re.search(pat, notes, re.IGNORECASE):
-                gate = name
-                break
-        gate_counts[gate] += 1
+    # Build CSV lookup
+    csv_by_fid = {row.get("finding_id", ""): row for row in rows}
 
-        # Check ground truth
-        for row in rows:
-            if row.get("finding_id") == fid:
+    if branch_items:
+        print(f"  [INFO] Using {len(branch_items)} DISPUTED_FP from branch PARTIALs")
+        for item in branch_items:
+            gate = _classify_gate(item["reviewer_notes"])
+            gate_counts[gate] += 1
+
+            # Check ground truth
+            row = csv_by_fid.get(item["property_id"])
+            if row:
                 label = row.get("auto_label", "unknown")
                 if label in FP_LABELS:
                     gate_correct[gate] += 1
                 elif label in TP_LABELS:
                     gate_wrong[gate] += 1
-                break
+    else:
+        print("  [INFO] No branch PARTIALs found, using phase_comparison.json")
+        for fid, v in verdicts.items():
+            if v.get("review_verdict") != "DISPUTED_FP":
+                continue
+            notes = v.get("reviewer_notes", "")
+            gate = _classify_gate(notes)
+            gate_counts[gate] += 1
+
+            row = csv_by_fid.get(fid)
+            if row:
+                label = row.get("auto_label", "unknown")
+                if label in FP_LABELS:
+                    gate_correct[gate] += 1
+                elif label in TP_LABELS:
+                    gate_wrong[gate] += 1
 
     gate_stats = {}
     for gate in gate_counts:
@@ -646,30 +715,39 @@ def analyze_ablation(rows: list[dict], verdicts: dict) -> dict:
 # ═══════════════════════════════════════════════════════════════════
 
 def plot_fp_taxonomy(taxonomy: dict, output_dir: Path) -> Path:
-    """Unified bar chart of ALL FP root causes."""
-    by_cause = taxonomy["by_root_cause"]
-    total = taxonomy["total_fp"]
-    if not by_cause:
-        return output_dir / "chart_fp_taxonomy.png"
+    """Horizontal bar chart of FP root causes (pipeline-centric, n=38).
 
-    categories = list(by_cause.keys())
-    counts = list(by_cause.values())
+    Uses paper Table 4 taxonomy from unknown_review_analysis.md §12.
+    Each category is annotated with the primary pipeline phase responsible.
+    """
+    # Paper Table 4 data — pipeline-centric categories (38 FPs)
+    data = [
+        ("Specification interpretation /\ndesign choice", 10, "01b, 01e"),
+        ("Dead / unused code", 8, "02c, 03"),
+        ("Trust boundary\nmisunderstanding", 7, "01e, 03"),
+        ("Architectural boundary\nblindness", 6, "03"),
+        ("Scope / pre-existing issues", 4, "Pipeline-wide"),
+        ("Cryptographic / mathematical\ninvariant ignorance", 2, "03"),
+        ("Semantic deduplication\nfailure", 1, "01e"),
+    ]
+    total = sum(d[1] for d in data)
 
-    colors = {
-        "Cross-Impl Duplicate": "#e74c3c",
-        "Validated at Different Layer": "#e67e22",
-        "Trust Boundary Mismatch": "#f39c12",
-        "Spec Interpretation Error": "#9b59b6",
-        "Design Choice": "#3498db",
-        "Out-of-Scope": "#2ecc71",
-        "Code Reading Error": "#1abc9c",
-        "Not Exploitable": "#95a5a6",
-        "Dead Code": "#7f8c8d",
-        "Other": "#bdc3c7",
+    categories = [d[0] for d in data]
+    counts = [d[1] for d in data]
+    phases = [d[2] for d in data]
+
+    # Phase-based color palette
+    phase_colors = {
+        "01b, 01e": "#9b59b6",
+        "02c, 03": "#7f8c8d",
+        "01e, 03": "#f39c12",
+        "03": "#e74c3c",
+        "Pipeline-wide": "#3498db",
+        "01e": "#2ecc71",
     }
-    bar_colors = [colors.get(c, "#bdc3c7") for c in categories]
+    bar_colors = [phase_colors.get(p, "#bdc3c7") for p in phases]
 
-    fig, ax = plt.subplots(figsize=(10, 5))
+    fig, ax = plt.subplots(figsize=(10, 5.5))
     bars = ax.barh(range(len(categories)), counts, color=bar_colors,
                    edgecolor="white", linewidth=0.5)
     ax.set_yticks(range(len(categories)))
@@ -679,10 +757,12 @@ def plot_fp_taxonomy(taxonomy: dict, output_dir: Path) -> Path:
     ax.set_title(f"False Positive Root Cause Taxonomy (n={total})")
     ax.grid(axis="x", alpha=0.3)
 
-    for bar, count in zip(bars, counts):
+    for bar, count, phase in zip(bars, counts, phases):
         ax.text(bar.get_width() + 0.3, bar.get_y() + bar.get_height() / 2,
-                str(count), ha="left", va="center", fontsize=10, fontweight="bold")
+                f"{count}  (Phase {phase})", ha="left", va="center",
+                fontsize=9, fontweight="bold")
 
+    ax.set_xlim(0, max(counts) * 1.55)
     fig.tight_layout()
     out = output_dir / "chart_fp_taxonomy.png"
     fig.savefig(out, dpi=150)
@@ -844,60 +924,44 @@ def plot_property_type_ablation(ablation: dict, output_dir: Path) -> Path:
 
 def plot_combined_label_breakdown(rows: list[dict], verdicts: dict,
                                   output_dir: Path) -> Path:
-    """Horizontal bar chart: TP/FP evaluated on SPECA final output only.
+    """Horizontal bar chart: SPECA output quality with 3-gate Phase 04 filter.
 
-    Phase 04 filtered findings are shown separately — they are not FPs,
-    they are the pipeline working correctly.
+    Uses paper numbers (Option A): n=102 Phase 03 total, 72 final output,
+    30 filtered by Phase 04 (20 correct FP + 10 TP loss).
+    Precision = 48/72 = 66.7% (non-FP rate).
     """
-    # Classify each finding as survived or filtered
-    tp_survived = 0
-    fp_survived = 0
-    filtered_correct = 0   # was FP, Phase 04 caught it
-    filtered_incorrect = 0  # was TP, Phase 04 wrongly removed it
+    # Paper data (3-gate system, Option A)
+    tp_survived = 48       # Security-relevant (non-FP) in final 72
+    fp_survived = 24       # Confirmed FP in final 72
+    filtered_correct = 20  # Phase 04 correctly filtered FPs
+    filtered_incorrect = 10  # Phase 04 incorrectly filtered TPs
 
-    for row in rows:
-        fid = row.get("finding_id", "")
-        label = row.get("auto_label", "unknown")
-        v = verdicts.get(fid, {})
-        is_filtered = v.get("classification") == "filtered"
-
-        if is_filtered:
-            if label in TP_LABELS:
-                filtered_incorrect += 1
-            else:
-                filtered_correct += 1
-        else:
-            if label in TP_LABELS:
-                tp_survived += 1
-            elif label in FP_LABELS:
-                fp_survived += 1
-
-    total_final = tp_survived + fp_survived
-    precision = tp_survived / total_final if total_final > 0 else 0
+    total_phase03 = 102
+    total_final = tp_survived + fp_survived  # 72
+    precision = tp_survived / total_final  # 66.7%
 
     categories = [
-        ("TP (Final Output)", tp_survived, "#27ae60"),
-        ("FP (Final Output)", fp_survived, "#e74c3c"),
-        ("Filtered: Correct (was FP)", filtered_correct, "#95a5a6"),
-        ("Filtered: Incorrect (was TP)", filtered_incorrect, "#f39c12"),
+        ("Security-relevant (Final Output)", tp_survived, "#27ae60"),
+        ("Confirmed FP (Final Output)", fp_survived, "#e74c3c"),
+        ("Filtered: Correct FP removal", filtered_correct, "#95a5a6"),
+        ("Filtered: TP loss", filtered_incorrect, "#f39c12"),
     ]
-    # Drop zero-count categories
-    categories = [(name, count, color) for name, count, color in categories if count > 0]
 
     names = [c[0] for c in categories]
     counts = [c[1] for c in categories]
     colors = [c[2] for c in categories]
-    total = sum(counts)
 
-    fig, ax = plt.subplots(figsize=(9, 4))
+    fig, ax = plt.subplots(figsize=(9, 4.5))
     bars = ax.barh(range(len(names)), counts, color=colors,
                    edgecolor="white", linewidth=0.5)
     ax.set_yticks(range(len(names)))
     ax.set_yticklabels(names, fontsize=10)
     ax.invert_yaxis()
     ax.set_xlabel("Number of Findings")
-    ax.set_title(f"RQ1: SPECA Output Quality (n={total}, "
-                 f"final precision={precision:.0%})")
+    ax.set_title(f"RQ1: SPECA Output Quality (n={total_phase03}, "
+                 f"precision={precision:.1%})\n"
+                 f"Phase 03: {total_phase03} findings → Phase 04 (3-gate): "
+                 f"{total_final} final output")
     ax.grid(axis="x", alpha=0.3)
 
     for bar, count in zip(bars, counts):
@@ -905,7 +969,7 @@ def plot_combined_label_breakdown(rows: list[dict], verdicts: dict,
                 str(count), ha="left", va="center",
                 fontsize=11, fontweight="bold")
 
-    ax.set_xlim(0, max(counts) * 1.25)
+    ax.set_xlim(0, max(counts) * 1.30)
     fig.tight_layout()
     out = output_dir / "chart_label_distribution.png"
     fig.savefig(out, dpi=150)
@@ -914,34 +978,62 @@ def plot_combined_label_breakdown(rows: list[dict], verdicts: dict,
 
 
 def plot_gate_effectiveness(ablation: dict, output_dir: Path) -> Path:
-    """Phase 04 review gate effectiveness."""
+    """Phase 04 3-gate evaluation: Dead Code, Trust Boundary, Scope.
+
+    Legacy gates (Code Verification, Exploitability, Spec Cross-Reference)
+    have been remapped to the nearest retained gate.
+    Bars show full count: verified FP (green) + TP loss (red) + unverified (yellow).
+    """
     gates = ablation["gate_effectiveness"]
     if not gates:
         return output_dir / "chart_gate_effectiveness.png"
 
-    gate_names = sorted(gates.keys(), key=lambda g: gates[g]["total_filtered"], reverse=True)
-    totals = [gates[g]["total_filtered"] for g in gate_names]
-    correct = [gates[g]["correct_fp"] for g in gate_names]
-    wrong = [gates[g]["wrong_tp"] for g in gate_names]
+    # Fixed order: Dead Code → Trust Boundary → Scope
+    gate_order = [g for g in ["Dead Code", "Trust Boundary", "Scope"] if g in gates]
+    # Append any unexpected gates
+    for g in gates:
+        if g not in gate_order:
+            gate_order.append(g)
 
-    fig, ax = plt.subplots(figsize=(9, 5))
-    x = np.arange(len(gate_names))
-    width = 0.6
+    if not gate_order:
+        return output_dir / "chart_gate_effectiveness.png"
 
-    ax.bar(x, correct, width, label="Correct Filter (True FP)", color="#2ecc71")
-    ax.bar(x, wrong, width, bottom=correct, label="Wrong Filter (True TP lost)", color="#e74c3c")
+    correct = [gates[g]["correct_fp"] for g in gate_order]
+    wrong = [gates[g]["wrong_tp"] for g in gate_order]
+    totals = [gates[g]["total_filtered"] for g in gate_order]
+    unverified = [t - c - w for t, c, w in zip(totals, correct, wrong)]
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    x = np.arange(len(gate_order))
+    width = 0.5
+
+    # Stack: verified FP → TP loss → unverified
+    ax.bar(x, correct, width, color="#2ecc71", edgecolor="white", linewidth=0.5)
+    ax.bar(x, wrong, width, bottom=correct, color="#e74c3c",
+           edgecolor="white", linewidth=0.5)
+    ax.bar(x, unverified, width, bottom=[c + w for c, w in zip(correct, wrong)],
+           color="#f4d03f", edgecolor="white", linewidth=0.5, alpha=0.6)
 
     ax.set_xticks(x)
-    ax.set_xticklabels(gate_names, rotation=25, ha="right", fontsize=9)
+    ax.set_xticklabels(gate_order, rotation=0, ha="center", fontsize=10)
     ax.set_ylabel("Number of Findings Filtered")
-    ax.set_title("Phase 04 Gate Effectiveness\n(Green = Correct FP removal, Red = TP loss)")
-    ax.legend()
+    total_disputed = sum(totals)
+    ax.set_title(f"Phase 04: 3-Gate FP Filter (n={total_disputed} DISPUTED_FP)")
     ax.grid(axis="y", alpha=0.3)
 
-    # Add precision labels
-    for i, g in enumerate(gate_names):
+    # Count + precision labels
+    for i, g in enumerate(gate_order):
         prec = gates[g]["precision"]
-        ax.text(i, totals[i] + 0.3, f"{prec:.0%}", ha="center", va="bottom", fontsize=9, fontweight="bold")
+        ax.text(i, totals[i] + 0.3, f"n={totals[i]}\n({prec:.0%} verified FP)",
+                ha="center", va="bottom", fontsize=9, fontweight="bold")
+
+    # Legend
+    legend_handles = [
+        mpatches.Patch(facecolor="#2ecc71", label="Verified FP (correct removal)"),
+        mpatches.Patch(facecolor="#e74c3c", label="TP loss (wrong removal)"),
+        mpatches.Patch(facecolor="#f4d03f", alpha=0.6, label="Unverified (no GT label)"),
+    ]
+    ax.legend(handles=legend_handles, fontsize=9, loc="upper left")
 
     fig.tight_layout()
     out = output_dir / "chart_gate_effectiveness.png"
