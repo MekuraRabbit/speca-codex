@@ -2,7 +2,7 @@
   "tp": 48,
   "fp": 6,
   "gt_tp": 35,
-  "new_tp": 13,
+  "new_tp": 12,
   "human_reviewed": 19,
   "unreviewed": 0,
   "precision": 88.89,
@@ -240,7 +240,6 @@
     "PROP-M4-mlk-009",
     "PROP-M5-mlk-001",
     "PROP-M5-mlk-002",
-    "PROP-N5-npd-015",
     "PROP-U2-uaf-004",
     "PROP-U2-uaf-006",
     "PROP-U3-uaf-008",
@@ -256,7 +255,7 @@
         "pr": "https://github.com/ImageMagick/ImageMagick/pull/8628",
         "state": "CLOSED",
         "category": "false_positive_confirmed",
-        "maintainer_response": "@dlemstra: CoderBlobSupportFlag ensures valid FILE* — change unnecessary. FP confirmed.",
+        "maintainer_response": "@dlemstra: CoderBlobSupportFlag ensures valid FILE* \u2014 change unnecessary. FP confirmed.",
         "description": "NULL pointer dereference in ReadDOTImage via GetBlobFileHandle()"
       },
       {
@@ -266,7 +265,7 @@
         "state": "OPEN",
         "category": "new_report",
         "maintainer_response": "@markusicu: CLA signature + Jira ticket creation required. Awaiting CLA confirmation.",
-        "description": "Use-after-free race in TransliteratorAlias compoundFilter — raw pointer freed by concurrent unregister()"
+        "description": "Use-after-free race in TransliteratorAlias compoundFilter \u2014 raw pointer freed by concurrent unregister()"
       }
     ],
     "summary": {
@@ -277,5 +276,8 @@
       "rejected_fp": 1,
       "pending_review": 1
     }
-  }
+  },
+  "gt_dup_findings": [
+    "PROP-N5-npd-015"
+  ]
 }

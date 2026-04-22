@@ -2,7 +2,7 @@
   "tp": 56,
   "fp": 13,
   "gt_tp": 35,
-  "new_tp": 21,
+  "new_tp": 18,
   "human_reviewed": 34,
   "unreviewed": 0,
   "precision": 81.16,
@@ -251,11 +251,8 @@
     "PROP-M5-mlk-004",
     "PROP-M5-mlk-007",
     "PROP-N1-npd-003",
-    "PROP-N2-npd-018",
     "PROP-N3-npd-001",
     "PROP-N4-npd-005",
-    "PROP-N5-npd-013",
-    "PROP-N5-npd-017",
     "PROP-U1-uaf-004",
     "PROP-U2-uaf-004",
     "PROP-U2-uaf-007",
@@ -277,7 +274,7 @@
         "state": "OPEN",
         "category": "new_report",
         "maintainer_response": "No response",
-        "description": "NULL pointer dereference in ResolveAddress() — unconditional dereference of RpcEndpoint* without NULL validation"
+        "description": "NULL pointer dereference in ResolveAddress() \u2014 unconditional dereference of RpcEndpoint* without NULL validation"
       },
       {
         "finding_id": "PROP-N3-npd-001",
@@ -285,8 +282,8 @@
         "pr": "https://github.com/coturn/coturn/pull/1841",
         "state": "CLOSED",
         "category": "new_report",
-        "maintainer_response": "Self-withdrawn — already fixed in latest version",
-        "description": "NULL pointer dereference in allocation_get_new_ch_info() — allocation_add_permission return unchecked"
+        "maintainer_response": "Self-withdrawn \u2014 already fixed in latest version",
+        "description": "NULL pointer dereference in allocation_get_new_ch_info() \u2014 allocation_add_permission return unchecked"
       },
       {
         "finding_id": "PROP-N4-npd-005",
@@ -295,7 +292,7 @@
         "state": "OPEN",
         "category": "new_report",
         "maintainer_response": "No response",
-        "description": "NULL pointer dereference in freenect_init_registration_table() — malloc without NULL check"
+        "description": "NULL pointer dereference in freenect_init_registration_table() \u2014 malloc without NULL check"
       },
       {
         "finding_id": "PROP-U5-uaf-002",
@@ -303,8 +300,8 @@
         "pr": "https://github.com/unicode-org/icu/pull/3921",
         "state": "OPEN",
         "category": "new_report",
-        "maintainer_response": "@markusicu Jira approved. Requested PR template restoration + unit tests — both completed and pushed. Awaiting re-review.",
-        "description": "Race condition UAF in uprv_collation_root_cleanup — initOnce.reset() after clearPtr allows concurrent getRoot() to access freed rootSingleton"
+        "maintainer_response": "@markusicu Jira approved. Requested PR template restoration + unit tests \u2014 both completed and pushed. Awaiting re-review.",
+        "description": "Race condition UAF in uprv_collation_root_cleanup \u2014 initOnce.reset() after clearPtr allows concurrent getRoot() to access freed rootSingleton"
       },
       {
         "finding_id": "PROP-U5-uaf-003",
@@ -313,7 +310,7 @@
         "state": "OPEN",
         "category": "new_report",
         "maintainer_response": "Jira ticket status change requested by hirorogo. Maintainer (@markusicu) not yet responded. PR template + tests pushed.",
-        "description": "Double-delete in Region::cleanupRegionData — pointers not nullified after delete/uhash_close"
+        "description": "Double-delete in Region::cleanupRegionData \u2014 pointers not nullified after delete/uhash_close"
       }
     ],
     "summary": {
@@ -324,5 +321,10 @@
       "rejected": 0,
       "pending_review": 3
     }
-  }
+  },
+  "gt_dup_findings": [
+    "PROP-N2-npd-018",
+    "PROP-N5-npd-013",
+    "PROP-N5-npd-017"
+  ]
 }
