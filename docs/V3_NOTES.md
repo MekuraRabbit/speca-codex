@@ -90,10 +90,6 @@ flowchart TB
 
 - **Goal:** Extract formal “program graphs” from each spec and output them as Mermaid diagrams.
 - **Prompt:** [`prompts/01b_extract_worker.md`](../prompts/01b_extract_worker.md)
-- **Sample output (Mermaid graph):**
-
-![Program Graph example](../assets/program_graph_sample.png)
-
 - **Sample output (JSON):**
 ```json
 {

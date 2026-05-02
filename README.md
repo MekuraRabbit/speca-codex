@@ -236,8 +236,6 @@ Crawls seed URLs to discover all relevant technical specification documents. Use
 
 Extracts formal **Program Graphs** (following Nielson & Nielson's definition) from each specification document. Each subgraph is output as an enriched Mermaid state diagram (`.mmd`) with YAML frontmatter and inline invariant annotations. PARTIAL JSON files reference the `.mmd` paths for downstream consumption.
 
-![Program Graph example](assets/program_graph_sample.png)
-
 <details>
 <summary>Output example — PARTIAL JSON (<code>outputs/01b_PARTIAL_W0B1_*.json</code>, from <code>ethereum-fusaka-20260220</code>)</summary>
 
