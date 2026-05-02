@@ -160,6 +160,27 @@ If unauthenticated:
 └────────────────────────────────────────────────────────────┘
 ```
 
+When `[L]` is pressed, the paste-code flow (§4.5.1) runs:
+
+```
+┌─ Sign in via Claude Code subscription ───────────────────────────┐
+│                                                                    │
+│  We've opened the following URL in your browser:                  │
+│                                                                    │
+│    https://claude.ai/oauth/authorize?client_id=...&scope=...      │
+│                                                                    │
+│  After signing in, claude.ai will redirect you to a page that     │
+│  shows a code. Copy the entire string and paste it below.         │
+│                                                                    │
+│  ➤ Paste code: _                                                   │
+│                                                                    │
+│  Trouble? Press [O] to re-open the URL, [K] to use an API key     │
+│  instead, [Q] to quit.                                            │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+The input field accepts any of the three formats handled by `parseCallbackInput`: a full URL, the `code#state` hash form, or a `code=X&state=Y` query string.
+
 ### 4.4 Handing the auth context to Claude Code workers
 
 The Python orchestrator already invokes the `claude` CLI per batch; it inherits the parent process' environment, so as long as `speca-cli` is running in a shell that has `claude auth login`'d, every worker subprocess uses the same subscription. **No bespoke token handling in `speca-cli` itself.**
@@ -170,20 +191,120 @@ When the user has *not* yet logged into Claude Code, `speca-cli` needs to drive 
 
 We **vendor** the working PKCE OAuth implementation from [`ex-machina-co/opencode-anthropic-auth`](https://github.com/ex-machina-co/opencode-anthropic-auth) (MIT). Specifically:
 
-- The PKCE generator ([`src/pkce.ts`](https://github.com/ex-machina-co/opencode-anthropic-auth/blob/main/src/pkce.ts)).
+- The PKCE generator ([`src/pkce.ts`](https://github.com/ex-machina-co/opencode-anthropic-auth/blob/main/src/pkce.ts)) — 64 bytes random → SHA-256 challenge using the `crypto.subtle` Web Crypto API; no Node-specific deps.
 - The `authorize()` + `exchange()` pair ([`src/auth.ts`](https://github.com/ex-machina-co/opencode-anthropic-auth/blob/main/src/auth.ts)).
-- The endpoint constants ([`src/constants.ts`](https://github.com/ex-machina-co/opencode-anthropic-auth/blob/main/src/constants.ts)) — most importantly the **OAuth scope `user:sessions:claude_code`**, which is what tells Anthropic to bill the request against the user's Claude Code subscription rather than against API credits. Without that exact scope string, the user gets billed against their Pro web entitlement (or no entitlement at all).
-- Token storage modelled on [`sst/opencode`'s `auth/index.ts`](https://github.com/sst/opencode/blob/dev/packages/opencode/src/auth/index.ts): `~/.config/speca/auth.json` written at `0o600`, with the `OAUTH_DUMMY_KEY` sentinel pattern that signals "use the OAuth token, not an API key" to downstream subprocess env injection.
+- The endpoint constants ([`src/constants.ts`](https://github.com/ex-machina-co/opencode-anthropic-auth/blob/main/src/constants.ts)) — see §4.5.2 below for the magic scope.
 
-The local-callback server (PKCE redirect target) follows the architecture of [`openai/codex/codex-rs/login/src/server.rs`](https://github.com/openai/codex/blob/main/codex-rs/login/src/server.rs) — port 1455 with conflict-fallback to 1456/1457 — but reimplemented in TypeScript using `node:http`. The endpoint constants from Codex are not reusable (`auth.openai.com` is OpenAI-specific); only the topology is.
+#### 4.5.1 The flow is **paste-code**, not loopback
 
-#### Stability caveat
+> ⚠️ Earlier drafts of this spec described a loopback server (à la OpenAI's Codex CLI). **That is not how Anthropic's OAuth works** — verified against the upstream constants on 2026-05-03.
 
-Anthropic has not officially published the Claude Code OAuth specification. The endpoint URLs and scope name above are reverse-engineered from the official `claude` CLI's network traffic and from the third-party packages cited above. They have been stable since Claude Code launched but **could change without notice**. Mitigation:
+Anthropic's authorize endpoint **hard-codes** the redirect URI:
 
-- Pin the constants via a single configurable file (`src/auth/constants.ts`) so a hotfix release can ship without source edits in user installs.
+```typescript
+// from constants.ts
+export const CODE_CALLBACK_URL = 'https://platform.claude.com/oauth/code/callback'
+```
+
+`http://localhost:<port>` is **not** an acceptable `redirect_uri` value — Anthropic's auth server validates against this exact constant and rejects anything else. Consequently `speca-cli` cannot run a local callback server like Codex's. The flow is:
+
+```
+┌──────────────┐       ┌─────────────┐         ┌────────────────────┐         ┌──────────────────┐
+│  speca-cli   │──(1)─▶│  user's     │───(2)──▶│  claude.ai/oauth/  │───(3)──▶│ platform.claude  │
+│              │ open  │  browser    │  login  │  authorize         │ redirect│ .com/oauth/code/ │
+│              │ URL   │             │         │  (max | console)   │         │ callback         │
+└──────┬───────┘       └─────────────┘         └────────────────────┘         └────────┬─────────┘
+       │                                                                                │
+       │                            (5) user copies the displayed                       │ (4) page
+       │◀───────────────  "<authorization_code>#<state>"  ◀─────────────────────────────┘ shows
+       │                                                                                  the
+       │ (6) POST platform.claude.com/v1/oauth/token                                     code+state
+       │     { code, state, code_verifier, client_id, redirect_uri,                       string
+       │       grant_type: "authorization_code" }
+       ▼
+   { access_token, refresh_token, expires_in }
+```
+
+In TUI terms: we print a clickable URL, open it via [`open`](https://github.com/sindresorhus/open), and then prompt the user to **paste the code string**. The `parseCallbackInput` helper accepts three formats (full URL with query params, `code#state` hash form, or `code=X&state=Y` URL-encoded form) so the user can paste whatever is most convenient.
+
+#### 4.5.2 The magic scope: `user:sessions:claude_code`
+
+This is the line in the request that decides who pays:
+
+```typescript
+export const OAUTH_SCOPES = [
+  'org:create_api_key',
+  'user:profile',
+  'user:inference',
+  'user:sessions:claude_code',  // ← bills against Claude Code subscription, not Pro web
+  'user:mcp_servers',
+  'user:file_upload',
+]
+```
+
+Without that exact scope string in the authorize request, the issued token is rejected for inference calls (or, worse silently, billed against the user's web-only Pro entitlement which has no API quota). **`speca doctor` MUST verify the scope is present in the access token before declaring auth healthy.**
+
+The two authorize URLs select which entitlement source Anthropic queries:
+
+| `mode` | URL | Entitlement source | Used when |
+|---|---|---|---|
+| `max` | `https://claude.ai/oauth/authorize` | Claude Pro / Max subscription | **Default for `speca-cli`** |
+| `console` | `https://platform.claude.com/oauth/authorize` | console.anthropic.com (creates a new API key) | User without a subscription, opt-in path |
+
+#### 4.5.3 Header impersonation when calling `/v1/messages`
+
+The OAuth flow above only gives us a token. When `speca-cli` (or the Python orchestrator's `claude` subprocess) actually calls Anthropic's inference API, **two more impersonation steps** are required, both encoded in the upstream constants:
+
+```typescript
+export const USER_AGENT = 'claude-cli/2.1.87 (external, cli)'
+export const REQUIRED_BETAS = ['oauth-2025-04-20', 'interleaved-thinking-2025-05-14']
+```
+
+Concretely, every request must carry:
+
+| Header | Value | Purpose |
+|---|---|---|
+| `Authorization` | `Bearer <access_token>` | Standard OAuth |
+| `User-Agent` | `claude-cli/2.1.87 (external, cli)` | Anthropic blocks unknown UAs from subscription endpoints; we present as the official Claude Code CLI |
+| `anthropic-beta` | `oauth-2025-04-20,interleaved-thinking-2025-05-14` | OAuth itself is a beta feature; without these the call is rejected |
+| `anthropic-version` | (whatever the upstream pins) | Standard |
+
+Note also the curiosity that `auth.ts` itself sends `User-Agent: axios/1.13.6` to the OAuth token endpoint — purely a fingerprint workaround for the same UA filter applied at `platform.claude.com`. We replicate this in our vendored copy.
+
+> **Why so much fingerprint-matching?** Anthropic has not officially opened subscription auth to third-party tools; it is treated as a Claude-Code-internal mechanism. Tools that want to use it (this one, OpenCode, Crush, etc.) impersonate the official CLI. This works today and has been stable since Claude Code 2.x but is **inherently fragile** — Anthropic could detect and block it at any time. Always ship the API-key fallback (§4.2 step 2 / §10.4).
+
+#### 4.5.4 Token storage layout
+
+Modelled on [`sst/opencode`'s `auth/index.ts`](https://github.com/sst/opencode/blob/dev/packages/opencode/src/auth/index.ts) (pattern only — we drop their Effect.ts dependency):
+
+```
+~/.config/speca/auth.json    (chmod 0o600, written atomically via tmp+rename)
+{
+  "anthropic": {
+    "type":    "oauth",
+    "access":  "<token>",
+    "refresh": "<token>",
+    "expires": 1715678400123,   // ms since epoch
+    "scope":   "org:create_api_key user:profile ... user:sessions:claude_code ..."
+  }
+}
+```
+
+When `speca-cli` spawns the Python orchestrator subprocess (which spawns `claude` per batch), it injects:
+- `ANTHROPIC_API_KEY=__OAUTH_DUMMY_KEY__` — sentinel that signals the workers "we're using OAuth; pull the real token from this other env var".
+- `SPECA_OAUTH_TOKEN=<access_token>` — the actual bearer token (lives only in the env, never on disk in the worker tree).
+- `SPECA_OAUTH_BETAS=oauth-2025-04-20,interleaved-thinking-2025-05-14` — passed as `anthropic-beta` by the worker.
+
+A small wrapper around the worker's HTTP client substitutes the real token in for the dummy when the dummy is detected. Standard pattern; same approach used in OpenCode.
+
+#### 4.5.5 Stability caveat
+
+Anthropic has not officially published the Claude Code OAuth specification. The endpoint URLs, the scope name, the User-Agent string, the beta-flag set, and the redirect URI are all reverse-engineered from the official `claude` CLI's network traffic and from the third-party packages cited above. They have been stable since Claude Code 2.x launched but **could change without notice**. Mitigation:
+
+- All auth constants live in a single file (`src/auth/constants.ts`) so a hotfix release can ship by editing one place.
 - Always fall back to API-key auth if OAuth fails — prompt the user with a clear "OAuth flow failed; paste your `ANTHROPIC_API_KEY`" path.
-- Surface the package version of `ex-machina-co/opencode-anthropic-auth` in `speca doctor` so debugging upstream changes is one command away.
+- Surface the upstream pinned version of `ex-machina-co/opencode-anthropic-auth` (which we vendor) in `speca doctor` so debugging upstream changes is one command away.
+- Add a CI smoke test that runs the OAuth flow weekly against a test account; if it breaks, we get paged before users do.
 
 ## 5. TUI Architecture & Screens
 
@@ -550,8 +671,7 @@ This section catalogs the OSS implementations whose patterns or code we lean on,
 | [`.../src/pkce.ts`](https://github.com/ex-machina-co/opencode-anthropic-auth/blob/main/src/pkce.ts) | `src/auth/pkce.ts` | `generatePKCE()` — verbatim |
 | [`.../src/constants.ts`](https://github.com/ex-machina-co/opencode-anthropic-auth/blob/main/src/constants.ts) | `src/auth/constants.ts` | `CLIENT_ID`, `AUTHORIZE_URLS.{max,console}`, `TOKEN_URL`, scope `user:sessions:claude_code` — **the subscription magic** |
 | [`sst/opencode/packages/opencode/src/auth/index.ts`](https://github.com/sst/opencode/blob/dev/packages/opencode/src/auth/index.ts) | `src/auth/store.ts` | Pattern only (drop Effect.ts). `~/.config/speca/auth.json` at `0o600`; `OAUTH_DUMMY_KEY` sentinel for env-injection signalling |
-| [`openai/codex/codex-rs/login/src/server.rs`](https://github.com/openai/codex/blob/main/codex-rs/login/src/server.rs) | `src/auth/loopback-server.ts` | Topology only (TS reimpl on `node:http`): port-fallback chain, `state` cookie validation, success-page HTML |
-| [`openai/codex/codex-rs/login/src/lib.rs`](https://github.com/openai/codex/blob/main/codex-rs/login/src/lib.rs) | n/a | Module-layout reference (`auth/`, `device_code_auth`, `pkce`, `server`, `token_data`) |
+| [`openai/codex/codex-rs/login/src/lib.rs`](https://github.com/openai/codex/blob/main/codex-rs/login/src/lib.rs) | n/a | Module-layout reference (`auth/`, `pkce`, `token_data`) — note: Codex's loopback server (`server.rs`) is **not applicable** to Anthropic, see §9.3 #4 |
 
 For everything outside the auth flow we **depend on packages, not vendor source files** — `ink`, `@clack/prompts`, `chokidar`, `zod`, `node-pty`, `execa` are added as regular dependencies.
 
@@ -562,12 +682,14 @@ These are concrete failure modes encountered by the upstream projects — we enc
 1. **Bubble Tea ≠ npx.** Crush, Plandex, and the deprecated Bubble Tea version of OpenCode all ship as Go binaries via `goreleaser` + `install.sh` (e.g. [plandex install.sh](https://github.com/plandex-ai/plandex/blob/main/app/cli/install.sh)) or via `brew`/`go install`. None of them work with bare `npx`. **Decision:** stay on Node.js + Ink; revisit Go only if Ink hits a hard scalability wall.
 2. **`node-pty` has no prebuilt binaries.** As of v1.1.0 its [`package.json`](https://github.com/microsoft/node-pty/blob/main/package.json) does `node scripts/prebuild.js || node-gyp rebuild` at install — meaning users without a C++ toolchain see install failures via `npx`. **Mitigation:** prefer plain `child_process.spawn` for the Python orchestrator (it's not a TTY-aware app); only use `node-pty` when wrapping the embedded `claude` chat session, and ship a `postinstall` hook that downgrades a node-pty install failure to a runtime warning ("Ask Claude pane unavailable on this platform — install build-essentials and reinstall").
 3. **OpenCode pivoted to OpenTUI; their Bubble Tea TUI is deprecated.** Their TUI now lives in [`packages/opencode/src/cli/cmd/tui/*.tsx`](https://github.com/sst/opencode/tree/dev/packages/opencode/src/cli/cmd/tui) using `@opentui/core` + `@opentui/solid`. Layout patterns translate to Ink, but the original Go TUI is no longer a moving reference.
-4. **`user:sessions:claude_code` is the magic scope.** Without that exact scope string in the OAuth `authorize` request, the issued token is billed against the user's Claude.ai web entitlement (or rejected entirely), not against the Claude Code subscription. **Always assert** the scope is present in the access token before completing setup.
-5. **Codex's flow is ChatGPT-only.** Borrow [`server.rs`](https://github.com/openai/codex/blob/main/codex-rs/login/src/server.rs) architecture, **not** its constants — `auth.openai.com`, `client_id`, scopes are all OpenAI-specific.
-6. **OpenCode's Anthropic OAuth lives in plugins, not core.** [`packages/opencode/src/provider/auth.ts`](https://github.com/sst/opencode/blob/dev/packages/opencode/src/provider/auth.ts) is provider-agnostic; the Claude-specific endpoints only exist in third-party plugins like `ex-machina-co/opencode-anthropic-auth`. Anthropic has not published the OAuth spec, so treat all constants as unstable and ship the API-key fallback (§4.5).
-7. **OpenCode-style npm distribution proven, but heavy.** [`opencode-ai`](https://www.npmjs.com/package/opencode-ai) ships a Bun-compiled binary per platform inside the npm tarball (~30 MB unpacked). For pure Node.js + Ink, `npx speca-cli` works without prebuild — keep it that way.
+4. **Anthropic forbids loopback `redirect_uri` — paste-code flow only.** This corrects an earlier draft of this spec. The redirect URI is hard-coded to `https://platform.claude.com/oauth/code/callback` in [`constants.ts`](https://github.com/ex-machina-co/opencode-anthropic-auth/blob/main/src/constants.ts) and Anthropic's authorize endpoint validates against that exact constant. `http://localhost:1455` is rejected. Codex's [`server.rs`](https://github.com/openai/codex/blob/main/codex-rs/login/src/server.rs) loopback architecture only works because OpenAI runs their own auth server with loopback URIs registered. **Implications for `speca-cli`:** we **do not** spawn a local HTTP server; we open the browser, then prompt the user to paste the code (§4.5.1). Less elegant UX, but the only option.
+5. **`user:sessions:claude_code` is the magic scope.** Without that exact scope string in the OAuth `authorize` request, the issued token is billed against the user's Claude.ai web entitlement (or rejected entirely), not against the Claude Code subscription. **Always assert** the scope is present in the access token before declaring auth healthy (§4.5.2).
+6. **Subscription auth requires impersonating the official `claude` CLI's HTTP fingerprint.** Every call to `/v1/messages` must carry `User-Agent: claude-cli/<version> (external, cli)` and `anthropic-beta: oauth-2025-04-20,interleaved-thinking-2025-05-14`. Without these, Anthropic rejects subscription-token requests. The OAuth token-exchange call itself uses `User-Agent: axios/1.13.6` for the same UA-filter reason. **All five strings (UA, betas, scope, redirect_uri, client_id) live in one constants file** so a hotfix release is a one-line change (§4.5.3).
+7. **Codex's flow is ChatGPT-only.** Borrow Codex's module *layout* (`auth/`, `pkce`, `token_data`), **not** its constants — `auth.openai.com`, the `client_id`, the scopes, and the loopback URIs are all OpenAI-specific.
+8. **OpenCode's Anthropic OAuth lives in plugins, not core.** [`packages/opencode/src/provider/auth.ts`](https://github.com/sst/opencode/blob/dev/packages/opencode/src/provider/auth.ts) is provider-agnostic; the Claude-specific endpoints only exist in third-party plugins like `ex-machina-co/opencode-anthropic-auth`. Anthropic has not published the OAuth spec, so treat all constants as unstable and ship the API-key fallback (§4.5.5).
+9. **OpenCode-style npm distribution proven, but heavy.** [`opencode-ai`](https://www.npmjs.com/package/opencode-ai) ships a Bun-compiled binary per platform inside the npm tarball (~30 MB unpacked). For pure Node.js + Ink, `npx speca-cli` works without prebuild — keep it that way.
 
-> All upstream metadata in this section was last verified on **2026-05-02**. Any maintainer modifying this section should re-confirm via `gh repo view <owner>/<repo>` and update the date stamp.
+> All upstream metadata in this section was last verified on **2026-05-03**. Any maintainer modifying this section should re-confirm via `gh repo view <owner>/<repo>` and update the date stamp.
 
 ## 10. Implementation Notes
 
