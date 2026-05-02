@@ -28,6 +28,19 @@
 
 The Python orchestrator under `scripts/orchestrator/` is **not rewritten** — `speca-cli` invokes it as a subprocess and parses its stream-JSON output. This keeps the proven harness intact and confines the new code to the UI layer.
 
+### 1.1 Build philosophy: reuse, don't reinvent
+
+The TUI ecosystem has matured around a small number of well-maintained components — Ink for React-style CLIs, Bubble Tea for Go, node-pty for PTY allocation, clack for prompts, chokidar for file watching. The recently shipped subscription-auth flows (OpenAI's [Codex CLI](https://github.com/openai/codex), the third-party [`ex-machina-co/opencode-anthropic-auth`](https://github.com/ex-machina-co/opencode-anthropic-auth) module that wraps Anthropic's `claude.ai/oauth` endpoint) give us a working blueprint for the trickiest part of the spec — **how to bill Claude Code subscription quota instead of API credits**.
+
+`speca-cli` is therefore designed as an **integration project**, not a from-scratch TUI. We commit to:
+
+- **Vendoring or depending on existing OAuth code** for Claude Code subscription auth (rather than re-implementing the unofficial OAuth flow).
+- **Using Ink + clack + chokidar** verbatim for the TUI shell (no custom rendering loop).
+- **Borrowing layout patterns from [opencode](https://github.com/sst/opencode) and [lazygit](https://github.com/jesseduffield/lazygit)** without forking either codebase.
+- **Subprocess-and-stream-JSON the existing Python orchestrator** rather than porting it.
+
+Concrete library choices and the per-file reuse map appear in [§9 Reference Implementations & Reuse Map](#9-reference-implementations--reuse-map).
+
 > **Working name.** The npm package is `speca-cli`; the binary is `speca`. We use `speca-cli` throughout this doc to match the user-facing `npx speca-cli` invocation.
 
 ## 2. Goals & Non-Goals
@@ -150,6 +163,27 @@ If unauthenticated:
 ### 4.4 Handing the auth context to Claude Code workers
 
 The Python orchestrator already invokes the `claude` CLI per batch; it inherits the parent process' environment, so as long as `speca-cli` is running in a shell that has `claude auth login`'d, every worker subprocess uses the same subscription. **No bespoke token handling in `speca-cli` itself.**
+
+### 4.5 Concrete OAuth implementation (vendored)
+
+When the user has *not* yet logged into Claude Code, `speca-cli` needs to drive the OAuth flow itself rather than punt to `claude auth login` (which assumes Claude Code is already installed — a circular dependency for first-run users via `npx`).
+
+We **vendor** the working PKCE OAuth implementation from [`ex-machina-co/opencode-anthropic-auth`](https://github.com/ex-machina-co/opencode-anthropic-auth) (MIT). Specifically:
+
+- The PKCE generator ([`src/pkce.ts`](https://github.com/ex-machina-co/opencode-anthropic-auth/blob/main/src/pkce.ts)).
+- The `authorize()` + `exchange()` pair ([`src/auth.ts`](https://github.com/ex-machina-co/opencode-anthropic-auth/blob/main/src/auth.ts)).
+- The endpoint constants ([`src/constants.ts`](https://github.com/ex-machina-co/opencode-anthropic-auth/blob/main/src/constants.ts)) — most importantly the **OAuth scope `user:sessions:claude_code`**, which is what tells Anthropic to bill the request against the user's Claude Code subscription rather than against API credits. Without that exact scope string, the user gets billed against their Pro web entitlement (or no entitlement at all).
+- Token storage modelled on [`sst/opencode`'s `auth/index.ts`](https://github.com/sst/opencode/blob/dev/packages/opencode/src/auth/index.ts): `~/.config/speca/auth.json` written at `0o600`, with the `OAUTH_DUMMY_KEY` sentinel pattern that signals "use the OAuth token, not an API key" to downstream subprocess env injection.
+
+The local-callback server (PKCE redirect target) follows the architecture of [`openai/codex/codex-rs/login/src/server.rs`](https://github.com/openai/codex/blob/main/codex-rs/login/src/server.rs) — port 1455 with conflict-fallback to 1456/1457 — but reimplemented in TypeScript using `node:http`. The endpoint constants from Codex are not reusable (`auth.openai.com` is OpenAI-specific); only the topology is.
+
+#### Stability caveat
+
+Anthropic has not officially published the Claude Code OAuth specification. The endpoint URLs and scope name above are reverse-engineered from the official `claude` CLI's network traffic and from the third-party packages cited above. They have been stable since Claude Code launched but **could change without notice**. Mitigation:
+
+- Pin the constants via a single configurable file (`src/auth/constants.ts`) so a hotfix release can ship without source edits in user installs.
+- Always fall back to API-key auth if OAuth fails — prompt the user with a clear "OAuth flow failed; paste your `ANTHROPIC_API_KEY`" path.
+- Surface the package version of `ex-machina-co/opencode-anthropic-auth` in `speca doctor` so debugging upstream changes is one command away.
 
 ## 5. TUI Architecture & Screens
 
@@ -426,20 +460,28 @@ The CLI auto-fills `commit` from `git ls-remote --heads <repo> | head -1` and `l
 | **Python orchestrator** | Unchanged from current repo — the source of truth for SPECA execution | Python (existing) |
 | **Claude Code CLI** | Auth + per-batch worker invocation + subscription token handling | Provided by Anthropic |
 
-### 8.3 Why Ink?
+### 8.3 Recommended stack
 
-- React-based — easy to compose pane layouts and modals.
-- npm-distributed and battle-tested by Vercel CLI, Gatsby, Cloudflare Wrangler.
-- Mature ecosystem (`ink-spinner`, `ink-table`, `ink-select-input`, `ink-text-input`).
-- Stable on macOS / Linux; works in WSL2; degrades cleanly when stdout is not a TTY.
+Concrete library choices. Rationale for each appears in [§9 Reference Implementations & Reuse Map](#9-reference-implementations--reuse-map).
 
-Alternatives considered:
+| Concern | Choice | Why this one | License |
+|---|---|---|---|
+| TUI framework | **[Ink 7.0.1](https://github.com/vadimdemedes/ink)** | React-for-CLI; battle-tested by Vercel/Wrangler/Astro/Gatsby; native `npx` distribution | MIT |
+| Wizard prompts | **[@clack/prompts 1.3.0](https://github.com/bombshell-dev/clack)** | Cleaner ergonomics than Inquirer; actively maintained under bombshell-dev | MIT |
+| Subprocess + PTY | **[node-pty 1.1.0](https://github.com/microsoft/node-pty)** when a real TTY is needed; `child_process.spawn` for the orchestrator subprocess | node-pty is the de-facto standard but has no prebuilt binaries (see pitfalls in §9.3) | MIT |
+| Live log tail | **[chokidar 5.0.0](https://github.com/paulmillr/chokidar)** | The standard Node fs watcher (used by webpack/vite/nodemon) | MIT |
+| Schema validation | **[zod](https://github.com/colinhacks/zod) 3.x** | Runtime validation of stream-JSON events and config files | MIT |
+| Claude Code subscription auth | Vendor **[`ex-machina-co/opencode-anthropic-auth`](https://github.com/ex-machina-co/opencode-anthropic-auth)** | Working PKCE OAuth against Anthropic's `claude.ai/oauth` endpoints with the `user:sessions:claude_code` scope (§4.5) | MIT |
+
+Stack alternatives explicitly rejected:
 
 | Option | Verdict |
 |---|---|
-| Bubble Tea (Go) | Excellent ergonomics but breaks `npx` distribution — Go binaries can't be `npx`-launched without precompiling per platform |
-| `blessed` (raw) | More flexible, but the imperative API balloons LoC for the layouts above |
-| `prompts` / `inquirer` only | Insufficient — we need persistent panes and live log streaming |
+| **[Bubble Tea](https://github.com/charmbracelet/bubbletea)** + bubbles + lipgloss (Go) | Excellent ergonomics but breaks `npx` distribution — Go binaries cannot be `npx`-launched without precompiling per platform (see [plandex's `install.sh`](https://github.com/plandex-ai/plandex/blob/main/app/cli/install.sh) for a sense of the multi-arch shipping burden) |
+| **[Charm Crush](https://github.com/charmbracelet/crush)** | Best-in-class chat TUI patterns, but licensed under [FSL-1.1-MIT](https://github.com/charmbracelet/crush/blob/main/LICENSE.md) (Functional Source License — 2-year delay before MIT applies). Not pure permissive; we cannot vendor or fork freely |
+| **[OpenTUI](https://github.com/anomalyco/opentui)** (`@opentui/core` 0.2.2) | What [opencode](https://github.com/sst/opencode) recently pivoted to (Solid-based `.tsx` for terminal UI). MIT and modern but young (v0.2.2, May 2026) and tied to Bun runtime — Ink is the safer bet for a `npx`-friendly Node.js distribution |
+| **[blessed](https://github.com/chjj/blessed)** raw | More flexible, but the imperative API balloons LoC for the layouts in §5 |
+| **prompts / inquirer only** | Insufficient — we need persistent panes and live log streaming, not just one-shot prompts |
 | Web UI (Electron / browser) | Violates G6 and N1; heavyweight for an audit harness |
 
 ### 8.4 Stream-JSON contract
@@ -480,9 +522,56 @@ When `process.stdout.isTTY === false` or `--no-tui` is passed, the CLI degrades 
 
 This is the mode used by CI and by `--json` consumers.
 
-## 9. Implementation Notes
+## 9. Reference Implementations & Reuse Map
 
-### 9.1 Distribution
+This section catalogs the OSS implementations whose patterns or code we lean on, with direct links so future maintainers can re-verify each citation. The choices in §8.3 follow from this analysis.
+
+### 9.1 Reference projects (what they teach us)
+
+| Project | Stack | Lesson for `speca-cli` | License |
+|---|---|---|---|
+| **[sst/opencode](https://github.com/sst/opencode)** ([npm](https://www.npmjs.com/package/opencode-ai)) | TypeScript / [OpenTUI](https://github.com/anomalyco/opentui) (Solid) on Bun; ships per-platform binary via npm | Token-store layout ([`auth/index.ts`](https://github.com/sst/opencode/blob/dev/packages/opencode/src/auth/index.ts)): `auth.json` at `0o600`, `OAUTH_DUMMY_KEY` sentinel for env injection, refresh/access/expires schema. Pane and dialog layout patterns ([`packages/opencode/src/cli/cmd/tui/component/dialog-*.tsx`](https://github.com/sst/opencode/tree/dev/packages/opencode/src/cli/cmd/tui/component)) translate directly to Ink components. **Note:** OpenCode's own Anthropic OAuth lives in third-party plugins, not core ([`provider/auth.ts`](https://github.com/sst/opencode/blob/dev/packages/opencode/src/provider/auth.ts) is generic). | MIT |
+| **[openai/codex](https://github.com/openai/codex)** | Rust / [`codex-rs/login`](https://github.com/openai/codex/tree/main/codex-rs/login) | Architecture for the **loopback OAuth callback server** ([`server.rs`](https://github.com/openai/codex/blob/main/codex-rs/login/src/server.rs)): port-conflict fallback (1455 → 1456 → 1457), state validation, deep-link redirect on completion. Module layout (`auth/`, `device_code_auth`, `pkce`, `token_data`) is what we mirror. **Reusable:** topology only. **Not reusable:** issuer constants (`auth.openai.com` is ChatGPT-specific). | Apache-2.0 |
+| **[ex-machina-co/opencode-anthropic-auth](https://github.com/ex-machina-co/opencode-anthropic-auth)** | TypeScript | The working PKCE OAuth flow against Anthropic's `claude.ai/oauth/authorize` (Pro/Max) and `platform.claude.com/v1/oauth/token` endpoints. **Most importantly:** the `user:sessions:claude_code` scope and `CLIENT_ID = '9d1c250a-…'` constants ([`src/constants.ts`](https://github.com/ex-machina-co/opencode-anthropic-auth/blob/main/src/constants.ts)). **We vendor `auth.ts`, `pkce.ts`, and `constants.ts` verbatim.** | MIT |
+| **[charmbracelet/crush](https://github.com/charmbracelet/crush)** | Go / Bubble Tea | Chat-pane layout, syntax-highlighted message rendering, scrollback handling. Patterns only — we cannot lift code due to FSL-1.1-MIT licensing. | FSL-1.1-MIT |
+| **[Aider-AI/aider](https://github.com/Aider-AI/aider)** | Python / `prompt_toolkit` + `rich` ([`io.py`](https://github.com/Aider-AI/aider/blob/main/aider/io.py)) | Confirms a **prompt-loop** is insufficient for our use-case (multi-pane dashboard). Aider's repo-mapping ideas inspire `speca attach`'s discovery of existing project state. | Apache-2.0 |
+| **[plandex-ai/plandex](https://github.com/plandex-ai/plandex)** | Go binary distributed via `goreleaser` + [`install.sh`](https://github.com/plandex-ai/plandex/blob/main/app/cli/install.sh) | Concrete reference for the multi-arch shipping burden if we ever pivot to Go. The current spec rejects this path. | MIT |
+| **[block/goose](https://github.com/block/goose)** | Rust | Plugin system as a long-term reference if `speca-cli` grows custom analysis plugins (deferred to v1.x). | Apache-2.0 |
+| **[vadimdemedes/ink](https://github.com/vadimdemedes/ink)** ecosystem | TypeScript | The chosen TUI runtime. Used in production by Vercel CLI, Cloudflare Wrangler, Astro, Gatsby. Companion packages: `ink-spinner`, `ink-table`, `ink-select-input`, `ink-text-input`, `ink-testing-library`. | MIT |
+| **[bombshell-dev/clack](https://github.com/bombshell-dev/clack)** | TypeScript | Wizard prompts (§5.2). The original `natemoo-re/clack` repo migrated to bombshell-dev; the latter is the actively maintained fork. | MIT |
+| **[microsoft/node-pty](https://github.com/microsoft/node-pty)** | C++ + Node bindings | Real PTY allocation for any subprocess that itself runs a TUI (e.g., the embedded `claude` chat session). | MIT |
+| **[paulmillr/chokidar](https://github.com/paulmillr/chokidar)** | TypeScript | The right answer for tailing `outputs/logs/*.jsonl` across macOS/Linux/WSL2. | MIT |
+
+### 9.2 File-level reuse map (what we actually lift)
+
+| Lift from (upstream) | Into `speca-cli` | Notes |
+|---|---|---|
+| [`ex-machina-co/opencode-anthropic-auth/src/auth.ts`](https://github.com/ex-machina-co/opencode-anthropic-auth/blob/main/src/auth.ts) | `src/auth/anthropic-oauth.ts` | `authorize()` + `exchange()` — full PKCE flow with state validation |
+| [`.../src/pkce.ts`](https://github.com/ex-machina-co/opencode-anthropic-auth/blob/main/src/pkce.ts) | `src/auth/pkce.ts` | `generatePKCE()` — verbatim |
+| [`.../src/constants.ts`](https://github.com/ex-machina-co/opencode-anthropic-auth/blob/main/src/constants.ts) | `src/auth/constants.ts` | `CLIENT_ID`, `AUTHORIZE_URLS.{max,console}`, `TOKEN_URL`, scope `user:sessions:claude_code` — **the subscription magic** |
+| [`sst/opencode/packages/opencode/src/auth/index.ts`](https://github.com/sst/opencode/blob/dev/packages/opencode/src/auth/index.ts) | `src/auth/store.ts` | Pattern only (drop Effect.ts). `~/.config/speca/auth.json` at `0o600`; `OAUTH_DUMMY_KEY` sentinel for env-injection signalling |
+| [`openai/codex/codex-rs/login/src/server.rs`](https://github.com/openai/codex/blob/main/codex-rs/login/src/server.rs) | `src/auth/loopback-server.ts` | Topology only (TS reimpl on `node:http`): port-fallback chain, `state` cookie validation, success-page HTML |
+| [`openai/codex/codex-rs/login/src/lib.rs`](https://github.com/openai/codex/blob/main/codex-rs/login/src/lib.rs) | n/a | Module-layout reference (`auth/`, `device_code_auth`, `pkce`, `server`, `token_data`) |
+
+For everything outside the auth flow we **depend on packages, not vendor source files** — `ink`, `@clack/prompts`, `chokidar`, `zod`, `node-pty`, `execa` are added as regular dependencies.
+
+### 9.3 Pitfalls (drawn from the references above)
+
+These are concrete failure modes encountered by the upstream projects — we encode them here so future maintainers do not re-discover them.
+
+1. **Bubble Tea ≠ npx.** Crush, Plandex, and the deprecated Bubble Tea version of OpenCode all ship as Go binaries via `goreleaser` + `install.sh` (e.g. [plandex install.sh](https://github.com/plandex-ai/plandex/blob/main/app/cli/install.sh)) or via `brew`/`go install`. None of them work with bare `npx`. **Decision:** stay on Node.js + Ink; revisit Go only if Ink hits a hard scalability wall.
+2. **`node-pty` has no prebuilt binaries.** As of v1.1.0 its [`package.json`](https://github.com/microsoft/node-pty/blob/main/package.json) does `node scripts/prebuild.js || node-gyp rebuild` at install — meaning users without a C++ toolchain see install failures via `npx`. **Mitigation:** prefer plain `child_process.spawn` for the Python orchestrator (it's not a TTY-aware app); only use `node-pty` when wrapping the embedded `claude` chat session, and ship a `postinstall` hook that downgrades a node-pty install failure to a runtime warning ("Ask Claude pane unavailable on this platform — install build-essentials and reinstall").
+3. **OpenCode pivoted to OpenTUI; their Bubble Tea TUI is deprecated.** Their TUI now lives in [`packages/opencode/src/cli/cmd/tui/*.tsx`](https://github.com/sst/opencode/tree/dev/packages/opencode/src/cli/cmd/tui) using `@opentui/core` + `@opentui/solid`. Layout patterns translate to Ink, but the original Go TUI is no longer a moving reference.
+4. **`user:sessions:claude_code` is the magic scope.** Without that exact scope string in the OAuth `authorize` request, the issued token is billed against the user's Claude.ai web entitlement (or rejected entirely), not against the Claude Code subscription. **Always assert** the scope is present in the access token before completing setup.
+5. **Codex's flow is ChatGPT-only.** Borrow [`server.rs`](https://github.com/openai/codex/blob/main/codex-rs/login/src/server.rs) architecture, **not** its constants — `auth.openai.com`, `client_id`, scopes are all OpenAI-specific.
+6. **OpenCode's Anthropic OAuth lives in plugins, not core.** [`packages/opencode/src/provider/auth.ts`](https://github.com/sst/opencode/blob/dev/packages/opencode/src/provider/auth.ts) is provider-agnostic; the Claude-specific endpoints only exist in third-party plugins like `ex-machina-co/opencode-anthropic-auth`. Anthropic has not published the OAuth spec, so treat all constants as unstable and ship the API-key fallback (§4.5).
+7. **OpenCode-style npm distribution proven, but heavy.** [`opencode-ai`](https://www.npmjs.com/package/opencode-ai) ships a Bun-compiled binary per platform inside the npm tarball (~30 MB unpacked). For pure Node.js + Ink, `npx speca-cli` works without prebuild — keep it that way.
+
+> All upstream metadata in this section was last verified on **2026-05-02**. Any maintainer modifying this section should re-confirm via `gh repo view <owner>/<repo>` and update the date stamp.
+
+## 10. Implementation Notes
+
+### 10.1 Distribution
 
 - **Package**: `speca-cli` on npm.
 - **Binaries**: `speca` (primary). Optional alias `speca-cli` for explicitness.
@@ -490,7 +579,7 @@ This is the mode used by CI and by `--json` consumers.
 - **Bundled assets**: none of the Python sources — `speca-cli` invokes the user's local checkout (or auto-clones it; see §9.2).
 - **Native deps**: `node-pty` is a native module. We ship prebuilt binaries via `node-gyp-build` and platform-specific `.node` files in the npm tarball to avoid build-on-install failures.
 
-### 9.2 Bootstrapping the Python repo
+### 10.2 Bootstrapping the Python repo
 
 `speca-cli` needs the SPECA Python sources to function. Two modes:
 
@@ -501,7 +590,7 @@ This is the mode used by CI and by `--json` consumers.
 
 Version pinning: the npm package version is the SPECA repo tag. So `speca-cli@1.4.2` clones `NyxFoundation/speca@v1.4.2`. The `speca doctor` command warns when the linked checkout drifts from the npm version.
 
-### 9.3 Performance & UX targets
+### 10.3 Performance & UX targets
 
 | Target | Goal |
 |---|---|
@@ -511,7 +600,7 @@ Version pinning: the npm package version is the SPECA repo tag. So `speca-cli@1.
 | Finding browser sort/filter response | < 50 ms for 1000 findings |
 | Ask-Claude first token | < 2 s (bounded by Claude Code latency) |
 
-### 9.4 Error handling & recovery
+### 10.4 Error handling & recovery
 
 | Failure | UX |
 |---|---|
@@ -523,11 +612,11 @@ Version pinning: the npm package version is the SPECA repo tag. So `speca-cli@1.
 | Auth expired mid-run | Pause runner, prompt `claude auth login`, resume |
 | Disk full | Refuse to write partials; surface `df -h` output |
 
-### 9.5 Telemetry
+### 10.5 Telemetry
 
 **No anonymous telemetry in v1.** Local-only error reporting via `~/.cache/speca/crash-<ts>.log`. A future opt-in `--share-anonymous-stats` is out of scope for this spec.
 
-### 9.6 Testing strategy
+### 10.6 Testing strategy
 
 | Layer | Strategy |
 |---|---|
@@ -537,21 +626,21 @@ Version pinning: the npm package version is the SPECA repo tag. So `speca-cli@1.
 | Wizards | Property-based tests (`fast-check`) on input validation |
 | Cross-platform | GitHub Actions matrix: macos-14, ubuntu-22.04, windows-2022 (WSL2) |
 
-### 9.7 Localisation
+### 10.7 Localisation
 
 UI strings live in a single `i18n.ts` map. v1 ships English only; ja-JP is a v1.1 stretch goal given the maintainer team's bilinguality.
 
-### 9.8 Accessibility
+### 10.8 Accessibility
 
 - All colour information is paired with a non-colour cue (icon, prefix). A `--no-color` / `NO_COLOR=1` mode is fully readable.
 - Every interaction has a keyboard binding. Mouse is unsupported in v1 (terminal mouse is too unreliable across emulators).
 
-## 10. Implementation Roadmap
+## 11. Implementation Roadmap
 
 | Milestone | Scope | Acceptance |
 |---|---|---|
 | **M1 — Skeleton (week 1)** | npm package scaffold, Ink layout shell, `speca version` / `speca doctor` | `npx speca-cli@next doctor` runs end-to-end |
-| **M2 — Auth + project wizard (week 2)** | `speca auth status/login`, new-project wizard, write valid `TARGET_INFO.json` / `BUG_BOUNTY_SCOPE.json` | A new project can be configured without manual JSON editing |
+| **M2 — Auth + project wizard (week 2)** | Vendor `ex-machina-co/opencode-anthropic-auth` into `src/auth/` (§9.2 reuse map), implement `speca auth status/login` against the Claude Code OAuth flow with API-key fallback, new-project wizard via `@clack/prompts`, write valid `TARGET_INFO.json` / `BUG_BOUNTY_SCOPE.json` | A new project can be configured without manual JSON editing; auth round-trip succeeds against a real Claude Code subscription |
 | **M3 — Pipeline dashboard (weeks 3–4)** | Process bridge, stream-JSON parser, Screen 3 with live phase rows + log pane, `--json` flag added to `scripts/run_phase.py` | Running Phase 01a end-to-end inside the TUI matches the CLI behaviour 1:1 |
 | **M4 — Finding browser (week 5)** | Screen 4 with filter DSL + sort + code peek | All Sherlock-RQ1 findings render correctly from a committed `outputs/04_PARTIAL_*.json` |
 | **M5 — Ask Claude (week 6)** | Screen 5 chat pane bound to Claude Code session id | Multi-turn chat works against a real subscription |
@@ -560,7 +649,9 @@ UI strings live in a single `i18n.ts` map. v1 ships English only; ja-JP is a v1.
 
 A v0.1 internal preview can ship after **M2** (no real pipeline run, just project setup) to gather feedback early.
 
-## 11. Required Upstream Changes
+## 12. Required Upstream Changes & Vendoring Decisions
+
+### 12.1 Upstream changes to this repository
 
 Two small additions to the existing Python orchestrator are needed to make the TUI clean. Both are independent of `speca-cli` and useful on their own.
 
@@ -571,7 +662,21 @@ Two small additions to the existing Python orchestrator are needed to make the T
 
 Both ship as PRs against `main` before `speca-cli@1.0.0`.
 
-## 12. Open Questions
+### 12.2 Vendoring vs. dependency decisions for third-party code
+
+| Source | Mode | Rationale |
+|---|---|---|
+| [`ex-machina-co/opencode-anthropic-auth`](https://github.com/ex-machina-co/opencode-anthropic-auth) | **Vendor** (copy `auth.ts` / `pkce.ts` / `constants.ts` into `src/auth/`) | The project is ~3 small files; depending on it via npm couples our auth to a single hobby package. Vendoring + attribution is safer for unstable OAuth constants. |
+| [`sst/opencode`](https://github.com/sst/opencode) `auth/index.ts` | **Pattern only** | Not vendored (uses Effect.ts). We re-implement the token-store pattern in plain TypeScript. |
+| [`openai/codex`](https://github.com/openai/codex) `codex-rs/login/server.rs` | **Pattern only** | Different language (Rust). We re-implement the loopback-server topology in TypeScript on `node:http`. |
+| `ink` / `@clack/prompts` / `chokidar` / `zod` / `node-pty` / `execa` | **npm dependency** | Stable, well-maintained packages — no need to vendor. |
+
+When vendoring, every lifted file must:
+1. Carry the original LICENSE notice in a header comment.
+2. Be tracked in [`docs/SPECA_CLI_SPEC.md` §9.2](#92-file-level-reuse-map-what-we-actually-lift) with a stable upstream link.
+3. Be re-checked at every minor release of the upstream package; a `make refresh-vendor` target dumps a side-by-side diff.
+
+## 13. Open Questions
 
 | # | Question | Owner | Notes |
 |---|---|---|---|
@@ -582,7 +687,7 @@ Both ship as PRs against `main` before `speca-cli@1.0.0`.
 | Q5 | Do we need a "headless run, attach later" mode (the user starts a run, closes their laptop, comes back to attach)? | TBD | Possible via PID file + shared `.speca/run.lock`; defer to v1.1 |
 | Q6 | What's the licence relationship between `speca-cli` (MIT) and the user's audit outputs? | @grandchildrice | Audit outputs belong to the user; the CLI does not exfiltrate them |
 
-## 13. Glossary
+## 14. Glossary
 
 | Term | Definition |
 |---|---|
