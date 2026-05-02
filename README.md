@@ -11,11 +11,25 @@
   <img src="https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white" alt="Python 3.11+">
 </p>
 
-> **Paper:** *SPECA: Specification-to-Checklist Agentic Auditing for Multi-Implementation Systems — A Case Study on Ethereum Clients.* arXiv preprint [arXiv:2604.26495](https://arxiv.org/abs/2604.26495).
+> **Paper:** Masato Kamba, Hirotake Murakami, Akiyoshi Sannai. *Beyond Code Reasoning: A Specification-Anchored Audit Framework for Expert-Augmented Security Verification.* arXiv preprint [arXiv:2604.26495](https://arxiv.org/abs/2604.26495), 2026.
 
-**SPECA** is an automated, end-to-end security audit framework that turns natural-language **specifications** into a formal program graph, derives **machine-checkable security properties**, and then runs a **proof-based agentic audit** against a target codebase — finishing with a recall-safe false-positive filter. The pipeline is implemented as an asynchronous orchestrator over the [Claude Code CLI](https://docs.claude.com/en/docs/claude-code) and runs both locally and on GitHub Actions.
+### Abstract
 
-In a real-world evaluation against the [Sherlock Ethereum Fusaka Audit Contest](https://audits.sherlock.xyz/contests/787), SPECA achieved **100% recall** (15/15 ground-truth issues), **66% precision**, and **F1 = 0.80** — see [Vulnerability Discovery Examples](#vulnerability-discovery-examples) below.
+Security-critical software is routinely audited by tools that reason about vulnerabilities as repository-local code patterns. Yet specification-governed systems — protocol stacks, consensus implementations, cryptographic libraries — are constrained by invariants and correctness conditions defined in natural-language specifications. When a vulnerability arises from what the *specification requires* rather than how code is written, code-level approaches lack the representational vocabulary to detect it, and their false positives resist systematic diagnosis.
+
+**SPECA** is a specification-anchored security audit framework that derives explicit, typed security properties from natural-language specifications and audits implementations through structured **proof-attempt** reasoning grounded in each property. The framework yields three capabilities absent from code-driven auditing:
+
+1. **Spec-dependent detections** that no code-local pattern matcher can express.
+2. **Controlled cross-implementation comparison** under a shared property vocabulary.
+3. **False positives that decompose into interpretable, pipeline-phase-traceable root causes.**
+
+### Headline Results
+
+- **Sherlock Ethereum Fusaka Audit Contest** (366 submissions, 10 implementations): SPECA recovers **all 15** in-scope H/M/L vulnerabilities (5H/2M/8L) and independently discovers **4 bugs confirmed by developer fix commits** — including a cryptographic invariant violation absent from all 366 adjudicated contest submissions.
+- **RepoAudit C/C++ benchmark** (15 projects, 35 non-disputed ground-truth bugs): SPECA matches the best published precision (**88.9%**, Sonnet 4.5) while surfacing **12 author-validated candidate bugs beyond the established ground truth** — two confirmed by upstream maintainers.
+- **All false positives** in the deep analysis (N=16) trace to **three interpretable root causes** — trust boundary misunderstanding (50%), code reading error (37.5%), specification misinterpretation (12.5%) — each mapped to a specific pipeline phase.
+
+See [Evaluation](#evaluation) for full numbers and charts.
 
 ## Table of Contents
 
@@ -26,22 +40,29 @@ In a real-world evaluation against the [Sherlock Ethereum Fusaka Audit Contest](
 - [Phases](#phases)
 - [Running on GitHub Actions](#running-on-github-actions)
 - [Configuration](#configuration)
-- [Vulnerability Discovery Examples](#vulnerability-discovery-examples)
-- [Benchmarks](#benchmarks)
+- [Evaluation](#evaluation) — RQ1 Sherlock + RQ2 RepoAudit, with charts
+- [Reproducing the Benchmarks](#reproducing-the-benchmarks)
 - [Contributing](#contributing)
 - [Citation](#citation)
 - [License](#license)
 
 ## Why SPECA?
 
-Most LLM-based auditors prompt a model to "find bugs" in a diff, which conflates *recall* with *precision* and tends to hallucinate. SPECA instead decomposes auditing into pipeline stages that mirror how human auditors work:
+Existing LLM-based auditors begin from the *code* and work outward — scanning a repository for bug-pattern templates, dataflow anomalies, and API misuse. Specification-governed systems break this assumption: a vulnerability can arise from what the spec *requires* even when no local code pattern looks suspicious. The KZG batch-verification bug recovered by SPECA in [§Evaluation](#evaluation) is exactly this kind of issue — a violation of a mathematical invariant defined only in the specification, missed by all 366 contest auditors despite the code being open and well-reviewed.
 
-1. **Read the spec → build a program graph.** Specifications are turned into Mermaid state diagrams with explicit invariants.
-2. **Derive properties from the graph.** Each subgraph yields formal pre/post-conditions and invariants under a domain-agnostic STRIDE + CWE Top 25 threat model.
-3. **Audit each property by *trying to prove* it.** Where the proof breaks, that gap is the bug. This *proof-based* mindset replaces "find bugs" pattern-matching.
-4. **Filter false positives with a recall-safe 3-gate pipeline.** Only Dead-Code, Trust-Boundary, and Scope gates may dispute a finding — preventing precision-driven recall loss.
+SPECA inverts the direction of analysis. It begins from the **specification** and derives a typed property vocabulary, then asks the implementation to *prove* each property. This shift produces three capabilities that code-driven tools cannot match:
 
-Because the pipeline is fully *spec-driven*, the same engine works on consensus protocols, smart contracts, or any well-specified software system — no domain hard-coding.
+| | Code-driven auditing | SPECA (specification-anchored) |
+|---|---|---|
+| **Detection** | Finds defects that look like known bug patterns | Finds defects defined as violations of explicit, typed properties |
+| **Cross-implementation comparison** | Each codebase analyzed in isolation | Single property vocabulary applied uniformly across N implementations |
+| **False positive triage** | Opaque — "the model thought this was a bug" | FPs decompose into 3 root causes (trust boundary / code reading / spec misinterpretation), each tied to a pipeline phase |
+
+A second, often-overlooked benefit: because every finding is grounded in a specific property derived from a specific spec section, every detection has a **provenance chain** (`property → subgraph → spec section → INV-* label`). This makes findings auditable, not just generated.
+
+### Why "proof-attempt" instead of "find bugs"
+
+An early prototype used the conventional adversarial framing — *"find bugs in this code"* — and produced an **88% false-positive rate**. Without a structured claim to disprove, the model emitted speculative findings with weak grounding. The proof-attempt framing forces the model to commit to a verifiable claim before reporting a gap, and the recall-safe 3-gate review filter (simplified down from a 5-gate prototype, after the dropped gates were shown to filter informational true positives at 0% precision) preserves H/M/L recall while filtering ~2/3 of the remaining false positives.
 
 ## Quick Start
 
@@ -106,7 +127,24 @@ Each workflow step (01a through 04) can be triggered independently via `workflow
 
 ## Architecture
 
-The pipeline is driven by a Python-based **orchestrator** (`scripts/orchestrator/`) that manages queue distribution, parallel worker execution, batching, resume, cost tracking, and circuit-breaker logic. Each phase invokes Claude Code CLI with a dedicated worker prompt, processing items in parallel across configurable workers.
+SPECA is organized as a **6-phase pipeline** in two stages: **Knowledge Structuring** (Phases 1–3) transforms natural-language specifications into explicit security properties, and **Systematic Auditing** (Phases 4–6) applies structured proof-attempt reasoning to check whether each implementation satisfies those properties.
+
+<p align="center">
+  <img src="assets/pipeline.png" alt="SPECA pipeline" width="900" />
+</p>
+
+In multi-implementation settings, the **left stage executes once** against the specification (producing a shared property vocabulary), and the **right stage executes per implementation** — enabling controlled cross-implementation security comparison by holding security expectations constant while varying the code under test.
+
+| Stage | Phase | Name | Purpose |
+|---|---|---|---|
+| **Knowledge Structuring** | 1 | Specification Discovery | Crawl spec documents into a structured index |
+|  | 2 | Subgraph Extraction | Decompose specs into [Nielson & Nielson](https://www.imm.dtu.dk/~hrni/) program graphs with RFC 2119–derived invariants |
+|  | 3 | Property Generation | STRIDE + CWE Top 25 threat model → typed security properties (Invariant / Pre / Post / Assumption) |
+| **Systematic Auditing** | 4 | Code Pre-resolution | Tree-sitter symbol resolution links each property to source locations (40–60% audit-token reduction) |
+|  | 5 | Property-Grounded Audit | Per-property *Map → Prove → Stress-Test* — gaps in the proof are findings |
+|  | 6 | Severity-Preserving Review | Three narrow mechanical gates (Dead Code / Trust Boundary / Scope) preserve H/M/L recall |
+
+The pipeline is driven by a Python-based **asynchronous orchestrator** (`scripts/orchestrator/`) that manages queue distribution, parallel worker execution, batching, resume, cost tracking, and circuit-breaker logic. Each phase invokes the Claude Code CLI with a dedicated worker prompt, processing items in parallel across configurable workers.
 
 ```
 scripts/
@@ -125,35 +163,7 @@ scripts/
     └── factory.py           # create_orchestrator()
 ```
 
-### Pipeline Overview
-
-```mermaid
-flowchart TB
-    subgraph "Preparation (Spec → Properties)"
-        A["01a: Spec Discovery"] --> B["01b: Subgraph Extraction"]
-        B --> E["01e: Property Generation<br/>(Trust Model + STRIDE/CWE + Formal Properties)"]
-    end
-
-    subgraph "Code Resolution"
-        E --> F["02c: Code Location Pre-resolution"]
-    end
-
-    subgraph "Audit"
-        F --> G["03: Audit Map (Proof-Based Formal Audit)"]
-        G --> H["04: FP Filter (3-Gate Pipeline)"]
-    end
-
-    subgraph "Reporting (Manual)"
-        H -.-> I["05: PoC Generation"]
-        H -.-> J["06: Bug-Bounty Report"]
-        I -.-> J
-        J -.-> K["06b: Full Audit Report"]
-    end
-
-    BBS["BUG_BOUNTY_SCOPE.json"] -.->|required| E
-    TI["TARGET_INFO.json"] -.->|target repo| F
-    TI -.->|auto-clone| G
-```
+> **Phase ID note.** The paper uses Phase 1–6 labels; the codebase uses the legacy IDs `01a → 01b → 01e → 02c → 03 → 04` (a one-to-one mapping). Phases 5–6 of the paper correspond to legacy `03` (Audit Map) and `04` (Audit Review). The remainder of this README uses the legacy IDs to match the file layout.
 
 ## Phases
 
@@ -431,11 +441,17 @@ Reduces token consumption in Phase 03 by ~40-60%.
 | **Output** | `outputs/03_PARTIAL_*.json` |
 | **Model** | Sonnet |
 
-Performs a proof-based 3-phase formal audit for each property against the target codebase. The core method: **try to prove the property holds; where the proof breaks, that is the bug.**
+Performs a proof-based 3-sub-phase formal audit for each property against the target codebase. **The core method: try to prove the property holds; where the proof breaks, that gap is the bug.** This framing was chosen over an adversarial *"find bugs"* prompt after preliminary experiments showed the adversarial approach produced an **88% false positive rate** — without a structured claim to disprove, the model produced numerous speculative findings with weak grounding.
 
-1. **Phase 1 (Map):** Identify exactly how the codebase enforces the property — guards, locks, type constraints, trust boundaries, spec-mandated behavior.
-2. **Phase 2 (Prove):** Construct a proof that the property holds. Checks input coverage, path coverage, concurrency safety, temporal validity, and implementation pattern obligations (cache keys, dedup keys, derived state, multi-path construction, return value completeness).
-3. **Phase 3 (Stress-Test):** Challenge the proof or verify the finding — list and validate all assumptions, re-read cited code, check for intentional design, construct concrete attack paths.
+<p align="center">
+  <img src="assets/phase5.png" alt="Phase 5 — Property-Grounded Audit (Map / Prove / Stress-Test)" width="700" />
+</p>
+
+1. **Sub-phase 1 (Map):** Decompose the property's assertion into verifiable sub-claims, read the enforcement code completely (full function bodies plus callers/callees), and link each sub-claim to the code responsible for satisfying it.
+2. **Sub-phase 2 (Prove):** Verify input coverage, path coverage, concurrency safety, temporal validity, and implementation-pattern obligations (e.g., cache keys and deduplication keys computed from complete inputs); gaps are recorded as findings.
+3. **Sub-phase 3 (Stress-Test):** Challenge the conclusion — re-examine every assumption (if the proof succeeded) or attempt to construct a concrete attack path (if it failed); findings without a plausible attack path are downgraded to `potential-vulnerability`.
+
+> "Proof attempt" is precise terminology: this is **LLM-driven evidence construction with structured reasoning steps, not formal verification**. The structure is what makes both detections and failures analyzable.
 
 Compact 6-field output per item: `property_id`, `classification`, `code_path`, `proof_trace`, `attack_scenario`, `checklist_id`.
 
@@ -678,35 +694,191 @@ Pins the target repository and commit. Phase 03 will `git clone` to this exact r
 | `CLAUDE_CODE_MAX_OUTPUT_TOKENS=100000` | CI | Raise output cap for long audit traces |
 | `GITHUB_PERSONAL_ACCESS_TOKEN` | Optional | Used by GitHub MCP server when enabled |
 
-## Vulnerability Discovery Examples
+## Evaluation
 
-The following are real vulnerabilities discovered by SPECA during the [Sherlock Ethereum Fusaka Audit Contest](https://audits.sherlock.xyz/contests/787), validated against contest ground-truth findings.
+SPECA is evaluated on two complementary benchmarks. **RQ1** measures effectiveness on a large multi-implementation security contest with 366 professional auditors; **RQ2** compares SPECA against published code-driven baselines on an established C/C++ benchmark.
+
+> All numbers below are taken verbatim from the paper ([arXiv:2604.26495](https://arxiv.org/abs/2604.26495)). Charts are reproducible via the scripts under [`benchmarks/`](./benchmarks/README.md); raw artifacts (logs, per-finding labels, model outputs) ship with this repository.
+
+### RQ1 — Sherlock Ethereum Fusaka Audit Contest
+
+**Benchmark.** 10 production Ethereum client implementations of EIP-7594 (PeerDAS) and EIP-7691, spanning **5 programming languages** (Go, Rust, Nim, TypeScript, C). 366 submissions from professional auditors; 15 judged valid at H/M/L severity (5 High, 2 Medium, 8 Low).
+
+**Headline detection numbers (post-Phase 6, N=72):**
+
+| Metric | Value |
+|---|---|
+| Phase 5 findings (pre-review) | 102 |
+| Phase 6 findings (post-review) | 72 |
+| **H/M/L recovered (expert-augmented)** | **15 / 15 (100%)** |
+| H/M/L recovered (automated-only) | 8 / 15 (53%) |
+| **Novel bugs confirmed by fix commits** | **4** |
+| Confirmed FPs (post-review) | 24 (33.3%) |
+| Strict precision (H/M/L match) | 26.4% (19/72) |
+| Confirmed-useful precision | 59.7% (43/72) |
+| Broad precision (non-FP rate) | 66.7% (48/72) |
+
+**Phase 6 lifts precision while preserving recall.** The severity-preserving review filter raises broad precision from **56.9% → 66.7%** while preserving 100% recall on H/M/L true positives, raising **F1 from 72.5% → 80.0%**:
+
+<p align="center">
+  <img src="benchmarks/results/rq1/sherlock_ethereum_audit_contest/chart_phase_comparison.png" alt="Phase 5 vs Phase 6" width="600" />
+</p>
+
+**Property neighborhoods drive recall.** Many issues are recovered not by a single alert but by multiple complementary properties. Cluster-level strict precision (grouping all findings against the same issue into one cluster) is **48.7%** (vs. 26.4% finding-level), confirming genuine redundancy rather than alert duplication.
+
+<p align="center">
+  <img src="benchmarks/results/rq1/sherlock_ethereum_audit_contest/chart_findings_per_issue.png" alt="Findings per issue" width="600" />
+</p>
+
+**Per-repository finding distribution** across the 10 implementations (Phase 5 vs Phase 6):
+
+<p align="center">
+  <img src="benchmarks/results/rq1/sherlock_ethereum_audit_contest/chart_per_repo.png" alt="Per-repository findings" width="700" />
+</p>
+
+**4 novel bugs absent from all 366 contest submissions, confirmed by developer fix commits:**
+
+| # | Target | Bug | Fix |
+|---|---|---|---|
+| A | **c-kzg-4844** | KZG batch-verification challenge hash uses the original commitment array rather than the deduplicated array — selective forgery against batch verify | `f18ba082` |
+| B | **Lodestar** | Inverted logic + missing validation on column sidecar cache | `3b98c59c` |
+| C | **Nimbus** | Unchecked array access reachable from RPC and Engine API | `b3a3f3f9` |
+| D | **Prysm** | Wrong subnet parameter computation + missing cell-count validation | `b5bdd65f` |
+
+> **Bug A** is particularly significant: a cryptographic correctness bug in a core library used by multiple Ethereum clients. It is a violation of an invariant that the specification defines but no code-level auditing tool was designed to check.
+
+**Recovered Sherlock H/M/L issues** (representative subset):
 
 | Severity | Target | Issue | Sherlock # |
 |---|---|---|---|
-| HIGH | Prysm | Inclusion proof cache key omits KzgCommitments — cache poisoning bypasses Merkle verification | #190 |
-| HIGH | Nethermind | Mismatched loop bounds between `BlobVersionedHashes` and `wrapper.Blobs` — extra hashes bypass commitment validation | #210 |
-| HIGH | c-kzg-4844 | Fiat-Shamir challenge hash uses original array instead of deduplicated commitments — selective forgery | #203 |
-| HIGH | Lighthouse | `get_beacon_proposer_indices` recomputes from active validators instead of reading `proposer_lookahead` — consensus split | #40 |
-| MEDIUM | Nimbus | `handle_custody_groups` loop terminates only when HashSet size equals `custody_group_count` — infinite loop DoS via P2P metadata | #15 |
-| MEDIUM | Nimbus | 30-minute metadata refresh timer with no fork-aware acceleration — stale `custody_group_count=0` blocks data column sync | #216 |
-| LOW | Grandine | `verify_kzg_proofs` returns `Ok(false)` but boolean is discarded by `.map_err()?` — invalid KZG proofs accepted | #376 |
-| LOW | Grandine | `get_blob_schedule_entry` assumes descending order but named network constructors define ascending — wrong epoch match causes chain split | #319 |
-| LOW | Lighthouse | `retry_partial_batch` catches `NoPeer` error but only logs it — batch stuck in `Downloading` state permanently | #343 |
-| LOW | Lodestar | Cache key `(blockRootHex, index)` excludes signature — attacker rebroadcasts invalid-signature sidecars via cache hit | #381 |
-| LOW | Reth/alloy-evm | `next_block_excess_blob_gas_osaka()` receives child's base fee instead of parent's — invalid block proposals | #371 |
+| HIGH | Prysm | Inclusion proof cache key omits `KzgCommitments` → cache poisoning bypasses Merkle verification | #190 |
+| HIGH | Nethermind | Mismatched loop bounds between `BlobVersionedHashes` and `wrapper.Blobs` → extra hashes bypass commitment validation | #210 |
+| HIGH | c-kzg-4844 | Fiat-Shamir challenge hash uses original array instead of deduplicated commitments → selective forgery | #203 |
+| HIGH | Lighthouse | `get_beacon_proposer_indices` recomputes from active validators instead of reading `proposer_lookahead` → consensus split | #40 |
+| MEDIUM | Nimbus | `handle_custody_groups` loop terminates only when `HashSet.size == custody_group_count` → infinite-loop DoS via P2P metadata | #15 |
+| MEDIUM | Nimbus | 30-minute metadata refresh timer with no fork-aware acceleration → stale `custody_group_count=0` blocks data-column sync | #216 |
+| LOW | Grandine | `verify_kzg_proofs` returns `Ok(false)` but boolean is discarded by `.map_err()?` → invalid KZG proofs accepted | #376 |
+| LOW | Grandine | `get_blob_schedule_entry` assumes descending order but named-network constructors define ascending → wrong epoch match causes chain split | #319 |
+| LOW | Lodestar | Cache key `(blockRootHex, index)` excludes signature → attacker rebroadcasts invalid-signature sidecars via cache hit | #381 |
+| LOW | Reth/alloy-evm | `next_block_excess_blob_gas_osaka()` receives child's base fee instead of parent's → invalid block proposals | #371 |
 
-**Aggregate results:** 100% recall (15/15 ground-truth issues matched), 66% precision, F1 = 0.80. 5 findings independently confirmed by developer fix commits.
+**Phase 6 three-gate filter effectiveness** (N=30 `DISPUTED_FP`):
 
-| Metric | Phase 03 (Audit) | Phase 04 (Review) |
-|---|---|---|
-| Items | 647 findings | 550 reviews |
-| Tokens/item | 2,917,937 | 393,277 |
-| Secs/item | 119.6s | 22.0s |
+<p align="center">
+  <img src="benchmarks/results/rq1/sherlock_ethereum_audit_contest/chart_gate_effectiveness.png" alt="Gate effectiveness" width="600" />
+</p>
 
-## Benchmarks
+The current 3-gate design was **simplified from a 5-gate prototype** after empirical analysis showed two of the original gates (Spec Cross-Reference and Exploitability) filtered informational true positives at **0% precision**, providing no net benefit.
 
-See [benchmarks page](./benchmarks/README.md)
+#### Structured False-Positive Analysis
+
+A defining capability of SPECA: every false positive decomposes into a **traceable root cause**. Of 16 deeply analyzed FPs (drawn from a population of 44 total):
+
+| Root Cause | Phase Origin | N | % |
+|---|---|---|---|
+| Trust boundary misunderstanding | Phase 3 (Property Generation) | 8 | 50.0% |
+| Code reading error | Phase 5 (Audit) | 6 | 37.5% |
+| Specification misinterpretation | Phase 3 | 2 | 12.5% |
+
+<p align="center">
+  <img src="benchmarks/results/rq1/sherlock_ethereum_audit_contest/chart_fp_taxonomy.png" alt="FP taxonomy" width="600" />
+</p>
+
+Each root cause maps to a **concrete, implementable improvement target**: explicit trust-boundary configuration, richer code-reading context, and enforced spec-section re-reading before classification. This is the property-centered representation's payoff: failures are diagnosable.
+
+#### Property-Type Ablation
+
+Which parts of the property vocabulary actually drive detection?
+
+| Property Type | N | TP | FP | Precision |
+|---|---|---|---|---|
+| Invariant | 67 | 18 | 6 | **75.0%** |
+| Precondition | 11 | 4 | 0 | **100.0%** |
+| Postcondition | 5 | 1 | 1 | 50.0% |
+| Assumption | 5 | 0 | 1 | **0.0%** |
+
+<p align="center">
+  <img src="benchmarks/results/rq1/sherlock_ethereum_audit_contest/chart_property_type_ablation.png" alt="Property type ablation" width="600" />
+</p>
+
+Invariants account for 76% of findings at 75% precision and dominate detection today. Assumption-type properties are too noisy for reliable auditing and are best treated as an exploratory mode. **Postcondition and assumption generation are the concrete research frontiers** for the automated-only configuration.
+
+#### Automated-Only vs. Expert-Augmented
+
+| Configuration | Properties | H/M/L | Coverage |
+|---|---|---|---|
+| Automated-only | Auto-generated (Phases 1–3) | 8 / 15 | 53% |
+| **Expert-augmented** | Auto + 7 manual properties | **15 / 15** | **100%** |
+
+The 7 manual properties cluster in two domain-specific areas — **cryptographic invariants** (KZG polynomial commitment edge cases, BLS12-381 identity element handling) and **protocol-lifecycle rules** (custody group bounds, cache key completeness, fork-transition metadata refresh) — that require mathematical domain knowledge or multi-specification cross-referencing not yet reliably automated. They are authored once per spec corpus and **reused across all 10 implementations**, so expert-knowledge injection has high amortized leverage in multi-implementation settings.
+
+### RQ2 — RepoAudit C/C++ Benchmark
+
+**Benchmark.** 15 open-source C/C++ projects with 35 non-disputed ground-truth bugs (null-pointer dereferences, memory leaks, use-after-free) confirmed by developer fixes, plus 5 disputed bugs. Comparison: published RepoAudit baselines (4 model configurations) plus Meta Infer and Amazon CodeGuru.
+
+| Method | TP | FP | Precision | New cand. | Cost |
+|---|---|---|---|---|---|
+| _Partially controlled (DeepSeek R1)_ | | | | | |
+| RepoAudit (DeepSeek R1) | 41 | 6 | 87.2% | (in TP) | $8.55 |
+| **SPECA (DeepSeek R1)** | — | 15 | 72.7% | **7** | $93.51 |
+| _Latest models_ | | | | | |
+| RepoAudit (Claude 3.7 Sonnet) | 40 | 5 | 88.9% | (in TP) | $23.85 |
+| **SPECA (Sonnet 4.5)** | — | 6 | **88.9%** | **12** | $81.05 |
+| _Other configurations_ | | | | | |
+| Amazon CodeGuru | 0 | 18 | 0.0% | 0 | — |
+| Meta Infer | 7 | 2 | 77.8% | 0 | free |
+| RepoAudit (o3-mini) | 36 | 9 | 80.0% | (in TP) | $4.50 |
+| RepoAudit (Claude 3.5 Sonnet) | 40 | 11 | 78.4% | (in TP) | $38.10 |
+| **SPECA (Sonnet 4)** | — | 13 | 81.2% | **18** | $100.68 |
+
+> **New cand.** = author-validated candidate bugs *beyond* the established ground truth. Recall is not reported because the GT was constructed from RepoAudit's own discoveries (structurally unfair to compare).
+
+<p align="center">
+  <img src="benchmarks/results/rq2a/figures/rq2a_precision_comparison.png" alt="Precision comparison" width="600" />
+</p>
+
+<p align="center">
+  <img src="benchmarks/results/rq2a/figures/rq2a_tp_fp_comparison.png" alt="TP vs FP" width="600" />
+</p>
+
+**SPECA (Sonnet 4.5) matches the best published baseline precision (88.9%)** while uniquely surfacing 12 author-validated beyond-GT candidates. Two of those candidates are externally validated:
+
+- **`PROP-N3-npd-001` (coturn, NPD)** — confirmed at **Level A** (bug existed in the analyzed commit, independently fixed in a later release; PR #1841 self-withdrawn after discovering the fix).
+- **`PROP-U5-uaf-002` (ICU/i18n, UAF race condition)** — confirmed at **Level B** (ICU maintainer approved the corresponding Jira ticket; PR #3921).
+
+**Cost vs. detection performance:**
+
+<p align="center">
+  <img src="benchmarks/results/rq2a/figures/rq2a_cost_efficiency.png" alt="Cost vs precision" width="600" />
+</p>
+
+At the Sonnet 4.5 configuration, SPECA achieves the highest precision while uniquely reporting double-digit beyond-GT candidates at a per-bug cost (~**$1.69/bug**) competitive with the best published baseline.
+
+**Symmetric cross-backbone comparison** (same-backbone DeepSeek R1 left, latest-models right):
+
+<p align="center">
+  <img src="benchmarks/results/rq2a/figures/rq2a_symmetric_comparison.png" alt="Symmetric comparison" width="700" />
+</p>
+
+#### The Property Adherence Effect
+
+An instructive non-monotonic pattern: Sonnet 4 discovers **18** beyond-GT candidates, Sonnet 4.5 discovers **12**, DeepSeek R1 discovers **7**. This is *not* a simple precision–discovery tradeoff — it reflects **increasing property adherence**. More capable models audit more faithfully against the stated property, checking exactly what the specification-derived property asserts and no more. Less capable models drift from the property scope during the proof-attempt phase, producing some genuine bugs (beyond-GT) and some false positives.
+
+> Engineering implication: **as models improve, property generation (Phases 1–3) becomes the binding constraint on detection coverage.** The model audits precisely what the properties tell it to audit; comprehensive property derivation is the primary lever for improving recall.
+
+### Cost & Throughput
+
+- **RQ1 (Sherlock):** ≈ $400–620 total API cost (10 implementations).
+- **RQ2 (RepoAudit, Sonnet 4.5):** $81.05 total = **$1.69 / bug**.
+- Phases 1–3 use Claude **Opus** (specification understanding); Phases 4–6 use Claude **Sonnet** (code analysis & review).
+
+## Reproducing the Benchmarks
+
+All evaluation scripts, per-repository outputs, and labeling artifacts ship with the repo:
+
+- [`benchmarks/results/rq1/sherlock_ethereum_audit_contest/`](./benchmarks/results/rq1/sherlock_ethereum_audit_contest/) — RQ1 raw outputs, labels, and chart-generation scripts.
+- [`benchmarks/results/rq2a/`](./benchmarks/results/rq2a/) — RQ2 RepoAudit outputs and figures.
+- [`benchmarks/README.md`](./benchmarks/README.md) — full reproduction instructions.
 
 ## Contributing
 
@@ -725,9 +897,9 @@ We welcome issues and pull requests from the community.
 If you use SPECA in academic work, please cite the accompanying paper:
 
 ```bibtex
-@misc{speca2026,
-  title         = {SPECA: Specification-to-Checklist Agentic Auditing for Multi-Implementation Systems --- A Case Study on Ethereum Clients},
-  author        = {Nyx Foundation and SPECA Contributors},
+@misc{kamba2026speca,
+  title         = {Beyond Code Reasoning: A Specification-Anchored Audit Framework for Expert-Augmented Security Verification},
+  author        = {Kamba, Masato and Murakami, Hirotake and Sannai, Akiyoshi},
   year          = {2026},
   eprint        = {2604.26495},
   archivePrefix = {arXiv},
