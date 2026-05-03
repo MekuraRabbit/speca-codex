@@ -2452,7 +2452,7 @@ class TestClaudeRunnerCommand(unittest.TestCase):
         config = get_phase_config("03")
         sem = asyncio.Semaphore(1)
         runner = ClaudeRunner(config, sem)
-        cmd = runner._build_cmd("hello")
+        cmd, _ = runner._build_cmd("hello")
         assert "--model" in cmd
         model_index = cmd.index("--model")
         assert cmd[model_index + 1] == "sonnet"
@@ -2463,7 +2463,7 @@ class TestClaudeRunnerCommand(unittest.TestCase):
         config = get_phase_config("01e")
         sem = asyncio.Semaphore(1)
         runner = ClaudeRunner(config, sem)
-        cmd = runner._build_cmd("hello")
+        cmd, _ = runner._build_cmd("hello")
         assert "--model" not in cmd
 
     def test_tools_filter_in_cmd(self):
@@ -2473,7 +2473,7 @@ class TestClaudeRunnerCommand(unittest.TestCase):
         config = get_phase_config("03")
         sem = asyncio.Semaphore(1)
         runner = ClaudeRunner(config, sem)
-        cmd = runner._build_cmd("hello")
+        cmd, _ = runner._build_cmd("hello")
         assert "--tools" in cmd
         tools_index = cmd.index("--tools")
         assert cmd[tools_index + 1] == "Read,Write,Grep,Glob"
@@ -2485,7 +2485,7 @@ class TestClaudeRunnerCommand(unittest.TestCase):
         config = get_phase_config("01a")
         sem = asyncio.Semaphore(1)
         runner = ClaudeRunner(config, sem)
-        cmd = runner._build_cmd("hello")
+        cmd, _ = runner._build_cmd("hello")
         assert "--tools" not in cmd
 
     def test_strict_mcp_config_in_cmd(self):
@@ -2495,7 +2495,7 @@ class TestClaudeRunnerCommand(unittest.TestCase):
         config = get_phase_config("03")
         sem = asyncio.Semaphore(1)
         runner = ClaudeRunner(config, sem)
-        cmd = runner._build_cmd("hello")
+        cmd, _ = runner._build_cmd("hello")
         assert "--strict-mcp-config" in cmd
         assert "--mcp-config" in cmd
 

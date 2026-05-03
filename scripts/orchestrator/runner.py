@@ -17,14 +17,18 @@ import asyncio
 import json
 import os
 import re
+import shutil
 import sys
 import tempfile
-import shutil
 import time
 from pathlib import Path
 from typing import Any
 
 import aiofiles
+
+_CLAUDE_BIN = (
+    shutil.which("claude.cmd") if sys.platform == "win32" else None
+) or shutil.which("claude") or "claude"
 
 from .config import PhaseConfig
 from .paths import get_output_root
@@ -389,7 +393,7 @@ class ClaudeRunner:
         )
 
         # Build command
-        cmd = self._build_cmd(prompt_content)
+        cmd, stdin_bytes = self._build_cmd(prompt_content)
 
         # Build environment
         env = self._build_env(
@@ -409,14 +413,22 @@ class ClaudeRunner:
         watcher = LogWatcher(log_file, config=watcher_config)
         watcher_task = asyncio.create_task(watcher.watch())
 
-        # Execute
+        # Execute. When the prompt was too large to fit on the command line,
+        # stdin_bytes is populated and we pipe it in.
         proc = await asyncio.create_subprocess_exec(
             *cmd,
+            stdin=asyncio.subprocess.PIPE if stdin_bytes is not None else asyncio.subprocess.DEVNULL,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             env=env,
             cwd=self.config.workdir or str(Path.cwd()),
         )
+        if stdin_bytes is not None and proc.stdin is not None:
+            try:
+                proc.stdin.write(stdin_bytes)
+                await proc.stdin.drain()
+            finally:
+                proc.stdin.close()
 
         # Collect stderr concurrently so it's available for error logging.
         # Reading stdout and stderr sequentially risks deadlock when the
@@ -894,19 +906,37 @@ class ClaudeRunner:
 
         return config_path
 
-    def _build_cmd(self, prompt_content: str) -> list[str]:
-        """Build the Claude CLI command."""
+    def _build_cmd(self, prompt_content: str) -> tuple[list[str], bytes | None]:
+        """Build the Claude CLI command.
+
+        Returns (cmd, stdin_bytes). stdin_bytes is non-None when the prompt
+        is too large to pass as an argv parameter; the caller must write it
+        to the subprocess' stdin.
+        """
         # Ensure prompt doesn't start with '-' which Claude CLI would
         # misinterpret as an option flag (e.g. YAML frontmatter '---').
         if prompt_content.lstrip().startswith("-"):
             prompt_content = "\n" + prompt_content
         cmd = [
-            shutil.which("claude") or "claude",
+            _CLAUDE_BIN,
             "--dangerously-skip-permissions",
             "--verbose",
             "--output-format", "stream-json",
-            "-p", prompt_content,
         ]
+        # On Windows, _CLAUDE_BIN points at a .cmd shim that goes through
+        # cmd.exe — any prompt containing cmd metacharacters (& | ^ > < ( )
+        # % ! and embedded newlines are common in markdown prompts) gets
+        # mangled or truncated, surfacing as "Input must be provided either
+        # through stdin or as a prompt argument when using --print". Always
+        # pipe the prompt via stdin on Windows. On Unix, larger argvs are
+        # safe so we only switch at ~100KB.
+        _PROMPT_ARG_LIMIT = 0 if sys.platform == "win32" else 100_000
+        stdin_bytes: bytes | None = None
+        if len(prompt_content) > _PROMPT_ARG_LIMIT:
+            stdin_bytes = prompt_content.encode("utf-8")
+            cmd.extend(["--input-format", "text", "-p"])
+        else:
+            cmd.extend(["-p", prompt_content])
         if self.config.model:
             cmd.extend(["--model", self.config.model])
         if self.config.max_turns_per_batch:
@@ -918,7 +948,7 @@ class ClaudeRunner:
         if self.config.mcp_servers is not None:
             mcp_config_path = self._get_phase_mcp_config()
             cmd.extend(["--strict-mcp-config", "--mcp-config", str(mcp_config_path)])
-        return cmd
+        return cmd, stdin_bytes
 
     def _save_json(self, path: Path, data: Any) -> None:
         """Save JSON data to file."""
