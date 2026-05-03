@@ -6,7 +6,6 @@
 
 | ファイル | 種別 | 内容 |
 |----------|------|------|
-| [issiuse.md](issiuse.md) | 分析 | ベンチマーク定量化の課題一覧・ベースライン考察 |
 | [ann.md](ann.md) | 構想 | SPECA 拡張アイデア 14 案 (ブレスト) |
 | ~~RQ2_BENCHMARK_GUIDE.md~~ | アーカイブ | 旧 PrimeVul ガイド → `benchmarks/archive/` に移動 |
 | [LOCAL_VERIFICATION_GUIDE.md](LOCAL_VERIFICATION_GUIDE.md) | 手順書 | ローカル環境でのパイプライン検証 |
