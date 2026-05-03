@@ -1,0 +1,52 @@
+name: cli-ci
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "cli/**"
+      - ".github/workflows/cli-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "cli/**"
+      - ".github/workflows/cli-ci.yml"
+
+jobs:
+  build:
+    name: ${{ matrix.os }} / Node ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, macos-14, windows-2022]
+        node: ["20", "22"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: cli/package-lock.json
+      - name: Install uv (so `speca doctor` passes)
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "latest"
+      - name: npm ci
+        working-directory: cli
+        run: npm ci
+      - name: typecheck
+        working-directory: cli
+        run: npm run typecheck
+      - name: build
+        working-directory: cli
+        run: npm run build
+      - name: vitest
+        working-directory: cli
+        run: npm test
+      - name: speca doctor smoke test (built bundle)
+        working-directory: cli
+        run: node dist/cli.js doctor
+      - name: speca version smoke test
+        working-directory: cli
+        run: node dist/cli.js version

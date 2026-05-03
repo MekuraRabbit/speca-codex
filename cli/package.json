@@ -1,0 +1,47 @@
+{
+  "name": "speca-cli",
+  "version": "0.1.0-alpha.0",
+  "description": "TUI front-end for the SPECA security-audit pipeline",
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "bin": {
+    "speca": "./dist/cli.js",
+    "speca-cli": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.tsx",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "ink": "^7.0.1",
+    "meow": "^13.2.0",
+    "react": "^19.0.0",
+    "which": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/which": "^3.0.4",
+    "ink-testing-library": "^4.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NyxFoundation/speca.git",
+    "directory": "cli"
+  },
+  "keywords": ["speca", "security", "audit", "cli", "tui", "ink"]
+}
