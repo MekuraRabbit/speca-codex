@@ -13,6 +13,12 @@ export interface CheckResult {
   hint?: string;
 }
 
+import { checkAuth } from "../auth/check.js";
+
+// Re-export so callers (e.g. cli/test/checks.test.ts, doctor.tsx) can import
+// the auth check from a single, stable surface.
+export { checkAuth };
+
 const MIN_NODE_MAJOR = 20;
 
 export async function checkNode(): Promise<CheckResult> {
@@ -82,5 +88,5 @@ export const checkClaude = (): Promise<CheckResult> =>
   );
 
 export async function runAllChecks(): Promise<CheckResult[]> {
-  return Promise.all([checkNode(), checkUv(), checkGit(), checkClaude()]);
+  return Promise.all([checkNode(), checkUv(), checkGit(), checkClaude(), checkAuth()]);
 }
