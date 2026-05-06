@@ -1,18 +1,25 @@
 # SPECA Benchmarks
 
-This directory contains the evaluation harnesses for the two benchmarks reported in the SPECA paper ([arXiv:2604.26495](https://arxiv.org/abs/2604.26495)) plus an exploratory third track. All numbers below match the paper verbatim; raw artifacts (per-target audit outputs, finding labels, model traces) and figure-generation scripts ship with the repository so that **external researchers can both reproduce our results and reuse the harness on new targets**.
+This directory contains the evaluation harnesses for the two benchmarks reported
+in the upstream SPECA paper ([arXiv:2604.26495](https://arxiv.org/abs/2604.26495))
+plus an exploratory third track. The numbers below are upstream paper results
+kept for reference. This Codex App-compatible fork changes the worker runtime
+and does not claim that Codex-run audits reproduce the exact upstream
+Claude-run outputs. Summary artifacts, labels, figures, and scripts are retained
+where practical, but raw worker logs and model trace logs are intentionally
+omitted from this fork. Use [NyxFoundation/speca](https://github.com/NyxFoundation/speca)
+when you need the original paper artifact bundle.
 
 ## Overview
 
 | Benchmark | Dataset | Targets | Ground Truth | Status |
 |---|---|---|---|---|
-| **[RQ1](#rq1--sherlock-ethereum-fusaka-audit-contest)** | Sherlock Ethereum Fusaka Audit Contest | 10 production Ethereum clients (Go, Rust, Nim, TypeScript, C) | 15 H/M/L issues from 366 expert submissions | ✅ Reported in paper |
-| **[RQ2](#rq2--repoaudit-cc-benchmark)** | RepoAudit (ICML 2025) | 15 OSS C/C++ projects (avg 251K LoC) | 35 non-disputed + 5 disputed bugs | ✅ Reported in paper |
-| [RQ2b](#rq2b--profuzzbench-exploratory-not-in-paper) | ProFuzzBench (ChatAFL, NDSS 2024) | 6 text-based protocol implementations | 9 zero-day bugs | ⚠️ Exploratory, not in paper |
+| **[RQ1](#rq1--sherlock-ethereum-fusaka-audit-contest)** | Sherlock Ethereum Fusaka Audit Contest | 10 production Ethereum clients (Go, Rust, Nim, TypeScript, C) | 15 H/M/L issues from 366 expert submissions | Upstream paper result |
+| **[RQ2](#rq2--repoaudit-cc-benchmark)** | RepoAudit (ICML 2025) | 15 OSS C/C++ projects (avg 251K LoC) | 35 non-disputed + 5 disputed bugs | Upstream paper result |
+| [RQ2b](#rq2b--profuzzbench-exploratory-not-in-paper) | ProFuzzBench (ChatAFL, NDSS 2024) | 6 text-based protocol implementations | 9 zero-day bugs | Upstream exploratory track |
 
-All results in this README correspond to the headline numbers in the paper:
-- RQ1: **15/15 H/M/L recovered (100%)**, 4 novel bugs confirmed by fix commits, **F1 = 0.80** post-Phase 6.
-- RQ2: **88.9% precision (Sonnet 4.5)** matching the best published RepoAudit baseline, plus **12 author-validated beyond-GT candidates** (2 externally confirmed).
+The detailed tables below are retained as upstream paper context. They are not
+validation results for the Codex runner added by this fork.
 
 ## Repository Layout
 
@@ -52,11 +59,14 @@ benchmarks/
 
 ## Prerequisites
 
-The same prerequisites as the [top-level Quick Start](../README.md#quick-start):
+For upstream-style benchmark reproduction, the legacy Claude workflow may still
+be required. Normal Codex App usage should start from the
+[top-level Quick Start](../README.md#quick-start).
 
 - Python 3.11+ with `uv` (`pip install uv`)
-- Node.js 20+ and the [Claude Code CLI](https://docs.claude.com/en/docs/claude-code) (`npm install -g @anthropic-ai/claude-code`)
-- An exported `ANTHROPIC_API_KEY` (or a logged-in `claude` session)
+- Node.js 20+
+- Codex CLI for Codex App workflows, or Claude Code CLI for legacy upstream-style
+  benchmark reproduction
 - `git` for cloning target repositories
 
 Install Python deps once:

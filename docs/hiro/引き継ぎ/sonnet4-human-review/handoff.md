@@ -107,7 +107,7 @@ ccfdef0e  rq2a: human review of Sonnet 4 SPECA results — 2 TP→FP corrections
 - **コンパイラ**: MSVC v19.44.35224 (Visual Studio 2022 BuildTools)
 - **MLK検出**: `/MDd` + `_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF)`
 - **NPD検出**: `/EHa` + `__try/__except` (Windows SEH)
-- **作業ディレクトリ**: `C:\Users\shieru_k\Documents\`
+- **作業ディレクトリ**: `<workspace>/`
 - **PowerShell経由**: `Launch-VsDevShell.ps1` → cl.exe
 
 ### テストファイル一覧
@@ -128,7 +128,7 @@ ccfdef0e  rq2a: human review of Sonnet 4 SPECA results — 2 TP→FP corrections
 | test_n3_npd001.cpp | allocation_add_permission NULL | ACCESS VIOLATION |
 
 ### ソースリポジトリクローン先
-`/c/Users/shieru_k/AppData/Local/Temp/hr_repos/` 配下:
+`<temp>/hr_repos/` 配下:
 - `libsass` @ 4da7c4bd (M1)
 - `memcached_m2` @ e15e1d6b (M2)
 - `memcached_m2b` @ dfe439d4 (M2b)

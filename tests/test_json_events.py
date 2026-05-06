@@ -83,6 +83,8 @@ def test_run_phase_json_flag_emits_pipeline_started_on_stdout(tmp_path: Path):
         cwd=tmp_path,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=60,
     )
 

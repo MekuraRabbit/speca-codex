@@ -25,7 +25,7 @@ def create_orchestrator(
     Args:
         phase_id: The phase identifier (e.g., "01b", "02c", "03", "04")
         num_workers: Number of parallel workers
-        max_concurrent: Maximum concurrent Claude executions
+        max_concurrent: Maximum concurrent worker executions
 
     Returns:
         A configured orchestrator instance for the phase.

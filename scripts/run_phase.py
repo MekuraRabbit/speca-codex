@@ -20,11 +20,28 @@ Usage:
 
 import argparse
 import asyncio
+import glob
 import json
 import sys
 import os
 import time
 from pathlib import Path
+
+
+def _configure_stdio() -> None:
+    """Keep CLI status output from crashing on non-UTF-8 Windows consoles."""
+    for stream_name in ("stdout", "stderr"):
+        stream = getattr(sys, stream_name, None)
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except (OSError, ValueError):
+            pass
+
+
+_configure_stdio()
 
 # Add scripts directory to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -58,7 +75,7 @@ def check_dependencies(phase_id: str) -> bool:
         # but generally input_patterns imply requirement.
         # Note: glob() returns a generator, list() consumes it.
         resolved = resolve_pattern(pattern)
-        matches = list(Path(".").glob(resolved))
+        matches = glob.glob(resolved)
         if not matches:
             # Check if it's a "worker-sharded" pattern (contains *)
             # If so, it might be that the previous phase produced nothing, 
@@ -139,6 +156,11 @@ async def run_phase(
     out_of_scope_layers: list[str] | None = None,
     min_severity: str | None = None,
     model: str | None = None,
+    runner_type: str | None = None,
+    app_server_url: str | None = None,
+    isolated_worktrees: bool = False,
+    worktree_root: str | None = None,
+    worktree_base_ref: str | None = None,
     emitter: JsonEventEmitter | None = None,
 ) -> bool:
     """Run a single phase with all checks and cleanup."""
@@ -199,12 +221,36 @@ async def run_phase(
             del os.environ["FORCE_EXECUTE"]
 
         orchestrator = create_orchestrator(phase_id, num_workers, max_concurrent)
+        orchestrator.force_execute = force
+
+        if runner_type is not None:
+            orchestrator.config.runner_type = runner_type
+            print(f"  --runner override: {runner_type}")
+
+        if app_server_url is not None:
+            orchestrator.config.codex_app_server_url = app_server_url
+            print(f"  --app-server-url: {app_server_url}")
+
+        if isolated_worktrees:
+            orchestrator.config.isolated_worktrees = True
+            print("  --isolated-worktrees: enabled")
+        if worktree_root is not None:
+            orchestrator.config.worktree_root = worktree_root
+            print(f"  --worktree-root: {worktree_root}")
+        if worktree_base_ref is not None:
+            orchestrator.config.worktree_base_ref = worktree_base_ref
+            print(f"  --worktree-base-ref: {worktree_base_ref}")
 
         # Override model from CLI if provided
         if model is not None:
-            prev = orchestrator.config.model
-            orchestrator.config.model = model
-            print(f"  --model override: {prev} -> {model}")
+            if (orchestrator.config.runner_type or os.environ.get("ORCHESTRATOR_RUNNER", "claude")).lower() == "api":
+                prev = orchestrator.config.runtime_env.get("API_RUNNER_MODEL") or os.environ.get("API_RUNNER_MODEL")
+                orchestrator.config.runtime_env["API_RUNNER_MODEL"] = model
+                print(f"  --model override (API_RUNNER_MODEL): {prev} -> {model}")
+            else:
+                prev = orchestrator.config.model
+                orchestrator.config.model = model
+                print(f"  --model override: {prev} -> {model}")
 
         # Override min_severity from CLI if provided
         if min_severity is not None and orchestrator.config.min_severity is not None:
@@ -268,6 +314,10 @@ async def run_phase(
         )
         print(f"Error running phase {phase_id}: {e}", file=sys.stderr)
         return False
+    finally:
+        runner_close = getattr(getattr(orchestrator, "runner", None), "close", None)
+        if runner_close is not None:
+            await runner_close()
 
 
 async def run_pipeline(
@@ -280,6 +330,11 @@ async def run_pipeline(
     out_of_scope_layers: list[str] | None = None,
     min_severity: str | None = None,
     model: str | None = None,
+    runner_type: str | None = None,
+    app_server_url: str | None = None,
+    isolated_worktrees: bool = False,
+    worktree_root: str | None = None,
+    worktree_base_ref: str | None = None,
     target_phase: str | None = None,
     emitter: JsonEventEmitter | None = None,
 ) -> dict[str, bool]:
@@ -295,6 +350,11 @@ async def run_pipeline(
             out_of_scope_layers=out_of_scope_layers,
             min_severity=min_severity,
             model=model,
+            runner_type=runner_type,
+            app_server_url=app_server_url,
+            isolated_worktrees=isolated_worktrees,
+            worktree_root=worktree_root,
+            worktree_base_ref=worktree_base_ref,
             emitter=emitter,
         )
         results[phase_id] = success
@@ -317,7 +377,7 @@ def main():
     parser.add_argument("--force", action="store_true", help="Force re-execution, ignoring resume state")
     parser.add_argument("--cleanup-dry-run", action="store_true", help="Show what would be cleaned up without executing")
     parser.add_argument("--workers", type=int, default=4, help="Number of parallel workers")
-    parser.add_argument("--max-concurrent", type=int, default=8, help="Max concurrent Claude executions")
+    parser.add_argument("--max-concurrent", type=int, default=8, help="Max concurrent worker executions")
     parser.add_argument(
         "--output-dir",
         default=None,
@@ -343,9 +403,41 @@ def main():
     parser.add_argument(
         "--model",
         default=None,
-        help="Override the Claude model for all phases in this run. "
-             "Accepts any model string supported by Claude CLI (e.g. 'claude-3-5-sonnet-20241022', 'sonnet'). "
-             "Default comes from PhaseConfig.",
+        help="Override the worker model for all phases in this run. "
+             "For --runner codex-app or codex, accepts any model string supported by Codex. "
+             "For --runner claude, accepts any model string supported by Claude CLI. "
+             "For --runner api, sets API_RUNNER_MODEL for this run.",
+    )
+    parser.add_argument(
+        "--runner",
+        choices=["codex-app", "codex", "claude", "api"],
+        default=None,
+        help="Worker runtime. Default is env ORCHESTRATOR_RUNNER or 'claude'. "
+             "'codex-app' uses codex app-server threads. "
+             "'codex' uses codex exec as a local fallback. "
+             "'api' uses scripts/orchestrator/api_runner.py with API_RUNNER_* "
+             "environment variables.",
+    )
+    parser.add_argument(
+        "--app-server-url",
+        default=None,
+        help="Existing codex app-server websocket URL for --runner codex-app. "
+             "When omitted, SPECA starts a loopback app-server for the run.",
+    )
+    parser.add_argument(
+        "--isolated-worktrees",
+        action="store_true",
+        help="For --runner codex-app, give each worker an isolated git worktree.",
+    )
+    parser.add_argument(
+        "--worktree-root",
+        default=None,
+        help="Directory for isolated worktrees (default: .codex/worktrees).",
+    )
+    parser.add_argument(
+        "--worktree-base-ref",
+        default=None,
+        help="Git ref used when creating isolated worktrees (default: HEAD).",
     )
 
     # Severity gate
@@ -395,6 +487,12 @@ def main():
     print(f"  Phases: {phases}")
     if args.model:
         print(f"  Model: {args.model}")
+    if args.runner:
+        print(f"  Runner: {args.runner}")
+    if args.app_server_url:
+        print(f"  Codex App Server URL: {args.app_server_url}")
+    if args.isolated_worktrees:
+        print("  Isolated Worktrees: enabled")
     if args.min_severity:
         print(f"  Min Severity: {args.min_severity}")
 
@@ -425,6 +523,11 @@ def main():
             out_of_scope_layers=args.out_of_scope_layers,
             min_severity=args.min_severity,
             model=args.model,
+            runner_type=args.runner,
+            app_server_url=args.app_server_url,
+            isolated_worktrees=args.isolated_worktrees,
+            worktree_root=args.worktree_root,
+            worktree_base_ref=args.worktree_base_ref,
             target_phase=args.target if args.target else None,
             emitter=emitter,
         )

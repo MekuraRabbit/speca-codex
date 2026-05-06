@@ -25,6 +25,17 @@ def test_env_var_override(monkeypatch):
     assert get_output_root() == Path("outputs/instance_42")
 
 
+def test_context_override_beats_env(monkeypatch):
+    """Task-local output root overrides SPECA_OUTPUT_DIR."""
+    monkeypatch.setenv("SPECA_OUTPUT_DIR", "outputs/from_env")
+    from scripts.orchestrator.paths import get_output_root, output_root_context
+
+    with output_root_context("outputs/from_context"):
+        assert get_output_root() == Path("outputs/from_context")
+
+    assert get_output_root() == Path("outputs/from_env")
+
+
 def test_resolve_pattern_default():
     """resolve_pattern with default root is identity."""
     env_backup = os.environ.pop("SPECA_OUTPUT_DIR", None)

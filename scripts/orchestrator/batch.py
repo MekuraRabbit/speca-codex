@@ -1,7 +1,7 @@
 """
 Batch Strategy Module
 
-Provides different strategies for batching items before Claude execution.
+Provides different strategies for batching items before worker execution.
 """
 
 import json

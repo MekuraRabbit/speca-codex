@@ -10,6 +10,7 @@ import json
 import glob
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -29,7 +30,13 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")
 FILTERED_CSV = os.path.join(OUTPUT_DIR, "similar_audit_findings.csv")
 MATCH_OUTPUT = os.path.join(OUTPUT_DIR, "similar_audit_matches.json")
-CLAUDE_EXE = r"C:\Users\shieru_k\AppData\Roaming\npm\claude.cmd"
+CLAUDE_EXE = (
+    os.environ.get("CLAUDE_EXE")
+    or (shutil.which("claude.cmd") if sys.platform == "win32" else None)
+    or shutil.which("claude")
+    or "claude"
+)
+CLAUDE_MODEL = os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-20250514")
 
 BATCH_SIZE = 10
 
@@ -169,7 +176,7 @@ def call_claude(prompt):
     """Call Claude CLI with the given prompt via stdin."""
     try:
         result = subprocess.run(
-            [CLAUDE_EXE, "--output-format", "json", "--model", "claude-sonnet-4-20250514", "-p"],
+            [CLAUDE_EXE, "--output-format", "json", "--model", CLAUDE_MODEL, "-p"],
             input=prompt.encode("utf-8"),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,

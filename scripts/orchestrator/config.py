@@ -26,9 +26,9 @@ def resolve_pattern(pattern: str) -> str:
     This function resolves them at usage time, supporting ``SPECA_OUTPUT_DIR``.
     """
     if pattern.startswith("outputs/"):
-        return str(get_output_root()) + pattern[7:]  # len("outputs") == 7
+        return get_output_root().as_posix() + pattern[7:]  # len("outputs") == 7
     if pattern.startswith("outputs\\"):
-        return str(get_output_root()) + pattern[7:]
+        return get_output_root().as_posix() + pattern[7:]
     return pattern
 
 
@@ -69,6 +69,20 @@ class PhaseConfig(BaseModel):
     workdir: str | None = None
     timeout_seconds: int = 3600
     model: str | None = None
+    # Runtime selected by app server / CLI. None preserves the env/default path.
+    runner_type: str | None = None
+    # Codex app-server websocket URL. When unset, CodexAppRunner starts a
+    # local app-server on a loopback websocket port for the phase run.
+    codex_app_server_url: str | None = None
+    # Optional isolation for app-server workers. Each worker gets a git
+    # worktree, so long-running turns can inspect or edit files without
+    # colliding with another worker's checkout.
+    isolated_worktrees: bool = False
+    worktree_root: str = ".codex/worktrees"
+    worktree_base_ref: str | None = None
+    # Per-run env overlay. This is intentionally stored on the copied config
+    # object, not in os.environ, so app-server runs can execute concurrently.
+    runtime_env: dict[str, str] = Field(default_factory=dict)
 
     # Queue item configuration
     item_id_field: str = "check_id"
@@ -281,7 +295,7 @@ def get_phase_config(phase_id: str) -> PhaseConfig:
     """Get configuration for a specific phase."""
     if phase_id not in PHASE_CONFIGS:
         raise ValueError(f"Unknown phase: {phase_id}. Available: {list(PHASE_CONFIGS.keys())}")
-    return PHASE_CONFIGS[phase_id]
+    return PHASE_CONFIGS[phase_id].model_copy(deep=True)
 
 
 def get_phase_chain(target_phase: str) -> list[str]:

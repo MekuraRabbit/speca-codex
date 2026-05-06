@@ -1,35 +1,54 @@
-<p align="center">
+﻿<p align="center">
   <img src="assets/speca_logo.png" alt="SPECA logo" width="240" />
 </p>
 
-<h1 align="center">SPECA: A Specification-to-Checklist Agentic Auditing Framework</h1>
+<h1 align="center">SPECA Codex: Codex App-Compatible SPECA Fork</h1>
 
 <p align="center">
   <a href="https://arxiv.org/abs/2604.26495"><img src="https://img.shields.io/badge/arXiv-2604.26495-b31b1b.svg" alt="arXiv"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
-  <a href="https://github.com/NyxFoundation/speca/actions"><img src="https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white" alt="CI"></a>
+  <img src="https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white" alt="CI">
   <img src="https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white" alt="Python 3.11+">
 </p>
 
-> **Paper:** Masato Kamba, Hirotake Murakami, Akiyoshi Sannai. *Beyond Code Reasoning: A Specification-Anchored Audit Framework for Expert-Augmented Security Verification.* arXiv preprint [arXiv:2604.26495](https://arxiv.org/abs/2604.26495), 2026.
+> **Upstream:** This repository is based on [NyxFoundation/speca](https://github.com/NyxFoundation/speca), the SPECA implementation associated with Masato Kamba, Hirotake Murakami, and Akiyoshi Sannai, *Beyond Code Reasoning: A Specification-Anchored Audit Framework for Expert-Augmented Security Verification*, arXiv [2604.26495](https://arxiv.org/abs/2604.26495), 2026.
 
-### Abstract
+> **Japanese guide:** [README.ja.md](README.ja.md)
 
-Security-critical software is routinely audited by tools that reason about vulnerabilities as repository-local code patterns. Yet specification-governed systems — protocol stacks, consensus implementations, cryptographic libraries — are constrained by invariants and correctness conditions defined in natural-language specifications. When a vulnerability arises from what the *specification requires* rather than how code is written, code-level approaches lack the representational vocabulary to detect it, and their false positives resist systematic diagnosis.
+> **Codex edition:** This fork adapts SPECA so Codex can run the worker phases through Codex App, `codex app-server`, isolated worktrees, and the local FastAPI scheduler. It preserves the upstream MIT license and copyright notice, but does not claim that Codex-run audits reproduce the upstream Claude-run paper results.
 
-**SPECA** is a specification-anchored security audit framework that derives explicit, typed security properties from natural-language specifications and audits implementations through structured **proof-attempt** reasoning grounded in each property. The framework yields three capabilities absent from code-driven auditing:
+## Authorized Use
 
-1. **Spec-dependent detections** that no code-local pattern matcher can express.
-2. **Controlled cross-implementation comparison** under a shared property vocabulary.
-3. **False positives that decompose into interpretable, pipeline-phase-traceable root causes.**
+SPECA is intended for defensive auditing and security research. Use it only on
+repositories and systems you own, maintain, or are explicitly authorized to
+assess through a contract, bug bounty, or other clear permission. Do not use
+SPECA for unauthorized probing, exploitation, authentication bypass, or service
+disruption. Treat `BUG_BOUNTY_SCOPE.json` and `TARGET_INFO.json` as the
+authorized boundary for each run.
 
-### Headline Results
+## What This Fork Is
 
-- **Sherlock Ethereum Fusaka Audit Contest** (366 submissions, 10 implementations): SPECA recovers **all 15** in-scope H/M/L vulnerabilities (5H/2M/8L) and independently discovers **4 bugs confirmed by developer fix commits** — including a cryptographic invariant violation absent from all 366 adjudicated contest submissions.
-- **RepoAudit C/C++ benchmark** (15 projects, 35 non-disputed ground-truth bugs): SPECA matches the best published precision (**88.9%**, Sonnet 4.5) while surfacing **12 author-validated candidate bugs beyond the established ground truth** — two confirmed by upstream maintainers.
-- **All false positives** in the deep analysis (N=16) trace to **three interpretable root causes** — trust boundary misunderstanding (50%), code reading error (37.5%), specification misinterpretation (12.5%) — each mapped to a specific pipeline phase.
+This repository is a practical Codex App adaptation of SPECA. The upstream
+project was designed around Claude Code workers; this fork keeps that workflow
+available for compatibility while adding a Codex-oriented path:
 
-See [Evaluation](#evaluation) for full numbers and charts.
+- Codex App can start the local SPECA API, dispatch phases, watch progress, and
+  collect results.
+- SPECA can use `codex app-server` threads for long-running and parallel worker
+  turns.
+- Worker changes can be isolated in per-worker git worktrees and collected via
+  the reducer/diff endpoint.
+- When an API run omits `model`, SPECA can use the model and reasoning effort
+  selected in the Codex App GUI.
+
+For the original research claims, paper results, and full benchmark artifact
+context, refer to the upstream SPECA repository and paper.
+
+## Maintenance Scope
+
+This is an unofficial Codex App-compatible fork. It is maintained as a Codex
+App adaptation and may intentionally lag behind upstream. For the latest
+upstream research implementation, use [NyxFoundation/speca](https://github.com/NyxFoundation/speca).
 
 ## Table of Contents
 
@@ -40,73 +59,181 @@ See [Evaluation](#evaluation) for full numbers and charts.
 - [Phases](#phases)
 - [Running on GitHub Actions](#running-on-github-actions)
 - [Configuration](#configuration)
-- [Evaluation](#evaluation) — RQ1 Sherlock + RQ2 RepoAudit, with charts
-- [Reproducing the Benchmarks](#reproducing-the-benchmarks)
+- [Upstream Paper And Benchmarks](#upstream-paper-and-benchmarks)
 - [Contributing](#contributing)
 - [Citation](#citation)
 - [License](#license)
 
 ## Why SPECA?
 
-Existing LLM-based auditors begin from the *code* and work outward — scanning a repository for bug-pattern templates, dataflow anomalies, and API misuse. Specification-governed systems break this assumption: a vulnerability can arise from what the spec *requires* even when no local code pattern looks suspicious. The KZG batch-verification bug recovered by SPECA in [§Evaluation](#evaluation) is exactly this kind of issue — a violation of a mathematical invariant defined only in the specification, missed by all 366 contest auditors despite the code being open and well-reviewed.
+SPECA starts from specifications rather than only scanning repository-local code
+patterns. It derives a typed property vocabulary from natural-language specs,
+then asks an implementation to provide evidence that each property holds. This
+fork keeps that pipeline shape and makes the worker runtime usable from Codex
+App.
 
-SPECA inverts the direction of analysis. It begins from the **specification** and derives a typed property vocabulary, then asks the implementation to *prove* each property. This shift produces three capabilities that code-driven tools cannot match:
+The upstream method is useful when an audit needs:
 
 | | Code-driven auditing | SPECA (specification-anchored) |
 |---|---|---|
-| **Detection** | Finds defects that look like known bug patterns | Finds defects defined as violations of explicit, typed properties |
+| **Detection** | Finds defects that look like known bug patterns | Checks defects framed as violations of explicit, typed properties |
 | **Cross-implementation comparison** | Each codebase analyzed in isolation | Single property vocabulary applied uniformly across N implementations |
-| **False positive triage** | Opaque — "the model thought this was a bug" | FPs decompose into 3 root causes (trust boundary / code reading / spec misinterpretation), each tied to a pipeline phase |
+| **False positive triage** | Opaque — "the model thought this was a bug" | Structured review metadata can tie disputed findings back to pipeline phases |
 
-A second, often-overlooked benefit: because every finding is grounded in a specific property derived from a specific spec section, every detection has a **provenance chain** (`property → subgraph → spec section → INV-* label`). This makes findings auditable, not just generated.
+A second, often-overlooked benefit: because every finding is grounded in a
+specific property derived from a specific spec section, each output can carry a
+provenance chain (`property -> subgraph -> spec section -> INV-* label`). This
+helps make findings auditable, not just generated.
 
 ### Why "proof-attempt" instead of "find bugs"
 
-An early prototype used the conventional adversarial framing — *"find bugs in this code"* — and produced an **88% false-positive rate**. Without a structured claim to disprove, the model emitted speculative findings with weak grounding. The proof-attempt framing forces the model to commit to a verifiable claim before reporting a gap, and the recall-safe 3-gate review filter (simplified down from a 5-gate prototype, after the dropped gates were shown to filter informational true positives at 0% precision) preserves H/M/L recall while filtering ~2/3 of the remaining false positives.
+The upstream SPECA design uses a proof-attempt framing instead of simply asking
+workers to "find bugs." The worker first maps a property to code evidence, then
+tries to prove the property holds; reported findings are gaps in that proof
+attempt. This fork does not change that core framing, but it lets Codex perform
+the worker turns.
 
 ## Quick Start
 
 ### Prerequisites
 
 - **Python 3.11+** and [`uv`](https://github.com/astral-sh/uv) (`pip install uv`)
-- **Node.js 20+** (for the Claude Code CLI and MCP servers)
-- **Anthropic API access** — `ANTHROPIC_API_KEY` exported in your shell, or a logged-in [Claude Code](https://docs.claude.com/en/docs/claude-code) session
+- **Node.js 20+** (for worker CLIs and MCP servers)
+- **Codex CLI** for Codex app-server and local fallback workers (`npm install -g @openai/codex`, or use the Codex desktop app bundle)
+- **Claude Code CLI** only for legacy Claude-runner workflows
 - **`git`** — Phase 03 auto-clones the target repository at the commit pinned in `outputs/TARGET_INFO.json`
 
 ### Install
 
 ```bash
 # 1. Clone
-git clone https://github.com/NyxFoundation/speca.git
-cd speca
+git clone <this-repository-url>
+cd <repository-directory>
 
-# 2. Install Claude Code CLI (used as the worker runtime)
-npm install -g @anthropic-ai/claude-code
+# 2. Install Codex CLI (used by the Codex app-server runner)
+npm install -g @openai/codex
 
 # 3. Install Python deps via uv (creates an isolated env)
 uv sync
-
-# 4. Register MCP servers (tree_sitter / filesystem / fetch)
-bash scripts/setup_mcp.sh
-bash scripts/setup_mcp.sh --verify
 ```
 
-### Run a single phase
+Copy `<this-repository-url>` from the green **Code** button on the repository
+page. If `uv sync` fails on Windows while preparing legacy workflow extras, you
+can create a lightweight environment for the Codex App API:
 
 ```bash
-# Smoke-test: discover specs from a seed URL
-SPEC_URLS="https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7594.md" \
-  uv run python3 scripts/run_phase.py --phase 01a
+uv venv
+uv pip install --python .venv/Scripts/python.exe pytest fastapi pydantic httpx aiofiles tqdm "uvicorn[standard]"
 ```
 
-### End-to-end audit
+### Use It From Codex App
+
+The primary path for this fork is **not** asking users to operate the CLI by
+hand. Ask Codex in Codex App to run SPECA for you; Codex can start the
+`speca-api` launch task, check health, dispatch phases, monitor progress, and
+collect app-server thread metadata and diffs. The `curl` and CLI snippets below
+are the underlying operations and are also useful for debugging.
+
+For the first smoke test, ask Codex:
+
+```text
+Start the SPECA API for this repository and check /api/health.
+Run a Codex App runner 01a smoke test, watch progress, and summarize
+outputs/smoke_01a/01a_STATE.json when it finishes.
+Use seed URL https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7594.md
+and output_dir outputs/smoke_01a.
+```
+
+For a production-like audit, prepare `outputs/BUG_BOUNTY_SCOPE.json` and
+`outputs/TARGET_INFO.json`, then ask:
+
+```text
+Using the Codex App runner, run SPECA through target phase 04.
+Enable isolated_worktrees. Use output_dir outputs/audit_<target-name>,
+workers=4, and max_concurrent=8. Report progress, failed batches,
+Codex app-server thread metadata, diff/reducer results, and final outputs.
+```
+
+For multiple targets:
+
+```text
+Dispatch two SPECA runs in parallel with distinct output_dir values.
+Make sure no output_dir is reused. Track progress for both runs and compare
+their final partials/results, failed batches, and diff metadata.
+```
+
+SPECA reads the Codex App GUI-selected model and reasoning effort from local
+session metadata when the API dispatch omits `model`. Ask for
+`service_tier: "fast"` only when you want to force the fast tier.
+
+### Start the API Manually
+
+From Codex App, launch `.codex/launch.json` entry `speca-api`. To start it
+manually on Windows:
+
+```bash
+.venv/Scripts/python.exe -m uvicorn server.app:app --host 127.0.0.1 --port 8000
+```
+
+On macOS/Linux:
+
+```bash
+.venv/bin/python -m uvicorn server.app:app --host 127.0.0.1 --port 8000
+```
+
+Check the server:
+
+```bash
+curl http://127.0.0.1:8000/api/health
+```
+
+Expected response:
+
+```json
+{"status":"ok"}
+```
+
+### First Smoke Test
+
+Start with `01a`; it does not require earlier SPECA outputs. This dispatch
+uses Codex app-server workers by default when called through the API.
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/phases/dispatch \
+  -H "content-type: application/json" \
+  -d '{"phase_id":"01a","workers":1,"max_concurrent":1,"spec_urls":"https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7594.md","output_dir":"outputs/smoke_01a"}'
+```
+
+Use the returned `run_id` to stream progress:
+
+```bash
+curl -N http://127.0.0.1:8000/api/runs/<run_id>/progress
+```
+
+The output should appear at `outputs/smoke_01a/01a_STATE.json`.
+
+### Full Audit Flow
+
+SPECA phases consume outputs from earlier phases. Phases `03` and `04` require
+the previous property and code-resolution artifacts to already exist.
+
+| Order | Phase | Purpose | Main input |
+|---|---|---|---|
+| 1 | `01a` | Discover specification URLs | `spec_urls` |
+| 2 | `01b` | Extract specification subgraphs | `01a_STATE.json` |
+| 3 | `01e` | Generate security properties | `BUG_BOUNTY_SCOPE.json` |
+| 4 | `02c` | Resolve properties to code locations | `TARGET_INFO.json` |
+| 5 | `03` | Property-grounded audit | Outputs through `02c` |
+| 6 | `04` | False-positive filtering and severity calibration | `03` output |
+
+For a CLI run that executes dependencies up to `04`:
 
 ```bash
 # Place these two files first:
 #   outputs/BUG_BOUNTY_SCOPE.json   # required by Phase 01e
 #   outputs/TARGET_INFO.json        # required by Phase 02c/03
 
-uv run python3 scripts/run_phase.py --target 04 --workers 4 --max-concurrent 64
+uv run python scripts/run_phase.py --target 04 --runner codex-app --workers 4 --max-concurrent 8
 ```
 
 Outputs are written to `outputs/<phase_id>_PARTIAL_*.json`. See the [Configuration](#configuration) section below for `BUG_BOUNTY_SCOPE.json` / `TARGET_INFO.json` formats.
@@ -114,14 +241,14 @@ Outputs are written to `outputs/<phase_id>_PARTIAL_*.json`. See the [Configurati
 ### Run the test suite
 
 ```bash
-uv run python3 -m pytest tests/ -v --tb=short
+uv run python -m pytest tests/ -v --tb=short
 ```
 
 ## Demo
 
-See past and ongoing audit runs on the **GitHub Actions** page:
+See past and ongoing audit runs on this repository's **GitHub Actions** page:
 
-**[View Actions Runs](https://github.com/NyxFoundation/speca/actions)**
+Open the repository's **Actions** tab to view or trigger workflow runs.
 
 Each workflow step (01a through 04) can be triggered independently via `workflow_dispatch`. Results are committed to audit branches and can be reviewed as Pull Requests.
 
@@ -149,7 +276,7 @@ In multi-implementation settings, the **left stage executes once** against the s
 The pipeline ships as a reusable **audit harness** under `scripts/orchestrator/` — not a one-off script. The harness provides the infrastructure that every phase needs (queueing, parallel worker dispatch, token-aware batching, resume on partial failure, per-phase budget enforcement, shared circuit-breaker logic, and structured log/cost telemetry); each phase plugs in a worker prompt and a Pydantic schema and inherits all of the above for free. This separation is what makes the framework reusable: you can drop in a new phase, target a new codebase, or swap a model backbone without touching the harness itself.
 
 Concretely, the harness:
-- **Drives the Claude Code CLI** as the worker runtime (one subprocess per batch, with `--prompt-path` and `--stream-json`), so each worker inherits Claude Code's tool sandbox (Read/Write/Grep/Glob, MCP servers when enabled).
+- **Drives a worker runtime per batch**. Codex App server runs use `codex app-server` threads by default, with `codex exec` as a local fallback and the original Claude Code runner retained for legacy workflows.
 - **Resumes from `outputs/*_PARTIAL_*.json`** so a 10-implementation RQ1 run that's interrupted at hour 4 picks up exactly where it left off without re-spending tokens.
 - **Enforces a per-phase budget** at the runner level (`BudgetExceeded` is raised, not logged) so a runaway prompt cannot burn the whole RQ1 budget on a single target.
 - **Validates leniently** — Pydantic schema mismatches generate warnings, not aborts; partial results are first-class and never blocked on validation failures.
@@ -379,7 +506,7 @@ The orchestrator **requires** `outputs/BUG_BOUNTY_SCOPE.json` and aborts if the 
 | **Prompt** | `prompts/02c_codelocation_worker.md` (inlined — no skill fork) |
 | **Input** | `outputs/01e_PARTIAL_*.json` + `outputs/TARGET_INFO.json` + `outputs/01b_SUBGRAPH_INDEX.json` |
 | **Output** | `outputs/02c_PARTIAL_*.json` |
-| **Model** | Sonnet |
+| **Worker model** | Legacy Claude default: Sonnet. Codex App runs use the GUI-selected model/reasoning effort unless `model` is passed explicitly. |
 
 Pre-resolves code locations for each property against the target repository using Tree-sitter MCP (primary) with Glob/Grep fallback. Records file paths, symbol names, and line ranges without extracting code. Applies severity gating (drops `Informational` properties by default). Builds `outputs/01b_SUBGRAPH_INDEX.json` from 01b partials for spec-level context. Reads `outputs/TARGET_INFO.json` (created by 02c workflow before phase runs).
 
@@ -448,7 +575,7 @@ Reduces token consumption in Phase 03 by ~40-60%.
 | **Prompt** | `prompts/03_auditmap_worker_inline.md` (inlined — no skill fork) |
 | **Input** | `outputs/02c_PARTIAL_*.json` + Target codebase (auto-cloned from `TARGET_INFO.json`) |
 | **Output** | `outputs/03_PARTIAL_*.json` |
-| **Model** | Sonnet |
+| **Worker model** | Legacy Claude default: Sonnet. Codex App runs use the GUI-selected model/reasoning effort unless `model` is passed explicitly. |
 
 Performs a proof-based 3-sub-phase formal audit for each property against the target codebase. **The core method: try to prove the property holds; where the proof breaks, that gap is the bug.** This framing was chosen over an adversarial *"find bugs"* prompt after preliminary experiments showed the adversarial approach produced an **88% false positive rate** — without a structured claim to disprove, the model produced numerous speculative findings with weak grounding.
 
@@ -517,7 +644,7 @@ Compact 6-field output per item: `property_id`, `classification`, `code_path`, `
 | **Prompt** | `prompts/04_review_worker.md` (inlined — no skill fork) |
 | **Input** | `outputs/03_PARTIAL_*.json` + `outputs/BUG_BOUNTY_SCOPE.json` + `outputs/TARGET_INFO.json` |
 | **Output** | `outputs/04_PARTIAL_*.json` |
-| **Model** | Sonnet |
+| **Worker model** | Legacy Claude default: Sonnet. Codex App runs use the GUI-selected model/reasoning effort unless `model` is passed explicitly. |
 
 Filters false positives from Phase 03 findings via a recall-safe 3-gate pipeline with early exit. **Only these 3 gates may produce DISPUTED_FP** — no other reasoning may dispute a finding:
 
@@ -614,7 +741,10 @@ Compiles a publication-ready security assessment report covering all findings. I
 
 ## Running on GitHub Actions
 
-All pipeline phases are executed via **GitHub Actions workflows** with `workflow_dispatch` triggers:
+The upstream-style CI workflows are still available via **GitHub Actions**
+with `workflow_dispatch` triggers. They are mainly useful for reproduction and
+legacy runner automation. For normal Codex App use, start with the local API
+flow in [Quick Start](#quick-start).
 
 | Workflow | File | Description |
 |---|---|---|
@@ -627,8 +757,8 @@ All pipeline phases are executed via **GitHub Actions workflows** with `workflow
 
 Each workflow:
 1. Checks out the repository and syncs the latest `scripts/`, `prompts/`, `.claude/` from the base branch.
-2. Installs Claude Code CLI and registers MCP servers via `scripts/setup_mcp.sh`.
-3. Runs the orchestrator: `uv run python3 scripts/run_phase.py --phase <ID> --workers N`.
+2. Installs the worker CLI selected by the workflow and registers MCP servers via `scripts/setup_mcp.sh`.
+3. Runs the orchestrator, for example: `uv run python scripts/run_phase.py --phase <ID> --runner codex-app --workers N`.
 4. Commits results to an audit branch and uploads logs as artifacts.
 
 For local execution, see [Quick Start](#quick-start) above.
@@ -695,7 +825,10 @@ Pins the target repository and commit. Phase 03 will `git clone` to this exact r
 
 | Variable | Used By | Purpose |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | All phases | Claude Code authentication |
+| `ANTHROPIC_API_KEY` | Legacy Claude runner | Claude Code authentication |
+| `SPECA_CODEX_MODEL` | Codex runners | Optional explicit Codex model override; API runs normally read the Codex App GUI model when `model` is omitted |
+| `SPECA_CODEX_REASONING_EFFORT` | Codex app-server runner | Optional explicit reasoning effort override (`low`, `medium`, `high`, `xhigh`, etc.) |
+| `SPECA_CODEX_SERVICE_TIER` | Codex app-server runner | Optional service tier override (`fast` or `flex`) |
 | `SPEC_URLS` | 01a | Comma-separated seed URLs to crawl |
 | `KEYWORDS` | 01a | Optional crawl keyword filter |
 | `FORCE_EXECUTE=1` | All phases | Bypass resume state (set automatically by `--force`) |
@@ -703,206 +836,34 @@ Pins the target repository and commit. Phase 03 will `git clone` to this exact r
 | `CLAUDE_CODE_MAX_OUTPUT_TOKENS=100000` | CI | Raise output cap for long audit traces |
 | `GITHUB_PERSONAL_ACCESS_TOKEN` | Optional | Used by GitHub MCP server when enabled |
 
-## Evaluation
+## Upstream Paper And Benchmarks
 
-SPECA is evaluated on two complementary benchmarks. **RQ1** measures effectiveness on a large multi-implementation security contest with 366 professional auditors; **RQ2** compares SPECA against published code-driven baselines on an established C/C++ benchmark.
+This fork is based on upstream SPECA and keeps selected benchmark summaries,
+labels, figures, and scripts where they are useful for context. The original
+paper results were produced by the upstream project and its runner setup. Because
+this fork changes the worker runtime to support Codex App and `codex app-server`,
+this repository does not claim that Codex-run audits reproduce those exact
+results.
 
-> All numbers below are taken verbatim from the paper ([arXiv:2604.26495](https://arxiv.org/abs/2604.26495)). Charts are reproducible via the scripts under [`benchmarks/`](./benchmarks/README.md); raw artifacts (logs, per-finding labels, model outputs) ship with this repository.
+For the original research claims, full benchmark discussion, and paper artifact
+layout, see:
 
-### RQ1 — Sherlock Ethereum Fusaka Audit Contest
+- [NyxFoundation/speca](https://github.com/NyxFoundation/speca)
+- [arXiv:2604.26495](https://arxiv.org/abs/2604.26495)
+- [benchmarks/README.md](benchmarks/README.md) for retained scripts and notes in
+  this fork
 
-**Benchmark.** 10 production Ethereum client implementations of EIP-7594 (PeerDAS) and EIP-7691, spanning **5 programming languages** (Go, Rust, Nim, TypeScript, C). 366 submissions from professional auditors; 15 judged valid at H/M/L severity (5 High, 2 Medium, 8 Low).
-
-**Headline detection numbers (post-Phase 6, N=72):**
-
-| Metric | Value |
-|---|---|
-| Phase 5 findings (pre-review) | 102 |
-| Phase 6 findings (post-review) | 72 |
-| **H/M/L recovered (expert-augmented)** | **15 / 15 (100%)** |
-| H/M/L recovered (automated-only) | 8 / 15 (53%) |
-| **Novel bugs confirmed by fix commits** | **4** |
-| Confirmed FPs (post-review) | 24 (33.3%) |
-| Strict precision (H/M/L match) | 26.4% (19/72) |
-| Confirmed-useful precision | 59.7% (43/72) |
-| Broad precision (non-FP rate) | 66.7% (48/72) |
-
-**Phase 6 lifts precision while preserving recall.** The severity-preserving review filter raises broad precision from **56.9% → 66.7%** while preserving 100% recall on H/M/L true positives, raising **F1 from 72.5% → 80.0%**:
-
-<p align="center">
-  <img src="benchmarks/results/rq1/sherlock_ethereum_audit_contest/chart_phase_comparison.png" alt="Phase 5 vs Phase 6" width="600" />
-</p>
-
-**Property neighborhoods drive recall.** Many issues are recovered not by a single alert but by multiple complementary properties. Cluster-level strict precision (grouping all findings against the same issue into one cluster) is **48.7%** (vs. 26.4% finding-level), confirming genuine redundancy rather than alert duplication.
-
-<p align="center">
-  <img src="benchmarks/results/rq1/sherlock_ethereum_audit_contest/chart_findings_per_issue.png" alt="Findings per issue" width="600" />
-</p>
-
-The Sankey diagram below makes the same neighborhood structure visible from the property side: the horizontal density around a handful of issues shows which property families converge on the same root cause.
-
-<p align="center">
-  <img src="benchmarks/results/rq1/sherlock_ethereum_audit_contest/chart_sankey_flow.png" alt="Property family → ground-truth issue Sankey flow" width="700" />
-</p>
-
-**Per-repository finding distribution** across the 10 implementations (Phase 5 vs Phase 6):
-
-<p align="center">
-  <img src="benchmarks/results/rq1/sherlock_ethereum_audit_contest/chart_per_repo.png" alt="Per-repository findings" width="700" />
-</p>
-
-**4 novel bugs absent from all 366 contest submissions, confirmed by developer fix commits:**
-
-| # | Target | Bug | Fix |
-|---|---|---|---|
-| A | **c-kzg-4844** | KZG batch-verification challenge hash uses the original commitment array rather than the deduplicated array — selective forgery against batch verify | `f18ba082` |
-| B | **Lodestar** | Inverted logic + missing validation on column sidecar cache | `3b98c59c` |
-| C | **Nimbus** | Unchecked array access reachable from RPC and Engine API | `b3a3f3f9` |
-| D | **Prysm** | Wrong subnet parameter computation + missing cell-count validation | `b5bdd65f` |
-
-> **Bug A** is particularly significant: a cryptographic correctness bug in a core library used by multiple Ethereum clients. It is a violation of an invariant that the specification defines but no code-level auditing tool was designed to check.
-
-**Recovered Sherlock H/M/L issues** (representative subset):
-
-| Severity | Target | Issue | Sherlock # |
-|---|---|---|---|
-| HIGH | Prysm | Inclusion proof cache key omits `KzgCommitments` → cache poisoning bypasses Merkle verification | #190 |
-| HIGH | Nethermind | Mismatched loop bounds between `BlobVersionedHashes` and `wrapper.Blobs` → extra hashes bypass commitment validation | #210 |
-| HIGH | c-kzg-4844 | Fiat-Shamir challenge hash uses original array instead of deduplicated commitments → selective forgery | #203 |
-| HIGH | Lighthouse | `get_beacon_proposer_indices` recomputes from active validators instead of reading `proposer_lookahead` → consensus split | #40 |
-| MEDIUM | Nimbus | `handle_custody_groups` loop terminates only when `HashSet.size == custody_group_count` → infinite-loop DoS via P2P metadata | #15 |
-| MEDIUM | Nimbus | 30-minute metadata refresh timer with no fork-aware acceleration → stale `custody_group_count=0` blocks data-column sync | #216 |
-| LOW | Grandine | `verify_kzg_proofs` returns `Ok(false)` but boolean is discarded by `.map_err()?` → invalid KZG proofs accepted | #376 |
-| LOW | Grandine | `get_blob_schedule_entry` assumes descending order but named-network constructors define ascending → wrong epoch match causes chain split | #319 |
-| LOW | Lodestar | Cache key `(blockRootHex, index)` excludes signature → attacker rebroadcasts invalid-signature sidecars via cache hit | #381 |
-| LOW | Reth/alloy-evm | `next_block_excess_blob_gas_osaka()` receives child's base fee instead of parent's → invalid block proposals | #371 |
-
-**Phase 6 three-gate filter effectiveness** (N=30 `DISPUTED_FP`):
-
-<p align="center">
-  <img src="benchmarks/results/rq1/sherlock_ethereum_audit_contest/chart_gate_effectiveness.png" alt="Gate effectiveness" width="600" />
-</p>
-
-The current 3-gate design was **simplified from a 5-gate prototype** after empirical analysis showed two of the original gates (Spec Cross-Reference and Exploitability) filtered informational true positives at **0% precision**, providing no net benefit.
-
-#### Structured False-Positive Analysis
-
-A defining capability of SPECA: every false positive decomposes into a **traceable root cause**. Of 16 deeply analyzed FPs (drawn from a population of 44 total):
-
-| Root Cause | Phase Origin | N | % |
-|---|---|---|---|
-| Trust boundary misunderstanding | Phase 3 (Property Generation) | 8 | 50.0% |
-| Code reading error | Phase 5 (Audit) | 6 | 37.5% |
-| Specification misinterpretation | Phase 3 | 2 | 12.5% |
-
-<p align="center">
-  <img src="benchmarks/results/rq1/sherlock_ethereum_audit_contest/chart_fp_taxonomy.png" alt="FP taxonomy" width="600" />
-</p>
-
-Each root cause maps to a **concrete, implementable improvement target**: explicit trust-boundary configuration, richer code-reading context, and enforced spec-section re-reading before classification. This is the property-centered representation's payoff: failures are diagnosable.
-
-#### Property-Type Ablation
-
-Which parts of the property vocabulary actually drive detection?
-
-| Property Type | N | TP | FP | Precision |
-|---|---|---|---|---|
-| Invariant | 67 | 18 | 6 | **75.0%** |
-| Precondition | 11 | 4 | 0 | **100.0%** |
-| Postcondition | 5 | 1 | 1 | 50.0% |
-| Assumption | 5 | 0 | 1 | **0.0%** |
-
-<p align="center">
-  <img src="benchmarks/results/rq1/sherlock_ethereum_audit_contest/chart_property_type_ablation.png" alt="Property type ablation" width="600" />
-</p>
-
-Invariants account for 76% of findings at 75% precision and dominate detection today. Assumption-type properties are too noisy for reliable auditing and are best treated as an exploratory mode. **Postcondition and assumption generation are the concrete research frontiers** for the automated-only configuration.
-
-#### Automated-Only vs. Expert-Augmented
-
-| Configuration | Properties | H/M/L | Coverage |
-|---|---|---|---|
-| Automated-only | Auto-generated (Phases 1–3) | 8 / 15 | 53% |
-| **Expert-augmented** | Auto + 7 manual properties | **15 / 15** | **100%** |
-
-The 7 manual properties cluster in two domain-specific areas — **cryptographic invariants** (KZG polynomial commitment edge cases, BLS12-381 identity element handling) and **protocol-lifecycle rules** (custody group bounds, cache key completeness, fork-transition metadata refresh) — that require mathematical domain knowledge or multi-specification cross-referencing not yet reliably automated. They are authored once per spec corpus and **reused across all 10 implementations**, so expert-knowledge injection has high amortized leverage in multi-implementation settings.
-
-### RQ2 — RepoAudit C/C++ Benchmark
-
-**Benchmark.** 15 open-source C/C++ projects with 35 non-disputed ground-truth bugs (null-pointer dereferences, memory leaks, use-after-free) confirmed by developer fixes, plus 5 disputed bugs. Comparison: published RepoAudit baselines (4 model configurations) plus Meta Infer and Amazon CodeGuru.
-
-| Method | TP | FP | Precision | New cand. | Cost |
-|---|---|---|---|---|---|
-| _Partially controlled (DeepSeek R1)_ | | | | | |
-| RepoAudit (DeepSeek R1) | 41 | 6 | 87.2% | (in TP) | $8.55 |
-| **SPECA (DeepSeek R1)** | — | 15 | 72.7% | **7** | $93.51 |
-| _Latest models_ | | | | | |
-| RepoAudit (Claude 3.7 Sonnet) | 40 | 5 | 88.9% | (in TP) | $23.85 |
-| **SPECA (Sonnet 4.5)** | — | 6 | **88.9%** | **12** | $81.05 |
-| _Other configurations_ | | | | | |
-| Amazon CodeGuru | 0 | 18 | 0.0% | 0 | — |
-| Meta Infer | 7 | 2 | 77.8% | 0 | free |
-| RepoAudit (o3-mini) | 36 | 9 | 80.0% | (in TP) | $4.50 |
-| RepoAudit (Claude 3.5 Sonnet) | 40 | 11 | 78.4% | (in TP) | $38.10 |
-| **SPECA (Sonnet 4)** | — | 13 | 81.2% | **18** | $100.68 |
-
-> **New cand.** = author-validated candidate bugs *beyond* the established ground truth. Recall is not reported because the GT was constructed from RepoAudit's own discoveries (structurally unfair to compare).
-
-<p align="center">
-  <img src="benchmarks/results/rq2a/figures/rq2a_precision_comparison.png" alt="Precision comparison" width="600" />
-</p>
-
-<p align="center">
-  <img src="benchmarks/results/rq2a/figures/rq2a_tp_fp_comparison.png" alt="TP vs FP" width="600" />
-</p>
-
-**SPECA (Sonnet 4.5) matches the best published baseline precision (88.9%)** while uniquely surfacing 12 author-validated beyond-GT candidates. Two of those candidates are externally validated:
-
-- **`PROP-N3-npd-001` (coturn, NPD)** — confirmed at **Level A** (bug existed in the analyzed commit, independently fixed in a later release; PR #1841 self-withdrawn after discovering the fix).
-- **`PROP-U5-uaf-002` (ICU/i18n, UAF race condition)** — confirmed at **Level B** (ICU maintainer approved the corresponding Jira ticket; PR #3921).
-
-**Cost vs. detection performance:**
-
-<p align="center">
-  <img src="benchmarks/results/rq2a/figures/rq2a_cost_efficiency.png" alt="Cost vs precision" width="600" />
-</p>
-
-At the Sonnet 4.5 configuration, SPECA achieves the highest precision while uniquely reporting double-digit beyond-GT candidates at a per-bug cost (~**$1.69/bug**) competitive with the best published baseline.
-
-**Symmetric cross-backbone comparison** (same-backbone DeepSeek R1 left, latest-models right):
-
-<p align="center">
-  <img src="benchmarks/results/rq2a/figures/rq2a_symmetric_comparison.png" alt="Symmetric comparison" width="700" />
-</p>
-
-#### The Property Adherence Effect
-
-An instructive non-monotonic pattern: Sonnet 4 discovers **18** beyond-GT candidates, Sonnet 4.5 discovers **12**, DeepSeek R1 discovers **7**. This is *not* a simple precision–discovery tradeoff — it reflects **increasing property adherence**. More capable models audit more faithfully against the stated property, checking exactly what the specification-derived property asserts and no more. Less capable models drift from the property scope during the proof-attempt phase, producing some genuine bugs (beyond-GT) and some false positives.
-
-> Engineering implication: **as models improve, property generation (Phases 1–3) becomes the binding constraint on detection coverage.** The model audits precisely what the properties tell it to audit; comprehensive property derivation is the primary lever for improving recall.
-
-### Cost & Throughput
-
-- **RQ1 (Sherlock):** ≈ $400–620 total API cost (10 implementations).
-- **RQ2 (RepoAudit, Sonnet 4.5):** $81.05 total = **$1.69 / bug**.
-- Phases 1–3 use Claude **Opus** (specification understanding); Phases 4–6 use Claude **Sonnet** (code analysis & review).
-
-## Reproducing the Benchmarks
-
-All evaluation scripts, per-repository outputs, and labeling artifacts ship with the repo:
-
-- [`benchmarks/results/rq1/sherlock_ethereum_audit_contest/`](./benchmarks/results/rq1/sherlock_ethereum_audit_contest/) — RQ1 raw outputs, labels, and chart-generation scripts.
-- [`benchmarks/results/rq2a/`](./benchmarks/results/rq2a/) — RQ2 RepoAudit outputs and figures.
-- [`benchmarks/README.md`](./benchmarks/README.md) — full reproduction instructions.
+Raw worker logs and model trace logs are intentionally omitted from this Codex
+fork. Generated run logs are ignored by default.
 
 ## Contributing
 
 We welcome issues and pull requests from the community.
 
-- **Bugs / feature requests:** open a [GitHub issue](https://github.com/NyxFoundation/speca/issues) with a minimal reproducer or a concrete use-case.
+- **Bugs / feature requests:** open a GitHub issue in this repository with a minimal reproducer or a concrete use-case.
 - **Pull requests:**
-  1. Fork the repo and create a topic branch off `master`.
-  2. Run the test suite: `uv run python3 -m pytest tests/ -v --tb=short`.
+  1. Fork the repo and create a topic branch off the default branch.
+  2. Run the test suite: `uv run python -m pytest tests/ -v --tb=short`.
   3. Keep changes focused — pipeline phases are deliberately decoupled, so a PR should usually touch one phase at a time.
   4. Open the PR with a brief description of *what* changed and *why*. If the change affects an inter-phase data contract, update `scripts/orchestrator/schemas.py` and the relevant prompt under `prompts/` together.
 - **New target domains:** SPECA is domain-agnostic by design. To onboard a new target, you typically only need to write a `BUG_BOUNTY_SCOPE.json` and a `TARGET_INFO.json` — no code change required.

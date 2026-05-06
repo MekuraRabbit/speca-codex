@@ -20,6 +20,8 @@ if _scripts_dir not in sys.path:
 
 from orchestrator import create_orchestrator
 from orchestrator.base import BaseOrchestrator, PhaseAbortError
+from orchestrator.codex_gui_model import resolve_codex_gui_settings
+from orchestrator.paths import get_output_root, output_root_context
 from orchestrator.runner import CircuitBreakerTripped, BudgetExceeded
 
 from .progress import ProgressBus, ProgressEvent, EventType
@@ -76,6 +78,9 @@ class InstrumentedOrchestrator:
             ))
             raise
         finally:
+            runner_close = getattr(getattr(self.orch, "runner", None), "close", None)
+            if runner_close is not None:
+                await runner_close()
             await self.bus.close()
 
     async def _execute_batches_with_progress(
@@ -191,38 +196,126 @@ async def _run_phase(run: RunInfo, manager: RunManager) -> None:
     inputs = run.inputs
     phase_id = inputs["phase_id"]
 
-    # Set environment variables (mirrors run_phase.py logic)
-    if inputs.get("force"):
-        os.environ["FORCE_EXECUTE"] = "1"
-    elif "FORCE_EXECUTE" in os.environ:
-        del os.environ["FORCE_EXECUTE"]
-
-    if phase_id == "01a":
-        if inputs.get("keywords"):
-            os.environ["KEYWORDS"] = inputs["keywords"]
-        if inputs.get("spec_urls"):
-            os.environ["SPEC_URLS"] = inputs["spec_urls"]
-
     try:
         run.status = RunStatus.RUNNING
 
-        orch = create_orchestrator(
-            phase_id,
-            num_workers=inputs.get("workers", 4),
-            max_concurrent=inputs.get("max_concurrent", 8),
-        )
+        with output_root_context(run.output_dir):
+            orch = create_orchestrator(
+                phase_id,
+                num_workers=inputs.get("workers", 4),
+                max_concurrent=inputs.get("max_concurrent", 8),
+            )
+            orch.force_execute = bool(inputs.get("force"))
 
-        if inputs.get("min_severity") and orch.config.min_severity is not None:
-            orch.config.min_severity = inputs["min_severity"]
+            runtime_env: dict[str, str] = {
+                "SPECA_OUTPUT_DIR": str(get_output_root()),
+                "SPECA_RUN_ID": run.run_id,
+                "SPECA_PHASE_ID": phase_id,
+            }
+            if inputs.get("keywords"):
+                runtime_env["KEYWORDS"] = str(inputs["keywords"])
+            if inputs.get("spec_urls"):
+                runtime_env["SPEC_URLS"] = str(inputs["spec_urls"])
+            if inputs.get("api_base_url"):
+                runtime_env["API_RUNNER_BASE_URL"] = str(inputs["api_base_url"])
+            if inputs.get("codex_thread_id"):
+                runtime_env["SPECA_CODEX_THREAD_ID"] = str(inputs["codex_thread_id"])
+            api_key_env = inputs.get("api_key_env")
+            if api_key_env and os.environ.get(str(api_key_env)):
+                runtime_env["API_RUNNER_API_KEY"] = os.environ[str(api_key_env)]
 
-        instrumented = InstrumentedOrchestrator(orch, run.bus)
-        await instrumented.run()
+            orch.config.runtime_env.update(runtime_env)
 
-        cost_stats = orch.cost_tracker.get_stats() if orch.cost_tracker else None
-        manager.mark_complete(run.run_id, result={
-            "total_results": len(orch.results),
-            "cost": cost_stats,
-        })
+            # Codex App work uses the app-server protocol by default. Claude
+            # and codex-exec remain available when explicitly requested for
+            # backwards compatibility and debugging.
+            orch.config.runner_type = inputs.get("runner") or "codex-app"
+            if inputs.get("app_server_url"):
+                orch.config.codex_app_server_url = str(inputs["app_server_url"])
+            if inputs.get("isolated_worktrees"):
+                orch.config.isolated_worktrees = True
+            if inputs.get("worktree_root"):
+                orch.config.worktree_root = str(inputs["worktree_root"])
+            if inputs.get("worktree_base_ref"):
+                orch.config.worktree_base_ref = str(inputs["worktree_base_ref"])
+
+            effective_runner = (
+                orch.config.runner_type
+                or os.environ.get("ORCHESTRATOR_RUNNER", "claude")
+            ).lower()
+            codex_runner = effective_runner in {
+                "codex",
+                "codex-app",
+                "codex_app",
+                "app-server",
+                "app_server",
+            }
+            use_gui_settings = codex_runner and (
+                inputs.get("use_codex_gui_model", True)
+                or inputs.get("use_codex_gui_reasoning_effort", True)
+                or inputs.get("use_codex_gui_service_tier", True)
+            )
+            gui_settings = (
+                resolve_codex_gui_settings({**os.environ, **runtime_env})
+                if use_gui_settings
+                else None
+            )
+            if inputs.get("model"):
+                if effective_runner == "api":
+                    orch.config.runtime_env["API_RUNNER_MODEL"] = str(inputs["model"])
+                elif codex_runner:
+                    orch.config.model = str(inputs["model"])
+                    orch.config.runtime_env["SPECA_CODEX_MODEL"] = str(inputs["model"])
+                    orch.config.runtime_env["SPECA_CODEX_MODEL_SOURCE"] = "explicit"
+                else:
+                    orch.config.model = str(inputs["model"])
+            elif inputs.get("use_codex_gui_model", True) and gui_settings:
+                if gui_settings.model:
+                    orch.config.runtime_env["SPECA_CODEX_MODEL"] = gui_settings.model
+                    orch.config.runtime_env["SPECA_CODEX_MODEL_SOURCE"] = "codex-gui"
+
+            if inputs.get("reasoning_effort"):
+                orch.config.runtime_env["SPECA_CODEX_REASONING_EFFORT"] = str(
+                    inputs["reasoning_effort"]
+                )
+                orch.config.runtime_env[
+                    "SPECA_CODEX_REASONING_EFFORT_SOURCE"
+                ] = "explicit"
+            elif inputs.get("use_codex_gui_reasoning_effort", True) and gui_settings:
+                if gui_settings.reasoning_effort:
+                    orch.config.runtime_env["SPECA_CODEX_REASONING_EFFORT"] = (
+                        gui_settings.reasoning_effort
+                    )
+                    orch.config.runtime_env[
+                        "SPECA_CODEX_REASONING_EFFORT_SOURCE"
+                    ] = "codex-gui"
+
+            if inputs.get("service_tier"):
+                orch.config.runtime_env["SPECA_CODEX_SERVICE_TIER"] = str(
+                    inputs["service_tier"]
+                )
+                orch.config.runtime_env["SPECA_CODEX_SERVICE_TIER_SOURCE"] = "explicit"
+            elif inputs.get("use_codex_gui_service_tier", True) and gui_settings:
+                if gui_settings.service_tier:
+                    orch.config.runtime_env["SPECA_CODEX_SERVICE_TIER"] = (
+                        gui_settings.service_tier
+                    )
+                    orch.config.runtime_env[
+                        "SPECA_CODEX_SERVICE_TIER_SOURCE"
+                    ] = "codex-gui"
+
+            if inputs.get("min_severity") and orch.config.min_severity is not None:
+                orch.config.min_severity = inputs["min_severity"]
+
+            instrumented = InstrumentedOrchestrator(orch, run.bus)
+            await instrumented.run()
+
+            cost_stats = orch.cost_tracker.get_stats() if orch.cost_tracker else None
+            manager.mark_complete(run.run_id, result={
+                "total_results": len(orch.results),
+                "cost": cost_stats,
+                "output_dir": str(get_output_root()),
+            })
         await send_phase_result(run)
     except PhaseAbortError as e:
         manager.mark_complete(run.run_id, error=str(e))

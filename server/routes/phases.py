@@ -53,6 +53,7 @@ async def dispatch_phase(req: PhaseDispatchRequest) -> RunResponse:
     return RunResponse(
         run_id=run.run_id,
         phase_id=run.phase_id,
+        output_dir=run.output_dir,
         status=run.status.value,
         created_at=run.created_at,
     )

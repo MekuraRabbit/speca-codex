@@ -15,6 +15,7 @@ Environment variables:
 from __future__ import annotations
 
 import asyncio
+import fnmatch
 import glob as glob_mod
 import json
 import os
@@ -189,6 +190,64 @@ def _execute_read(params: dict[str, Any]) -> str:
     return result
 
 
+def _execute_grep_python(
+    pattern: str,
+    path: str,
+    glob_filter: str | None = None,
+    context: int = 0,
+    head_limit: int = 250,
+) -> str:
+    """Pure-Python Grep fallback for environments where rg is blocked."""
+    try:
+        regex = re.compile(pattern)
+    except re.error as e:
+        return f"Error: invalid regex pattern: {e}"
+
+    root = Path(path)
+    if root.is_file():
+        candidates = [root]
+        base = root.parent
+    else:
+        base = root
+        candidates = [p for p in root.rglob("*") if p.is_file()]
+
+    matches: list[str] = []
+    for file_path in candidates:
+        rel = file_path.relative_to(base).as_posix() if file_path.is_relative_to(base) else file_path.as_posix()
+        if glob_filter and not (
+            fnmatch.fnmatch(rel, glob_filter)
+            or fnmatch.fnmatch(file_path.name, glob_filter)
+        ):
+            continue
+
+        try:
+            lines = file_path.read_text(errors="replace").splitlines()
+        except (OSError, UnicodeDecodeError):
+            continue
+
+        for idx, line in enumerate(lines):
+            if not regex.search(line):
+                continue
+            if context:
+                start = max(0, idx - context)
+                end = min(len(lines), idx + context + 1)
+                for ctx_idx in range(start, end):
+                    matches.append(f"{file_path}:{ctx_idx + 1}:{lines[ctx_idx]}")
+            else:
+                matches.append(f"{file_path}:{idx + 1}:{line}")
+            if head_limit and len(matches) >= head_limit:
+                matches.append(f"... (truncated to {head_limit} lines)")
+                return "\n".join(matches)
+
+    if not matches:
+        return "No matches found"
+
+    result_text = "\n".join(matches)
+    if len(result_text) > 100_000:
+        result_text = result_text[:100_000] + "\n... (truncated)"
+    return result_text
+
+
 def _execute_grep(params: dict[str, Any]) -> str:
     """Execute the Grep tool using ripgrep."""
     pattern = params["pattern"]
@@ -209,19 +268,14 @@ def _execute_grep(params: dict[str, Any]) -> str:
             cmd, capture_output=True, text=True, timeout=30,
         )
         output = result.stdout
-    except FileNotFoundError:
-        # Fallback to grep if rg not available
-        cmd_fallback = ["grep", "-rn"]
-        if context:
-            cmd_fallback.extend([f"-C{context}"])
-        cmd_fallback.extend([pattern, path])
-        try:
-            result = subprocess.run(
-                cmd_fallback, capture_output=True, text=True, timeout=30,
-            )
-            output = result.stdout
-        except Exception as e:
-            return f"Error: grep failed: {e}"
+    except (FileNotFoundError, PermissionError, OSError):
+        return _execute_grep_python(
+            pattern=pattern,
+            path=path,
+            glob_filter=glob_filter,
+            context=context,
+            head_limit=head_limit,
+        )
     except subprocess.TimeoutExpired:
         return "Error: Search timed out after 30 seconds"
 
@@ -306,12 +360,14 @@ class APIRunner:
         self.circuit_breaker = circuit_breaker or CircuitBreaker(config)
         self.cost_tracker = cost_tracker
 
-        # API configuration from environment
-        self.base_url = os.environ.get(
+        # API configuration from environment plus per-run app-server overlay.
+        env = os.environ.copy()
+        env.update(config.runtime_env)
+        self.base_url = env.get(
             "API_RUNNER_BASE_URL", "https://openrouter.ai/api/v1"
         )
-        self.api_key = os.environ.get("API_RUNNER_API_KEY", "")
-        self.model = os.environ.get("API_RUNNER_MODEL", "deepseek/deepseek-r1")
+        self.api_key = env.get("API_RUNNER_API_KEY", "")
+        self.model = env.get("API_RUNNER_MODEL", "deepseek/deepseek-r1")
 
         # Directories
         self.output_dir = get_output_root()

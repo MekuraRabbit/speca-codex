@@ -286,7 +286,8 @@ class ClaudeRunner:
         self.output_dir = get_output_root()
         self.log_dir = self.output_dir / "logs"
         self.log_dir.mkdir(parents=True, exist_ok=True)
-        Path(".claude/debug").mkdir(parents=True, exist_ok=True)
+        self.debug_root = self.output_dir / ".claude_debug"
+        self.debug_root.mkdir(parents=True, exist_ok=True)
 
     async def run_batch(
         self,
@@ -644,7 +645,7 @@ class ClaudeRunner:
                 )
 
         # Clean up: delete intermediate file only in file mode
-        if not directory_mode:
+        if not directory_mode and results:
             result_parse_path.unlink(missing_ok=True)
 
         return results
@@ -828,6 +829,7 @@ class ClaudeRunner:
     def _build_env(self, **kwargs) -> dict[str, str]:
         """Build environment variables for Claude execution."""
         env = os.environ.copy()
+        env.update(self.config.runtime_env)
 
         # Remove Claude Code session variables that would trigger the nested-session
         # detection ("Claude Code cannot be launched inside another Claude Code
@@ -841,10 +843,11 @@ class ClaudeRunner:
         # across parallel workers writing to .claude/debug/latest
         w_id = kwargs.get("worker_id", 0)
         b_idx = kwargs.get("iteration", 0)
-        debug_dir = Path(f".claude/debug/W{w_id}B{b_idx}")
+        debug_dir = self.debug_root / f"W{w_id}B{b_idx}"
         debug_dir.mkdir(parents=True, exist_ok=True)
 
         env.update({
+            "SPECA_OUTPUT_DIR": str(self.output_dir),
             "CLAUDE_CODE_PERMISSIONS": "bypassPermissions",
             "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "100000",
             "CLAUDE_CODE_DEBUG_DIR": str(debug_dir),
@@ -863,7 +866,7 @@ class ClaudeRunner:
         Uses atomic write (tempfile + os.replace) to avoid TOCTOU races
         when multiple workers start concurrently.
         """
-        config_dir = Path("outputs/.mcp_configs")
+        config_dir = self.output_dir / ".mcp_configs"
         config_dir.mkdir(parents=True, exist_ok=True)
         config_path = config_dir / f"mcp_{self.config.phase_id}.json"
 
@@ -969,10 +972,10 @@ class ClaudeRunner:
         stderr_text = stderr.decode("utf-8", errors="replace") if stderr else ""
 
         debug_text = ""
-        debug_dir = Path(f".claude/debug/W{worker_id}B{batch_index}")
+        debug_dir = self.debug_root / f"W{worker_id}B{batch_index}"
         if not debug_dir.exists():
             # Fall back to shared latest if batch-specific dir doesn't exist
-            debug_dir = Path(".claude/debug/latest")
+            debug_dir = self.debug_root / "latest"
         try:
             if debug_dir.exists():
                 if debug_dir.is_dir():
@@ -1072,7 +1075,7 @@ class ClaudeRunner:
         if not output_path.exists():
             return []
         try:
-            with open(output_path, encoding="utf-8") as f:
+            with open(output_path, encoding="utf-8-sig") as f:
                 data = json.load(f)
         except Exception:
             return []

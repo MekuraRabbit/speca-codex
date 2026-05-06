@@ -6,6 +6,7 @@ Focuses on patterns NOT covered by existing findings (H-01, M-01 through M-14).
 import csv
 import json
 import os
+import shutil
 import subprocess
 import sys
 
@@ -18,7 +19,13 @@ csv.field_size_limit(sys.maxsize)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, "benchmarks", "data", "defi_audit_reports")
 OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")
-CLAUDE_EXE = r"C:\Users\shieru_k\AppData\Roaming\npm\claude.cmd"
+CLAUDE_EXE = (
+    os.environ.get("CLAUDE_EXE")
+    or (shutil.which("claude.cmd") if sys.platform == "win32" else None)
+    or shutil.which("claude")
+    or "claude"
+)
+CLAUDE_MODEL = os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-20250514")
 
 # New patterns derived from code reading
 PATTERNS = {
@@ -181,7 +188,7 @@ def search_all_csvs(pattern_config):
 def call_claude(prompt):
     try:
         result = subprocess.run(
-            [CLAUDE_EXE, "--output-format", "json", "--model", "claude-sonnet-4-20250514", "-p"],
+            [CLAUDE_EXE, "--output-format", "json", "--model", CLAUDE_MODEL, "-p"],
             input=prompt.encode("utf-8"),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,

@@ -23,6 +23,9 @@ from .paths import get_output_root
 from .queue import QueueManager
 from .batch import BatchStrategy, TokenBasedBatch, CountBasedBatch
 from .runner import ClaudeRunner, CircuitBreaker, CircuitBreakerTripped, BudgetExceeded
+from .codex_runner import CodexRunner
+from .codex_app_runner import CodexAppRunner
+from .codex_adapter import codex_model_from_config
 from .api_runner import APIRunner
 from .watchdog import CostTracker
 
@@ -127,7 +130,7 @@ class BaseOrchestrator(ABC):
     Provides common functionality for:
     - Queue management
     - Batch creation
-    - Parallel Claude execution
+    - Parallel worker execution
     - Result collection
     - **Circuit breaker** for anomaly detection and cost control
     - **Cost tracking** with automatic budget enforcement
@@ -145,6 +148,7 @@ class BaseOrchestrator(ABC):
         self.num_workers = max(1, num_workers)
         self.max_concurrent = max(1, max_concurrent)
         self.semaphore: asyncio.Semaphore | None = None
+        self.force_execute: bool | None = None
         
         # Shared circuit breaker for all workers in this phase
         self.circuit_breaker = CircuitBreaker(self.config)
@@ -159,7 +163,7 @@ class BaseOrchestrator(ABC):
         # Components (runner is created lazily in run() after event loop starts)
         self.queue_manager = QueueManager(self.config)
         self.batch_strategy = self._create_batch_strategy()
-        self.runner: ClaudeRunner | APIRunner | None = None
+        self.runner: ClaudeRunner | CodexRunner | CodexAppRunner | APIRunner | None = None
         self.collector = ResultCollector(self.config)
         self.resume_manager = ResumeManager(self.config)
         
@@ -196,16 +200,37 @@ class BaseOrchestrator(ABC):
         # Lazily create asyncio primitives now that the event loop is running
         self.semaphore = asyncio.Semaphore(self.max_concurrent)
 
-        # Select runner: API runner (for non-Claude models) vs Claude CLI
-        runner_type = os.environ.get("ORCHESTRATOR_RUNNER", "claude")
-        if runner_type == "api":
+        # Select runner. CLI/CI keep the historical Claude default unless
+        # explicitly overridden; the SPECA app server sets runner_type=codex-app.
+        # App-server runs set this on their copied PhaseConfig to avoid
+        # process-wide env races while multiple runs are active.
+        runner_type = (self.config.runner_type or os.environ.get("ORCHESTRATOR_RUNNER", "claude")).lower()
+        if runner_type in {"codex-app", "codex_app", "app-server", "app_server"}:
+            self.runner = CodexAppRunner(
+                self.config,
+                self.semaphore,
+                circuit_breaker=self.circuit_breaker,
+                cost_tracker=self.cost_tracker,
+            )
+            model_label = codex_model_from_config(self.config) or "default Codex model"
+            print(f"  Runner: CodexAppRunner ({model_label})")
+        elif runner_type == "codex":
+            self.runner = CodexRunner(
+                self.config,
+                self.semaphore,
+                circuit_breaker=self.circuit_breaker,
+                cost_tracker=self.cost_tracker,
+            )
+            model_label = codex_model_from_config(self.config) or "default Codex model"
+            print(f"  Runner: CodexRunner ({model_label})")
+        elif runner_type == "api":
             self.runner = APIRunner(
                 self.config,
                 self.semaphore,
                 circuit_breaker=self.circuit_breaker,
                 cost_tracker=self.cost_tracker,
             )
-            print(f"  Runner: APIRunner ({os.environ.get('API_RUNNER_MODEL', 'deepseek/deepseek-r1')})")
+            print(f"  Runner: APIRunner ({self.runner.model})")
         else:
             self.runner = ClaudeRunner(
                 self.config,
@@ -229,7 +254,11 @@ class BaseOrchestrator(ABC):
             return
 
         # Step 1.5: Resume — skip already-processed items
-        force_execute = os.environ.get("FORCE_EXECUTE", "") == "1"
+        force_execute = (
+            self.force_execute
+            if self.force_execute is not None
+            else os.environ.get("FORCE_EXECUTE", "") == "1"
+        )
         if force_execute:
             print("FORCE_EXECUTE=1: skipping resume filter")
         else:
@@ -361,13 +390,13 @@ class BaseOrchestrator(ABC):
 
         # Determine status emoji
         if self._budget_exceeded:
-            status = "\U0001f6d1 Budget Exceeded"
+            status = "Budget Exceeded"
         elif self._circuit_breaker_tripped:
-            status = "\U0001f6d1 Circuit Breaker Tripped"
+            status = "Circuit Breaker Tripped"
         elif self.failed_batches:
-            status = "\u26a0\ufe0f Partial Failure"
+            status = "Partial Failure"
         else:
-            status = "\u2705 Success"
+            status = "Success"
 
         lines: list[str] = []
         lines.append(f"## Phase {self.config.phase_id}: {self.config.name}")
@@ -409,13 +438,13 @@ class BaseOrchestrator(ABC):
             # Budget bar (visual indicator)
             pct = min(cost_stats['budget_utilization_pct'], 100.0)
             filled = int(pct / 5)  # 20 chars = 100%
-            bar = '\u2588' * filled + '\u2591' * (20 - filled)
+            bar = '#' * filled + '-' * (20 - filled)
             if pct >= 80:
-                lines.append(f"> \U0001f534 **Budget: [{bar}] {pct:.1f}%**")
+                lines.append(f"> **Budget: [{bar}] {pct:.1f}%**")
             elif pct >= 50:
-                lines.append(f"> \U0001f7e1 Budget: [{bar}] {pct:.1f}%")
+                lines.append(f"> Budget: [{bar}] {pct:.1f}%")
             else:
-                lines.append(f"> \U0001f7e2 Budget: [{bar}] {pct:.1f}%")
+                lines.append(f"> Budget: [{bar}] {pct:.1f}%")
             lines.append("")
 
         # --- Failed batches detail ---
@@ -608,7 +637,7 @@ class Phase01Orchestrator(BaseOrchestrator):
         for pattern in self.config.input_patterns:
             for filepath in sorted(glob_mod.glob(resolve_pattern(pattern))):
                 try:
-                    with open(filepath, encoding="utf-8") as f:
+                    with open(filepath, encoding="utf-8-sig") as f:
                         data = json.load(f)
 
                     # Validate 01a output structure
@@ -644,7 +673,7 @@ class Phase01Orchestrator(BaseOrchestrator):
         for pattern in self.config.input_patterns:
             for filepath in sorted(glob_mod.glob(resolve_pattern(pattern))):
                 try:
-                    with open(filepath, encoding="utf-8") as f:
+                    with open(filepath, encoding="utf-8-sig") as f:
                         data = json.load(f)
 
                     # Validate 01b partial structure
@@ -672,8 +701,8 @@ class Phase01Orchestrator(BaseOrchestrator):
         """Enrich items with necessary context."""
         if self.config.phase_id == "01a":
             # For 01a, we need to ensure KEYWORDS and SPEC_URLS are available
-            keywords = os.environ.get("KEYWORDS")
-            spec_urls = os.environ.get("SPEC_URLS")
+            keywords = self.config.runtime_env.get("KEYWORDS") or os.environ.get("KEYWORDS")
+            spec_urls = self.config.runtime_env.get("SPEC_URLS") or os.environ.get("SPEC_URLS")
             if not keywords or not spec_urls:
                  print("Warning: KEYWORDS or SPEC_URLS not set, using defaults")
             return items
@@ -722,7 +751,7 @@ class Phase01Orchestrator(BaseOrchestrator):
             return hashlib.sha256(file_path.encode()).hexdigest()[:8]
 
         try:
-            with open(file_path, encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8-sig") as f:
                 data = json.load(f)
 
             # Try specs[].title or specs[].source_url
@@ -763,7 +792,7 @@ class Phase01Orchestrator(BaseOrchestrator):
             )
 
         try:
-            with open(scope_path, encoding="utf-8") as f:
+            with open(scope_path, encoding="utf-8-sig") as f:
                 scope_data = json.load(f)
             print(f"  Injected bug_bounty_scope from {scope_path}")
         except Exception as e:
@@ -802,7 +831,7 @@ class Phase01Orchestrator(BaseOrchestrator):
                     subgraph_cache[subgraph_file] = {}
                 elif subgraph_file not in subgraph_cache:
                     try:
-                        with open(subgraph_file, encoding="utf-8") as f:
+                        with open(subgraph_file, encoding="utf-8-sig") as f:
                             subgraph_cache[subgraph_file] = json.load(f)
                     except Exception:
                         subgraph_cache[subgraph_file] = {}
@@ -838,7 +867,7 @@ class Phase02cOrchestrator(BaseOrchestrator):
         index = []
         for filepath in sorted(glob_mod.glob(str(get_output_root() / "01b_PARTIAL_*.json"))):
             try:
-                with open(filepath, encoding="utf-8") as f:
+                with open(filepath, encoding="utf-8-sig") as f:
                     data = json.load(f)
                 for spec in data.get("specs", []):
                     entry = {
@@ -877,7 +906,7 @@ class Phase02cOrchestrator(BaseOrchestrator):
 
         for filepath in sorted(glob.glob(str(get_output_root() / "01e_PARTIAL_*.json"))):
             try:
-                with open(filepath, encoding="utf-8") as f:
+                with open(filepath, encoding="utf-8-sig") as f:
                     data = json.load(f)
 
                 # Validate 01e partial structure
@@ -1021,7 +1050,7 @@ class Phase03Orchestrator(BaseOrchestrator):
 
         for filepath in sorted(glob.glob(str(get_output_root() / "02c_PARTIAL_*.json"))):
             try:
-                with open(filepath, encoding="utf-8") as f:
+                with open(filepath, encoding="utf-8-sig") as f:
                     data = json.load(f)
 
                 try:
@@ -1168,7 +1197,7 @@ class Phase04Orchestrator(BaseOrchestrator):
         validation_warnings = 0
         for filepath in sorted(glob.glob(str(get_output_root() / "03_PARTIAL_*.json"))):
             try:
-                with open(filepath, encoding="utf-8") as f:
+                with open(filepath, encoding="utf-8-sig") as f:
                     data = json.load(f)
 
                 try:
@@ -1245,7 +1274,7 @@ class Phase04Orchestrator(BaseOrchestrator):
         prop_lookup: dict[str, dict[str, Any]] = {}
         for filepath in sorted(glob_mod.glob(str(get_output_root() / "02c_PARTIAL_*.json"))):
             try:
-                with open(filepath, encoding="utf-8") as f:
+                with open(filepath, encoding="utf-8-sig") as f:
                     data = json.load(f)
                 for prop in data.get("properties_with_code", []):
                     pid = prop.get("property_id", "")

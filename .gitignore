@@ -203,6 +203,8 @@ parameter.local.py
 
 # Log files (general)
 *.log
+outputs/logs/*.jsonl
+benchmarks/results/**/logs/*.jsonl
 benchmarks/data/rq1/sherlock_1140_comments.json
 # Allow error logs in outputs/logs/ for post-mortem debugging
 !outputs/logs/*.error.log
@@ -233,6 +235,9 @@ outputs/.mcp_configs/
 
 # Claude Code worktrees
 .claude/worktrees/
+
+# Codex app-server worker worktrees
+.codex/worktrees/
 
 # Serena runtime state (modified by MCP server at runtime, not suitable for tracking)
 .serena/project.yml

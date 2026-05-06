@@ -2,6 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> Codex note: Codex-oriented instructions live in `AGENTS.md` and
+> `docs/CODEX_APP*.md`. The `Model: Sonnet` labels below are legacy
+> Claude-runner defaults; Codex runners ignore Claude model aliases such as
+> `sonnet`, `opus`, and `haiku` unless a valid Codex model is explicitly
+> provided.
+>
+> Authorized use: run SPECA only against repositories and systems the operator
+> owns, maintains, or is explicitly authorized to assess. Treat
+> `BUG_BOUNTY_SCOPE.json` and `TARGET_INFO.json` as the authorized boundary for
+> each run.
+
 ## Project Overview
 
 SPECA (Specification-to-Property Agentic Auditing) — an automated security audit pipeline that uses Claude Code CLI to analyze codebases for vulnerabilities. The pipeline transforms specifications into formal program graphs, generates security properties, pre-resolves code locations, performs proof-based formal audits against target code, and filters false positives via a recall-safe 3-gate review pipeline (Dead Code, Trust Boundary, Scope Check).

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
@@ -29,6 +30,7 @@ async def list_runs() -> list[RunResponse]:
         RunResponse(
             run_id=r.run_id,
             phase_id=r.phase_id,
+            output_dir=r.output_dir,
             status=r.status.value,
             created_at=r.created_at,
             completed_at=r.completed_at,
@@ -47,12 +49,50 @@ async def get_run(run_id: str) -> RunResponse:
     return RunResponse(
         run_id=run.run_id,
         phase_id=run.phase_id,
+        output_dir=run.output_dir,
         status=run.status.value,
         created_at=run.created_at,
         completed_at=run.completed_at,
         error=run.error,
         result=run.result,
     )
+
+
+@router.get("/{run_id}/diffs")
+async def get_run_diffs(
+    run_id: str,
+    include_content: bool = False,
+) -> list[dict[str, object]]:
+    """Return Codex app-server thread metadata and optional collected diffs."""
+    mgr = _get_manager()
+    run = mgr.get_run(run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    meta_dir = Path(run.output_dir) / "codex_app_threads"
+    if not meta_dir.exists():
+        return []
+
+    result: list[dict[str, object]] = []
+    for path in sorted(meta_dir.glob("*.json")):
+        try:
+            item = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if item.get("run_id") not in {None, run_id}:
+            continue
+        item["metadata_file"] = str(path)
+        diff_file = item.get("diff_file")
+        if include_content and isinstance(diff_file, str) and diff_file:
+            try:
+                item["diff"] = Path(diff_file).read_text(
+                    encoding="utf-8",
+                    errors="replace",
+                )
+            except OSError:
+                item["diff"] = ""
+        result.append(item)
+    return result
 
 
 @router.get("/{run_id}/progress")
