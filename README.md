@@ -1,21 +1,17 @@
-﻿<p align="center">
-  <img src="assets/speca_logo.png" alt="SPECA logo" width="240" />
-</p>
-
-<h1 align="center">SPECA Codex: Codex App-Compatible SPECA Fork</h1>
+<h1 align="center">SPECA Codex</h1>
 
 <p align="center">
-  <a href="https://arxiv.org/abs/2604.26495"><img src="https://img.shields.io/badge/arXiv-2604.26495-b31b1b.svg" alt="arXiv"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
-  <img src="https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white" alt="CI">
   <img src="https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white" alt="Python 3.11+">
 </p>
 
-> **Upstream:** This repository is based on [NyxFoundation/speca](https://github.com/NyxFoundation/speca), the SPECA implementation associated with Masato Kamba, Hirotake Murakami, and Akiyoshi Sannai, *Beyond Code Reasoning: A Specification-Anchored Audit Framework for Expert-Augmented Security Verification*, arXiv [2604.26495](https://arxiv.org/abs/2604.26495), 2026.
+> **Unofficial fork:** This repository is an unofficial Codex App-compatible fork of SPECA. It is not affiliated with or endorsed by NyxFoundation or the upstream authors.
+
+> **Upstream attribution:** This repository is based on [NyxFoundation/speca](https://github.com/NyxFoundation/speca), the SPECA implementation associated with Masato Kamba, Hirotake Murakami, and Akiyoshi Sannai, *Beyond Code Reasoning: A Specification-Anchored Audit Framework for Expert-Augmented Security Verification*, arXiv [2604.26495](https://arxiv.org/abs/2604.26495), 2026.
 
 > **Japanese guide:** [README.ja.md](README.ja.md)
 
-> **Codex edition:** This fork adapts SPECA so Codex can run the worker phases through Codex App, `codex app-server`, isolated worktrees, and the local FastAPI scheduler. It preserves the upstream MIT license and copyright notice, but does not claim that Codex-run audits reproduce the upstream Claude-run paper results.
+> **Codex edition:** This fork adapts SPECA so Codex can run the worker phases through Codex App, `codex app-server`, isolated worktrees, and the local FastAPI scheduler. It preserves the upstream MIT license and copyright notice, but does not claim that Codex-run audits reproduce the upstream Claude-run paper results. Upstream logos, generated paper figures, historical run outputs, and raw worker traces are intentionally not bundled in this fork.
 
 ## Authorized Use
 
@@ -246,19 +242,18 @@ uv run python -m pytest tests/ -v --tb=short
 
 ## Demo
 
-See past and ongoing audit runs on this repository's **GitHub Actions** page:
+This fork does not bundle the upstream generated demo artifacts, paper figures,
+or historical audit outputs. Start with the Codex App smoke test in
+[Use It From Codex App](#use-it-from-codex-app), then run your own authorized
+target with a fresh `output_dir`.
 
-Open the repository's **Actions** tab to view or trigger workflow runs.
-
-Each workflow step (01a through 04) can be triggered independently via `workflow_dispatch`. Results are committed to audit branches and can be reviewed as Pull Requests.
+Some inherited GitHub Actions workflows can still be useful as references for
+legacy benchmark reproduction, but normal Codex App usage should start from the
+local API and `codex app-server` runner.
 
 ## Architecture
 
 SPECA is organized as a **6-phase pipeline** in two stages: **Knowledge Structuring** (Phases 1–3) transforms natural-language specifications into explicit security properties, and **Systematic Auditing** (Phases 4–6) applies structured proof-attempt reasoning to check whether each implementation satisfies those properties.
-
-<p align="center">
-  <img src="assets/pipeline.png" alt="SPECA pipeline" width="900" />
-</p>
 
 In multi-implementation settings, the **left stage executes once** against the specification (producing a shared property vocabulary), and the **right stage executes per implementation** — enabling controlled cross-implementation security comparison by holding security expectations constant while varying the code under test.
 
@@ -579,10 +574,6 @@ Reduces token consumption in Phase 03 by ~40-60%.
 
 Performs a proof-based 3-sub-phase formal audit for each property against the target codebase. **The core method: try to prove the property holds; where the proof breaks, that gap is the bug.** This framing was chosen over an adversarial *"find bugs"* prompt after preliminary experiments showed the adversarial approach produced an **88% false positive rate** — without a structured claim to disprove, the model produced numerous speculative findings with weak grounding.
 
-<p align="center">
-  <img src="assets/phase5.png" alt="Phase 5 — Property-Grounded Audit (Map / Prove / Stress-Test)" width="700" />
-</p>
-
 1. **Sub-phase 1 (Map):** Decompose the property's assertion into verifiable sub-claims, read the enforcement code completely (full function bodies plus callers/callees), and link each sub-claim to the code responsible for satisfying it.
 2. **Sub-phase 2 (Prove):** Verify input coverage, path coverage, concurrency safety, temporal validity, and implementation-pattern obligations (e.g., cache keys and deduplication keys computed from complete inputs); gaps are recorded as findings.
 3. **Sub-phase 3 (Stress-Test):** Challenge the conclusion — re-examine every assumption (if the proof succeeded) or attempt to construct a concrete attack path (if it failed); findings without a plausible attack path are downgraded to `potential-vulnerability`.
@@ -838,20 +829,25 @@ Pins the target repository and commit. Phase 03 will `git clone` to this exact r
 
 ## Upstream Paper And Benchmarks
 
-This fork is based on upstream SPECA and keeps selected benchmark summaries,
-labels, figures, and scripts where they are useful for context. The original
-paper results were produced by the upstream project and its runner setup. Because
-this fork changes the worker runtime to support Codex App and `codex app-server`,
-this repository does not claim that Codex-run audits reproduce those exact
-results.
+This fork is based on upstream SPECA, but it is packaged as a Codex App
+adaptation rather than as a reproduction bundle for the upstream paper. The
+original paper results were produced by the upstream project and its runner
+setup. Because this fork changes the worker runtime to support Codex App and
+`codex app-server`, this repository does not claim that Codex-run audits
+reproduce those exact results.
 
-For the original research claims, full benchmark discussion, and paper artifact
-layout, see:
+Upstream logos, rendered paper figures, historical run outputs, and raw worker
+logs are intentionally omitted from this fork. Benchmark code and dataset
+descriptions are kept only where they help users run their own authorized
+evaluations.
+
+For the original research claims, benchmark discussion, and paper artifact
+bundle, see:
 
 - [NyxFoundation/speca](https://github.com/NyxFoundation/speca)
 - [arXiv:2604.26495](https://arxiv.org/abs/2604.26495)
-- [benchmarks/README.md](benchmarks/README.md) for retained scripts and notes in
-  this fork
+- [benchmarks/README.md](benchmarks/README.md) for the retained benchmark
+  harness notes in this fork
 
 Raw worker logs and model trace logs are intentionally omitted from this Codex
 fork. Generated run logs are ignored by default.

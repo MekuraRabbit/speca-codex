@@ -203,6 +203,11 @@ parameter.local.py
 
 # Log files (general)
 *.log
+
+# Generated SPECA run artifacts
+outputs/**
+!outputs/.gitkeep
+
 outputs/logs/*.jsonl
 benchmarks/results/**/logs/*.jsonl
 benchmarks/data/rq1/sherlock_1140_comments.json
