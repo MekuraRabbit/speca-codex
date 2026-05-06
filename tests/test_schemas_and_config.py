@@ -19,6 +19,7 @@ import json
 import sys
 import os
 import tempfile
+from pathlib import Path
 import pytest
 
 # Ensure the scripts directory is importable
@@ -57,6 +58,7 @@ from orchestrator.schemas import (
     ChecklistItem,
     ChecklistReachability,
     Phase02Partial,
+    Phase02cPartial,
     # Phase 03
     Phase1AbstractInterpretation,
     Phase2SymbolicExecution,
@@ -91,7 +93,7 @@ from orchestrator.runner import (
     LogAnomalyDetector,
 )
 from orchestrator.collector import ResultCollector
-from orchestrator.base import generate_slug, Phase01Orchestrator
+from orchestrator.base import generate_slug, Phase01Orchestrator, Phase02cOrchestrator
 
 
 # =========================================================================
@@ -1340,6 +1342,161 @@ class TestResultCollector:
             finally:
                 os.chdir(old_cwd)
 
+    def test_save_partial_does_not_clobber_same_batch_timestamp(self):
+        """save_partial should preserve early-exit files when a batch shares a timestamp."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            old_cwd = os.getcwd()
+            os.chdir(tmpdir)
+            try:
+                config = self._make_config("02c")
+                collector = ResultCollector(config)
+                first = collector.save_partial(
+                    [{"property_id": "PROP-out", "code_scope": {"resolution_status": "out_of_scope"}}],
+                    worker_id=0,
+                    batch_index=0,
+                    timestamp=123,
+                )
+                second = collector.save_partial(
+                    [{"property_id": "PROP-in", "code_scope": {"resolution_status": "resolved"}}],
+                    worker_id=0,
+                    batch_index=0,
+                    timestamp=123,
+                )
+
+                assert first.exists()
+                assert second.exists()
+                assert first != second
+                assert len(list((Path("outputs")).glob("02c_PARTIAL_W0B0_123*.json"))) == 2
+            finally:
+                os.chdir(old_cwd)
+
+    def test_save_partial_normalizes_single_code_location_object(self):
+        """02c partials should be saved with code_scope.locations as a list."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            old_cwd = os.getcwd()
+            os.chdir(tmpdir)
+            try:
+                config = self._make_config("02c")
+                collector = ResultCollector(config)
+                path = collector.save_partial(
+                    [
+                        {
+                            "property_id": "PROP-001",
+                            "code_scope": {
+                                "locations": {
+                                    "file": "contracts/X.sol",
+                                    "symbol": "x",
+                                    "line_range": {"start": 1, "end": 2},
+                                },
+                                "resolution_status": "resolved",
+                            },
+                        }
+                    ],
+                    worker_id=0,
+                    batch_index=0,
+                    timestamp=123,
+                )
+
+                data = json.loads(path.read_text(encoding="utf-8"))
+                locations = data["properties_with_code"][0]["code_scope"]["locations"]
+                assert isinstance(locations, list)
+                Phase02cPartial.model_validate(data)
+            finally:
+                os.chdir(old_cwd)
+
+    def test_save_partial_filters_02c_locations_to_bug_bounty_scope(self):
+        """02c saves should drop resolved locations outside the declared scope."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            old_cwd = os.getcwd()
+            os.chdir(tmpdir)
+            try:
+                output_dir = Path("outputs")
+                output_dir.mkdir()
+                (output_dir / "BUG_BOUNTY_SCOPE.json").write_text(
+                    json.dumps({
+                        "in_scope": {
+                            "components": ["contracts/**/*.sol", "test/**/*.challenge.js"],
+                        }
+                    }),
+                    encoding="utf-8",
+                )
+                (output_dir / "TARGET_INFO.json").write_text(
+                    json.dumps({"local_checkout": "target_workspace/damn-vulnerable-defi"}),
+                    encoding="utf-8",
+                )
+
+                config = self._make_config("02c")
+                collector = ResultCollector(config)
+                path = collector.save_partial(
+                    [
+                        {
+                            "property_id": "PROP-001",
+                            "code_scope": {
+                                "locations": [
+                                    {
+                                        "file": "contracts/compromised/TrustfulOracle.sol",
+                                        "symbol": "postPrice",
+                                        "line_range": {"start": 1, "end": 2},
+                                    },
+                                    {
+                                        "file": "build-uniswap-v1/IUniswapExchange.json",
+                                        "symbol": "abi",
+                                        "line_range": {"start": 1, "end": 2},
+                                    },
+                                    {
+                                        "file": "target_workspace/damn-vulnerable-defi/test/puppet/puppet.challenge.js",
+                                        "symbol": "challenge",
+                                        "line_range": {"start": 1, "end": 2},
+                                    },
+                                ],
+                                "resolution_status": "resolved",
+                            },
+                        }
+                    ],
+                    worker_id=0,
+                    batch_index=0,
+                    timestamp=123,
+                )
+
+                data = json.loads(path.read_text(encoding="utf-8"))
+                locations = data["properties_with_code"][0]["code_scope"]["locations"]
+                files = [location["file"] for location in locations]
+                assert files == [
+                    "contracts/compromised/TrustfulOracle.sol",
+                    "target_workspace/damn-vulnerable-defi/test/puppet/puppet.challenge.js",
+                ]
+                Phase02cPartial.model_validate(data)
+            finally:
+                os.chdir(old_cwd)
+
+
+class TestPhase02cEarlyExit:
+    """Tests for Phase 02c early-exit preservation."""
+
+    def test_out_of_scope_skip_preserves_property_fields(self):
+        orch = Phase02cOrchestrator("02c", num_workers=1, max_concurrent=1)
+        item = {
+            "property_id": "PROP-out",
+            "text": "Out of scope",
+            "type": "assumption",
+            "assertion": "external == false",
+            "severity": "LOW",
+            "covers": "SG-1",
+            "reachability": {"bug_bounty_scope": "out-of-scope"},
+            "bug_bounty_eligible": False,
+            "exploitability": "none",
+        }
+
+        early, remaining = orch.apply_early_exit([item])
+
+        assert remaining == []
+        assert len(early) == 1
+        assert early[0]["text"] == "Out of scope"
+        assert early[0]["covers"] == "SG-1"
+        assert early[0]["code_scope"]["locations"] == []
+        assert early[0]["code_scope"]["resolution_status"] == "out_of_scope"
+        Phase02cPartial.model_validate({"properties_with_code": early})
+
 
 # =========================================================================
 # Integration: Circuit Breaker + Config
@@ -2069,10 +2226,10 @@ class TestGitHubStepSummary:
 
             with open(summary_file) as f:
                 content = f.read()
-            assert "### Cost Report" in content
+            assert "### Estimated Token Cost Report" in content
             assert "| Input tokens | 100,000 |" in content
-            assert "| Estimated cost | $8.50 |" in content
-            assert "| Budget | $30.00 |" in content
+            assert "| Estimated token cost | $8.50 |" in content
+            assert "| Budget limit | $30.00 |" in content
             assert "28.3%" in content
         finally:
             del os.environ["GITHUB_STEP_SUMMARY"]
@@ -2091,7 +2248,7 @@ class TestGitHubStepSummary:
 
             with open(summary_file) as f:
                 content = f.read()
-            assert "### Cost Report" not in content
+            assert "### Estimated Token Cost Report" not in content
         finally:
             del os.environ["GITHUB_STEP_SUMMARY"]
             os.unlink(summary_file)

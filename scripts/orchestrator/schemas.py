@@ -331,6 +331,15 @@ class CodeScope(BaseModel):
     resolution_status: str = ""  # "resolved", "not_found", "specification_only", "out_of_scope", "skipped", "error"
     resolution_error: str = ""
 
+    @model_validator(mode="before")
+    @classmethod
+    def _normalize_locations(cls, data: Any) -> Any:
+        """Accept a single location object and normalize it to a one-item list."""
+        if isinstance(data, dict) and isinstance(data.get("locations"), dict):
+            data = dict(data)
+            data["locations"] = [data["locations"]]
+        return data
+
 
 class PropertyWithCode(Property):
     """Property with pre-resolved code locations from Phase 02c."""

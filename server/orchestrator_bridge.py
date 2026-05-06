@@ -62,6 +62,7 @@ class InstrumentedOrchestrator:
                     "phase_id": config.phase_id,
                     "total_results": len(self.orch.results),
                     "failed_batches": len(self.orch.failed_batches),
+                    "estimated_token_cost": cost_stats,
                     "cost": cost_stats,
                 },
             ))
@@ -313,6 +314,8 @@ async def _run_phase(run: RunInfo, manager: RunManager) -> None:
             cost_stats = orch.cost_tracker.get_stats() if orch.cost_tracker else None
             manager.mark_complete(run.run_id, result={
                 "total_results": len(orch.results),
+                "estimated_token_cost": cost_stats,
+                "cost_kind": "estimated_token_usage",
                 "cost": cost_stats,
                 "output_dir": str(get_output_root()),
             })

@@ -276,7 +276,7 @@ class BaseOrchestrator(ABC):
 
         # Persist early-exit results so resume sees them
         if early_exit_results:
-            self.collector.save_partial(early_exit_results, 0, 0)
+            self.collector.save_partial(early_exit_results, 0, -1)
 
         # Step 3: Enrich items (phase-specific)
         enriched_items = self.enrich_items(items_to_process)
@@ -351,14 +351,14 @@ class BaseOrchestrator(ABC):
         cost_stats = None
         if self.cost_tracker:
             cost_stats = self.cost_tracker.get_stats()
-            print(f"  ---- Cost ----")
+            print(f"  ---- Estimated Token Cost ----")
             print(f"  Input tokens:          {cost_stats['total_input_tokens']:,}")
             print(f"  Cache read tokens:     {cost_stats['total_cache_read_tokens']:,}")
             print(f"  Cache create tokens:   {cost_stats['total_cache_creation_tokens']:,}")
             print(f"  Output tokens:         {cost_stats['total_output_tokens']:,}")
             print(f"  Total turns:           {cost_stats['total_turns']:,}")
-            print(f"  Estimated cost:        ${cost_stats['total_cost_usd']:.2f}")
-            print(f"  Budget:                ${cost_stats['max_budget_usd']:.2f}")
+            print(f"  Estimated token cost:  ${cost_stats['total_cost_usd']:.2f}")
+            print(f"  Budget limit:          ${cost_stats['max_budget_usd']:.2f}")
             print(f"  Budget utilization:    {cost_stats['budget_utilization_pct']:.1f}%")
         _sep = '\u2500' * 40
         print(_sep)
@@ -421,7 +421,7 @@ class BaseOrchestrator(ABC):
 
         # --- Cost table (if available) ---
         if cost_stats:
-            lines.append("### Cost Report")
+            lines.append("### Estimated Token Cost Report")
             lines.append("")
             lines.append("| Metric | Value |")
             lines.append("| :--- | ---: |")
@@ -430,8 +430,8 @@ class BaseOrchestrator(ABC):
             lines.append(f"| Cache creation tokens | {cost_stats.get('total_cache_creation_tokens', 0):,} |")
             lines.append(f"| Output tokens | {cost_stats.get('total_output_tokens', 0):,} |")
             lines.append(f"| Total turns | {cost_stats.get('total_turns', 0):,} |")
-            lines.append(f"| Estimated cost | ${cost_stats.get('total_cost_usd', 0):.2f} |")
-            lines.append(f"| Budget | ${cost_stats.get('max_budget_usd', 0):.2f} |")
+            lines.append(f"| Estimated token cost | ${cost_stats.get('total_cost_usd', 0):.2f} |")
+            lines.append(f"| Budget limit | ${cost_stats.get('max_budget_usd', 0):.2f} |")
             lines.append(f"| Budget utilization | {cost_stats.get('budget_utilization_pct', 0):.1f}% |")
             lines.append("")
 
@@ -1020,12 +1020,19 @@ class Phase02cOrchestrator(BaseOrchestrator):
     def _build_skip_result(self, item: dict[str, Any], reason: str) -> dict[str, Any]:
         """Build a skip result for early exit items."""
         prop_id = item.get("property_id", "unknown")
-        return {
+        result = dict(item)
+        result.update({
             "property_id": prop_id,
             "skipped": True,
             "skip_reason": reason,
-            "code_scope": {"resolution_status": "out_of_scope"},
-        }
+            "code_scope": {
+                "locations": [],
+                "resolution_status": "out_of_scope",
+                "resolution_error": reason,
+            },
+            "code_excerpt": "",
+        })
+        return result
 
     def enrich_items(self, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Assign _id_prefix from property_id."""

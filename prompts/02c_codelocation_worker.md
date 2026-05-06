@@ -43,6 +43,11 @@ Language: English only.
 
     **Heuristic fallback** (when `out_of_scope_spec_layers` is absent or empty): use the repo orientation from Step 2.5 to infer scope. If the property clearly belongs to a domain with no matching top-level package in the target (e.g. the property references EVM opcodes/gas scheduling but the repo has no `core/vm/`, `evm/`, or `interpreter` package — only `beacon-chain/`), mark it `out_of_scope`. When uncertain, treat as in-scope and attempt resolution.
 
+    Out-of-scope handling is still an output case, not a drop case. Every
+    out-of-scope property must be appended to `properties_with_code` with
+    `code_scope.resolution_status = "out_of_scope"`,
+    `code_scope.locations = []`, and a non-empty `resolution_error`.
+
     ## Step 2.5: Repository Orientation (once per batch)
 
     Before resolving any item, run a single Glob on `target_workspace/*/` to list top-level directories. Build a mental map of which packages handle which domains (e.g. crypto, networking, state, consensus, validation, p2p, database). Reuse this map for all items in the batch — it tells you where to narrow searches and which properties are out of scope.
@@ -97,6 +102,9 @@ Language: English only.
 
     If all search attempts fail → mark as `not_found` with a mandatory `resolution_error` (see output schema).
 
+    Every input item MUST appear exactly once in the output, including
+    out-of-scope, unresolved, and error cases.
+
   </instructions>
 
   <output>
@@ -114,7 +122,7 @@ Language: English only.
             "reachability": { "classification": "...", "entry_points": [...], "attacker_controlled": true, "bug_bounty_scope": "..." },
             "exploitability": "...",
             "code_scope": {
-              "locations": [           // empty list if out_of_scope or not_found
+              "locations": [           // ALWAYS an array; empty if out_of_scope or not_found
                 {
                   "file": "relative/path/from/workspace/root.go",
                   "symbol": "FunctionOrTypeName",

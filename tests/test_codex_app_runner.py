@@ -57,6 +57,8 @@ def test_codex_app_runner_inlines_referenced_claude_skill(tmp_path: Path):
     assert "<codex_skill_context>" in prompt
     assert "/subgraph-extractor" in prompt
     assert ".claude/skills/subgraph-extractor/SKILL.md" in prompt
+    assert "Do not recursively fetch links" in prompt
+    assert "TARGET_INFO.local_checkout" in prompt
 
 
 def test_codex_app_client_replays_early_turn_notifications(tmp_path: Path):
@@ -241,6 +243,61 @@ def test_codex_app_runner_executes_with_fake_app_server(tmp_path: Path):
     assert metadata["effort_source"] == "codex-app-default"
     assert metadata["requested_service_tier"] is None
     assert metadata["service_tier_source"] == "codex-app-default"
+
+
+def test_codex_app_runner_synthesizes_01b_results_from_directory_artifacts(tmp_path: Path):
+    async def run() -> list[dict]:
+        with output_root_context(tmp_path):
+            config = get_phase_config("01b")
+            config.workdir = str(tmp_path)
+            runner = CodexAppRunner(config, asyncio.Semaphore(1))
+
+            class FakeClient:
+                async def run_turn(self, *, prompt, cwd, model, effort, service_tier, timeout_seconds, developer_instructions):
+                    matches = re.findall(r"OUTPUT_DIR=(\S+)", prompt)
+                    assert matches
+                    output_dir = Path(matches[-1].strip('"'))
+                    for rel in (
+                        "unstoppable/SG-001_halt_flow.mmd",
+                        "unstoppable/SG-002_flashLoan.mmd",
+                        "naive-receiver/SG-001_fee_drain_flow.mmd",
+                    ):
+                        path = output_dir / rel
+                        path.parent.mkdir(parents=True, exist_ok=True)
+                        path.write_text("---\ntitle: test\n---\nstateDiagram-v2\n", encoding="utf-8")
+                    capture = TurnCapture(thread_id="thread-1", turn_id="turn-1")
+                    capture.completed = {"turn": {"status": "completed"}}
+                    capture.text_parts.append(f"Output Directory: {output_dir}")
+                    return {"thread": {"id": "thread-1"}}, capture
+
+            async def fake_client():
+                return FakeClient()
+
+            runner._get_client = fake_client  # type: ignore[method-assign]
+            return await runner._execute_batch(
+                [
+                    {
+                        "url": "https://www.damnvulnerabledefi.xyz/challenges/unstoppable/",
+                        "title": "Unstoppable",
+                    },
+                    {
+                        "url": "https://www.damnvulnerabledefi.xyz/challenges/naive-receiver/",
+                        "title": "Naive receiver",
+                    },
+                ],
+                worker_id=0,
+                batch_index=0,
+            )
+
+    results = asyncio.run(run())
+
+    by_title = {item["title"]: item for item in results}
+    assert len(results) == 2
+    assert len(by_title["Unstoppable"]["sub_graphs"]) == 2
+    assert len(by_title["Naive receiver"]["sub_graphs"]) == 1
+    first_file = by_title["Unstoppable"]["sub_graphs"][0]["mermaid_file"]
+    assert first_file.startswith("graphs/batch_w0b0_")
+    assert first_file.endswith("/unstoppable/SG-001_halt_flow.mmd")
 
 
 def test_codex_app_runner_collects_diff_only_for_isolated_worktree(tmp_path: Path):

@@ -23,6 +23,20 @@ This skill processes **one specification URL** per invocation. A single specific
 
 The calling worker is responsible for batching and aggregation.
 
+Respect the run's authorized boundary:
+
+- Fetch only the single input `url` unless a `local_path` is explicitly
+  provided. Do not recursively fetch links discovered inside the page.
+- Do not fetch GitHub, raw GitHub, package registry, deployment, explorer, RPC,
+  account, or website infrastructure URLs found in the specification page.
+- If the caller provides `TARGET_INFO.local_checkout`, use only that local
+  checkout for any needed source-code context. External source-code links are
+  references or candidates, not the analyzed source of truth.
+- If the caller provides `BUG_BOUNTY_SCOPE.json`, keep code reads within the
+  listed in-scope paths. If a desired file is outside scope or unavailable,
+  proceed from the fetched specification content and note the limitation in the
+  relevant `.mmd` invariant notes instead of broadening the target.
+
 ## Input
 
 The caller provides:
@@ -30,9 +44,12 @@ The caller provides:
 - `output_dir` — directory where `.mmd` files should be written
 - `local_path` *(optional)* — path to a pre-downloaded copy of the specification
 
+- `TARGET_INFO` *(optional)* - target metadata, including `local_checkout`
+- `BUG_BOUNTY_SCOPE` *(optional)* - authorized in-scope and out-of-scope rules
+
 ## Procedure
 
-1. **Read Specification**: If `local_path` is provided and the file exists, read from it. Otherwise, fetch the content from `url` using `mcp__fetch__fetch`.
+1. **Read Specification**: If `local_path` is provided and the file exists, read from it. Otherwise, fetch the content from `url` using `mcp__fetch__fetch`. Do not follow links from that content.
 
 2. **Identify Functional Units**: Break down the document into logical units:
    - Function definitions

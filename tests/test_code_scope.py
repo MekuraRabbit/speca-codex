@@ -43,6 +43,21 @@ class TestCodeScope:
         assert scope.resolution_status == "resolved"
         assert scope.resolution_error == ""
 
+    def test_code_scope_accepts_single_location_object(self):
+        """Workers sometimes emit one location object; normalize it to a list."""
+        scope = CodeScope.model_validate({
+            "locations": {
+                "file": "src/beacon_chain.go",
+                "symbol": "ProcessBlock",
+                "line_range": {"start": 100, "end": 150},
+                "role": "primary",
+            },
+            "resolution_status": "resolved",
+        })
+
+        assert len(scope.locations) == 1
+        assert scope.locations[0].file == "src/beacon_chain.go"
+
     def test_code_scope_not_found(self):
         """Test CodeScope with resolution error."""
         scope = CodeScope(

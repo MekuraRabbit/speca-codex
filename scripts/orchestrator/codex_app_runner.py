@@ -612,6 +612,8 @@ class CodexAppRunner(ClaudeRunner):
         results = self._parse_results(result_parse_path)
         if not results:
             results = self._parse_results_from_log(log_file)
+        if directory_mode and not results:
+            results = self._parse_directory_results(batch_output_dir, context_path)
         if not directory_mode and results:
             result_parse_path.unlink(missing_ok=True)
         return results

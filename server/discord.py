@@ -57,11 +57,19 @@ def _build_embed(run: RunInfo) -> dict[str, Any]:
     cost_info = result.get("cost") or {}
     cost_usd = cost_info.get("total_cost_usd")
     if cost_usd is not None:
-        fields.append({"name": "Cost", "value": f"${cost_usd:.2f}", "inline": True})
+        fields.append({
+            "name": "Estimated token cost",
+            "value": f"${cost_usd:.2f}",
+            "inline": True,
+        })
 
     budget_pct = cost_info.get("budget_utilization_pct")
     if budget_pct is not None:
-        fields.append({"name": "Budget", "value": f"{budget_pct:.1f}%", "inline": True})
+        fields.append({
+            "name": "Budget utilization",
+            "value": f"{budget_pct:.1f}%",
+            "inline": True,
+        })
 
     if run.error:
         err_text = run.error[:200] + "..." if len(run.error) > 200 else run.error
