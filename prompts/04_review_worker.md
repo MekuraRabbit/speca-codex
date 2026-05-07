@@ -65,6 +65,9 @@ Execution hint: This worker prompt is invoked by the phase-04 async orchestrator
   ### Gate 1: Dead Code (catches bugs in unreachable code)
 
   Grep for call sites of the flagged function (exclude `*_test.*` / `test_*.*` files).
+  If `rg` is unavailable or fails with "Access is denied" on Windows, do not
+  retry `rg`; immediately fall back to PowerShell `Get-ChildItem` plus
+  `Select-String` under the resolved checkout.
   - **Zero non-test callers** → DISPUTED_FP: "dead/unreachable code"
   - Function no longer exists in the file → DISPUTED_FP: "code removed"
   - Skip this gate for "missing validation" findings (the issue is that something is NOT called).

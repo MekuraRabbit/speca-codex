@@ -14,3 +14,5 @@ def test_phase04_prompt_anchors_output_root_and_target_checkout():
     assert "`outputs/rehearsal_dvd/target_workspace`" in prompt
     assert "Treat the resolved checkout as the exact target code root" in prompt
     assert "Do not list or search the" in prompt
+    assert 'fails with "Access is denied" on Windows' in prompt
+    assert "PowerShell `Get-ChildItem` plus" in prompt

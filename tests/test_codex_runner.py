@@ -92,6 +92,9 @@ def test_codex_runner_injects_adapter_instructions():
     assert "Never build OUTPUT_ROOT/target_workspace" in prompt
     assert "outputs/rehearsal_dvd/target_workspace" in prompt
     assert "Do not list/search its" in prompt
+    assert 'fails with "Access is denied" on' in prompt
+    assert "PowerShell" in prompt
+    assert "Select-String" in prompt
 
 
 def test_codex_runner_inlines_referenced_claude_skill():
