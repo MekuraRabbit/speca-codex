@@ -703,14 +703,20 @@ Items that pass all gates undergo severity calibration against `severity_classif
 ```
 </details>
 
-### Phase 05: PoC Generation (Manual)
+### Phase 05: PoC Candidate Selection And Generation
 
 | | |
 |---|---|
+| **Candidate builder** | `scripts/build_phase05_candidates.py` |
 | **Prompt** | `prompts/05_poc.md` |
-| **Usage** | `/05_poc TYPE=unit VULN_ID=... OUTPUT_PATH=...` |
+| **Usage** | `uv run python scripts/run_phase.py --phase 05 --output-dir outputs/<run>` |
+| **PoC prompt** | `/05_poc CANDIDATE_ID=... OUTPUT_DIR=outputs/<run>` |
 
-Generates minimal, self-verifying Proof-of-Concept tests in the project's native stack (auto-detected language and test framework). Supports unit / integration / e2e scopes. Includes a self-repair loop (up to 4 attempts) and false-positive mitigation via guard assertions.
+Builds `05_POC_CANDIDATES.json` from Phase 04 confirmed/potential findings, groups duplicate root causes, and selects one representative PoC candidate per group. The PoC prompt then generates a minimal, self-verifying test in the target project's native stack, records covered Phase 04 property IDs, and writes `05_POC_RESULT_<candidate_id>.json`.
+
+```bash
+uv run python scripts/run_phase.py --phase 05 --output-dir outputs/rehearsal_dvd
+```
 
 ### Phase 06: Bug-Bounty Report (Manual)
 

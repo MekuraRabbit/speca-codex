@@ -1,144 +1,97 @@
-
-
-
 ---
-Description: PoC Generator & Self-Verifying Tests
-Usage: `/05_poc TYPE=... VULN_ID=... OUTPUT_PATH=...`
-Example: `/05_poc TYPE="unit" VULN_ID="03523523" OUTPUT_PATH="crates/net/network/src/transactions/poc_reentrancy.rs"`
+Description: Phase 05 PoC Generator from reviewed SPECA findings
+Usage: `/05_poc CANDIDATE_ID=... [OUTPUT_DIR=outputs] [TYPE=unit|it|e2e] [OUTPUT_PATH=...]`
+Example: `/05_poc CANDIDATE_ID="POC-truster-unauthorized-token-approval-76774102" OUTPUT_DIR="outputs/rehearsal_dvd"`
 Arguments:
-- **$TYPE**: `unit`, `it`, or `e2e`. Selects the granularity of the PoC.
-- **$VULN_ID**: value of `audit_items[].id` in `03_AUDITMAP.json`.
-- **$OUTPUT_PATH**: destination path for the generated test or scenario file.
+- **$CANDIDATE_ID**: value of `candidates[].candidate_id` in `05_POC_CANDIDATES.json`.
+- **$OUTPUT_DIR**: SPECA output directory containing `TARGET_INFO.json` and `05_POC_CANDIDATES.json`.
+- **$TYPE**: optional override for the candidate's `recommended_type`.
+- **$OUTPUT_PATH**: optional override for the candidate's `recommended_output_path`.
 ---
 
-Create & validate a minimal PoC that reproduces **$VULN_ID** at the chosen scope.
+Create and validate a minimal Proof-of-Concept test for a reviewed Phase 04 finding.
 
-**Always use /serena for these development tasks to maximize token efficiency.**
-**Never assume the implementation language; detect and reuse the project's existing language, test harness, fixtures, and mocks.**
+# Inputs
+1. Read `$OUTPUT_DIR/05_POC_CANDIDATES.json`.
+2. Locate the entry where `candidates[].candidate_id == $CANDIDATE_ID`.
+3. If `$CANDIDATE_ID` is omitted and exactly one candidate is provided in context, use that candidate. Otherwise abort with a clear error.
+4. Read `$OUTPUT_DIR/TARGET_INFO.json` and use its `local_checkout` as the target repository root.
+5. Resolve `target_local_checkout`, `recommended_output_path`, and any override paths relative to the current workspace.
 
-# 📥 Auto-load from 03_AUDITMAP.json
-1. **Read** `security-agent/outputs/03_AUDITMAP.json`.
-2. **Locate** the entry where `audit_items[].id == $VULN_ID`.
-3. **Extract**
-   - `VULN_SNIPPET` ← `audit_items[].snippet`
-   - `TARGET_FILE` ← `audit_items[].file` + `:L` + `audit_items[].line`
-   - `VULN_TITLE_RAW` ← `audit_items[].description`
-   - `VULN_TITLE` ← text before the first colon (`:`) in `VULN_TITLE_RAW`, or the full string if no colon exists. If empty, craft a concise fallback title (avoid embedding `$VULN_ID`).
-   - `TITLE_SLUG` ← `VULN_TITLE` transformed to lowercase snake_case using ASCII letters/digits/underscores only. Replace punctuation/spaces with `_`, collapse repeats, strip outer `_`, and ensure length ≤ 40 characters (trim filler words or truncate meaningfully if needed).
-   - `EXISTING_POC_FILES` ← array of all `poc_tests[].file`, `integration_tests[].file`, and `e2e_tests[].file` in the vulnerability entry (if any).
-4. **If not found** → abort with error `"Vulnerability '$VULN_ID' not found in 03_AUDITMAP.json"`.
+# Scope And Safety
+* Use SPECA only inside the authorized local checkout from `TARGET_INFO.local_checkout`.
+* Read target code only under that local checkout.
+* Do not read sibling directories such as another target checkout or `target_workspace/contracts`.
+* Do not fetch external GitHub, raw GitHub, registry, explorer, RPC, deployment, account, or website infrastructure links.
+* Do not run package installation commands (`npm install`, `npm ci`, `pip install`, `forge install`, etc.) unless the operator explicitly asks.
+* Do not modify production code. Write only the PoC test/scenario file under the target checkout and Phase05 result JSON under `$OUTPUT_DIR`.
+* If `rg` is unavailable or returns Windows `Access denied`, immediately fall back to PowerShell `Get-ChildItem` plus `Select-String`.
+* If the local checkout is missing, or the pinned commit does not match `TARGET_INFO.target_commit`, stop and report the mismatch.
 
-# 🎯 Goals
-1. Generate the PoC in the **project's native stack** (language, test runner, mocks, fixtures).
-2. The PoC must **pass only while the vulnerability exists** and **fail once the bug is fixed**.
-3. Reuse nearby tests, fixtures, and mocks instead of re-implementing them.
-4. Keep the artifact focused, ≤ 120 LOC, and free from external binaries or network dependencies unless already standard in the project.
+# Candidate Fields To Use
+Use the candidate as the source of truth:
+* `representative_property_id`
+* `covered_property_ids`
+* `challenge`
+* `attack_family`
+* `target_files`
+* `primary_file`
+* `primary_symbol`
+* `attack_summary`
+* `recommended_type`
+* `recommended_output_path`
+* `run_command`
 
-# 🧭 TYPE-specific Guidelines
-- **$TYPE = `unit`**
-  - Work within the smallest available test target (module-level, crate-level, package-level, etc.).
-  - Prefer in-memory mocks or harnesses already used in unit tests.
-  - Output must be a single test file containing at least one `poc_{TITLE_SLUG}` test.
-- **$TYPE = `it`** (integration)
-  - Place the file alongside existing integration tests (use $OUTPUT_PATH).
-  - Attempt to reuse helpers from `EXISTING_POC_FILES` (e.g., a prior unit PoC) and other integration fixtures.
-  - Cover the full module/system interaction needed to surface the bug.
-- **$TYPE = `e2e`**
-  - Target the highest level available (CLI, API, contract deployment, workflow script, etc.).
-  - Compose the scenario using production-like flows, leveraging existing end-to-end harnesses or scripts.
-  - If the repository lacks e2e scaffolding, fall back to the closest black-box executable or smoke test framework already present.
+# Goals
+1. Generate the PoC in the target project's native stack.
+2. Reuse nearby tests, fixtures, helpers, mocks, and package scripts.
+3. The PoC should pass while the vulnerability exists and fail once the bug is fixed.
+4. Keep the artifact focused and self-verifying.
+5. Prefer one representative PoC per root cause; mention the covered Phase04 property IDs in the result JSON.
 
-# 📝 Attack-Scenario Design
-1. Locate the code containing `VULN_SNIPPET` and understand the full execution path.
-2. Identify required preconditions, fixtures, or deployed components.
-3. Design an Arrange–Act–Assert sequence that triggers the bug with minimal setup.
-4. Embed assertions proving both the vulnerable outcome and the expected healthy behaviour after a hypothetical fix.
+# TYPE Guidelines
+* `unit`: smallest available module-level or package-level test.
+* `it`: integration test using the existing project test harness.
+* `e2e`: highest available workflow/CLI/API scenario.
+* If the candidate has a `recommended_type`, use it unless `$TYPE` overrides it.
 
-# 🛠️ Build & Run
-* Inspect repository metadata (`Cargo.toml`, `package.json`, `pytest.ini`, `go.mod`, etc.) to **auto-detect the correct test runner**.
-* Use the project's primary language and frameworks exactly as configured; do not introduce alternative stacks unless already present.
-* Derive the execution command dynamically, e.g.:
-  - Rust → `cargo test --test poc_{{TITLE_SLUG}} -- --nocapture`
-  - Node → `npm test -- --runTestsByPath $OUTPUT_PATH`
-  - Python → `pytest $OUTPUT_PATH -k poc_{{TITLE_SLUG}} -vv`
-  - Solidity/Foundry → `forge test --match-test poc_{{TITLE_SLUG}} -vv`
-* If the project uses custom test scripts, mirror their invocation (check Makefiles, package scripts, etc.).
+# Build And Run
+1. Inspect local project metadata only (`package.json`, `Cargo.toml`, `pytest.ini`, `go.mod`, `foundry.toml`, Makefiles, etc.).
+2. Use the candidate `run_command` when it is suitable; otherwise derive a command that runs only this PoC.
+3. Run commands from `target_local_checkout`.
+4. If dependencies are missing and cannot be installed under the scope rules, record `status: "blocked"` rather than weakening the PoC.
+5. Use a self-repair loop up to 3 times for import, fixture, typing, or harness issues that do not change the exploit.
 
-# 📤 Output Artifacts
-1. **PoC file** → `{{OUTPUT_PATH}}`
-   - Filename must include `poc_{TITLE_SLUG}` and must not include `$VULN_ID`.
-   - Keep the filename component ≤ 50 characters; shorten the slug if necessary.
-2. **Run command** → provide the full command that executes just this PoC within the native test runner.
-3. **Status JSON** → append to the vulnerability entry:
-   - For `unit`:
-     ```jsonc
+# Output Artifacts
+1. PoC file:
+   * Default path: candidate `recommended_output_path`.
+   * Override path: `$OUTPUT_PATH`, if provided.
+   * File name should start with `poc_` and describe the attack family, not the property ID.
+2. Phase05 result JSON:
+   * Write `$OUTPUT_DIR/05_POC_RESULT_<candidate_id>.json`.
+   * Use this shape:
+     ```json
      {
-       "poc_tests": [{
-         "type": "unit",
-         "file": "{{OUTPUT_PATH}}",
-         "build_passed": true,
-         "test_result": "pass_when_exploitable",
-         "attempts": 1,
-         "created_at": "<timestamp>"
-       }]
+       "candidate_id": "<candidate_id>",
+       "representative_property_id": "<property_id>",
+       "covered_property_ids": ["<property_id>"],
+       "type": "unit|it|e2e",
+       "file": "<path>",
+       "run_command": "<command>",
+       "status": "passed|failed|blocked",
+       "attempts": 1,
+       "test_passed_when_bug_present": true,
+       "notes": "",
+       "created_at": "<ISO-8601 timestamp>"
      }
      ```
-   - For `it`:
-     ```jsonc
-     {
-       "integration_tests": [{
-         "type": "integration",
-         "file": "{{OUTPUT_PATH}}",
-         "build_passed": true,
-         "test_passed_when_bug_present": true,
-         "attempts": 1,
-         "created_at": "<timestamp>"
-       }]
-     }
-     ```
-   - For `e2e`:
-     ```jsonc
-     {
-       "e2e_tests": [{
-         "type": "e2e",
-         "file": "{{OUTPUT_PATH}}",
-         "build_passed": true,
-         "test_passed_when_bug_present": true,
-         "attempts": 1,
-         "created_at": "<timestamp>"
-       }]
-     }
-     ```
+3. Final response:
+   * Summarize the PoC file, run command, status, attempts, and any blocker.
+   * Include the candidate's covered property count and IDs.
 
-# 🔍 Generation Algorithm
-```
-PLAN = global plan()
-FOR attempt in 1..=4:
-    scaffold PoC using project-native mocks & fixtures
-    if build succeeds:
-        run targeted test command
-        if exploit triggers while bug present: break ✅
-    else:
-        if attempt == 4: ask user 🆘
-        adjust imports/types without diluting exploit
-```
-
-# 🛡️ False-Positive Mitigation
-* Implement guard assertions verifying both the buggy behaviour and the expected behaviour after a simulated fix (e.g., toggling a flag, patch stub, or in-test check).
-* Avoid silent failures (no unchecked `unwrap()`/`expect()` unless idiomatic for the stack).
-* Log key metrics (`eprintln!`, `tracing`, `console.log`, etc.) to aid manual review.
-
-# 🤖 Self-Repair Loop (max 3)
-* If the build or test run fails for reasons unrelated to the exploit, iterate by adapting imports, feature flags, or harness wiring.
-* After 3 unsuccessful corrections, output `Need guidance: <stderr snippet>`.
-
-# ⛔ Constraints
-* Do **not** modify production logic or add new dependencies beyond those already declared.
-* Maintain compatibility with existing project tooling; prefer extending current mocks/fixtures over inventing new infrastructure.
-* Keep PoC files self-contained and ≤ 120 LOC unless the existing style clearly requires more.
-
-# ✅ Success Criteria
-* Entry with `id == $VULN_ID` located and processed.
-* PoC runs via the detected native runner and fails once the vulnerability is fixed.
-* Status JSON appended to the correct entry with accurate metadata.
-* Artifact adheres to project language, environment, and naming standards.
+# Success Criteria
+* Candidate located in `05_POC_CANDIDATES.json`.
+* Target checkout verified against `TARGET_INFO`.
+* PoC file created under the authorized target checkout.
+* Targeted test command executed, or a precise local dependency blocker recorded.
+* `05_POC_RESULT_<candidate_id>.json` written with accurate status.

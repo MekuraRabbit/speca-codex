@@ -198,6 +198,28 @@ async def run_phase(
         )
         return False
 
+    if phase_id == "05":
+        from orchestrator.phase05_candidates import write_poc_candidate_index
+
+        output_root = get_output_root()
+        candidate_path = output_root / "05_POC_CANDIDATES.json"
+        if force and candidate_path.exists():
+            candidate_path.unlink()
+
+        index = write_poc_candidate_index(output_root, candidate_path)
+        metadata = index["metadata"]
+        print(f"Phase 05 candidate index written: {candidate_path}")
+        print(f"  reviewed candidate items: {metadata['reviewed_candidate_items']}")
+        print(f"  representative candidates: {metadata['candidate_count']}")
+        duration = round(time.time() - start_time, 2)
+        emitter.emit(
+            "phase-completed",
+            phase=phase_id,
+            duration_s=duration,
+            total_results=metadata["candidate_count"],
+        )
+        return True
+
     # 2. Automatic cleanup of incomplete batches
     if force:
         print(f"Force mode: Cleaning up ALL previous outputs for phase {phase_id}...")

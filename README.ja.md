@@ -163,12 +163,21 @@ SPECA の phase は前段の出力を次段が読む構成です。`03` や `04`
 | 4 | `02c` | propertyとコード位置の対応付け | `TARGET_INFO.json` |
 | 5 | `03` | property-grounded audit | `02c` までの出力 |
 | 6 | `04` | false positive filter / severity調整 | `03` の出力 |
+| 7 | `05` | PoC代表候補の作成とPoC生成 | `04` の出力 |
 
 CLI で前段から `04` まで順に実行する場合:
 
 ```bash
 uv run python scripts/run_phase.py --target 04 --runner codex-app --workers 4 --max-concurrent 8
 ```
+
+Phase 04 の confirmed / potential finding から、重複した根本原因をまとめた PoC 代表候補を作る場合:
+
+```bash
+uv run python scripts/run_phase.py --phase 05 --output-dir outputs/<run>
+```
+
+これにより `outputs/<run>/05_POC_CANDIDATES.json` が作られます。Codex に PoC 生成を依頼する場合は、候補の `candidate_id` を指定して `prompts/05_poc.md` の形式で進めます。
 
 API から実行する場合は、各 phase を順番に dispatch します。長い run や source 差分がありうる run では `isolated_worktrees` を有効にしてください。
 
