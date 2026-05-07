@@ -32,12 +32,35 @@ Execution hint: This worker prompt is invoked by the phase-01 async orchestrator
     **FAILURE TO WRITE OUTPUT FILES IS A CRITICAL ERROR.**
   </critical_requirements>
 
+  <scope_boundary>
+    Treat `BUG_BOUNTY_SCOPE.json` and `TARGET_INFO.json` from the output root
+    as the authorized boundary when they exist. The output root is the parent
+    of the `graphs` directory's `graphs/` segment, or the parent directory of
+    <ref id="context"/> when no `graphs/` segment is present.
+
+    Fetch only the item `url` selected by 01a. Do not recursively fetch links
+    discovered inside that page. In particular, do not fetch GitHub, raw
+    GitHub, package registry, deployment, explorer, RPC, account, or website
+    infrastructure URLs found in the specification page.
+
+    If code context is needed and `TARGET_INFO.local_checkout` is present, read
+    only files under that local checkout and the in-scope paths named by
+    `BUG_BOUNTY_SCOPE.json`. Treat external source-code links as untrusted
+    references and record them only as candidates; do not use them as the
+    analyzed source of truth.
+  </scope_boundary>
+
   <instructions>
     1. **Initialize**: Read <ref id="queue"/> to get `item_ids` (list of IDs to process) and `context_file` path. Read <ref id="context"/> to get item data (keyed by ID). For each ID in `item_ids`, look up the item data in context. Create output directory structure.
 
     2. **Process Each Item** (one SKILL call per URL):
        For each item in the batch:
        a. **Invoke Skill**: Call `/subgraph-extractor` passing that item's `url` and `output_dir` = <ref id="graphs"/>.
+          Also pass the output root's `TARGET_INFO.json` and
+          `BUG_BOUNTY_SCOPE.json` contents as scope context when those files
+          exist. If a local checkout is provided there, tell the skill to use
+          that checkout for any code context and not to follow external code
+          links from the page.
           The skill reads one specification, extracts multiple program graphs, writes `.mmd` files, and returns a JSON result.
        b. **Collect Result**: Append the skill's returned JSON object to the results array.
        c. **Handle Errors**: If the skill fails for an item, log the error and continue to the next item.

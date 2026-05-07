@@ -11,6 +11,7 @@ import os
 import sys
 import tempfile
 import time
+from fnmatch import fnmatchcase
 from pathlib import Path
 from typing import Any
 
@@ -82,10 +83,7 @@ class ResultCollector:
         # Always use simple {phase_id}_PARTIAL_* naming - no prefix needed
         partial_base = f"{self.config.phase_id}_PARTIAL"
 
-        output_path = (
-            self.output_dir
-            / f"{partial_base}_W{worker_id}B{batch_index}_{timestamp}.json"
-        )
+        output_path = self._partial_path(partial_base, worker_id, batch_index, timestamp)
 
         # Extract processed IDs for fast resume lookup
         id_field = self.config.effective_result_id_field
@@ -102,6 +100,7 @@ class ResultCollector:
                 for item in results
                 if isinstance(item, dict)
             ]
+        results = self._normalize_results(results)
 
         output_data = {
             self.config.result_key: results,
@@ -136,6 +135,142 @@ class ResultCollector:
             raise
 
         return output_path
+
+    def _partial_path(
+        self,
+        partial_base: str,
+        worker_id: int,
+        batch_index: int,
+        timestamp: int,
+    ) -> Path:
+        """Return a non-clobbering partial path for this worker/batch/timestamp."""
+        output_path = (
+            self.output_dir
+            / f"{partial_base}_W{worker_id}B{batch_index}_{timestamp}.json"
+        )
+        if not output_path.exists():
+            return output_path
+
+        suffix = 1
+        while True:
+            candidate = (
+                self.output_dir
+                / f"{partial_base}_W{worker_id}B{batch_index}_{timestamp}_{suffix}.json"
+            )
+            if not candidate.exists():
+                return candidate
+            suffix += 1
+
+    def _normalize_results(self, results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Normalize known worker output quirks before validation and save."""
+        if self.config.phase_id != "02c":
+            return results
+
+        normalized: list[dict[str, Any]] = []
+        for item in results:
+            if not isinstance(item, dict):
+                continue
+            entry = dict(item)
+            code_scope = entry.get("code_scope")
+            if isinstance(code_scope, dict) and isinstance(code_scope.get("locations"), dict):
+                code_scope = dict(code_scope)
+                code_scope["locations"] = [code_scope["locations"]]
+                entry["code_scope"] = code_scope
+            self._filter_02c_locations_to_scope(entry)
+            normalized.append(entry)
+        return normalized
+
+    def _filter_02c_locations_to_scope(self, entry: dict[str, Any]) -> None:
+        """Remove 02c code locations outside BUG_BOUNTY_SCOPE components."""
+        code_scope = entry.get("code_scope")
+        if not isinstance(code_scope, dict):
+            return
+        locations = code_scope.get("locations")
+        if not isinstance(locations, list):
+            return
+
+        components, local_checkout = self._load_scope_path_constraints()
+        if not components:
+            return
+
+        kept = [
+            loc for loc in locations
+            if isinstance(loc, dict)
+            and self._is_in_scope_location(str(loc.get("file", "")), components, local_checkout)
+        ]
+        if len(kept) == len(locations):
+            return
+
+        code_scope["locations"] = kept
+        if not kept and code_scope.get("resolution_status") == "resolved":
+            code_scope["resolution_status"] = "not_found"
+            code_scope["resolution_error"] = (
+                "Resolved locations were outside BUG_BOUNTY_SCOPE in-scope components"
+            )
+        elif kept:
+            note = "Dropped out-of-scope code locations from BUG_BOUNTY_SCOPE filtering"
+            existing = str(code_scope.get("resolution_error") or "")
+            code_scope["resolution_error"] = f"{existing}; {note}".strip("; ")
+
+    def _load_scope_path_constraints(self) -> tuple[list[str], str]:
+        scope_path = self.output_dir / "BUG_BOUNTY_SCOPE.json"
+        target_path = self.output_dir / "TARGET_INFO.json"
+        components: list[str] = []
+        local_checkout = ""
+
+        try:
+            scope_data = json.loads(scope_path.read_text(encoding="utf-8-sig"))
+            raw_components = (
+                scope_data.get("in_scope", {}).get("components", [])
+                if isinstance(scope_data, dict)
+                else []
+            )
+            components = [
+                self._normalize_path_string(component)
+                for component in raw_components
+                if isinstance(component, str) and component.strip()
+            ]
+        except (OSError, json.JSONDecodeError):
+            components = []
+
+        try:
+            target_data = json.loads(target_path.read_text(encoding="utf-8-sig"))
+            if isinstance(target_data, dict):
+                local_checkout = self._normalize_path_string(
+                    str(target_data.get("local_checkout") or "")
+                )
+        except (OSError, json.JSONDecodeError):
+            local_checkout = ""
+
+        return components, local_checkout
+
+    @classmethod
+    def _is_in_scope_location(
+        cls,
+        file_path: str,
+        components: list[str],
+        local_checkout: str,
+    ) -> bool:
+        candidate = cls._normalize_path_string(file_path)
+        candidates = [candidate]
+        if local_checkout and candidate.startswith(local_checkout.rstrip("/") + "/"):
+            candidates.append(candidate[len(local_checkout.rstrip("/") + "/"):])
+        return any(
+            cls._matches_component(path, component)
+            for path in candidates
+            for component in components
+        )
+
+    @staticmethod
+    def _matches_component(path: str, component: str) -> bool:
+        return (
+            fnmatchcase(path, component)
+            or fnmatchcase(path, component.replace("**/", ""))
+        )
+
+    @staticmethod
+    def _normalize_path_string(path: str) -> str:
+        return path.replace("\\", "/").strip().lstrip("./")
 
     # ------------------------------------------------------------------
     # Validation helpers

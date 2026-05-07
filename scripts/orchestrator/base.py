@@ -276,7 +276,7 @@ class BaseOrchestrator(ABC):
 
         # Persist early-exit results so resume sees them
         if early_exit_results:
-            self.collector.save_partial(early_exit_results, 0, 0)
+            self.collector.save_partial(early_exit_results, 0, -1)
 
         # Step 3: Enrich items (phase-specific)
         enriched_items = self.enrich_items(items_to_process)
@@ -351,14 +351,14 @@ class BaseOrchestrator(ABC):
         cost_stats = None
         if self.cost_tracker:
             cost_stats = self.cost_tracker.get_stats()
-            print(f"  ---- Cost ----")
+            print(f"  ---- Estimated Token Cost ----")
             print(f"  Input tokens:          {cost_stats['total_input_tokens']:,}")
             print(f"  Cache read tokens:     {cost_stats['total_cache_read_tokens']:,}")
             print(f"  Cache create tokens:   {cost_stats['total_cache_creation_tokens']:,}")
             print(f"  Output tokens:         {cost_stats['total_output_tokens']:,}")
             print(f"  Total turns:           {cost_stats['total_turns']:,}")
-            print(f"  Estimated cost:        ${cost_stats['total_cost_usd']:.2f}")
-            print(f"  Budget:                ${cost_stats['max_budget_usd']:.2f}")
+            print(f"  Estimated token cost:  ${cost_stats['total_cost_usd']:.2f}")
+            print(f"  Budget limit:          ${cost_stats['max_budget_usd']:.2f}")
             print(f"  Budget utilization:    {cost_stats['budget_utilization_pct']:.1f}%")
         _sep = '\u2500' * 40
         print(_sep)
@@ -421,7 +421,7 @@ class BaseOrchestrator(ABC):
 
         # --- Cost table (if available) ---
         if cost_stats:
-            lines.append("### Cost Report")
+            lines.append("### Estimated Token Cost Report")
             lines.append("")
             lines.append("| Metric | Value |")
             lines.append("| :--- | ---: |")
@@ -430,8 +430,8 @@ class BaseOrchestrator(ABC):
             lines.append(f"| Cache creation tokens | {cost_stats.get('total_cache_creation_tokens', 0):,} |")
             lines.append(f"| Output tokens | {cost_stats.get('total_output_tokens', 0):,} |")
             lines.append(f"| Total turns | {cost_stats.get('total_turns', 0):,} |")
-            lines.append(f"| Estimated cost | ${cost_stats.get('total_cost_usd', 0):.2f} |")
-            lines.append(f"| Budget | ${cost_stats.get('max_budget_usd', 0):.2f} |")
+            lines.append(f"| Estimated token cost | ${cost_stats.get('total_cost_usd', 0):.2f} |")
+            lines.append(f"| Budget limit | ${cost_stats.get('max_budget_usd', 0):.2f} |")
             lines.append(f"| Budget utilization | {cost_stats.get('budget_utilization_pct', 0):.1f}% |")
             lines.append("")
 
@@ -1020,12 +1020,19 @@ class Phase02cOrchestrator(BaseOrchestrator):
     def _build_skip_result(self, item: dict[str, Any], reason: str) -> dict[str, Any]:
         """Build a skip result for early exit items."""
         prop_id = item.get("property_id", "unknown")
-        return {
+        result = dict(item)
+        result.update({
             "property_id": prop_id,
             "skipped": True,
             "skip_reason": reason,
-            "code_scope": {"resolution_status": "out_of_scope"},
-        }
+            "code_scope": {
+                "locations": [],
+                "resolution_status": "out_of_scope",
+                "resolution_error": reason,
+            },
+            "code_excerpt": "",
+        })
+        return result
 
     def enrich_items(self, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Assign _id_prefix from property_id."""
@@ -1040,6 +1047,78 @@ class Phase03Orchestrator(BaseOrchestrator):
 
     def __init__(self, num_workers: int = 4, max_concurrent: int = 8):
         super().__init__("03", num_workers, max_concurrent)
+
+    def enrich_items(self, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Anchor 02c code locations to the pinned local target checkout."""
+        local_checkout = self._target_local_checkout()
+
+        for item in items:
+            item["target_local_checkout"] = local_checkout
+            code_scope = item.get("code_scope", {})
+            if not isinstance(code_scope, dict):
+                continue
+
+            locations = code_scope.get("locations", [])
+            if not isinstance(locations, list):
+                continue
+
+            for location in locations:
+                if not isinstance(location, dict):
+                    continue
+
+                file_path = location.get("file")
+                if isinstance(file_path, str):
+                    location["file"] = self._anchor_code_path(file_path, local_checkout)
+
+        return items
+
+    def _target_local_checkout(self) -> str:
+        """Return the configured local checkout root, falling back to legacy layout."""
+        target_info = get_output_root() / "TARGET_INFO.json"
+        if target_info.exists():
+            try:
+                data = json.loads(target_info.read_text(encoding="utf-8-sig"))
+                local_checkout = data.get("local_checkout")
+                if isinstance(local_checkout, str) and local_checkout.strip():
+                    return self._normalize_code_path(local_checkout).rstrip("/")
+            except Exception as e:
+                print(
+                    f"Warning: Failed to read {target_info}: {e}",
+                    file=sys.stderr,
+                )
+
+        return "target_workspace"
+
+    @classmethod
+    def _anchor_code_path(cls, file_path: str, local_checkout: str) -> str:
+        """Resolve repo-relative code paths under the pinned checkout root."""
+        candidate = cls._normalize_code_path(file_path)
+        checkout = cls._normalize_code_path(local_checkout).rstrip("/")
+        if not candidate or not checkout:
+            return candidate
+
+        if candidate == checkout or candidate.startswith(f"{checkout}/"):
+            return candidate
+
+        if candidate.startswith(("http://", "https://")):
+            return candidate
+
+        if re.match(r"^[A-Za-z]:/", candidate) or candidate.startswith("/"):
+            return candidate
+
+        if candidate.startswith("target_workspace/") and checkout != "target_workspace":
+            remainder = candidate[len("target_workspace/"):]
+            return f"{checkout}/{remainder}"
+
+        return f"{checkout}/{candidate}"
+
+    @staticmethod
+    def _normalize_code_path(path: str) -> str:
+        """Normalize path separators for worker prompts and JSON context."""
+        normalized = path.replace("\\", "/").strip()
+        while normalized.startswith("./"):
+            normalized = normalized[2:]
+        return normalized
 
     def load_items(self) -> list[dict[str, Any]]:
         """Load properties with code from 02c partials with Pydantic validation."""

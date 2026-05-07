@@ -23,6 +23,7 @@ import tempfile
 import time
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 import aiofiles
 
@@ -643,6 +644,14 @@ class ClaudeRunner:
                     f"[W{worker_id}] Batch {batch_index}: recovered {len(results)} result(s) from inline response",
                     file=sys.stderr,
                 )
+        if directory_mode and not results:
+            results = self._parse_directory_results(batch_output_dir, context_path)
+            if results:
+                print(
+                    f"[W{worker_id}] Batch {batch_index}: synthesized {len(results)} "
+                    "result(s) from directory artifacts",
+                    file=sys.stderr,
+                )
 
         # Clean up: delete intermediate file only in file mode
         if not directory_mode and results:
@@ -1016,6 +1025,127 @@ class ClaudeRunner:
             return [data]
 
         return []
+
+    def _parse_directory_results(
+        self,
+        output_dir: Path,
+        context_path: Path,
+    ) -> list[dict[str, Any]]:
+        """Synthesize Phase 01b result objects from directory-mode .mmd files."""
+        if self.config.phase_id != "01b" or not output_dir.exists():
+            return []
+
+        mmd_files = sorted(output_dir.rglob("*.mmd"))
+        if not mmd_files:
+            return []
+
+        context_items = self._load_context_items(context_path)
+        groups: dict[str, list[Path]] = {}
+        display_names: dict[str, str] = {}
+        for path in mmd_files:
+            try:
+                rel_to_batch = path.relative_to(output_dir)
+            except ValueError:
+                rel_to_batch = path.name
+            parts = rel_to_batch.parts if isinstance(rel_to_batch, Path) else (str(rel_to_batch),)
+            spec_dir = parts[0] if len(parts) > 1 else output_dir.name
+            slug = self._normalize_slug(spec_dir)
+            groups.setdefault(slug, []).append(path)
+            display_names.setdefault(slug, spec_dir)
+
+        results: list[dict[str, Any]] = []
+        used_slugs: set[str] = set()
+        for item in context_items:
+            candidates = self._directory_slug_candidates(item)
+            matched_slugs = [slug for slug in groups if slug in candidates]
+            matched_files = [
+                path
+                for slug in matched_slugs
+                for path in groups.get(slug, [])
+            ]
+            used_slugs.update(matched_slugs)
+            title = str(item.get("title") or "")
+            results.append({
+                "source_url": str(item.get("url") or item.get("source_url") or ""),
+                "title": title,
+                "sub_graphs": [
+                    self._subgraph_from_mermaid_file(path) for path in matched_files
+                ],
+            })
+
+        if not results:
+            for slug, paths in groups.items():
+                results.append({
+                    "source_url": "",
+                    "title": display_names.get(slug, slug),
+                    "sub_graphs": [
+                        self._subgraph_from_mermaid_file(path) for path in paths
+                    ],
+                })
+        else:
+            for slug, paths in groups.items():
+                if slug in used_slugs:
+                    continue
+                results.append({
+                    "source_url": "",
+                    "title": display_names.get(slug, slug),
+                    "sub_graphs": [
+                        self._subgraph_from_mermaid_file(path) for path in paths
+                    ],
+                })
+
+        return results
+
+    @staticmethod
+    def _load_context_items(context_path: Path) -> list[dict[str, Any]]:
+        try:
+            with open(context_path, encoding="utf-8-sig") as f:
+                data = json.load(f)
+        except Exception:
+            return []
+        if isinstance(data, dict):
+            return [item for item in data.values() if isinstance(item, dict)]
+        if isinstance(data, list):
+            return [item for item in data if isinstance(item, dict)]
+        return []
+
+    @classmethod
+    def _directory_slug_candidates(cls, item: dict[str, Any]) -> set[str]:
+        candidates: set[str] = set()
+        for key in ("title", "name", "id"):
+            value = item.get(key)
+            if value:
+                candidates.add(cls._normalize_slug(str(value)))
+        url = str(item.get("url") or item.get("source_url") or "")
+        if url:
+            path = urlparse(url).path.rstrip("/")
+            if path:
+                candidates.add(cls._normalize_slug(Path(path).name))
+        return {candidate for candidate in candidates if candidate}
+
+    @classmethod
+    def _subgraph_from_mermaid_file(cls, path: Path) -> dict[str, str]:
+        stem = path.stem
+        if "_" in stem:
+            subgraph_id, name = stem.split("_", 1)
+        else:
+            subgraph_id, name = stem, stem
+        return {
+            "id": subgraph_id,
+            "name": name,
+            "mermaid_file": cls._output_relative_path(path),
+        }
+
+    @staticmethod
+    def _output_relative_path(path: Path) -> str:
+        try:
+            return path.resolve().relative_to(get_output_root().resolve()).as_posix()
+        except ValueError:
+            return path.as_posix()
+
+    @staticmethod
+    def _normalize_slug(value: str) -> str:
+        return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
 
     @staticmethod
     def _validate_result_item(item: dict[str, Any]) -> dict[str, Any]:
