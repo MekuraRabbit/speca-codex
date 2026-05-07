@@ -44,6 +44,9 @@ def test_codex_app_runner_injects_adapter_instructions(tmp_path: Path):
     assert "Never build OUTPUT_ROOT/target_workspace" in prompt
     assert "outputs/rehearsal_dvd/target_workspace" in prompt
     assert "Do not list/search its" in prompt
+    assert 'fails with "Access is denied" on' in prompt
+    assert "PowerShell" in prompt
+    assert "Select-String" in prompt
 
 
 def test_codex_app_runner_inlines_referenced_claude_skill(tmp_path: Path):
@@ -67,6 +70,7 @@ def test_codex_app_runner_inlines_referenced_claude_skill(tmp_path: Path):
     assert ".claude/skills/subgraph-extractor/SKILL.md" in prompt
     assert "Do not recursively fetch links" in prompt
     assert "TARGET_INFO.local_checkout" in prompt
+    assert "Select-String" in prompt
 
 
 def test_codex_app_client_replays_early_turn_notifications(tmp_path: Path):

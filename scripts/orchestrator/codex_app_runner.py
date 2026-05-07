@@ -728,7 +728,9 @@ Tool translation:
 - If the prompt says Read, use shell commands to read files.
 - If the prompt says Write, create the requested output file with shell commands.
 - If the prompt says Grep/Glob, use fast file search commands available in the
-  environment.
+  environment. If `rg` is unavailable or fails with "Access is denied" on
+  Windows, do not retry `rg`; immediately fall back to PowerShell
+  `Get-ChildItem` plus `Select-String` under the resolved checkout.
 - If the prompt references a Claude slash skill, perform the described task
   directly in Codex while preserving the required JSON/output contract.
 </codex_app_worker_adapter>"""
