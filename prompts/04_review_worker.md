@@ -39,7 +39,14 @@ Execution hint: This worker prompt is invoked by the phase-04 async orchestrator
   - `BUG_BOUNTY_SCOPE.json` - scope rules, `trust_assumptions`, severity thresholds. **Required.**
   - `TARGET_INFO.json` - target repo metadata, including `local_checkout`. **Required.**
 
-  Treat `TARGET_INFO.local_checkout` as the exact target code root. All source
+  Resolve the target checkout root from `TARGET_INFO.local_checkout`:
+  - If `local_checkout` is absolute, use it as-is.
+  - If `local_checkout` is relative, resolve it relative to the worker's current
+    workspace/cwd, not relative to `OUTPUT_ROOT`.
+  - Never construct `OUTPUT_ROOT/local_checkout`, `OUTPUT_ROOT/target_workspace`,
+    `outputs/target_workspace`, or `outputs/rehearsal_dvd/target_workspace`.
+
+  Treat the resolved checkout as the exact target code root. All source
   reads/searches must stay under that checkout. Do not list or search the
   `target_workspace` parent, sibling checkouts, the SPECA repository root, live
   URLs, RPC endpoints, registries, explorers, or deployment/account infrastructure.

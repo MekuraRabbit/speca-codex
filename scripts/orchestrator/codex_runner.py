@@ -79,8 +79,12 @@ Preserve the worker contract exactly:
   output root implied by the queue/context/output paths; never probe
   repository-root `outputs/` as a fallback for run artifacts.
 - For target code, read TARGET_INFO.local_checkout from the resolved output root
-  and restrict file reads/searches to that exact checkout. Do not list/search its
-  parent `target_workspace`, sibling paths, the SPECA repo root, or live services.
+  and resolve it as the target checkout root. If local_checkout is absolute, use
+  it as-is. If it is relative, resolve it relative to the worker cwd/workspace,
+  not relative to the output root. Never build OUTPUT_ROOT/target_workspace,
+  outputs/target_workspace, or outputs/rehearsal_dvd/target_workspace. Restrict
+  file reads/searches to the resolved checkout. Do not list/search its parent
+  `target_workspace`, sibling paths, the SPECA repo root, or live services.
 - If the original phase prompt mentions `outputs/...`, translate that path to
   SPECA_OUTPUT_DIR or to the output root implied by the queue/context/output
   paths instead of assuming repository-root `outputs/`.
