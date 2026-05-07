@@ -36,6 +36,10 @@ def test_codex_app_runner_injects_adapter_instructions(tmp_path: Path):
     assert "OUTPUT_FILE=" in prompt
     assert "isolated worktree" in prompt
     assert "translate that path to" in prompt
+    assert "never probe" in prompt
+    assert "repository-root `outputs/` as a fallback" in prompt
+    assert "TARGET_INFO.local_checkout" in prompt
+    assert "Do not list/search its" in prompt
 
 
 def test_codex_app_runner_inlines_referenced_claude_skill(tmp_path: Path):

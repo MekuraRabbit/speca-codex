@@ -31,9 +31,18 @@ Execution hint: This worker prompt is invoked by the phase-04 async orchestrator
   ## 1. Setup (once per batch)
 
   Read <ref id="queue"/> for `item_ids` and `context_file`. Read <ref id="context"/> for item data.
-  Then read and cache these files:
-  - `outputs/BUG_BOUNTY_SCOPE.json` — scope rules, `trust_assumptions`, severity thresholds. **Required.**
-  - `outputs/TARGET_INFO.json` — target repo metadata. **Required.**
+  Derive `OUTPUT_ROOT` from the directory containing the absolute queue/context/output
+  paths. Whenever this prompt says `outputs/...`, read from that `OUTPUT_ROOT`;
+  do not probe repository-root `outputs/` as a fallback.
+
+  Then read and cache these files from `OUTPUT_ROOT`:
+  - `BUG_BOUNTY_SCOPE.json` - scope rules, `trust_assumptions`, severity thresholds. **Required.**
+  - `TARGET_INFO.json` - target repo metadata, including `local_checkout`. **Required.**
+
+  Treat `TARGET_INFO.local_checkout` as the exact target code root. All source
+  reads/searches must stay under that checkout. Do not list or search the
+  `target_workspace` parent, sibling checkouts, the SPECA repository root, live
+  URLs, RPC endpoints, registries, explorers, or deployment/account infrastructure.
 
   ## 2. For each item — FP Filter Pipeline (3 gates)
 
