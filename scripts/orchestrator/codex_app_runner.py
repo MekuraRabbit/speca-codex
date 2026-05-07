@@ -709,8 +709,12 @@ Preserve the worker contract exactly:
   by the absolute QUEUE_FILE, CONTEXT_FILE, OUTPUT_FILE, or OUTPUT_DIR paths;
   never probe repository-root `outputs/` as a fallback for run artifacts.
 - For target code, read TARGET_INFO.local_checkout from the resolved output root
-  and restrict file reads/searches to that exact checkout. Do not list/search its
-  parent `target_workspace`, sibling paths, the SPECA repo root, or live services.
+  and resolve it as the target checkout root. If local_checkout is absolute, use
+  it as-is. If it is relative, resolve it relative to the worker cwd/workspace,
+  not relative to the output root. Never build OUTPUT_ROOT/target_workspace,
+  outputs/target_workspace, or outputs/rehearsal_dvd/target_workspace. Restrict
+  file reads/searches to the resolved checkout. Do not list/search its parent
+  `target_workspace`, sibling paths, the SPECA repo root, or live services.
 - If this worker is running in an isolated worktree, use that worktree for code
   inspection or source edits, but still write SPECA output artifacts to the
   absolute output paths named in the prompt.

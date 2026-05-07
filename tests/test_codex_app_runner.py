@@ -39,6 +39,10 @@ def test_codex_app_runner_injects_adapter_instructions(tmp_path: Path):
     assert "never probe" in prompt
     assert "repository-root `outputs/` as a fallback" in prompt
     assert "TARGET_INFO.local_checkout" in prompt
+    assert "relative to the worker cwd/workspace" in prompt
+    assert "not relative to the output root" in prompt
+    assert "Never build OUTPUT_ROOT/target_workspace" in prompt
+    assert "outputs/rehearsal_dvd/target_workspace" in prompt
     assert "Do not list/search its" in prompt
 
 
