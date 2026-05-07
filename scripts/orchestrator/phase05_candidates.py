@@ -269,13 +269,13 @@ def _anchor_code_path(path: str, target_checkout: str) -> str:
     checkout = target_checkout.rstrip("/")
     if candidate == checkout or candidate.startswith(f"{checkout}/"):
         return candidate
+    if candidate.startswith(("http://", "https://")):
+        return candidate
     if re.match(r"^[A-Za-z]:/", candidate) or candidate.startswith("/"):
         return candidate
     if candidate.startswith("target_workspace/") and checkout != "target_workspace":
-        return f"{checkout}/{candidate[len('target_workspace/'):]}"
-    if candidate.startswith(("contracts/", "test/", "scripts/")):
-        return f"{checkout}/{candidate}"
-    return candidate
+        return f"{checkout}/{_safe_relative_path(candidate[len('target_workspace/'):])}"
+    return f"{checkout}/{_safe_relative_path(candidate)}"
 
 
 def _challenge_from_paths(paths: list[str]) -> str:
@@ -344,7 +344,7 @@ def _attack_family(challenge: str, symbol: str, text: str) -> str:
 
 def _recommended_type(target_info: dict[str, Any]) -> str:
     language = str(target_info.get("language", "")).lower()
-    if language in {"solidity", "javascript", "typescript"}:
+    if language in {"solidity", "javascript", "typescript", "js", "ts"}:
         return "it"
     return "unit"
 
@@ -359,6 +359,10 @@ def _recommended_output_path(
     slug = _slug(attack_family, max_len=40)
     if language == "solidity":
         return f"{target_checkout}/test/speca-poc/{challenge}/poc_{slug}.challenge.js"
+    if language in {"javascript", "js"}:
+        return f"{target_checkout}/test/speca-poc/{challenge}/poc_{slug}.test.js"
+    if language in {"typescript", "ts"}:
+        return f"{target_checkout}/test/speca-poc/{challenge}/poc_{slug}.test.ts"
     return f"{target_checkout}/test/speca-poc/{challenge}/poc_{slug}_test.py"
 
 
@@ -371,6 +375,8 @@ def _run_command(output_path: str, target_info: dict[str, Any]) -> str:
     language = str(target_info.get("language", "")).lower()
     if language == "solidity":
         return f"npm run compile && npx mocha --timeout 5000 --exit {rel_path}"
+    if language in {"javascript", "typescript", "js", "ts"}:
+        return f"npm test -- {rel_path}"
     if language == "python":
         return f"pytest {rel_path} -vv"
     return f"<run native test command for {rel_path}>"
@@ -387,6 +393,15 @@ def _summary_for_candidate(item: dict[str, Any]) -> str:
         if value:
             return value
     return f"Representative PoC candidate for {item['property_id']}."
+
+
+def _safe_relative_path(path: str) -> str:
+    parts = [
+        part
+        for part in path.split("/")
+        if part not in {"", ".", ".."}
+    ]
+    return "/".join(parts)
 
 
 def _slug(value: str, max_len: int = 64) -> str:

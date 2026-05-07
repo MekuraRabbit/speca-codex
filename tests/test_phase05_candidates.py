@@ -125,6 +125,119 @@ def test_ignores_non_candidate_phase04_items(tmp_path):
     assert index["candidates"] == []
 
 
+def test_anchors_unknown_relative_code_paths(tmp_path):
+    _write_json(
+        tmp_path / "TARGET_INFO.json",
+        {
+            "local_checkout": "target_workspace/service",
+            "language": "go",
+        },
+    )
+    _write_json(
+        tmp_path / "03_PARTIAL_W0B0.json",
+        {
+            "audit_items": [
+                {
+                    "property_id": "PROP-service-inv-001",
+                    "classification": "vulnerability",
+                    "code_path": "src/security/check.go::ValidateAccess::L10-20",
+                    "summary": "Access check accepts attacker-controlled input.",
+                },
+                {
+                    "property_id": "PROP-service-inv-002",
+                    "classification": "vulnerability",
+                    "code_scope": {
+                        "locations": [
+                            {
+                                "file": "pkg/auth/guard.go",
+                                "symbol": "Guard",
+                                "line_range": {"start": 1, "end": 8},
+                            }
+                        ]
+                    },
+                    "summary": "Duplicate access check issue.",
+                },
+            ],
+        },
+    )
+    _write_json(
+        tmp_path / "04_PARTIAL_W0B0.json",
+        {
+            "reviewed_items": [
+                {
+                    "property_id": "PROP-service-inv-001",
+                    "review_verdict": "CONFIRMED_VULNERABILITY",
+                    "adjusted_severity": "High",
+                },
+                {
+                    "property_id": "PROP-service-inv-002",
+                    "review_verdict": "CONFIRMED_VULNERABILITY",
+                    "adjusted_severity": "High",
+                },
+            ],
+        },
+    )
+
+    index = build_poc_candidate_index(tmp_path)
+
+    target_files = {
+        path
+        for candidate in index["candidates"]
+        for path in candidate["target_files"]
+    }
+    assert "target_workspace/service/src/security/check.go" in target_files
+    assert "target_workspace/service/pkg/auth/guard.go" in target_files
+
+
+def test_javascript_and_typescript_candidates_get_native_defaults(tmp_path):
+    for language, suffix in [("javascript", ".test.js"), ("typescript", ".test.ts")]:
+        output_dir = tmp_path / language
+        output_dir.mkdir()
+        _write_json(
+            output_dir / "TARGET_INFO.json",
+            {
+                "local_checkout": f"target_workspace/{language}-app",
+                "language": language,
+            },
+        )
+        _write_json(
+            output_dir / "03_PARTIAL_W0B0.json",
+            {
+                "audit_items": [
+                    {
+                        "property_id": f"PROP-{language}-inv-001",
+                        "classification": "vulnerability",
+                        "code_path": "src/security/session.ts::validateSession::L4-12",
+                        "summary": "Session validation accepts forged input.",
+                    }
+                ],
+            },
+        )
+        _write_json(
+            output_dir / "04_PARTIAL_W0B0.json",
+            {
+                "reviewed_items": [
+                    {
+                        "property_id": f"PROP-{language}-inv-001",
+                        "review_verdict": "CONFIRMED_VULNERABILITY",
+                        "adjusted_severity": "High",
+                    }
+                ],
+            },
+        )
+
+        index = build_poc_candidate_index(output_dir)
+        candidate = index["candidates"][0]
+
+        assert candidate["recommended_type"] == "it"
+        assert candidate["primary_file"] == (
+            f"target_workspace/{language}-app/src/security/session.ts"
+        )
+        assert candidate["recommended_output_path"].endswith(suffix)
+        assert candidate["run_command"].startswith("npm test -- ")
+        assert "<run native test command" not in candidate["run_command"]
+
+
 def test_phase05_config_is_available():
     config = get_phase_config("05")
 
