@@ -75,6 +75,12 @@ Preserve the worker contract exactly:
 - Treat BUG_BOUNTY_SCOPE and TARGET_INFO as the authorized scope for this run.
   Do not expand analysis to unrelated repositories, live services, accounts, or
   infrastructure.
+- Resolve any `outputs/...` path before reading it. Use SPECA_OUTPUT_DIR or the
+  output root implied by the queue/context/output paths; never probe
+  repository-root `outputs/` as a fallback for run artifacts.
+- For target code, read TARGET_INFO.local_checkout from the resolved output root
+  and restrict file reads/searches to that exact checkout. Do not list/search its
+  parent `target_workspace`, sibling paths, the SPECA repo root, or live services.
 - If the original phase prompt mentions `outputs/...`, translate that path to
   SPECA_OUTPUT_DIR or to the output root implied by the queue/context/output
   paths instead of assuming repository-root `outputs/`.

@@ -84,6 +84,10 @@ def test_codex_runner_injects_adapter_instructions():
     assert "codex exec" in prompt
     assert "OUTPUT_FILE=outputs/out.json" in prompt
     assert "SPECA_OUTPUT_DIR" in prompt
+    assert "never probe" in prompt
+    assert "repository-root `outputs/` as a fallback" in prompt
+    assert "TARGET_INFO.local_checkout" in prompt
+    assert "Do not list/search its" in prompt
 
 
 def test_codex_runner_inlines_referenced_claude_skill():
