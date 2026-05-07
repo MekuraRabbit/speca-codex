@@ -93,7 +93,7 @@ from orchestrator.runner import (
     LogAnomalyDetector,
 )
 from orchestrator.collector import ResultCollector
-from orchestrator.base import generate_slug, Phase01Orchestrator, Phase02cOrchestrator
+from orchestrator.base import generate_slug, Phase01Orchestrator, Phase02cOrchestrator, Phase03Orchestrator
 
 
 # =========================================================================
@@ -1496,6 +1496,58 @@ class TestPhase02cEarlyExit:
         assert early[0]["code_scope"]["locations"] == []
         assert early[0]["code_scope"]["resolution_status"] == "out_of_scope"
         Phase02cPartial.model_validate({"properties_with_code": early})
+
+
+class TestPhase03CodePathAnchoring:
+    """Tests for Phase 03 local checkout path anchoring."""
+
+    def test_enrich_items_prefixes_repo_relative_locations_with_local_checkout(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            old_cwd = os.getcwd()
+            os.chdir(tmpdir)
+            try:
+                output_dir = Path("outputs")
+                output_dir.mkdir()
+                (output_dir / "TARGET_INFO.json").write_text(
+                    json.dumps({"local_checkout": "target_workspace/damn-vulnerable-defi"}),
+                    encoding="utf-8",
+                )
+
+                orch = Phase03Orchestrator(num_workers=1, max_concurrent=1)
+                items = [
+                    {
+                        "property_id": "PROP-001",
+                        "code_scope": {
+                            "resolution_status": "resolved",
+                            "locations": [
+                                {"file": "contracts/naive-receiver/NaiveReceiverLenderPool.sol"},
+                                {"file": "target_workspace/contracts/side-entrance/SideEntranceLenderPool.sol"},
+                                {"file": "target_workspace/damn-vulnerable-defi/test/puppet/puppet.challenge.js"},
+                            ],
+                        },
+                    }
+                ]
+
+                enriched = orch.enrich_items(items)
+                files = [
+                    location["file"]
+                    for location in enriched[0]["code_scope"]["locations"]
+                ]
+
+                assert enriched[0]["target_local_checkout"] == "target_workspace/damn-vulnerable-defi"
+                assert files == [
+                    "target_workspace/damn-vulnerable-defi/contracts/naive-receiver/NaiveReceiverLenderPool.sol",
+                    "target_workspace/damn-vulnerable-defi/contracts/side-entrance/SideEntranceLenderPool.sol",
+                    "target_workspace/damn-vulnerable-defi/test/puppet/puppet.challenge.js",
+                ]
+            finally:
+                os.chdir(old_cwd)
+
+    def test_phase03_context_includes_target_local_checkout(self):
+        cfg = get_phase_config("03")
+
+        assert cfg.context_fields is not None
+        assert "target_local_checkout" in cfg.context_fields
 
 
 # =========================================================================

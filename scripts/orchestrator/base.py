@@ -1048,6 +1048,78 @@ class Phase03Orchestrator(BaseOrchestrator):
     def __init__(self, num_workers: int = 4, max_concurrent: int = 8):
         super().__init__("03", num_workers, max_concurrent)
 
+    def enrich_items(self, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Anchor 02c code locations to the pinned local target checkout."""
+        local_checkout = self._target_local_checkout()
+
+        for item in items:
+            item["target_local_checkout"] = local_checkout
+            code_scope = item.get("code_scope", {})
+            if not isinstance(code_scope, dict):
+                continue
+
+            locations = code_scope.get("locations", [])
+            if not isinstance(locations, list):
+                continue
+
+            for location in locations:
+                if not isinstance(location, dict):
+                    continue
+
+                file_path = location.get("file")
+                if isinstance(file_path, str):
+                    location["file"] = self._anchor_code_path(file_path, local_checkout)
+
+        return items
+
+    def _target_local_checkout(self) -> str:
+        """Return the configured local checkout root, falling back to legacy layout."""
+        target_info = get_output_root() / "TARGET_INFO.json"
+        if target_info.exists():
+            try:
+                data = json.loads(target_info.read_text(encoding="utf-8-sig"))
+                local_checkout = data.get("local_checkout")
+                if isinstance(local_checkout, str) and local_checkout.strip():
+                    return self._normalize_code_path(local_checkout).rstrip("/")
+            except Exception as e:
+                print(
+                    f"Warning: Failed to read {target_info}: {e}",
+                    file=sys.stderr,
+                )
+
+        return "target_workspace"
+
+    @classmethod
+    def _anchor_code_path(cls, file_path: str, local_checkout: str) -> str:
+        """Resolve repo-relative code paths under the pinned checkout root."""
+        candidate = cls._normalize_code_path(file_path)
+        checkout = cls._normalize_code_path(local_checkout).rstrip("/")
+        if not candidate or not checkout:
+            return candidate
+
+        if candidate == checkout or candidate.startswith(f"{checkout}/"):
+            return candidate
+
+        if candidate.startswith(("http://", "https://")):
+            return candidate
+
+        if re.match(r"^[A-Za-z]:/", candidate) or candidate.startswith("/"):
+            return candidate
+
+        if candidate.startswith("target_workspace/") and checkout != "target_workspace":
+            remainder = candidate[len("target_workspace/"):]
+            return f"{checkout}/{remainder}"
+
+        return f"{checkout}/{candidate}"
+
+    @staticmethod
+    def _normalize_code_path(path: str) -> str:
+        """Normalize path separators for worker prompts and JSON context."""
+        normalized = path.replace("\\", "/").strip()
+        while normalized.startswith("./"):
+            normalized = normalized[2:]
+        return normalized
+
     def load_items(self) -> list[dict[str, Any]]:
         """Load properties with code from 02c partials with Pydantic validation."""
         import glob

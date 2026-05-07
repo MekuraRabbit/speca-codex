@@ -44,7 +44,19 @@ Execution hint: This worker prompt is invoked by the phase-03 async orchestrator
 
     2. **Resolve Code Scope**:
 
-       **Path prefix**: The target repository is cloned under `target_workspace/`. All `code_scope.locations[].file` paths from Phase 02c are relative to the repo root — prepend `target_workspace/` when reading files (e.g. `beacon-chain/core/blocks/payload.go` → `target_workspace/beacon-chain/core/blocks/payload.go`). Read `outputs/TARGET_INFO.json` for repository metadata.
+       **Authorized checkout root (overrides any legacy `target_workspace/` prefix rule)**:
+       Use `item.target_local_checkout` when present. Otherwise, read
+       `outputs/TARGET_INFO.json` and use its `local_checkout` value. Treat that
+       path as the only target code root for this run. If a
+       `code_scope.locations[].file` path already starts with that root, read it
+       as-is. If it is repo-relative, prepend the authorized checkout root. Do
+       not read `target_workspace/<path>` unless it is inside the authorized
+       checkout root. If a candidate path points outside the authorized checkout
+       root, mark the item out-of-scope instead of reading it.
+
+       **Legacy path note**: Older target setups may use `target_workspace/` as
+       the checkout root. Only use that root when `item.target_local_checkout`
+       and `outputs/TARGET_INFO.json.local_checkout` are unavailable.
 
        a. **Pre-resolved (preferred)**: If `item.code_scope.resolution_status == "resolved"` and `item.code_scope.locations` is not empty:
           - Use pre-resolved data from Phase 02c

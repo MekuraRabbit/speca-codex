@@ -54,8 +54,8 @@ pip install uv
 GitHub の緑色の **Code** ボタンから、この公開リポジトリの clone URL をコピーして使います。
 
 ```bash
-git clone <this-repository-url>
-cd <repository-directory>
+git clone https://github.com/MekuraRabbit/speca-codex
+cd speca-codex
 uv sync
 ```
 

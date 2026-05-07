@@ -103,8 +103,8 @@ the worker turns.
 
 ```bash
 # 1. Clone
-git clone <this-repository-url>
-cd <repository-directory>
+git clone https://github.com/MekuraRabbit/speca-codex
+cd speca-codex
 
 # 2. Install Codex CLI (used by the Codex app-server runner)
 npm install -g @openai/codex
@@ -113,9 +113,9 @@ npm install -g @openai/codex
 uv sync
 ```
 
-Copy `<this-repository-url>` from the green **Code** button on the repository
-page. If `uv sync` fails on Windows while preparing legacy workflow extras, you
-can create a lightweight environment for the Codex App API:
+The clone URL above points to this Codex App fork. If `uv sync` fails on
+Windows while preparing legacy workflow extras, you can create a lightweight
+environment for the Codex App API:
 
 ```bash
 uv venv

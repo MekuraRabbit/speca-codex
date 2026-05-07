@@ -265,7 +265,7 @@ PHASE_CONFIGS: dict[str, PhaseConfig] = {
         tools_filter=["Read", "Write", "Grep", "Glob"],
         context_fields=["property_id", "text", "type", "assertion", "severity",
                          "covers", "reachability", "exploitability",
-                         "code_scope", "code_excerpt"],
+                         "code_scope", "code_excerpt", "target_local_checkout"],
     ),
 
     "04": PhaseConfig(
