@@ -288,6 +288,27 @@ PHASE_CONFIGS: dict[str, PhaseConfig] = {
         context_fields=["property_id", "audit_result", "text", "assertion",
                          "covers", "severity", "type"],
     ),
+
+    "05": PhaseConfig(
+        phase_id="05",
+        name="PoC Candidate Selection",
+        description="Group Phase 04 confirmed findings into representative PoC candidates",
+        skill_path=Path("prompts/05_poc.md"),
+        prompt_path=Path("prompts/05_poc.md"),
+        queue_pattern="outputs/05_QUEUE_{worker_id}.json",
+        output_pattern="outputs/05_POC_CANDIDATES.json",
+        depends_on=["04"],
+        input_patterns=[
+            "outputs/03_PARTIAL_*.json",
+            "outputs/04_PARTIAL_*.json",
+            "outputs/TARGET_INFO.json",
+        ],
+        batch_strategy="count",
+        max_batch_size=1,
+        item_id_field="candidate_id",
+        result_key="candidates",
+        mcp_servers=[],
+    ),
 }
 
 
