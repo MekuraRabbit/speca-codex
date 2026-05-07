@@ -347,19 +347,19 @@ class BaseOrchestrator(ABC):
         print(f"  Validation warnings:   {val_stats['validation_warnings']}")
         print(f"  Validation errors:     {val_stats['validation_errors']}")
 
-        # Cost statistics
+        # Token usage statistics. CostTracker still handles budget enforcement,
+        # but the normal run summary avoids dollar estimates that look like
+        # actual billing for non-API runners such as Codex app-server.
         cost_stats = None
         if self.cost_tracker:
             cost_stats = self.cost_tracker.get_stats()
-            print(f"  ---- Estimated Token Cost ----")
+            print(f"  ---- Token Usage ----")
             print(f"  Input tokens:          {cost_stats['total_input_tokens']:,}")
             print(f"  Cache read tokens:     {cost_stats['total_cache_read_tokens']:,}")
             print(f"  Cache create tokens:   {cost_stats['total_cache_creation_tokens']:,}")
             print(f"  Output tokens:         {cost_stats['total_output_tokens']:,}")
+            print(f"  Total tokens:          {cost_stats['total_tokens']:,}")
             print(f"  Total turns:           {cost_stats['total_turns']:,}")
-            print(f"  Estimated token cost:  ${cost_stats['total_cost_usd']:.2f}")
-            print(f"  Budget limit:          ${cost_stats['max_budget_usd']:.2f}")
-            print(f"  Budget utilization:    {cost_stats['budget_utilization_pct']:.1f}%")
         _sep = '\u2500' * 40
         print(_sep)
 
@@ -419,9 +419,18 @@ class BaseOrchestrator(ABC):
         lines.append(f"| Validation errors | {val_stats['validation_errors']} |")
         lines.append("")
 
-        # --- Cost table (if available) ---
+        # --- Token usage table (if available) ---
         if cost_stats:
-            lines.append("### Estimated Token Cost Report")
+            total_tokens = cost_stats.get("total_tokens")
+            if total_tokens is None:
+                total_tokens = (
+                    cost_stats.get("total_input_tokens", 0)
+                    + cost_stats.get("total_cache_read_tokens", 0)
+                    + cost_stats.get("total_cache_creation_tokens", 0)
+                    + cost_stats.get("total_output_tokens", 0)
+                )
+
+            lines.append("### Token Usage")
             lines.append("")
             lines.append("| Metric | Value |")
             lines.append("| :--- | ---: |")
@@ -429,22 +438,8 @@ class BaseOrchestrator(ABC):
             lines.append(f"| Cache read tokens | {cost_stats.get('total_cache_read_tokens', 0):,} |")
             lines.append(f"| Cache creation tokens | {cost_stats.get('total_cache_creation_tokens', 0):,} |")
             lines.append(f"| Output tokens | {cost_stats.get('total_output_tokens', 0):,} |")
+            lines.append(f"| Total tokens | {total_tokens:,} |")
             lines.append(f"| Total turns | {cost_stats.get('total_turns', 0):,} |")
-            lines.append(f"| Estimated token cost | ${cost_stats.get('total_cost_usd', 0):.2f} |")
-            lines.append(f"| Budget limit | ${cost_stats.get('max_budget_usd', 0):.2f} |")
-            lines.append(f"| Budget utilization | {cost_stats.get('budget_utilization_pct', 0):.1f}% |")
-            lines.append("")
-
-            # Budget bar (visual indicator)
-            pct = min(cost_stats['budget_utilization_pct'], 100.0)
-            filled = int(pct / 5)  # 20 chars = 100%
-            bar = '#' * filled + '-' * (20 - filled)
-            if pct >= 80:
-                lines.append(f"> **Budget: [{bar}] {pct:.1f}%**")
-            elif pct >= 50:
-                lines.append(f"> Budget: [{bar}] {pct:.1f}%")
-            else:
-                lines.append(f"> Budget: [{bar}] {pct:.1f}%")
             lines.append("")
 
         # --- Failed batches detail ---

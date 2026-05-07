@@ -2256,8 +2256,8 @@ class TestGitHubStepSummary:
             del os.environ["GITHUB_STEP_SUMMARY"]
             os.unlink(summary_file)
 
-    def test_includes_cost_report(self):
-        """Should include cost table when cost_stats is provided."""
+    def test_includes_token_usage_report(self):
+        """Should include token usage table when token stats are provided."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
             summary_file = f.name
         os.environ["GITHUB_STEP_SUMMARY"] = summary_file
@@ -2267,7 +2267,10 @@ class TestGitHubStepSummary:
             val_stats = orch.collector.get_validation_summary()
             cost_stats = {
                 "total_input_tokens": 100000,
+                "total_cache_read_tokens": 250000,
+                "total_cache_creation_tokens": 10000,
                 "total_output_tokens": 30000,
+                "total_tokens": 390000,
                 "total_cost_usd": 8.50,
                 "max_budget_usd": 30.0,
                 "budget_utilization_pct": 28.3,
@@ -2278,17 +2281,21 @@ class TestGitHubStepSummary:
 
             with open(summary_file) as f:
                 content = f.read()
-            assert "### Estimated Token Cost Report" in content
+            assert "### Token Usage" in content
             assert "| Input tokens | 100,000 |" in content
-            assert "| Estimated token cost | $8.50 |" in content
-            assert "| Budget limit | $30.00 |" in content
-            assert "28.3%" in content
+            assert "| Cache read tokens | 250,000 |" in content
+            assert "| Cache creation tokens | 10,000 |" in content
+            assert "| Output tokens | 30,000 |" in content
+            assert "| Total tokens | 390,000 |" in content
+            assert "Estimated token cost" not in content
+            assert "Budget limit" not in content
+            assert "$8.50" not in content
         finally:
             del os.environ["GITHUB_STEP_SUMMARY"]
             os.unlink(summary_file)
 
-    def test_no_cost_section_without_stats(self):
-        """Should not include cost section when cost_stats is None."""
+    def test_no_token_usage_section_without_stats(self):
+        """Should not include token usage section when cost_stats is None."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
             summary_file = f.name
         os.environ["GITHUB_STEP_SUMMARY"] = summary_file
@@ -2300,7 +2307,7 @@ class TestGitHubStepSummary:
 
             with open(summary_file) as f:
                 content = f.read()
-            assert "### Estimated Token Cost Report" not in content
+            assert "### Token Usage" not in content
         finally:
             del os.environ["GITHUB_STEP_SUMMARY"]
             os.unlink(summary_file)
@@ -2382,8 +2389,8 @@ class TestGitHubStepSummary:
             del os.environ["GITHUB_STEP_SUMMARY"]
             os.unlink(summary_file)
 
-    def test_budget_bar_high_utilization(self):
-        """High budget utilization (>=80%) should show red indicator."""
+    def test_token_usage_report_hides_budget_utilization(self):
+        """Normal summaries should not display dollar/budget estimates."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
             summary_file = f.name
         os.environ["GITHUB_STEP_SUMMARY"] = summary_file
@@ -2404,7 +2411,10 @@ class TestGitHubStepSummary:
 
             with open(summary_file) as f:
                 content = f.read()
-            assert "83.3%" in content
+            assert "### Token Usage" in content
+            assert "83.3%" not in content
+            assert "Budget:" not in content
+            assert "$25.0" not in content
         finally:
             del os.environ["GITHUB_STEP_SUMMARY"]
             os.unlink(summary_file)
