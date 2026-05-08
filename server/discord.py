@@ -27,6 +27,34 @@ def _format_elapsed(start: float, end: float | None) -> str:
     return f"{m}m {s}s" if m > 0 else f"{s}s"
 
 
+def _format_token_usage(token_info: dict[str, Any]) -> str:
+    total_tokens = token_info.get("total_tokens")
+    if total_tokens is None:
+        total_tokens = (
+            int(token_info.get("total_input_tokens") or 0)
+            + int(token_info.get("total_cache_read_tokens") or 0)
+            + int(token_info.get("total_cache_creation_tokens") or 0)
+            + int(token_info.get("total_output_tokens") or 0)
+        )
+
+    lines = []
+    if total_tokens:
+        lines.append(f"Total: {int(total_tokens):,}")
+    if token_info.get("total_input_tokens"):
+        lines.append(f"Input: {int(token_info['total_input_tokens']):,}")
+    if token_info.get("total_cache_read_tokens"):
+        lines.append(f"Cache read: {int(token_info['total_cache_read_tokens']):,}")
+    if token_info.get("total_cache_creation_tokens"):
+        lines.append(
+            f"Cache creation: {int(token_info['total_cache_creation_tokens']):,}"
+        )
+    if token_info.get("total_output_tokens"):
+        lines.append(f"Output: {int(token_info['total_output_tokens']):,}")
+    if token_info.get("total_turns"):
+        lines.append(f"Turns: {int(token_info['total_turns']):,}")
+    return "\n".join(lines)
+
+
 def _build_embed(run: RunInfo) -> dict[str, Any]:
     """Build a Discord embed from a completed RunInfo."""
     phase_id = run.phase_id
@@ -54,21 +82,13 @@ def _build_embed(run: RunInfo) -> dict[str, Any]:
     if total_results is not None:
         fields.append({"name": "Results", "value": str(total_results), "inline": True})
 
-    cost_info = result.get("cost") or {}
-    cost_usd = cost_info.get("total_cost_usd")
-    if cost_usd is not None:
+    token_info = result.get("token_usage") or result.get("cost") or {}
+    token_usage = _format_token_usage(token_info)
+    if token_usage:
         fields.append({
-            "name": "Estimated token cost",
-            "value": f"${cost_usd:.2f}",
-            "inline": True,
-        })
-
-    budget_pct = cost_info.get("budget_utilization_pct")
-    if budget_pct is not None:
-        fields.append({
-            "name": "Budget utilization",
-            "value": f"{budget_pct:.1f}%",
-            "inline": True,
+            "name": "Token usage",
+            "value": token_usage,
+            "inline": False,
         })
 
     if run.error:

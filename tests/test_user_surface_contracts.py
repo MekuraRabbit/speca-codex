@@ -1,0 +1,77 @@
+import time
+from pathlib import Path
+
+from server.discord import _build_embed
+from server.progress import ProgressBus
+from server.run_manager import RunInfo, RunStatus
+
+
+def test_discord_embed_reports_token_usage_without_dollar_estimates():
+    run = RunInfo(
+        run_id="run-123",
+        phase_id="03",
+        output_dir="outputs/inst_01",
+        status=RunStatus.COMPLETED,
+        created_at=time.time() - 10,
+        completed_at=time.time(),
+        inputs={},
+        bus=ProgressBus(),
+        result={
+            "total_results": 7,
+            "cost": {
+                "total_input_tokens": 100_000,
+                "total_cache_read_tokens": 250_000,
+                "total_cache_creation_tokens": 10_000,
+                "total_output_tokens": 30_000,
+                "total_tokens": 390_000,
+                "total_turns": 12,
+                "total_cost_usd": 8.50,
+                "budget_utilization_pct": 28.3,
+            },
+        },
+    )
+
+    embed = _build_embed(run)
+    fields = {field["name"]: field["value"] for field in embed["fields"]}
+
+    assert "Token usage" in fields
+    assert "Total: 390,000" in fields["Token usage"]
+    assert "Input: 100,000" in fields["Token usage"]
+    assert "Cache read: 250,000" in fields["Token usage"]
+    assert "Output: 30,000" in fields["Token usage"]
+    assert "Turns: 12" in fields["Token usage"]
+    assert "Estimated token cost" not in fields
+    assert "Budget utilization" not in fields
+    assert "$" not in fields["Token usage"]
+
+
+def test_discord_embed_accepts_native_token_usage_field():
+    run = RunInfo(
+        run_id="run-456",
+        phase_id="04",
+        output_dir="outputs/inst_02",
+        status=RunStatus.COMPLETED,
+        created_at=time.time() - 5,
+        completed_at=time.time(),
+        inputs={},
+        bus=ProgressBus(),
+        result={
+            "token_usage": {
+                "total_input_tokens": 10,
+                "total_output_tokens": 2,
+            },
+        },
+    )
+
+    embed = _build_embed(run)
+    fields = {field["name"]: field["value"] for field in embed["fields"]}
+
+    assert fields["Token usage"] == "Total: 12\nInput: 10\nOutput: 2"
+
+
+def test_github_issue_helper_uses_current_outputs_path():
+    script = Path("scripts/get_github_issues.sh").read_text(encoding="utf-8")
+
+    assert "outputs/00_SIMILAR_ISSUES.json" in script
+    assert "--output path" in script
+    assert "security-agent/outputs" not in script
