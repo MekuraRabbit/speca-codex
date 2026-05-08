@@ -1,8 +1,10 @@
 # speca-cli
 
-TUI front-end for the [SPECA](https://github.com/NyxFoundation/speca) security-audit pipeline.
+TUI front-end prototype for the [SPECA Codex fork](https://github.com/MekuraRabbit/speca-codex) security-audit pipeline.
 
-> **Status:** M1 (skeleton). Full design in [`docs/SPECA_CLI_SPEC.md`](../docs/SPECA_CLI_SPEC.md). Tracking issue: [#3](https://github.com/NyxFoundation/speca/issues/3).
+> **Status:** early prototype. `version`, `doctor`, `auth login`, and `auth status`
+> exist; run orchestration and browsing are still future work. The broader CLI
+> design is in [`docs/SPECA_CLI_SPEC.md`](../docs/SPECA_CLI_SPEC.md).
 
 ## Quick start (development)
 
@@ -14,17 +16,21 @@ npm run build               # compile to dist/
 node dist/cli.js doctor     # run the built bundle
 ```
 
-## Commands available in M1
+## Commands available now
 
 | Command | Description |
 |---|---|
 | `speca version` | Print the speca-cli version |
-| `speca doctor` | Check that Node / uv / git / claude-code are installed |
+| `speca doctor` | Check Node / uv / git / optional legacy Claude Code / auth status |
+| `speca auth login` | Save Anthropic credentials for legacy Claude-oriented CLI experiments |
+| `speca auth status` | Show currently saved auth records |
 | `speca help` | Show usage |
 
-Future milestones (M2–M7) add `init`, `auth`, `run`, `browse`, `attach`, `config`, the live pipeline dashboard, and the finding browser. See [SPEC §11](../docs/SPECA_CLI_SPEC.md#11-implementation-roadmap).
+Future milestones add `init`, `run`, `browse`, `attach`, `config`, the live
+pipeline dashboard, and the finding browser. See
+[SPEC §11](../docs/SPECA_CLI_SPEC.md#11-implementation-roadmap).
 
-## Stack (M1)
+## Stack
 
 - [Ink 7](https://github.com/vadimdemedes/ink) + React 19 — TUI framework
 - [meow](https://github.com/sindresorhus/meow) — CLI argument parsing
@@ -38,14 +44,18 @@ Future milestones (M2–M7) add `init`, `auth`, `run`, `browse`, `attach`, `conf
 cli/
 ├── src/
 │   ├── cli.tsx                # entry point + command routing
-│   ├── lib/
-│   │   └── checks.ts          # version-check helpers
+│   ├── auth/                  # credential storage and auth checks
 │   ├── components/
 │   │   └── Layout.tsx         # shared header / body / status frame
 │   └── commands/
+│       ├── auth/              # commands/auth/
+│       │   ├── login.tsx
+│       │   └── status.tsx
 │       ├── version.tsx
 │       └── doctor.tsx
 └── test/
+    ├── auth.flow.test.ts
+    ├── auth.store.test.ts
     └── checks.test.ts
 ```
 

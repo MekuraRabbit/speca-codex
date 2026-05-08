@@ -40,7 +40,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/NyxFoundation/speca.git",
+    "url": "https://github.com/MekuraRabbit/speca-codex.git",
     "directory": "cli"
   },
   "keywords": ["speca", "security", "audit", "cli", "tui", "ink"]

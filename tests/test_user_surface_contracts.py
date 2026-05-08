@@ -1,3 +1,4 @@
+import json
 import time
 from pathlib import Path
 
@@ -86,3 +87,31 @@ def test_web_readme_describes_design_only_surface():
     assert "template provides" not in readme
     assert "ann.md" not in design
     assert "security-agent/" not in design
+
+
+def test_automation_playbook_does_not_advertise_unimplemented_web_client():
+    playbook = Path("automation/AUDIT_PLAYBOOK.md").read_text(encoding="utf-8")
+
+    assert "Max concurrent worker turns" in playbook
+    assert '| `--max-concurrent` | `8` |' in playbook
+    assert "--runner codex-app" in playbook
+    assert "not an implemented `/audit` slash command" in playbook
+    assert "not a runnable client yet" in playbook
+    assert "/audit <bug_bounty_url>" not in playbook
+    assert "cd web && npm run dev" not in playbook
+    assert "http://localhost:5173" not in playbook
+    assert "Max concurrent Claude calls" not in playbook
+
+
+def test_cli_metadata_points_at_codex_fork():
+    readme = Path("cli/README.md").read_text(encoding="utf-8")
+    package = json.loads(Path("cli/package.json").read_text(encoding="utf-8"))
+
+    assert "https://github.com/MekuraRabbit/speca-codex" in readme
+    assert "auth login" in readme
+    assert "commands/auth/" in readme
+    assert "auth.flow.test.ts" in readme
+    assert "optional legacy Claude Code" in readme
+    assert "Stack (M1)" not in readme
+    assert package["repository"]["url"] == "https://github.com/MekuraRabbit/speca-codex.git"
+    assert "https://github.com/NyxFoundation/speca/issues/3" not in readme
