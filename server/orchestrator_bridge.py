@@ -199,7 +199,7 @@ async def _run_phase(run: RunInfo, manager: RunManager) -> None:
     phase_id = inputs["phase_id"]
 
     try:
-        run.status = RunStatus.RUNNING
+        manager.mark_running(run.run_id)
 
         with output_root_context(run.output_dir):
             validate_target_checkout_for_phase(phase_id)
@@ -369,8 +369,7 @@ async def _run_phase(run: RunInfo, manager: RunManager) -> None:
         manager.mark_complete(run.run_id, error=str(e))
         await send_phase_result(run)
     except asyncio.CancelledError:
-        run.status = RunStatus.CANCELLED
-        run.completed_at = __import__("time").time()
+        manager.mark_cancelled(run.run_id)
         await run.bus.close()
         await send_phase_result(run)
     except Exception as e:

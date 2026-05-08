@@ -11,7 +11,7 @@ from fastapi.responses import StreamingResponse
 
 from ..models import RunResponse
 from ..path_safety import resolve_child_path
-from ..run_manager import RunManager
+from ..run_manager import RunManager, RunStatus
 
 router = APIRouter(prefix="/api/runs", tags=["runs"])
 
@@ -106,9 +106,13 @@ async def stream_progress(run_id: str) -> StreamingResponse:
         raise HTTPException(status_code=404, detail="Run not found")
 
     queue = run.bus.subscribe()
+    terminal_statuses = {RunStatus.COMPLETED, RunStatus.FAILED, RunStatus.CANCELLED}
 
     async def event_generator():
         try:
+            if run.status in terminal_statuses:
+                yield "event: done\ndata: {}\n\n"
+                return
             while True:
                 try:
                     event = await asyncio.wait_for(queue.get(), timeout=30.0)

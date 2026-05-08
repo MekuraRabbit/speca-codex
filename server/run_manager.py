@@ -1,8 +1,9 @@
-"""In-memory run lifecycle manager (single-user)."""
+"""Run lifecycle manager with lightweight output-dir indexes."""
 
 from __future__ import annotations
 
 import asyncio
+import json
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -14,6 +15,8 @@ from .progress import ProgressBus
 
 
 RUN_ID_HEX_LENGTH = 16
+RUN_INFO_FILENAME = "RUN_INFO.json"
+STALE_RUN_ERROR = "Server restarted before this run completed"
 
 
 class RunStatus(str, Enum):
@@ -40,10 +43,17 @@ class RunInfo:
 
 
 class RunManager:
-    """Manages active and completed runs. Single-user, in-memory."""
+    """Manages active and completed single-user runs."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        load_existing: bool = False,
+        output_root: str | Path = "outputs",
+    ) -> None:
         self._runs: dict[str, RunInfo] = {}
+        if load_existing:
+            self._load_run_indexes(Path(output_root))
 
     @property
     def active_run(self) -> RunInfo | None:
@@ -81,6 +91,7 @@ class RunManager:
             bus=bus,
         )
         self._runs[run_id] = run
+        self._persist_run(run)
         return run
 
     def _generate_run_id(self) -> str:
@@ -104,9 +115,21 @@ class RunManager:
         if not run or not run.task:
             return False
         run.task.cancel()
-        run.status = RunStatus.CANCELLED
-        run.completed_at = time.time()
+        self.mark_cancelled(run_id)
         return True
+
+    def mark_running(self, run_id: str) -> None:
+        run = self._runs.get(run_id)
+        if run:
+            run.status = RunStatus.RUNNING
+            self._persist_run(run)
+
+    def mark_cancelled(self, run_id: str) -> None:
+        run = self._runs.get(run_id)
+        if run:
+            run.status = RunStatus.CANCELLED
+            run.completed_at = time.time()
+            self._persist_run(run)
 
     def mark_complete(
         self,
@@ -120,3 +143,61 @@ class RunManager:
             run.error = error
             run.result = result
             run.completed_at = time.time()
+            self._persist_run(run)
+
+    def _load_run_indexes(self, output_root: Path) -> None:
+        if not output_root.exists():
+            return
+        for path in sorted(output_root.glob(f"**/{RUN_INFO_FILENAME}")):
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+                run = self._run_from_index(data)
+            except (OSError, json.JSONDecodeError, KeyError, ValueError, TypeError):
+                continue
+            if Path(run.output_dir).resolve() != path.parent.resolve():
+                continue
+            existing = self._runs.get(run.run_id)
+            if existing and existing.created_at >= run.created_at:
+                continue
+            self._runs[run.run_id] = run
+            if run.status in {RunStatus.QUEUED, RunStatus.RUNNING}:
+                run.status = RunStatus.FAILED
+                run.error = run.error or STALE_RUN_ERROR
+                run.completed_at = run.completed_at or time.time()
+                self._persist_run(run)
+
+    def _run_from_index(self, data: dict[str, Any]) -> RunInfo:
+        completed_at = data.get("completed_at")
+        return RunInfo(
+            run_id=str(data["run_id"]),
+            phase_id=str(data["phase_id"]),
+            output_dir=str(data["output_dir"]),
+            status=RunStatus(str(data["status"])),
+            created_at=float(data["created_at"]),
+            inputs=dict(data.get("inputs") or {}),
+            bus=ProgressBus(),
+            error=data.get("error"),
+            result=data.get("result"),
+            completed_at=float(completed_at) if completed_at is not None else None,
+        )
+
+    def _persist_run(self, run: RunInfo) -> None:
+        path = Path(run.output_dir) / RUN_INFO_FILENAME
+        path.parent.mkdir(parents=True, exist_ok=True)
+        data = {
+            "run_id": run.run_id,
+            "phase_id": run.phase_id,
+            "output_dir": run.output_dir,
+            "status": run.status.value,
+            "created_at": run.created_at,
+            "completed_at": run.completed_at,
+            "error": run.error,
+            "result": run.result,
+            "inputs": run.inputs,
+        }
+        tmp_path = path.with_name(f".{path.name}.tmp")
+        tmp_path.write_text(
+            json.dumps(data, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        tmp_path.replace(path)
