@@ -125,6 +125,14 @@ Execution hint: This worker prompt is invoked by the phase-04 async orchestrator
      (`CONFIRMED_VULNERABILITY` or `CONFIRMED_POTENTIAL`), set
      `severity_action` to `DOWNGRADED`, and set `adjusted_severity` to the capped
      severity. Do not use `DOWNGRADED` as a `review_verdict` for new outputs.
+  4. If the finding depends on a semi-trusted integration choice or a non-standard
+     underlying asset (for example fee-on-transfer, deflationary, rebasing, or
+     otherwise short-delivering tokens), do not dispute it solely for that reason
+     when an untrusted user can still reach the code. Keep it as
+     `CONFIRMED_POTENTIAL`, cap `adjusted_severity` at `Low` unless
+     `BUG_BOUNTY_SCOPE.json` explicitly says otherwise, set `severity_action` to
+     `DOWNGRADED` when applying the cap, and state the conditional integration
+     prerequisite in `reviewer_notes`.
 
   ## 4. Verdict
 

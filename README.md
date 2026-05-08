@@ -749,7 +749,7 @@ Items that pass all gates undergo severity calibration against `severity_classif
 | **Usage** | `uv run python scripts/run_phase.py --phase 05 --output-dir outputs/<run>` |
 | **PoC prompt** | `/05_poc CANDIDATE_ID=... OUTPUT_DIR=outputs/<run>` |
 
-Builds `05_POC_CANDIDATES.json` from Phase 04 confirmed/potential findings, groups duplicate root causes, and selects one representative PoC candidate per group. The PoC prompt then generates a minimal, self-verifying test in the target project's native stack, records covered Phase 04 property IDs, and writes `05_POC_RESULT_<candidate_id>.json`.
+Builds `05_POC_CANDIDATES.json` from Phase 04 confirmed/potential findings, groups duplicate root causes, and selects one representative PoC candidate per group. Conditional integration hazards, such as fee-on-transfer or otherwise short-delivering underlying-token cases, are grouped by prerequisite instead of being counted once per nearby symbol. The PoC prompt then generates a minimal, self-verifying test in the target project's native stack, records covered Phase 04 property IDs, and writes `05_POC_RESULT_<candidate_id>.json`.
 
 ```bash
 uv run python scripts/run_phase.py --phase 05 --output-dir outputs/rehearsal_dvd

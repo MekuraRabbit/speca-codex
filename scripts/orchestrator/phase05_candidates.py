@@ -338,6 +338,10 @@ def _attack_family(challenge: str, symbol: str, text: str) -> str:
     haystack = f"{challenge} {symbol} {text}".lower()
     if _has_oracle_source_quorum_context(challenge, symbol, text):
         return "oracle-source-quorum-degradation"
+    if _has_max_boundary_conversion_context(haystack):
+        return "max-boundary-conversion-overflow"
+    if _has_short_delivering_underlying_context(haystack):
+        return "short-delivering-underlying"
 
     known_challenge_families = {
         "truster": "unauthorized-token-approval",
@@ -434,6 +438,20 @@ def _severity_action(review: dict[str, Any]) -> str:
 
 
 def _summary_for_candidate(item: dict[str, Any]) -> str:
+    if item.get("attack_family") == "max-boundary-conversion-overflow":
+        return (
+            "A maximum supply or asset-balance boundary can make ERC-4626 "
+            "conversion, preview, or limit-query view functions revert through "
+            "checked arithmetic in the shared conversion helpers. Treat this as "
+            "a standards-compliance edge case unless practical reachability is proven."
+        )
+    if item.get("attack_family") == "short-delivering-underlying":
+        return (
+            "A fee-on-transfer, deflationary, or otherwise short-delivering "
+            "underlying token can make the vault receive fewer assets than the "
+            "nominal deposit or mint amount. Treat this as a conditional "
+            "integration hazard unless the target explicitly supports such assets."
+        )
     if (
         item.get("attack_family") == "oracle-source-quorum-degradation"
         and _item_has_oracle_source_quorum_context(item)
@@ -491,6 +509,74 @@ def _has_oracle_source_quorum_context(challenge: str, symbol: str, text: str) ->
     return (
         any(term in haystack for term in oracle_terms)
         and any(term in haystack for term in source_quorum_terms)
+    )
+
+
+def _has_max_boundary_conversion_context(haystack: str) -> bool:
+    boundary_terms = (
+        "type(uint256).max",
+        "uint256.max",
+        "max-supply",
+        "maximum supply",
+        "max-share",
+        "checked-addition boundary",
+    )
+    conversion_terms = (
+        "converttoshares",
+        "converttoassets",
+        "_converttoshares",
+        "_converttoassets",
+        "previewdeposit",
+        "previewmint",
+        "previewwithdraw",
+        "previewredeem",
+        "maxwithdraw",
+        "maxredeem",
+        "_decimalsoffset",
+        "virtual-share",
+        "virtual share",
+    )
+    return (
+        "overflow" in haystack
+        and any(term in haystack for term in boundary_terms)
+        and any(term in haystack for term in conversion_terms)
+    )
+
+
+def _has_short_delivering_underlying_context(haystack: str) -> bool:
+    short_delivery_terms = (
+        "fee-on-transfer",
+        "fee on transfer",
+        "transfer-tax",
+        "transfer tax",
+        "deflationary",
+        "short-deliver",
+        "short deliver",
+        "short-transferring",
+        "delivering less",
+        "delivers less",
+        "received less",
+        "receives less",
+        "less than the requested",
+        "actual received",
+        "assets_received",
+        "balance delta",
+        "does not measure the vault balance",
+        "does not verify the vault balance",
+        "does not verify that the vault asset balance",
+        "does not verify balance delta",
+    )
+    transfer_terms = (
+        "underlying",
+        "_transferin",
+        "safetransferfrom",
+        "deposit",
+        "mint",
+        "transferfrom",
+    )
+    return (
+        any(term in haystack for term in short_delivery_terms)
+        and any(term in haystack for term in transfer_terms)
     )
 
 

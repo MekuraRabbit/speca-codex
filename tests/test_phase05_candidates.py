@@ -515,6 +515,228 @@ def test_javascript_and_typescript_candidates_get_native_defaults(tmp_path):
         assert "<run native test command" not in candidate["run_command"]
 
 
+def test_erc4626_max_boundary_candidates_group_by_conversion_root_cause(tmp_path):
+    _write_json(
+        tmp_path / "TARGET_INFO.json",
+        {
+            "local_checkout": "target_workspace/openzeppelin-contracts-erc4626",
+            "language": "solidity",
+        },
+    )
+    _write_json(
+        tmp_path / "03_PARTIAL_W0B0.json",
+        {
+            "audit_items": [
+                {
+                    "property_id": "PROP-openzeppelin-inv-010",
+                    "classification": "potential-vulnerability",
+                    "code_path": (
+                        "contracts/token/ERC20/extensions/ERC4626.sol"
+                        "::_convertToShares/_convertToAssets::L248-256"
+                    ),
+                    "attack_scenario": (
+                        "A maximum supply state at type(uint256).max makes "
+                        "convertToShares and convertToAssets revert with overflow."
+                    ),
+                },
+                {
+                    "property_id": "PROP-erc-4626-tok-inv-017",
+                    "classification": "potential-vulnerability",
+                    "code_path": (
+                        "contracts/token/ERC20/extensions/ERC4626.sol"
+                        "::maxWithdraw::L164-166"
+                    ),
+                    "attack_scenario": (
+                        "A max-share boundary at type(uint256).max makes "
+                        "maxWithdraw revert through previewRedeem overflow."
+                    ),
+                },
+            ],
+        },
+    )
+    _write_json(
+        tmp_path / "04_PARTIAL_W0B0.json",
+        {
+            "reviewed_items": [
+                {
+                    "property_id": "PROP-openzeppelin-inv-010",
+                    "review_verdict": "CONFIRMED_POTENTIAL",
+                    "adjusted_severity": "Low",
+                },
+                {
+                    "property_id": "PROP-erc-4626-tok-inv-017",
+                    "review_verdict": "CONFIRMED_POTENTIAL",
+                    "adjusted_severity": "Medium",
+                },
+            ],
+        },
+    )
+
+    index = build_poc_candidate_index(tmp_path)
+    candidate = index["candidates"][0]
+
+    assert index["metadata"]["reviewed_candidate_items"] == 2
+    assert index["metadata"]["candidate_count"] == 1
+    assert candidate["attack_family"] == "max-boundary-conversion-overflow"
+    assert candidate["covered_property_ids"] == [
+        "PROP-token-inv-010",
+        "PROP-token-inv-017",
+    ]
+    assert "standards-compliance edge case" in candidate["attack_summary"]
+
+
+def test_short_delivering_underlying_candidates_group_without_rewriting_severity(tmp_path):
+    _write_json(
+        tmp_path / "TARGET_INFO.json",
+        {
+            "local_checkout": "target_workspace/openzeppelin-contracts-erc4626",
+            "language": "solidity",
+        },
+    )
+    _write_json(
+        tmp_path / "03_PARTIAL_W0B0.json",
+        {
+            "audit_items": [
+                {
+                    "property_id": "PROP-erc-4626-tok-pre-004",
+                    "classification": "potential-vulnerability",
+                    "code_path": (
+                        "contracts/token/ERC20/extensions/ERC4626.sol"
+                        "::deposit::L194-204"
+                    ),
+                    "proof_trace": (
+                        "deposit mints shares from nominal assets, but a "
+                        "fee-on-transfer underlying can deliver less than the "
+                        "requested amount."
+                    ),
+                },
+                {
+                    "property_id": "PROP-erc-4626-tok-asm-003",
+                    "classification": "potential-vulnerability",
+                    "code_path": (
+                        "contracts/token/ERC20/extensions/ERC4626.sol"
+                        "::_transferIn::L303-305"
+                    ),
+                    "proof_trace": (
+                        "SafeERC20.safeTransferFrom does not measure the vault "
+                        "balance delta when a short-delivering underlying token "
+                        "returns success."
+                    ),
+                },
+                {
+                    "property_id": "PROP-openzeppelin-inv-015",
+                    "classification": "potential-vulnerability",
+                    "code_path": (
+                        "contracts/token/ERC20/extensions/ERC4626.sol"
+                        "::_transferIn/_transferOut::L303-310"
+                    ),
+                    "attack_scenario": (
+                        "A deflationary underlying receives less than assets "
+                        "during deposit and shifts accounting losses to later users."
+                    ),
+                },
+            ],
+        },
+    )
+    _write_json(
+        tmp_path / "04_PARTIAL_W0B0.json",
+        {
+            "reviewed_items": [
+                {
+                    "property_id": "PROP-erc-4626-tok-pre-004",
+                    "review_verdict": "CONFIRMED_POTENTIAL",
+                    "severity_action": "NONE",
+                    "adjusted_severity": "Medium",
+                },
+                {
+                    "property_id": "PROP-erc-4626-tok-asm-003",
+                    "review_verdict": "CONFIRMED_POTENTIAL",
+                    "severity_action": "DOWNGRADED",
+                    "adjusted_severity": "Low",
+                },
+                {
+                    "property_id": "PROP-openzeppelin-inv-015",
+                    "review_verdict": "CONFIRMED_POTENTIAL",
+                    "severity_action": "DOWNGRADED",
+                    "adjusted_severity": "Low",
+                },
+            ],
+        },
+    )
+
+    index = build_poc_candidate_index(tmp_path)
+    candidate = index["candidates"][0]
+
+    assert index["metadata"]["reviewed_candidate_items"] == 3
+    assert index["metadata"]["candidate_count"] == 1
+    assert candidate["attack_family"] == "short-delivering-underlying"
+    assert candidate["adjusted_severity"] == "Medium"
+    assert candidate["severity_action"] == "NONE"
+    assert candidate["covered_property_ids"] == [
+        "PROP-token-asm-003",
+        "PROP-token-inv-015",
+        "PROP-token-pre-004",
+    ]
+    assert "conditional integration hazard" in candidate["attack_summary"]
+    assert {
+        (item["property_id"], item["adjusted_severity"], item["severity_action"])
+        for item in candidate["source_items"]
+    } == {
+        ("PROP-token-pre-004", "Medium", "NONE"),
+        ("PROP-token-asm-003", "Low", "DOWNGRADED"),
+        ("PROP-token-inv-015", "Low", "DOWNGRADED"),
+    }
+
+
+def test_short_delivering_underlying_keeps_phase04_low_cap_when_reviewed(tmp_path):
+    _write_json(
+        tmp_path / "TARGET_INFO.json",
+        {
+            "local_checkout": "target_workspace/openzeppelin-contracts-erc4626",
+            "language": "solidity",
+        },
+    )
+    _write_json(
+        tmp_path / "03_PARTIAL_W0B0.json",
+        {
+            "audit_items": [
+                {
+                    "property_id": "PROP-erc-4626-tok-pre-004",
+                    "classification": "potential-vulnerability",
+                    "code_path": (
+                        "contracts/token/ERC20/extensions/ERC4626.sol"
+                        "::deposit::L194-204"
+                    ),
+                    "proof_trace": (
+                        "deposit can mint from nominal assets while a "
+                        "fee-on-transfer underlying delivers less than requested."
+                    ),
+                }
+            ],
+        },
+    )
+    _write_json(
+        tmp_path / "04_PARTIAL_W0B0.json",
+        {
+            "reviewed_items": [
+                {
+                    "property_id": "PROP-erc-4626-tok-pre-004",
+                    "review_verdict": "CONFIRMED_POTENTIAL",
+                    "severity_action": "DOWNGRADED",
+                    "adjusted_severity": "Low",
+                }
+            ],
+        },
+    )
+
+    index = build_poc_candidate_index(tmp_path)
+    candidate = index["candidates"][0]
+
+    assert candidate["attack_family"] == "short-delivering-underlying"
+    assert candidate["adjusted_severity"] == "Low"
+    assert candidate["severity_action"] == "DOWNGRADED"
+
+
 def test_phase05_config_is_available():
     config = get_phase_config("05")
 
