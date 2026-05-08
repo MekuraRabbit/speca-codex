@@ -115,13 +115,13 @@ npm install -g @openai/codex
 uv sync
 ```
 
-The clone URL above points to this Codex App fork. If `uv sync` fails on
-Windows while preparing legacy workflow extras, you can create a lightweight
-environment for the Codex App API:
+The clone URL above points to this Codex App fork. Default `uv sync` installs
+the local API, orchestrator, Codex runner path, and tests. Legacy resolver
+extras such as SWE-agent are optional; install them only when you are working
+on those disabled resolver workflows:
 
 ```bash
-uv venv
-uv pip install --python .venv/Scripts/python.exe pytest fastapi pydantic httpx aiofiles tqdm "uvicorn[standard]"
+uv sync --group resolver
 ```
 
 ### Use It From Codex App

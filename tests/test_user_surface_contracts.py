@@ -129,6 +129,26 @@ def test_root_readme_describes_token_usage_without_api_cost_surface():
     assert "per-phase budget enforcement" not in readme
 
 
+def test_resolver_dependencies_are_not_default_install_surface():
+    pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+    default_deps = "\n".join(pyproject["project"]["dependencies"]).lower()
+    resolver_deps = "\n".join(pyproject["dependency-groups"]["resolver"]).lower()
+
+    assert "sweagent" not in default_deps
+    assert "swe-agent" not in default_deps
+    assert "sweagent" in resolver_deps
+    assert "swe-agent" in resolver_deps
+
+    for path in (
+        Path("README.md"),
+        Path("README.ja.md"),
+        Path("CONTRIBUTING.md"),
+        Path("automation/AUDIT_PLAYBOOK.md"),
+    ):
+        doc = path.read_text(encoding="utf-8")
+        assert "uv sync --group resolver" in doc
+
+
 def test_public_readmes_link_security_and_contribution_guides():
     readme = Path("README.md").read_text(encoding="utf-8")
     readme_ja = Path("README.ja.md").read_text(encoding="utf-8")
