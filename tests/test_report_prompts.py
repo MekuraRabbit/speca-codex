@@ -12,6 +12,8 @@ def test_phase06_report_prompt_uses_current_run_artifacts():
     assert "source_items[].original_property_id" in prompt
     assert "source_items[].property_id" in prompt
     assert "TARGET_INFO.local_checkout" in prompt
+    assert "legacy `DOWNGRADED` entries" in prompt
+    assert "severity_action" in prompt
     assert "docs/report_templates/<report_type_lower>.md" in prompt
     assert "security-agent/" not in prompt
     assert "03_AUDITMAP.json" not in prompt
@@ -31,6 +33,8 @@ def test_phase06b_audit_report_prompt_uses_current_partial_schema():
     assert "source_items[].original_property_id" in prompt
     assert "source_items[].property_id" in prompt
     assert "review_verdict" in prompt
+    assert "severity_action" in prompt
+    assert "Treat legacy `DOWNGRADED` verdicts as reportable findings" in prompt
     assert "Do not read repository-root `outputs/` as a fallback" in prompt
     assert "security-agent/" not in prompt
     assert "03_AUDITMAP.json" not in prompt

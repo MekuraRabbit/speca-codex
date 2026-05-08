@@ -38,3 +38,15 @@ def test_phase04_prompt_reads_phase03_fields_from_audit_result():
     assert "read it from the item's `audit_result`" in prompt
     assert "Items with `audit_result.classification`" in prompt
     assert "audit_result.attack_scenario" in prompt
+
+
+def test_phase04_prompt_keeps_downgrade_separate_from_verdict():
+    prompt = Path("prompts/04_review_worker.md").read_text(encoding="utf-8")
+
+    assert "`severity_action` to `DOWNGRADED`" in prompt
+    assert "Do not use `DOWNGRADED` as a `review_verdict` for new outputs" in prompt
+    assert '"severity_action": "NONE | DOWNGRADED"' in prompt
+    assert (
+        '"review_verdict": "CONFIRMED_VULNERABILITY | CONFIRMED_POTENTIAL | '
+        'DISPUTED_FP | NEEDS_MANUAL_REVIEW | PASS_THROUGH"'
+    ) in prompt

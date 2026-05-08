@@ -82,6 +82,16 @@
           "title": "Reviewer Notes",
           "type": "string"
         },
+        "severity_action": {
+          "default": "",
+          "enum": [
+            "",
+            "NONE",
+            "DOWNGRADED"
+          ],
+          "title": "Severity Action",
+          "type": "string"
+        },
         "spec_reference": {
           "default": "",
           "title": "Spec Reference",

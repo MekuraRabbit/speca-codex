@@ -382,6 +382,7 @@ class TestEnums:
         assert ReviewVerdict.CONFIRMED_VULNERABILITY == "CONFIRMED_VULNERABILITY"
         assert ReviewVerdict.CONFIRMED_POTENTIAL == "CONFIRMED_POTENTIAL"
         assert ReviewVerdict.DISPUTED_FP == "DISPUTED_FP"
+        assert ReviewVerdict.DOWNGRADED == "DOWNGRADED"
         assert ReviewVerdict.NEEDS_MANUAL_REVIEW == "NEEDS_MANUAL_REVIEW"
         assert ReviewVerdict.PASS_THROUGH == "PASS_THROUGH"
 
@@ -811,6 +812,7 @@ class TestPhase04Partial:
                 {
                     "property_id": "PROP-001",
                     "review_verdict": "CONFIRMED_VULNERABILITY",
+                    "severity_action": "DOWNGRADED",
                     "original_classification": "vulnerability",
                     "adjusted_severity": "High",
                     "reviewer_notes": "An attacker can trigger this via HTTP.",
@@ -820,6 +822,7 @@ class TestPhase04Partial:
         )
         assert len(partial.reviewed_items) == 1
         assert partial.reviewed_items[0].review_verdict == "CONFIRMED_VULNERABILITY"
+        assert partial.reviewed_items[0].severity_action == "DOWNGRADED"
         assert partial.reviewed_items[0].original_classification == "vulnerability"
 
     def test_rejects_unknown_review_verdict(self):
