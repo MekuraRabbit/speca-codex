@@ -81,7 +81,7 @@ def check_dependencies(phase_id: str) -> bool:
             # If so, it might be that the previous phase produced nothing, 
             # which might be valid or might be an error.
             # For now, strict check: if input pattern yields nothing, it's a dependency failure.
-            print(f"❌ Error: Dependency not met for phase {phase_id}. Missing input: {pattern}", file=sys.stderr)
+            print(f"Error: Dependency not met for phase {phase_id}. Missing input: {pattern}", file=sys.stderr)
             print(f"   Please run phase(s) {config.depends_on} first.", file=sys.stderr)
             return False
     return True
@@ -126,7 +126,7 @@ def patch_target_info(target_layer: str | None, out_of_scope_layers: list[str] |
     target_info_path = get_output_root() / "TARGET_INFO.json"
     if not target_info_path.exists():
         print(
-            f"⚠️  {target_info_path} not found — skipping --target-layer / "
+            f"Warning: {target_info_path} not found - skipping --target-layer / "
             "--out-of-scope-layers injection. Run phase 02c setup first.",
             file=sys.stderr,
         )
@@ -279,7 +279,7 @@ async def run_phase(
             print(f"  --min-severity override: {orchestrator.config.min_severity} -> {min_severity}")
             orchestrator.config.min_severity = min_severity
         elif min_severity is not None:
-            # Phase doesn't have min_severity configured — set it anyway
+            # Phase doesn't have min_severity configured - set it anyway
             orchestrator.config.min_severity = min_severity
             print(f"  --min-severity set: {min_severity}")
 
@@ -381,7 +381,7 @@ async def run_pipeline(
         )
         results[phase_id] = success
         if not success and stop_on_failure:
-            print(f"\n❌ Pipeline stopped due to failure in phase {phase_id}.", file=sys.stderr)
+            print(f"\nPipeline stopped due to failure in phase {phase_id}.", file=sys.stderr)
             break
     return results
 
@@ -569,12 +569,12 @@ def main():
     for phase_id in phases:
         if phase_id in results:
             success = results[phase_id]
-            status = "✅ Success" if success else "❌ Failed"
+            status = "Success" if success else "Failed"
             print(f"  Phase {phase_id}: {status}")
             if not success:
                 all_success = False
         else:
-             print(f"  Phase {phase_id}: ⏭️  Skipped/Not reached")
+             print(f"  Phase {phase_id}: Skipped/Not reached")
 
     
     if not all_success:

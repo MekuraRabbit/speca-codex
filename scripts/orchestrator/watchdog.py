@@ -308,11 +308,11 @@ class LogWatcher:
         if self._fatal_detected:
             self._stop_event.set()
             print(
-                f"\n🛑  LogWatcher: FATAL anomaly detected — immediate stop",
+                f"\nLogWatcher: FATAL anomaly detected - immediate stop",
                 file=sys.stderr,
             )
             for a in self.anomalies[-5:]:
-                print(f"    🛑  {a}", file=sys.stderr)
+                print(f"    Fatal: {a}", file=sys.stderr)
             return True
 
         # Only flag excessive tool calls ONCE (not on every subsequent line)
@@ -330,12 +330,12 @@ class LogWatcher:
         if total_anomalies >= self.cfg.anomaly_threshold:
             self._stop_event.set()
             print(
-                f"\n⚠️  LogWatcher: anomaly threshold reached "
+                f"\nWarning: LogWatcher: anomaly threshold reached "
                 f"({total_anomalies} anomalies, threshold={self.cfg.anomaly_threshold})",
                 file=sys.stderr,
             )
             for a in self.anomalies[-5:]:
-                print(f"    ⚠️  {a}", file=sys.stderr)
+                print(f"    Warning: {a}", file=sys.stderr)
             return True
         return False
 

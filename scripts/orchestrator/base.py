@@ -63,7 +63,7 @@ def _log_validation_warning(
     """Print structured Pydantic validation warnings to stderr."""
     label = f"{prefix} " if prefix else ""
     print(
-        f"⚠️  {label}Schema validation warning for {filepath}: "
+        f"Warning: {label}Schema validation warning for {filepath}: "
         f"{ve.error_count()} error(s)",
         file=sys.stderr,
     )
@@ -298,18 +298,18 @@ class BaseOrchestrator(ABC):
         # Step 7: Report failures
         if self._budget_exceeded:
             print(
-                f"\n\U0001f6d1 Phase {self.config.phase_id} ABORTED — budget exceeded "
+                f"\nPhase {self.config.phase_id} ABORTED - budget exceeded "
                 f"after {duration:.1f}s",
                 file=sys.stderr,
             )
             print(f"   Saved results so far: {total_results}")
             raise PhaseAbortError(
-                f"Phase {self.config.phase_id} ABORTED — budget exceeded after {duration:.1f}s"
+                f"Phase {self.config.phase_id} ABORTED - budget exceeded after {duration:.1f}s"
             )
 
         if self._circuit_breaker_tripped:
             print(
-                f"\n🛑 Phase {self.config.phase_id} ABORTED by circuit breaker "
+                f"\nPhase {self.config.phase_id} ABORTED by circuit breaker "
                 f"after {duration:.1f}s",
                 file=sys.stderr,
             )
@@ -319,25 +319,31 @@ class BaseOrchestrator(ABC):
             )
 
         if self.failed_batches:
-            print(f"\n⚠️  {len(self.failed_batches)} batch(es) failed (successful results saved as partials)", file=sys.stderr)
+            print(f"\nWarning: {len(self.failed_batches)} batch(es) failed (successful results saved as partials)", file=sys.stderr)
             for worker_id, batch_index in self.failed_batches:
                 print(f"  - Worker {worker_id}, Batch {batch_index}", file=sys.stderr)
             print(f"   Saved results: {total_results}")
             raise PhaseAbortError(
                 f"Phase {self.config.phase_id}: {len(self.failed_batches)} batch(es) failed"
             )
-        
-        print(f"\n✅ Phase {self.config.phase_id} completed in {duration:.1f}s")
+
+        self._after_batches_completed()
+
+        print(f"\nPhase {self.config.phase_id} completed in {duration:.1f}s")
         print(f"   Total results: {total_results}")
+
+    def _after_batches_completed(self) -> None:
+        """Run phase-specific finalization after worker batches finish."""
+        return None
 
     async def _print_run_statistics(self, duration: float, total_results: int) -> None:
         """Print circuit breaker and validation statistics."""
         cb_stats = await self.circuit_breaker.get_stats()
         val_stats = self.collector.get_validation_summary()
 
-        print(f"\n{'─'*40}")
+        print(f"\n{'-'*40}")
         print(f"Run Statistics (Phase {self.config.phase_id})")
-        print(f"{'─'*40}")
+        print(f"{'-'*40}")
         print(f"  Duration:              {duration:.1f}s")
         print(f"  Total results:         {total_results}")
         print(f"  Batch successes:       {cb_stats['total_successes']}")
@@ -360,7 +366,7 @@ class BaseOrchestrator(ABC):
             print(f"  Output tokens:         {cost_stats['total_output_tokens']:,}")
             print(f"  Total tokens:          {cost_stats['total_tokens']:,}")
             print(f"  Total turns:           {cost_stats['total_turns']:,}")
-        _sep = '\u2500' * 40
+        _sep = "-" * 40
         print(_sep)
 
         # Write to GitHub Step Summary if running in GitHub Actions
@@ -548,7 +554,7 @@ class BaseOrchestrator(ABC):
                 except CircuitBreakerTripped as cb:
                     self._circuit_breaker_tripped = True
                     print(
-                        f"\n\U0001f6d1 Circuit breaker tripped: {cb.reason}",
+                        f"\nCircuit breaker tripped: {cb.reason}",
                         file=sys.stderr,
                     )
                     print(
@@ -563,7 +569,7 @@ class BaseOrchestrator(ABC):
                 except BudgetExceeded as be:
                     self._budget_exceeded = True
                     print(
-                        f"\n\U0001f4b8 Budget exceeded: {be}",
+                        f"\nBudget exceeded: {be}",
                         file=sys.stderr,
                     )
                     print(
@@ -611,7 +617,7 @@ class Phase01Orchestrator(BaseOrchestrator):
         - Others: Standard queue loading.
         """
         if self.config.phase_id == "01a":
-            return [{"id": "seed", "source": "manual"}]
+            return self._load_01a_items()
 
         if self.config.phase_id == "01b":
             return self._load_01b_items()
@@ -620,6 +626,66 @@ class Phase01Orchestrator(BaseOrchestrator):
             return self._load_01e_items()
 
         return super().load_items()
+
+    def _load_01a_items(self) -> list[dict[str, Any]]:
+        """Load one Phase 01a discovery item per configured seed URL."""
+        spec_urls = self.config.runtime_env.get("SPEC_URLS") or os.environ.get("SPEC_URLS", "")
+        urls = [url.strip() for url in re.split(r"[\n,]+", spec_urls) if url.strip()]
+        if not urls:
+            return [{"id": "seed", "source": "manual"}]
+        return [
+            {"id": f"seed-{index}", "url": url, "source": "manual"}
+            for index, url in enumerate(urls)
+        ]
+
+    def _after_batches_completed(self) -> None:
+        if self.config.phase_id != "01a" or not self.results:
+            return None
+        if self.failed_batches or self._budget_exceeded or self._circuit_breaker_tripped:
+            return None
+
+        merged_specs: list[dict[str, Any]] = []
+        seen_urls: set[str] = set()
+        start_urls: list[str] = []
+        urls_visited: list[str] = []
+
+        for result in self.results:
+            start_url = result.get("start_url")
+            if isinstance(start_url, str) and start_url and start_url not in start_urls:
+                start_urls.append(start_url)
+
+            metadata = result.get("metadata")
+            if isinstance(metadata, dict):
+                for visited in metadata.get("urls_visited", []):
+                    if isinstance(visited, str) and visited not in urls_visited:
+                        urls_visited.append(visited)
+
+            found_specs = result.get("found_specs", [])
+            if not isinstance(found_specs, list):
+                continue
+            for spec in found_specs:
+                if not isinstance(spec, dict):
+                    continue
+                url = spec.get("url")
+                if not isinstance(url, str) or not url or url in seen_urls:
+                    continue
+                seen_urls.add(url)
+                merged_specs.append(spec)
+
+        state = {
+            "found_specs": merged_specs,
+            "metadata": {
+                "phase": "01a",
+                "seed_urls": start_urls,
+                "urls_visited": urls_visited,
+                "merged_batches": len(self.results),
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            },
+        }
+        state_path = get_output_root() / "01a_STATE.json"
+        with open(state_path, "w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2, ensure_ascii=False)
+        print(f"  Wrote merged 01a state: {state_path}")
 
     # -- Phase 01b: load discovered specs from 01a output ----------------
 
@@ -639,10 +705,10 @@ class Phase01Orchestrator(BaseOrchestrator):
                     try:
                         state = Phase01aState.model_validate(data)
                         print(
-                            f"  ✓ {filepath}: {len(state.found_specs)} specs validated"
+                            f"  OK {filepath}: {len(state.found_specs)} specs validated"
                         )
                     except ValidationError as ve:
-                        _log_validation_warning(filepath, ve, prefix="01a→01b")
+                        _log_validation_warning(filepath, ve, prefix="01a->01b")
                         # Fall through to raw parsing
 
                     for spec in data.get("found_specs", []):
@@ -675,7 +741,7 @@ class Phase01Orchestrator(BaseOrchestrator):
                     try:
                         Phase01bPartial.model_validate(data)
                     except ValidationError as ve:
-                        _log_validation_warning(filepath, ve, prefix="01b→01e")
+                        _log_validation_warning(filepath, ve, prefix="01b->01e")
                         validation_warnings += 1
 
                     items.append({"file_path": filepath})
@@ -687,7 +753,7 @@ class Phase01Orchestrator(BaseOrchestrator):
 
         if validation_warnings:
             print(
-                f"⚠️  {validation_warnings} file(s) had schema validation warnings (01b→01e)",
+                f"Warning: {validation_warnings} file(s) had schema validation warnings (01b->01e)",
                 file=sys.stderr,
             )
         return items
@@ -699,7 +765,15 @@ class Phase01Orchestrator(BaseOrchestrator):
             keywords = self.config.runtime_env.get("KEYWORDS") or os.environ.get("KEYWORDS")
             spec_urls = self.config.runtime_env.get("SPEC_URLS") or os.environ.get("SPEC_URLS")
             if not keywords or not spec_urls:
-                 print("Warning: KEYWORDS or SPEC_URLS not set, using defaults")
+                missing = [
+                    name
+                    for name, value in (
+                        ("KEYWORDS", keywords),
+                        ("SPEC_URLS", spec_urls),
+                    )
+                    if not value
+                ]
+                print(f"Warning: {', '.join(missing)} not set")
             return items
 
         if self.config.phase_id == "01e":
@@ -888,7 +962,7 @@ class Phase02cOrchestrator(BaseOrchestrator):
             json.dump(index, f, indent=2)
 
         total_sg = sum(len(e["subgraphs"]) for e in index)
-        print(f"  Built subgraph index: {len(index)} specs, {total_sg} subgraphs → {out_path}")
+        print(f"  Built subgraph index: {len(index)} specs, {total_sg} subgraphs -> {out_path}")
 
     def load_items(self) -> list[dict[str, Any]]:
         """Load properties from 01e partials with Pydantic validation and deduplication."""
@@ -908,10 +982,10 @@ class Phase02cOrchestrator(BaseOrchestrator):
                 try:
                     partial = Phase01ePartial.model_validate(data)
                     print(
-                        f"  ✓ {filepath}: {len(partial.properties)} properties validated"
+                        f"  OK {filepath}: {len(partial.properties)} properties validated"
                     )
                 except ValidationError as ve:
-                    _log_validation_warning(filepath, ve, prefix="01e→02c")
+                    _log_validation_warning(filepath, ve, prefix="01e->02c")
                     validation_warnings += 1
 
                 # Derive a fallback prefix from the file name for ID generation
@@ -926,7 +1000,7 @@ class Phase02cOrchestrator(BaseOrchestrator):
                             prop_id_raw = prop.get("property_id", "<unknown>")
                             for err in errs:
                                 print(
-                                    f"    ⚠️  {filepath} property {prop_id_raw}: {err}",
+                                    f"    Warning: {filepath} property {prop_id_raw}: {err}",
                                     file=sys.stderr,
                                 )
 
@@ -940,7 +1014,7 @@ class Phase02cOrchestrator(BaseOrchestrator):
                             prop_id = f"PROP-{fallback_hash}-{type_abbrev}-{auto_id_counter:03d}"
                             prop["property_id"] = prop_id
                             print(
-                                f"    ⚠️  {filepath}: auto-assigned {prop_id} (worker omitted property_id)",
+                                f"    Warning: {filepath}: auto-assigned {prop_id} (worker omitted property_id)",
                                 file=sys.stderr,
                             )
                         if prop_id not in items:
@@ -953,7 +1027,7 @@ class Phase02cOrchestrator(BaseOrchestrator):
 
         if validation_warnings:
             print(
-                f"⚠️  {validation_warnings} file(s) had schema validation warnings (01e→02c)",
+                f"Warning: {validation_warnings} file(s) had schema validation warnings (01e->02c)",
                 file=sys.stderr,
             )
 
@@ -966,9 +1040,9 @@ class Phase02cOrchestrator(BaseOrchestrator):
         """Apply early exit for properties without required fields.
 
         Filters applied (in order):
-        1. Missing property ID → skip
-        2. Bug-bounty out-of-scope → skip
-        3. Severity below ``min_severity`` config threshold → skip
+        1. Missing property ID -> skip
+        2. Bug-bounty out-of-scope -> skip
+        3. Severity below ``min_severity`` config threshold -> skip
         """
         early_exit_results = []
         items_to_process = []
@@ -1130,10 +1204,10 @@ class Phase03Orchestrator(BaseOrchestrator):
                 try:
                     partial = Phase02cPartial.model_validate(data)
                     print(
-                        f"  ✓ {filepath}: {len(partial.properties_with_code)} properties validated"
+                        f"  OK {filepath}: {len(partial.properties_with_code)} properties validated"
                     )
                 except ValidationError as ve:
-                    _log_validation_warning(filepath, ve, prefix="02c→03")
+                    _log_validation_warning(filepath, ve, prefix="02c->03")
                     validation_warnings += 1
 
                 entries_raw = data.get("properties_with_code", [])
@@ -1147,7 +1221,7 @@ class Phase03Orchestrator(BaseOrchestrator):
                         prop_id_raw = entry.get("property_id", "<unknown>")
                         for err in errs:
                             print(
-                                f"    ⚠️  {filepath} property {prop_id_raw}: {err}",
+                                f"    Warning: {filepath} property {prop_id_raw}: {err}",
                                 file=sys.stderr,
                             )
 
@@ -1168,7 +1242,7 @@ class Phase03Orchestrator(BaseOrchestrator):
 
         if validation_warnings:
             print(
-                f"⚠️  {validation_warnings} file(s) had schema validation warnings (02c→03)",
+                f"Warning: {validation_warnings} file(s) had schema validation warnings (02c->03)",
                 file=sys.stderr,
             )
 
@@ -1277,7 +1351,7 @@ class Phase04Orchestrator(BaseOrchestrator):
                 try:
                     Phase03Partial.model_validate(data)
                 except ValidationError as ve:
-                    _log_validation_warning(filepath, ve, prefix="03→04")
+                    _log_validation_warning(filepath, ve, prefix="03->04")
                     validation_warnings += 1
 
                 audit_items = data.get("audit_items", [])
@@ -1291,7 +1365,7 @@ class Phase04Orchestrator(BaseOrchestrator):
                     if errs:
                         for err in errs:
                             print(
-                                f"    ⚠️  {filepath} item {prop_id}: {err}",
+                                f"    Warning: {filepath} item {prop_id}: {err}",
                                 file=sys.stderr,
                             )
                     items_dict[prop_id] = {
@@ -1304,7 +1378,7 @@ class Phase04Orchestrator(BaseOrchestrator):
 
         if validation_warnings:
             print(
-                f"⚠️  {validation_warnings} file(s) had schema validation warnings (03→04)",
+                f"Warning: {validation_warnings} file(s) had schema validation warnings (03->04)",
                 file=sys.stderr,
             )
 

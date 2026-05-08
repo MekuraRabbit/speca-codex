@@ -49,6 +49,78 @@ def test_codex_app_runner_injects_adapter_instructions(tmp_path: Path):
     assert "Select-String" in prompt
 
 
+def test_codex_app_runner_adds_phase01a_url_argument(tmp_path: Path):
+    with output_root_context(tmp_path):
+        config = get_phase_config("01a")
+        config.workdir = str(tmp_path)
+        runner = CodexAppRunner(config, asyncio.Semaphore(1))
+
+        prompt = runner._build_prompt(
+            **runner._batch_prompt_kwargs(
+                [{"url": "https://example.com/spec"}],
+                worker_id=0,
+                queue_file=str(tmp_path / "q.json"),
+                context_file=str(tmp_path / "c.json"),
+                batch_size=1,
+                iteration=0,
+                timestamp=1,
+                output_file=str(tmp_path / "out.json"),
+            )
+        )
+
+    assert "URL=https://example.com/spec" in prompt
+
+
+def test_codex_app_runner_phase01a_writes_batch_state_fragment(tmp_path: Path):
+    async def run() -> list[dict]:
+        with output_root_context(tmp_path):
+            config = get_phase_config("01a")
+            config.workdir = str(tmp_path)
+            config.runtime_env["SPECA_RUN_ID"] = "run-test"
+            runner = CodexAppRunner(config, asyncio.Semaphore(1))
+
+            class FakeClient:
+                async def run_turn(self, *, prompt, cwd, model, effort, service_tier, timeout_seconds, developer_instructions):
+                    assert "URL=https://example.com/spec" in prompt
+                    matches = re.findall(r"OUTPUT_FILE=(\S+)", prompt)
+                    assert matches
+                    output_file = Path(matches[-1].strip('"'))
+                    assert output_file.name.startswith("01a_STATE_W0B0_")
+                    assert output_file.name.endswith(".json")
+                    output_file.write_text(
+                        json.dumps(
+                            {
+                                "found_specs": [
+                                    {
+                                        "url": "https://example.com/spec",
+                                        "title": "Example Spec",
+                                    }
+                                ]
+                            }
+                        ),
+                        encoding="utf-8",
+                    )
+                    capture = TurnCapture(thread_id="thread-1", turn_id="turn-1")
+                    capture.completed = {"turn": {"status": "completed"}}
+                    return {"thread": {"id": "thread-1"}}, capture
+
+            async def fake_client():
+                return FakeClient()
+
+            runner._get_client = fake_client  # type: ignore[method-assign]
+            return await runner._execute_batch(
+                [{"id": "seed", "url": "https://example.com/spec"}],
+                worker_id=0,
+                batch_index=0,
+            )
+
+    results = asyncio.run(run())
+
+    assert not (tmp_path / "01a_STATE.json").exists()
+    assert not list(tmp_path.glob("01a_STATE_W0B0_*.json"))
+    assert results[0]["found_specs"][0]["title"] == "Example Spec"
+
+
 def test_codex_app_runner_inlines_referenced_claude_skill(tmp_path: Path):
     with output_root_context(tmp_path):
         config = get_phase_config("01b")

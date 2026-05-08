@@ -364,14 +364,19 @@ class ClaudeRunner:
         queue_path = self.output_dir / f"{phase_id}_ASYNC_QUEUE_W{worker_id}B{batch_index}_{timestamp}.json"
         log_file = self.log_dir / f"{phase_id}_w{worker_id}b{batch_index}_{timestamp}.log.jsonl"
 
-        # Determine output paths based on output_mode
-        if directory_mode:
+        # Determine output paths based on output_mode. Phase 01a writes
+        # per-batch state fragments that are merged into 01a_STATE.json after
+        # all workers complete.
+        if phase_id == "01a":
+            result_parse_path = self.output_dir / f"01a_STATE_W{worker_id}B{batch_index}_{timestamp}.json"
+            output_kwargs: dict[str, str] = {"output_file": str(result_parse_path)}
+        elif directory_mode:
             batch_output_dir = self.output_dir / "graphs" / f"batch_w{worker_id}b{batch_index}_{timestamp}"
             batch_output_dir.mkdir(parents=True, exist_ok=True)
             # Directory mode has no result file; _parse_results will return []
             # and the runner falls back to _parse_results_from_log automatically.
             result_parse_path = batch_output_dir / ".no_result_file"
-            output_kwargs: dict[str, str] = {"output_dir": str(batch_output_dir)}
+            output_kwargs = {"output_dir": str(batch_output_dir)}
         else:
             result_parse_path = self.output_dir / f"{partial_base}_W{worker_id}B{batch_index}_{timestamp}.json"
             output_kwargs = {"output_file": str(result_parse_path)}
@@ -383,8 +388,8 @@ class ClaudeRunner:
         self._save_json(queue_path, queue_payload)
         self._save_json(context_path, context_payload)
 
-        # Build prompt
-        prompt_content = self._build_prompt(
+        batch_kwargs = self._batch_prompt_kwargs(
+            batch,
             worker_id=worker_id,
             queue_file=str(queue_path),
             context_file=str(context_path),
@@ -393,20 +398,15 @@ class ClaudeRunner:
             timestamp=timestamp,
             **output_kwargs,
         )
+
+        # Build prompt
+        prompt_content = self._build_prompt(**batch_kwargs)
 
         # Build command
         cmd, stdin_bytes = self._build_cmd(prompt_content)
 
         # Build environment
-        env = self._build_env(
-            worker_id=worker_id,
-            queue_file=str(queue_path),
-            context_file=str(context_path),
-            batch_size=len(batch),
-            iteration=batch_index,
-            timestamp=timestamp,
-            **output_kwargs,
-        )
+        env = self._build_env(**batch_kwargs)
 
         # --- Start real-time log watcher ---
         watcher_config = LogWatcherConfig(
@@ -462,7 +462,7 @@ class ClaudeRunner:
                         if watcher.should_stop:
                             print(
                                 f"[W{worker_id}] Batch {batch_index}: "
-                                f"LogWatcher detected anomalies — killing process",
+                                f"LogWatcher detected anomalies - killing process",
                                 file=sys.stderr,
                             )
                             proc.kill()
@@ -602,7 +602,7 @@ class ClaudeRunner:
                     f"recovered {len(results)} result(s)",
                     file=sys.stderr,
                 )
-                if not directory_mode:
+                if self._should_delete_result_file(directory_mode):
                     result_parse_path.unlink(missing_ok=True)
                 return results
             # No output — retrying won't help (max_turns is deterministic)
@@ -654,7 +654,7 @@ class ClaudeRunner:
                 )
 
         # Clean up: delete intermediate file only in file mode
-        if not directory_mode and results:
+        if self._should_delete_result_file(directory_mode) and results:
             result_parse_path.unlink(missing_ok=True)
 
         return results
@@ -703,7 +703,7 @@ class ClaudeRunner:
         print(
             f"[W{worker_id}] Batch {batch_index}: Claude exited non-zero but "
             f"log shows subtype=success (is_error={is_error}, "
-            f"duration={duration_s:.0f}s) — attempting partial recovery",
+            f"duration={duration_s:.0f}s) - attempting partial recovery",
             file=sys.stderr,
         )
 
@@ -719,7 +719,7 @@ class ClaudeRunner:
                 file=sys.stderr,
             )
             # Clean up intermediate file
-            if not directory_mode:
+            if self._should_delete_result_file(directory_mode):
                 result_parse_path.unlink(missing_ok=True)
             return results
 
@@ -834,6 +834,39 @@ class ClaudeRunner:
 
         args = " ".join(f"{k.upper()}={_quote(v)}" for k, v in kwargs.items())
         return f"{prompt_content}\n\n{args}"
+
+    def _should_delete_result_file(self, directory_mode: bool) -> bool:
+        """Return whether the worker output file is only an intermediate file."""
+        return not directory_mode
+
+    def _batch_prompt_kwargs(
+        self,
+        batch: list[dict[str, Any]],
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        """Build prompt/env kwargs, including phase-specific item arguments."""
+        result = dict(kwargs)
+        if self.config.phase_id == "01a" and "url" not in result:
+            url = self._first_batch_url(batch) or self._first_runtime_spec_url()
+            if url:
+                result["url"] = url
+        return result
+
+    @staticmethod
+    def _first_batch_url(batch: list[dict[str, Any]]) -> str:
+        for item in batch:
+            value = item.get("url") or item.get("start_url")
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+        return ""
+
+    def _first_runtime_spec_url(self) -> str:
+        spec_urls = self.config.runtime_env.get("SPEC_URLS") or os.environ.get("SPEC_URLS", "")
+        for value in re.split(r"[\n,]+", spec_urls):
+            value = value.strip()
+            if value:
+                return value
+        return ""
 
     def _build_env(self, **kwargs) -> dict[str, str]:
         """Build environment variables for Claude execution."""

@@ -7,7 +7,7 @@ body:
     attributes:
       value: |
         Thanks for filing a bug report. Please include enough information to reproduce — without a reproducer the bug is hard to triage.
-        Before submitting, please [search existing issues](https://github.com/NyxFoundation/speca/issues?q=is%3Aissue) to avoid duplicates.
+        Before submitting, please [search existing issues](https://github.com/MekuraRabbit/speca-codex/issues?q=is%3Aissue) to avoid duplicates.
 
   - type: dropdown
     id: phase
@@ -67,12 +67,14 @@ body:
     id: env
     attributes:
       label: Environment
-      description: Python version, OS, Claude Code CLI version, model used.
+      description: Python version, OS, Codex App / Codex CLI version, optional Claude Code CLI version, runner, and model used.
       placeholder: |
         Python: 3.11.6
-        OS: macOS 14.4 / Ubuntu 22.04
-        claude code: 2.1.39
-        Model: Sonnet 4.5
+        OS: Windows 11 / macOS 14.4 / Ubuntu 22.04
+        Codex App / CLI: 0.x
+        Runner: codex-app
+        Claude Code, if using legacy runner: 2.1.39
+        Model: GUI default or gpt-*
       render: yaml
     validations:
       required: false
