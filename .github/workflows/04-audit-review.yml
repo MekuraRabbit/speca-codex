@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   audit-review:
-    if: ${{ github.actor == 'grandchildrice' || github.actor == 'hirorogo' }}
+    if: ${{ github.actor == github.repository_owner }}
     runs-on: self-hosted
 
     env:

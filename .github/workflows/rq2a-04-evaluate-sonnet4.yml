@@ -46,14 +46,14 @@ permissions:
 
 jobs:
   evaluate:
-    if: ${{ github.actor == 'grandchildrice' || github.actor == 'hirorogo' }}
+    if: ${{ github.actor == github.repository_owner }}
     runs-on: self-hosted
 
     steps:
-      - name: Checkout master
+      - name: Checkout main
         uses: actions/checkout@v4
         with:
-          ref: master
+          ref: main
           fetch-depth: 1
 
       - name: Setup Python + benchmark deps
@@ -135,7 +135,7 @@ jobs:
             exit 1
           fi
 
-      - name: Push results to master
+      - name: Push results to main
         run: |
           set -euo pipefail
           git config --local user.name "Security Agent Bot"
@@ -154,7 +154,7 @@ jobs:
             git commit -m "rq2a: evaluate SPECA results [Claude Sonnet 4] — add metrics and figures"
             PUSHED=false
             for i in 1 2 3; do
-              if git pull --rebase origin master && git push origin master; then
+              if git pull --rebase origin main && git push origin main; then
                 echo "Pushed successfully"
                 PUSHED=true
                 break

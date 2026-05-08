@@ -57,6 +57,7 @@ upstream research implementation, use [NyxFoundation/speca](https://github.com/N
 - [Running on GitHub Actions](#running-on-github-actions)
 - [Configuration](#configuration)
 - [Upstream Paper And Benchmarks](#upstream-paper-and-benchmarks)
+- [Security](#security)
 - [Contributing](#contributing)
 - [Citation](#citation)
 - [License](#license)
@@ -929,9 +930,20 @@ bundle, see:
 Raw worker logs and model trace logs are intentionally omitted from this Codex
 fork. Generated run logs are ignored by default.
 
+## Security
+
+Please do not open public issues for vulnerabilities in this repository, its
+workflows, runner isolation, or generated artifacts. Use the private reporting
+process in [SECURITY.md](SECURITY.md).
+
+Findings produced against third-party audit targets should be validated by a
+human auditor and reported through the target project's own disclosure or
+bug-bounty process, not through this repository's public issue tracker.
+
 ## Contributing
 
-We welcome issues and pull requests from the community.
+We welcome issues and pull requests from the community. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for the full contribution guide.
 
 - **Bugs / feature requests:** open a GitHub issue in this repository with a minimal reproducer or a concrete use-case.
 - **Pull requests:**

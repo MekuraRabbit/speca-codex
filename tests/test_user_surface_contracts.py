@@ -1,5 +1,6 @@
 import json
 import time
+import tomllib
 from pathlib import Path
 
 from server.discord import _build_embed
@@ -126,3 +127,52 @@ def test_root_readme_describes_token_usage_without_api_cost_surface():
     assert "actual API spend unless an API runner was explicitly used" in readme
     assert "structured log/cost telemetry" not in readme
     assert "per-phase budget enforcement" not in readme
+
+
+def test_public_readmes_link_security_and_contribution_guides():
+    readme = Path("README.md").read_text(encoding="utf-8")
+    readme_ja = Path("README.ja.md").read_text(encoding="utf-8")
+
+    for doc in (readme, readme_ja):
+        assert "SECURITY.md" in doc
+        assert "CONTRIBUTING.md" in doc
+
+    assert "public issue tracker" in readme
+    assert "公開 issue" in readme_ja
+
+
+def test_oss_metadata_uses_codex_fork_name():
+    pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+
+    assert pyproject["project"]["name"] == "speca-codex"
+
+
+def test_public_workflows_do_not_reference_stale_security_agent_repo():
+    workflow_text = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in Path(".github/workflows").glob("*.yml")
+    )
+
+    assert "NyxFoundation/security-agent" not in workflow_text
+    assert "grandchildrice" not in workflow_text
+    assert "hirorogo" not in workflow_text
+    assert "target_branch: \"master\"" not in workflow_text
+    assert "ref: master" not in workflow_text
+    assert "origin master" not in workflow_text
+
+
+def test_issue_resolver_requires_explicit_maintainer_trigger():
+    resolver = Path(".github/workflows/issue-resolver.yml").read_text(encoding="utf-8")
+    reusable = Path(".github/workflows/openhands-resolver.yml").read_text(encoding="utf-8")
+
+    assert "target_branch: \"main\"" in resolver
+    assert "github.event.label.name == 'fix-me'" in resolver
+    assert "contains(github.event.comment.body, vars.OPENHANDS_MACRO || '@openhands-agent')" in resolver
+    codeowners = Path(".github/CODEOWNERS").read_text(encoding="utf-8")
+
+    assert "@MekuraRabbit" in codeowners
+    assert "@grandchildrice" not in codeowners
+    assert "github.actor == github.repository_owner" in resolver
+    assert "github.actor == github.repository_owner" in reusable
+    assert "Token length:" not in reusable
+    assert "(workdir:" not in reusable
