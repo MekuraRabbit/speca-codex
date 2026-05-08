@@ -4,20 +4,48 @@ from __future__ import annotations
 
 import asyncio
 import json
+import subprocess
+from pathlib import Path
 
 from server.orchestrator_bridge import _run_phase
 from server.run_manager import RunManager, RunStatus
 
 
+def _git(cwd: Path, *args: str) -> str:
+    result = subprocess.run(
+        ["git", *args],
+        cwd=str(cwd),
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    return result.stdout.strip()
+
+
+def _make_target_checkout(path: Path) -> str:
+    path.mkdir(parents=True)
+    _git(path, "init")
+    _git(path, "config", "user.email", "speca@example.invalid")
+    _git(path, "config", "user.name", "SPECA Test")
+    (path / "README.md").write_text("target\n", encoding="utf-8")
+    _git(path, "add", "README.md")
+    _git(path, "commit", "-m", "initial")
+    _git(path, "remote", "add", "origin", "https://github.com/example/repo.git")
+    return _git(path, "rev-parse", "HEAD")
+
+
 def test_api_phase05_dispatch_builds_candidate_index(tmp_path):
     output_dir = tmp_path / "outputs" / "phase05"
     output_dir.mkdir(parents=True)
+    checkout = tmp_path / "target_workspace" / "example"
+    head = _make_target_checkout(checkout)
     (output_dir / "TARGET_INFO.json").write_text(
         json.dumps(
             {
                 "target_repo": "example/repo",
-                "target_commit": "abc123",
-                "local_checkout": "target_workspace/example",
+                "target_commit": head,
+                "local_checkout": str(checkout),
                 "language": "solidity",
             }
         ),

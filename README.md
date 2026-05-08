@@ -873,6 +873,12 @@ Pins the target repository, commit, and local checkout used by worker phases.
 Prepare the checkout locally at `local_checkout`; SPECA workers treat that path
 as the exact target code root.
 
+Before phases `02c`, `03`, `04`, or `05` run, SPECA validates that
+`local_checkout` exists, is the Git repository root, is clean, matches
+`target_commit`, and, when an `origin` remote is available, matches
+`target_repo`. For trusted legacy/local runs only, this pre-flight check can be
+skipped with `SPECA_ALLOW_UNVERIFIED_TARGET_CHECKOUT=1`.
+
 ```json
 {
   "target_repo": "ethereum/go-ethereum",
@@ -905,6 +911,7 @@ those aliases.
 | `SPECA_ENABLE_API_RUNNER_DISPATCH` | Local FastAPI server | Opt-in gate for dispatching the OpenAI-compatible API runner through the local API |
 | `SPECA_API_RUNNER_BASE_URL_ALLOWLIST` | Local FastAPI server | Comma-separated API runner base URLs allowed when API runner dispatch is enabled |
 | `SPECA_API_RUNNER_KEY_ENV_ALLOWLIST` | Local FastAPI server | Comma-separated environment variable names allowed for API runner keys when API runner dispatch is enabled |
+| `SPECA_ALLOW_UNVERIFIED_TARGET_CHECKOUT` | Phase 02c/03/04/05 pre-flight | Skip `TARGET_INFO.local_checkout` Git validation for trusted legacy/local runs only |
 | `SPEC_URLS` | 01a | Comma-separated seed URLs to crawl |
 | `KEYWORDS` | 01a | Optional crawl keyword filter |
 | `FORCE_EXECUTE=1` | All phases | Bypass resume state (set automatically by `--force`) |

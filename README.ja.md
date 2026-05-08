@@ -177,6 +177,12 @@ CLI で前段から `04` まで順に実行する場合:
 uv run python scripts/run_phase.py --target 04 --runner codex-app --workers 4 --max-concurrent 8
 ```
 
+Phase `02c`、`03`、`04`、`05` の実行前に、SPECA は
+`TARGET_INFO.local_checkout` が存在する Git repository root で、clean で、
+`target_commit` と一致し、`origin` remote がある場合は `target_repo` と
+一致することを検証します。信頼済みの legacy/local run だけ、
+`SPECA_ALLOW_UNVERIFIED_TARGET_CHECKOUT=1` でこの事前検証を省略できます。
+
 Phase 04 の confirmed / potential finding から、重複した根本原因をまとめた PoC 代表候補を作る場合:
 
 ```bash
