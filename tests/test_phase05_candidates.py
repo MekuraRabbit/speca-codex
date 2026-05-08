@@ -287,6 +287,54 @@ def test_renounce_candidates_are_quorum_degradation_potentials(tmp_path):
     )
 
 
+def test_non_oracle_renounce_candidates_keep_confirmed_verdict(tmp_path):
+    _write_json(
+        tmp_path / "TARGET_INFO.json",
+        {
+            "local_checkout": "target_workspace/protocol",
+            "language": "solidity",
+        },
+    )
+    _write_json(
+        tmp_path / "03_PARTIAL_W0B0.json",
+        {
+            "audit_items": [
+                {
+                    "property_id": "PROP-ownership-inv-001",
+                    "classification": "vulnerability",
+                    "code_path": (
+                        "target_workspace/protocol/contracts/ownership/"
+                        "OwnableVault.sol::renounceOwnership::L10-24"
+                    ),
+                    "attack_scenario": (
+                        "The owner can renounce ownership and permanently brick "
+                        "admin recovery for pending withdrawals."
+                    ),
+                }
+            ],
+        },
+    )
+    _write_json(
+        tmp_path / "04_PARTIAL_W0B0.json",
+        {
+            "reviewed_items": [
+                {
+                    "property_id": "PROP-ownership-inv-001",
+                    "review_verdict": "CONFIRMED_VULNERABILITY",
+                    "adjusted_severity": "High",
+                }
+            ],
+        },
+    )
+
+    index = build_poc_candidate_index(tmp_path)
+    candidate = index["candidates"][0]
+
+    assert candidate["attack_family"] != "oracle-source-quorum-degradation"
+    assert candidate["review_verdict"] == "CONFIRMED_VULNERABILITY"
+    assert "oracle quorum" not in candidate["attack_summary"]
+
+
 def test_javascript_and_typescript_candidates_get_native_defaults(tmp_path):
     for language, suffix in [("javascript", ".test.js"), ("typescript", ".test.ts")]:
         output_dir = tmp_path / language

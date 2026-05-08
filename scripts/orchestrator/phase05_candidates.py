@@ -329,7 +329,7 @@ def _primary_symbol(audit: dict[str, Any]) -> str:
 
 def _attack_family(challenge: str, symbol: str, text: str) -> str:
     haystack = f"{challenge} {symbol} {text}".lower()
-    if "renounce" in haystack:
+    if _has_oracle_source_quorum_context(challenge, symbol, text):
         return "oracle-source-quorum-degradation"
 
     known_challenge_families = {
@@ -409,13 +409,19 @@ def _candidate_id(challenge: str, attack_family: str, covered_ids: list[str]) ->
 
 
 def _candidate_review_verdict(item: dict[str, Any]) -> str:
-    if item.get("attack_family") == "oracle-source-quorum-degradation":
+    if (
+        item.get("attack_family") == "oracle-source-quorum-degradation"
+        and _item_has_oracle_source_quorum_context(item)
+    ):
         return "CONFIRMED_POTENTIAL"
     return str(item.get("review_verdict", ""))
 
 
 def _summary_for_candidate(item: dict[str, Any]) -> str:
-    if item.get("attack_family") == "oracle-source-quorum-degradation":
+    if (
+        item.get("attack_family") == "oracle-source-quorum-degradation"
+        and _item_has_oracle_source_quorum_context(item)
+    ):
         return (
             "A current oracle source, or an attacker holding that source key, can call "
             "renounceRole(TRUSTED_SOURCE_ROLE, source) directly on the oracle. This "
@@ -427,6 +433,49 @@ def _summary_for_candidate(item: dict[str, Any]) -> str:
         if value:
             return value
     return f"Representative PoC candidate for {item['property_id']}."
+
+
+def _item_has_oracle_source_quorum_context(item: dict[str, Any]) -> bool:
+    text = " ".join(
+        str(item.get(key) or "")
+        for key in (
+            "attack_scenario",
+            "audit_summary",
+            "reviewer_notes",
+            "code_path",
+            "primary_file",
+        )
+    )
+    return _has_oracle_source_quorum_context(
+        str(item.get("challenge") or ""),
+        str(item.get("primary_symbol") or ""),
+        text,
+    )
+
+
+def _has_oracle_source_quorum_context(challenge: str, symbol: str, text: str) -> bool:
+    haystack = f"{challenge} {symbol} {text}".lower()
+    if "renounce" not in haystack:
+        return False
+
+    oracle_terms = (
+        "oracle",
+        "trustfuloracle",
+        "postprice",
+        "median",
+    )
+    source_quorum_terms = (
+        "source",
+        "trusted_source_role",
+        "trusted source",
+        "source set",
+        "quorum",
+        "median",
+    )
+    return (
+        any(term in haystack for term in oracle_terms)
+        and any(term in haystack for term in source_quorum_terms)
+    )
 
 
 def _safe_relative_path(path: str) -> str:
