@@ -18,13 +18,30 @@ on:
         required: false
         type: boolean
         default: false
+      confirm_legacy_claude_bypass:
+        description: 'Type I_UNDERSTAND_THIS_RUNS_LEGACY_CLAUDE_WITH_BYPASS_PERMISSIONS to run the legacy Claude workflow on a self-hosted runner'
+        required: true
+        type: string
+        default: 'no'
 
 permissions:
   contents: write
 
 jobs:
+  legacy-claude-bypass-guard:
+    if: ${{ inputs.confirm_legacy_claude_bypass != 'I_UNDERSTAND_THIS_RUNS_LEGACY_CLAUDE_WITH_BYPASS_PERMISSIONS' }}
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+    steps:
+      - name: Refuse unacknowledged legacy Claude bypass run
+        run: |
+          echo "::error::This workflow runs the legacy Claude runner with bypassPermissions on a self-hosted runner."
+          echo "::error::Set confirm_legacy_claude_bypass to I_UNDERSTAND_THIS_RUNS_LEGACY_CLAUDE_WITH_BYPASS_PERMISSIONS to continue."
+          exit 1
+
   audit-review:
-    if: ${{ github.actor == github.repository_owner }}
+    if: ${{ github.actor == github.repository_owner && inputs.confirm_legacy_claude_bypass == 'I_UNDERSTAND_THIS_RUNS_LEGACY_CLAUDE_WITH_BYPASS_PERMISSIONS' }}
     runs-on: self-hosted
 
     env:
