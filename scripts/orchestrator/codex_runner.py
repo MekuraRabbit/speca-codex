@@ -13,6 +13,7 @@ from typing import Any
 
 from .codex_adapter import build_codex_prompt, codex_model_from_config
 from .codex_bin import resolve_codex_bin
+from .codex_sandbox import codex_exec_sandbox_args
 from .runner import ClaudeRunner
 
 
@@ -54,8 +55,11 @@ class CodexRunner(ClaudeRunner):
             "exec",
             "--json",
             "--skip-git-repo-check",
-            "--dangerously-bypass-approvals-and-sandbox",
         ]
+        cmd.extend(codex_exec_sandbox_args(
+            self.config,
+            writable_roots=[self.output_dir],
+        ))
         model = codex_model_from_config(self.config)
         if model:
             cmd.extend(["--model", model])

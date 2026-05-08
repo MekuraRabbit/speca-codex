@@ -131,6 +131,13 @@ dependency の full sync を強制しません。platform ごとの venv interpr
 > 非 loopback host への bind は、明示的に確認したローカル環境で
 > `SPECA_ENABLE_REMOTE_API=1` を設定した場合だけ許可されます。
 
+Codex worker turn は既定で `workspace-write` で動き、full filesystem access
+は使いません。`01a`/`01b` は operator が指定した仕様 URL を取得するため、
+sandbox 内の network access を既定で許可します。target code を読む後段 phase
+では、明示的に上書きしない限り sandbox 内の network access は無効です。
+`SPECA_CODEX_SANDBOX=danger-full-access` は、外側で sandbox され、権限範囲を
+確認済みの trusted local run だけで使ってください。
+
 確認:
 
 ```bash
@@ -308,6 +315,12 @@ Codex モデルを明示したい場合だけ指定します。Codex App API dis
 SPEC_URLS="https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7594.md" \
   uv run python scripts/run_phase.py --phase 01a --runner codex-app --model <CODEX_MODEL>
 ```
+
+Codex worker の sandbox mode は `SPECA_CODEX_SANDBOX` で上書きできます。
+既定は `workspace-write` です。`danger-full-access` は、trusted local run
+で外側の isolation を確認している場合だけ使ってください。
+`SPECA_CODEX_SANDBOX_NETWORK` を設定すると sandbox 内 network access を
+明示的に上書きできます。
 
 ## 主なファイル
 

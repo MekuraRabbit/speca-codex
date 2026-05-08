@@ -79,6 +79,13 @@ dependency の full sync を強制しません。
 > 非 loopback host への bind は、明示的に確認したローカル環境で
 > `SPECA_ENABLE_REMOTE_API=1` を設定した場合だけ許可されます。
 
+Codex worker turn は既定で `workspace-write` sandbox を使います。`01a` と
+`01b` は operator が指定した仕様 URL を取得するため sandbox 内 network
+access を既定で許可します。target code を読む後段 phase では、
+`SPECA_CODEX_SANDBOX_NETWORK=1` を設定しない限り sandbox 内 network access
+は無効です。`SPECA_CODEX_SANDBOX=danger-full-access` は、外側で sandbox
+され、権限範囲を確認済みの trusted local run だけで使ってください。
+
 health check:
 
 ```bash

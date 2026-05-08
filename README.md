@@ -193,6 +193,13 @@ On macOS/Linux:
 > binds are refused unless `SPECA_ENABLE_REMOTE_API=1` is set for an explicitly
 > reviewed local environment.
 
+Codex worker turns default to `workspace-write`, not full filesystem access.
+Phase `01a`/`01b` allow sandboxed network access because they fetch
+operator-provided specification URLs; later target-code phases keep sandboxed
+network access off unless explicitly enabled. Set
+`SPECA_CODEX_SANDBOX=danger-full-access` only for trusted local runs that are
+externally sandboxed and authorized.
+
 Check the server:
 
 ```bash
@@ -913,6 +920,8 @@ those aliases.
 | `SPECA_CODEX_MODEL` | Codex runners | Optional explicit Codex model override; API runs normally read the Codex App GUI model when `model` is omitted |
 | `SPECA_CODEX_REASONING_EFFORT` | Codex app-server runner | Optional explicit reasoning effort override (`low`, `medium`, `high`, `xhigh`, etc.) |
 | `SPECA_CODEX_SERVICE_TIER` | Codex app-server runner | Optional service tier override (`fast` or `flex`) |
+| `SPECA_CODEX_SANDBOX` | Codex runners | Worker sandbox mode; defaults to `workspace-write`; set `danger-full-access` only for trusted local runs that are externally sandboxed |
+| `SPECA_CODEX_SANDBOX_NETWORK` | Codex runners | Override sandboxed worker network access; by default only spec-fetch phases `01a`/`01b` enable it |
 | `SPECA_API_HOST` | Local FastAPI server | Optional manual bind host override; defaults to `127.0.0.1`; non-loopback hosts require `SPECA_ENABLE_REMOTE_API=1` |
 | `SPECA_API_PORT` | Local FastAPI server | Optional manual port override; defaults to `8000` |
 | `SPECA_API_RELOAD` | Local FastAPI server | Set to `1`/`true` to enable uvicorn reload for local development |

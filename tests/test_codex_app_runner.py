@@ -968,6 +968,12 @@ def test_codex_app_client_omits_model_when_defaulting_to_app_server(
     thread_params = calls[0][1]
     turn_params = calls[1][1]
     assert thread_params["ephemeral"] is True
+    assert thread_params["sandbox"] == "workspace-write"
+    assert turn_params["sandboxPolicy"] == {
+        "type": "workspaceWrite",
+        "networkAccess": False,
+        "writableRoots": [],
+    }
     assert "model" not in thread_params
     assert "model" not in turn_params
     assert "effort" not in turn_params
@@ -1054,3 +1060,73 @@ def test_codex_app_client_sends_model_effort_and_service_tier(tmp_path: Path):
     assert turn_params["model"] == "gpt-5.5"
     assert turn_params["effort"] == "xhigh"
     assert turn_params["serviceTier"] == "fast"
+
+
+def test_codex_app_runner_passes_sandbox_policy_to_client(tmp_path: Path, monkeypatch):
+    import scripts.orchestrator.codex_app_runner as module
+
+    captured: dict[str, object] = {}
+
+    class FakeClient:
+        def __init__(
+            self,
+            *,
+            url,
+            cwd,
+            timeout_seconds,
+            sandbox_mode,
+            sandbox_policy,
+        ):
+            captured["url"] = url
+            captured["cwd"] = cwd
+            captured["timeout_seconds"] = timeout_seconds
+            captured["sandbox_mode"] = sandbox_mode
+            captured["sandbox_policy"] = sandbox_policy
+
+        async def connect(self):
+            return None
+
+    monkeypatch.setattr(module, "CodexAppServerClient", FakeClient)
+    monkeypatch.delenv("SPECA_CODEX_SANDBOX", raising=False)
+    monkeypatch.delenv("SPECA_CODEX_SANDBOX_NETWORK", raising=False)
+
+    with output_root_context(tmp_path):
+        config = get_phase_config("03")
+        config.workdir = str(tmp_path)
+        runner = CodexAppRunner(config, asyncio.Semaphore(1))
+        asyncio.run(runner._get_client())
+
+    assert captured["sandbox_mode"] == "workspace-write"
+    assert captured["sandbox_policy"] == {
+        "type": "workspaceWrite",
+        "networkAccess": False,
+        "writableRoots": [str(tmp_path.resolve())],
+    }
+
+
+def test_codex_app_runner_enables_sandbox_network_for_spec_fetch(tmp_path: Path, monkeypatch):
+    import scripts.orchestrator.codex_app_runner as module
+
+    captured: dict[str, object] = {}
+
+    class FakeClient:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+
+        async def connect(self):
+            return None
+
+    monkeypatch.setattr(module, "CodexAppServerClient", FakeClient)
+    monkeypatch.delenv("SPECA_CODEX_SANDBOX", raising=False)
+    monkeypatch.delenv("SPECA_CODEX_SANDBOX_NETWORK", raising=False)
+
+    with output_root_context(tmp_path):
+        config = get_phase_config("01b")
+        config.workdir = str(tmp_path)
+        runner = CodexAppRunner(config, asyncio.Semaphore(1))
+        asyncio.run(runner._get_client())
+
+    policy = captured["sandbox_policy"]
+    assert isinstance(policy, dict)
+    assert policy["type"] == "workspaceWrite"
+    assert policy["networkAccess"] is True
