@@ -296,6 +296,11 @@ class ResultCollector:
 
     @staticmethod
     def _matches_component(path: str, component: str) -> bool:
+        if not component:
+            return False
+        if not any(char in component for char in "*?[]"):
+            component = component.rstrip("/")
+            return path == component or path.startswith(component + "/")
         return (
             fnmatchcase(path, component)
             or fnmatchcase(path, component.replace("**/", ""))

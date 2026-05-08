@@ -1629,6 +1629,80 @@ class TestResultCollector:
             finally:
                 os.chdir(old_cwd)
 
+    def test_save_partial_treats_bare_scope_components_as_directories(self):
+        """Bare in-scope components should match nested code locations."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            old_cwd = os.getcwd()
+            os.chdir(tmpdir)
+            try:
+                output_dir = Path("outputs")
+                output_dir.mkdir()
+                (output_dir / "BUG_BOUNTY_SCOPE.json").write_text(
+                    json.dumps({"in_scope": {"components": ["contracts", "test"]}}),
+                    encoding="utf-8",
+                )
+                (output_dir / "TARGET_INFO.json").write_text(
+                    json.dumps({"local_checkout": "target_workspace/damn-vulnerable-defi"}),
+                    encoding="utf-8",
+                )
+
+                config = self._make_config("02c")
+                collector = ResultCollector(config)
+                path = collector.save_partial(
+                    [
+                        {
+                            "property_id": "PROP-001",
+                            "code_scope": {
+                                "locations": [
+                                    {
+                                        "file": "contracts/compromised/TrustfulOracle.sol",
+                                        "symbol": "postPrice",
+                                        "line_range": {"start": 1, "end": 2},
+                                    },
+                                    {
+                                        "file": "target_workspace/damn-vulnerable-defi/test/puppet/puppet.challenge.js",
+                                        "symbol": "challenge",
+                                        "line_range": {"start": 1, "end": 2},
+                                    },
+                                    {
+                                        "file": "build-uniswap-v1/IUniswapExchange.json",
+                                        "symbol": "abi",
+                                        "line_range": {"start": 1, "end": 2},
+                                    },
+                                ],
+                                "resolution_status": "resolved",
+                            },
+                        }
+                    ],
+                    worker_id=0,
+                    batch_index=0,
+                    timestamp=123,
+                )
+
+                data = json.loads(path.read_text(encoding="utf-8"))
+                locations = data["properties_with_code"][0]["code_scope"]["locations"]
+                files = [location["file"] for location in locations]
+                assert files == [
+                    "contracts/compromised/TrustfulOracle.sol",
+                    "target_workspace/damn-vulnerable-defi/test/puppet/puppet.challenge.js",
+                ]
+                Phase02cPartial.model_validate(data)
+            finally:
+                os.chdir(old_cwd)
+
+    def test_scope_component_directory_matching_keeps_path_boundaries(self):
+        """Bare directory matching should not match similarly prefixed paths."""
+        assert ResultCollector._matches_component("contracts/Foo.sol", "contracts")
+        assert ResultCollector._matches_component("contracts", "contracts/")
+        assert not ResultCollector._matches_component("contracts-v2/Foo.sol", "contracts")
+        assert not ResultCollector._matches_component("src/contracts/Foo.sol", "contracts")
+
+    def test_scope_component_globs_preserve_trailing_slash_semantics(self):
+        """Glob components should keep their original pattern semantics."""
+        assert not ResultCollector._matches_component("contracts/Foo.sol", "contracts/*/")
+        assert not ResultCollector._matches_component("contracts/token/ERC20.sol", "contracts/**/")
+        assert ResultCollector._matches_component("contracts/token/", "contracts/*/")
+
 
 class TestPhase02cEarlyExit:
     """Tests for Phase 02c early-exit preservation."""
