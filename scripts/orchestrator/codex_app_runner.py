@@ -749,9 +749,9 @@ Tool translation:
         if not worktree_root.is_absolute():
             worktree_root = repo_root / worktree_root
         worktree = worktree_root / f"{self.config.phase_id}_{output_slug}_w{worker_id}"
+        base_ref = self._resolve_git_ref(repo_root, self.config.worktree_base_ref or "HEAD")
         if not self._looks_like_worktree(worktree):
             worktree.parent.mkdir(parents=True, exist_ok=True)
-            base_ref = self.config.worktree_base_ref or "HEAD"
             env = os.environ.copy()
             env["GIT_LFS_SKIP_SMUDGE"] = "1"
             env["GIT_TERMINAL_PROMPT"] = "0"
@@ -772,6 +772,8 @@ Tool translation:
                 text=True,
                 env=env,
             )
+        else:
+            self._prepare_existing_worktree(worktree, base_ref)
         self._worktrees[worker_id] = worktree.resolve()
         return self._worktrees[worker_id]
 
@@ -787,8 +789,56 @@ Tool translation:
         return Path(result.stdout.strip()).resolve()
 
     @staticmethod
+    def _resolve_git_ref(repo_root: Path, ref: str) -> str:
+        result = subprocess.run(
+            ["git", "-C", str(repo_root), "rev-parse", "--verify", f"{ref}^{{commit}}"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        return result.stdout.strip()
+
+    @staticmethod
     def _looks_like_worktree(path: Path) -> bool:
         return path.exists() and (path / ".git").exists()
+
+    @staticmethod
+    def _prepare_existing_worktree(path: Path, base_ref: str) -> None:
+        status = subprocess.run(
+            ["git", "-C", str(path), "status", "--porcelain"],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        if status.returncode != 0:
+            raise RuntimeError(
+                f"Cannot inspect existing isolated worktree {path}: "
+                f"{status.stderr.strip()}"
+            )
+        if status.stdout.strip():
+            raise RuntimeError(
+                f"Refusing to reuse dirty isolated worktree {path}. "
+                "Commit, clean, or remove it before retrying."
+            )
+
+        env = os.environ.copy()
+        env["GIT_LFS_SKIP_SMUDGE"] = "1"
+        env["GIT_TERMINAL_PROMPT"] = "0"
+        checkout = subprocess.run(
+            ["git", "-C", str(path), "checkout", "--detach", base_ref],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=env,
+        )
+        if checkout.returncode != 0:
+            raise RuntimeError(
+                f"Cannot reset existing isolated worktree {path} to {base_ref}: "
+                f"{checkout.stderr.strip()}"
+            )
 
     @staticmethod
     def _slug(text: str) -> str:
