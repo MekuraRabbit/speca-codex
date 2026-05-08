@@ -302,12 +302,12 @@ In multi-implementation settings, the **left stage executes once** against the s
 
 ### The Audit Harness
 
-The pipeline ships as a reusable **audit harness** under `scripts/orchestrator/` — not a one-off script. The harness provides the infrastructure that every phase needs (queueing, parallel worker dispatch, token-aware batching, resume on partial failure, per-phase budget enforcement, shared circuit-breaker logic, and structured log/cost telemetry); each phase plugs in a worker prompt and a Pydantic schema and inherits all of the above for free. This separation is what makes the framework reusable: you can drop in a new phase, target a new codebase, or swap a model backbone without touching the harness itself.
+The pipeline ships as a reusable **audit harness** under `scripts/orchestrator/` — not a one-off script. The harness provides the infrastructure that every phase needs (queueing, parallel worker dispatch, token-aware batching, resume on partial failure, optional per-phase budget guards for runners that report estimated costs, shared circuit-breaker logic, structured logs, and token-usage telemetry); each phase plugs in a worker prompt and a Pydantic schema and inherits all of the above for free. This separation is what makes the framework reusable: you can drop in a new phase, target a new codebase, or swap a model backbone without touching the harness itself.
 
 Concretely, the harness:
 - **Drives a worker runtime per batch**. Codex App server runs use `codex app-server` threads by default, with `codex exec` as a local fallback and the original Claude Code runner retained for legacy workflows.
 - **Resumes from `outputs/*_PARTIAL_*.json`** so a 10-implementation RQ1 run that's interrupted at hour 4 picks up exactly where it left off without re-spending tokens.
-- **Enforces a per-phase budget** at the runner level (`BudgetExceeded` is raised, not logged) so a runaway prompt cannot burn the whole RQ1 budget on a single target.
+- **Tracks token usage and optional budget guards** at the runner level. Normal Codex App summaries report token counts; raw runner/API payloads may still include estimated-cost fields for compatibility, but public summaries should not present them as actual API spend unless an API runner was explicitly used.
 - **Validates leniently** — Pydantic schema mismatches generate warnings, not aborts; partial results are first-class and never blocked on validation failures.
 - **Shares one circuit breaker per phase** across all workers, so systemic issues (bad prompt, API outage, schema drift) trigger a fast abort instead of N parallel failures.
 

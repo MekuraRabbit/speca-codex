@@ -115,3 +115,14 @@ def test_cli_metadata_points_at_codex_fork():
     assert "Stack (M1)" not in readme
     assert package["repository"]["url"] == "https://github.com/MekuraRabbit/speca-codex.git"
     assert "https://github.com/NyxFoundation/speca/issues/3" not in readme
+
+
+def test_root_readme_describes_token_usage_without_api_cost_surface():
+    readme = Path("README.md").read_text(encoding="utf-8")
+
+    assert "token-usage telemetry" in readme
+    assert "Normal Codex App summaries report token counts" in readme
+    assert "raw runner/API payloads may still include estimated-cost fields" in readme
+    assert "actual API spend unless an API runner was explicitly used" in readme
+    assert "structured log/cost telemetry" not in readme
+    assert "per-phase budget enforcement" not in readme
