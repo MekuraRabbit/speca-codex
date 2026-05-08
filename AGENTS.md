@@ -12,15 +12,17 @@ uv run python scripts/run_phase.py --phase 01a
 uv run python scripts/run_phase.py --phase 01a 01b 01e
 uv run python scripts/run_phase.py --target 04 --workers 4
 uv run python scripts/run_phase.py --phase 03 --force --workers 4 --max-concurrent 64
-uv run python -m server.app
+uv run --no-sync python -m server.app
 .venv/Scripts/python.exe -m server.app
+.venv/bin/python -m server.app
 ```
 
 ## Codex App Workflow
 
 - Use `.codex/launch.json` to start the SPECA API app server from Codex App.
-  On this Windows workspace it uses `.venv/Scripts/python.exe` to avoid forcing
-  a full `uv sync` of the legacy SWE-agent dependency used by existing flows.
+  It calls `uv run --no-sync python -m server.app`, which reuses the existing
+  lightweight `.venv` on Windows/macOS/Linux without forcing a full `uv sync`
+  of the legacy SWE-agent dependency.
 - The app server exposes:
   - `GET /api/health`
   - `GET /api/phases/`

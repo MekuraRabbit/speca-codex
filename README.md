@@ -166,8 +166,16 @@ session metadata when the API dispatch omits `model`. Ask for
 
 ### Start the API Manually
 
-From Codex App, launch `.codex/launch.json` entry `speca-api`. To start it
-manually on Windows:
+From Codex App, launch `.codex/launch.json` entry `speca-api`. It uses
+`uv run --no-sync` so an existing lightweight `.venv` can be reused without
+forcing a full project sync. To start it manually with the same cross-platform
+command:
+
+```bash
+uv run --no-sync python -m server.app
+```
+
+You can also call platform-specific venv interpreters directly:
 
 ```bash
 .venv/Scripts/python.exe -m server.app

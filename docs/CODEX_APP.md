@@ -56,8 +56,11 @@ From Codex App, launch `speca-api` from `.codex/launch.json`.
 Manual equivalent:
 
 ```bash
-uv run python -m server.app
+uv run --no-sync python -m server.app
 ```
+
+The `--no-sync` flag reuses an existing lightweight `.venv` without forcing a
+full project sync of legacy workflow dependencies.
 
 > **Do not expose this API.** The SPECA API is a local single-user control
 > plane that can launch agent worker runs. It is unauthenticated and should
@@ -65,12 +68,17 @@ uv run python -m server.app
 > binds are refused unless `SPECA_ENABLE_REMOTE_API=1` is set for an explicitly
 > reviewed local environment.
 
-On Windows, if `uv run` tries to sync the full project and fails while checking
-out the legacy SWE-agent dependency, use the lightweight venv path used by
-`.codex/launch.json`:
+On Windows, if you want to bypass the launcher and call the lightweight venv
+directly:
 
 ```bash
 .venv/Scripts/python.exe -m server.app
+```
+
+On macOS/Linux, the equivalent direct venv command is:
+
+```bash
+.venv/bin/python -m server.app
 ```
 
 Use `--reload` only for interactive API development. For Codex App worker smoke

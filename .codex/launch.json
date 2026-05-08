@@ -3,8 +3,11 @@
   "configurations": [
     {
       "name": "speca-api",
-      "runtimeExecutable": ".venv/Scripts/python.exe",
+      "runtimeExecutable": "uv",
       "runtimeArgs": [
+        "run",
+        "--no-sync",
+        "python",
         "-m",
         "server.app"
       ],
