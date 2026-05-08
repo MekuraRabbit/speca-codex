@@ -1025,6 +1025,47 @@ class TestCrossPhaseDataFlow:
         assert len(pwc_parsed.code_scope.locations) == 1
         assert pwc_parsed.code_scope.locations[0].file == "test.go"
 
+    def test_02c_code_location_normalizes_list_role(self):
+        """Loose worker outputs sometimes emit role as a list; keep old artifacts readable."""
+        from orchestrator.schemas import PropertyWithCode
+
+        pwc = PropertyWithCode.model_validate(
+            {
+                "property_id": "PROP-001",
+                "text": "Test property",
+                "type": "invariant",
+                "severity": "Low",
+                "covers": "FN-001",
+                "code_scope": {
+                    "resolution_status": "resolved",
+                    "locations": [
+                        {
+                            "file": "test.go",
+                            "symbol": "TestFunc",
+                            "line_range": {"start": 1, "end": 10},
+                            "role": ["L", "primary"],
+                        },
+                        {
+                            "file": "caller.go",
+                            "symbol": "Caller",
+                            "line_range": {"start": 11, "end": 20},
+                            "role": [None, "caller"],
+                        },
+                        {
+                            "file": "fallback.go",
+                            "symbol": "Fallback",
+                            "line_range": {"start": 21, "end": 30},
+                            "role": ["L"],
+                        },
+                    ],
+                },
+            }
+        )
+
+        assert pwc.code_scope.locations[0].role == "primary"
+        assert pwc.code_scope.locations[1].role == "caller"
+        assert pwc.code_scope.locations[2].role == "primary"
+
     def test_03_audit_to_04_review(self):
         """Audit item from 03 should be parseable as Phase04 input."""
         audit = AuditMapItem(
@@ -1457,6 +1498,50 @@ class TestResultCollector:
             finally:
                 os.chdir(old_cwd)
 
+    def test_save_partial_normalizes_list_code_location_role(self):
+        """02c partials should persist role as a single allowed string."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            old_cwd = os.getcwd()
+            os.chdir(tmpdir)
+            try:
+                config = self._make_config("02c")
+                collector = ResultCollector(config)
+                path = collector.save_partial(
+                    [
+                        {
+                            "property_id": "PROP-001",
+                            "code_scope": {
+                                "locations": [
+                                    {
+                                        "file": "contracts/X.sol",
+                                        "symbol": "x",
+                                        "line_range": {"start": 1, "end": 2},
+                                        "role": ["L", "primary"],
+                                    },
+                                    {
+                                        "file": "contracts/Y.sol",
+                                        "symbol": "y",
+                                        "line_range": {"start": 3, "end": 4},
+                                        "role": [None, "caller"],
+                                    },
+                                ],
+                                "resolution_status": "resolved",
+                            },
+                        }
+                    ],
+                    worker_id=0,
+                    batch_index=0,
+                    timestamp=123,
+                )
+
+                data = json.loads(path.read_text(encoding="utf-8"))
+                locations = data["properties_with_code"][0]["code_scope"]["locations"]
+                assert locations[0]["role"] == "primary"
+                assert locations[1]["role"] == "caller"
+                Phase02cPartial.model_validate(data)
+            finally:
+                os.chdir(old_cwd)
+
     def test_save_partial_filters_02c_locations_to_bug_bounty_scope(self):
         """02c saves should drop resolved locations outside the declared scope."""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -1601,6 +1686,50 @@ class TestPhase03CodePathAnchoring:
 
         assert cfg.context_fields is not None
         assert "target_local_checkout" in cfg.context_fields
+
+    def test_load_items_uses_normalized_02c_schema_data(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            old_cwd = os.getcwd()
+            os.chdir(tmpdir)
+            try:
+                output_dir = Path("outputs")
+                output_dir.mkdir()
+                (output_dir / "02c_PARTIAL_W0B0_123.json").write_text(
+                    json.dumps(
+                        {
+                            "properties_with_code": [
+                                {
+                                    "property_id": "PROP-001",
+                                    "text": "Test property",
+                                    "type": "invariant",
+                                    "assertion": "x",
+                                    "severity": "Low",
+                                    "covers": "FN-001",
+                                    "code_scope": {
+                                        "locations": [
+                                            {
+                                                "file": "contracts/X.sol",
+                                                "symbol": "x",
+                                                "line_range": {"start": 1, "end": 2},
+                                                "role": ["L", "primary"],
+                                            }
+                                        ],
+                                        "resolution_status": "resolved",
+                                    },
+                                }
+                            ],
+                            "metadata": {"phase": "02c", "worker_id": 0, "batch_index": 0, "item_count": 1},
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+
+                orch = Phase03Orchestrator(num_workers=1, max_concurrent=1)
+                items = orch.load_items()
+
+                assert items[0]["code_scope"]["locations"][0]["role"] == "primary"
+            finally:
+                os.chdir(old_cwd)
 
 
 # =========================================================================
