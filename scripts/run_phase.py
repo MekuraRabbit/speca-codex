@@ -52,6 +52,10 @@ from orchestrator.config import get_phase_config, get_phase_chain, PHASE_CONFIGS
 from orchestrator.json_events import JsonEventEmitter
 from orchestrator.paths import get_output_root
 from orchestrator.resume import ResumeManager
+from orchestrator.target_checkout import (
+    TargetCheckoutValidationError,
+    validate_target_checkout_for_phase,
+)
 
 
 # Default configuration (migrated from Makefile)
@@ -198,6 +202,25 @@ async def run_phase(
         )
         return False
 
+    # 2. Inject scope metadata into TARGET_INFO for Phase 02c
+    if phase_id == "02c":
+        patch_target_info(target_layer, out_of_scope_layers)
+
+    try:
+        validation = validate_target_checkout_for_phase(phase_id)
+        if validation is not None:
+            print("  target checkout verified")
+    except TargetCheckoutValidationError as e:
+        duration = round(time.time() - start_time, 2)
+        emitter.emit(
+            "phase-failed",
+            phase=phase_id,
+            reason=f"target checkout validation failed: {e}",
+            duration_s=duration,
+        )
+        print(f"Error: {e}", file=sys.stderr)
+        return False
+
     if phase_id == "05":
         from orchestrator.phase05_candidates import write_poc_candidate_index
 
@@ -220,7 +243,7 @@ async def run_phase(
         )
         return True
 
-    # 2. Automatic cleanup of incomplete batches
+    # 3. Automatic cleanup of incomplete batches
     if force:
         print(f"Force mode: Cleaning up ALL previous outputs for phase {phase_id}...")
         resume_manager = ResumeManager(get_phase_config(phase_id))
@@ -228,11 +251,7 @@ async def run_phase(
     else:
         run_cleanup(phase_id, dry_run=False)
 
-    # 2b. Inject scope metadata into TARGET_INFO for Phase 02c
-    if phase_id == "02c":
-        patch_target_info(target_layer, out_of_scope_layers)
-
-    # 3. Run the orchestrator
+    # 4. Run the orchestrator
     orchestrator = None
     try:
         # Set FORCE_EXECUTE for the orchestrator if --force is used

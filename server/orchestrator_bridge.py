@@ -23,6 +23,7 @@ from orchestrator.base import BaseOrchestrator, PhaseAbortError
 from orchestrator.codex_gui_model import resolve_codex_gui_settings
 from orchestrator.paths import get_output_root, output_root_context
 from orchestrator.runner import CircuitBreakerTripped, BudgetExceeded
+from orchestrator.target_checkout import validate_target_checkout_for_phase
 
 from .progress import ProgressBus, ProgressEvent, EventType
 from .run_manager import RunManager, RunInfo, RunStatus
@@ -201,6 +202,8 @@ async def _run_phase(run: RunInfo, manager: RunManager) -> None:
         run.status = RunStatus.RUNNING
 
         with output_root_context(run.output_dir):
+            validate_target_checkout_for_phase(phase_id)
+
             if phase_id == "05":
                 from orchestrator.phase05_candidates import write_poc_candidate_index
 
