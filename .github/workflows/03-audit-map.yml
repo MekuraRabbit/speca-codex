@@ -13,6 +13,11 @@ on:
         required: false
         type: number
         default: 64
+      upload_logs:
+        description: 'Upload outputs/logs as workflow artifacts; keep false unless the target is safe to disclose'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -145,7 +150,6 @@ jobs:
         run: |
           git add outputs/ ':!outputs/logs/'
           if ! git diff --staged --quiet; then
-            git add outputs/logs/
             git commit -m "03: audit map for ${{ env.TARGET_REPO }}@${{ steps.target_info.outputs.short_sha }}"
             git push origin "${{ github.ref_name }}" --force-with-lease
           fi
@@ -162,7 +166,7 @@ jobs:
 
       - name: Upload Logs
         uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ always() && inputs.upload_logs }}
         with:
           name: audit-map-logs-${{ github.run_id }}
           path: outputs/logs/

@@ -1,52 +1,18 @@
-name: SWE-agent on Issue Comment
+name: SWE-agent on Issue Comment (disabled)
 
 on:
-  issue_comment:
-    types: [created]
+  workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write
-  issues: write
+  contents: read
 
 jobs:
-  run-swe-agent:
-    if: ${{ contains(github.event.comment.body, '@swe-agent') && github.actor == github.repository_owner }}
-    runs-on: self-hosted
-
+  disabled:
+    name: Disabled in public fork
+    runs-on: ubuntu-22.04
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install dependencies
+      - name: Explain disabled resolver
         run: |
-          uv venv
-          uv sync --frozen
-
-      - name: Clone SWE-agent repository for config files
-        run: |
-          if [ -d /tmp/swe-agent-repo ]; then
-            echo "Skipping clone; /tmp/swe-agent-repo already exists."
-          else
-            git clone --depth 1 https://github.com/SWE-agent/SWE-agent.git /tmp/swe-agent-repo
-          fi
-
-      - name: Run SWE-agent to create a Pull Request
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          # Pass token via environment variable instead of CLI argument
-          # to avoid exposure in process listing (ps, /proc/*/cmdline)
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SWE_AGENT_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SWE_AGENT_CONFIG_ROOT: /tmp/swe-agent-repo
-          SWE_AGENT_CONFIG_DIR: /tmp/swe-agent-repo/config
-          SWE_AGENT_TOOLS_DIR: /tmp/swe-agent-repo/tools
-          SWE_AGENT_TRAJECTORY_DIR: /tmp/swe-agent-repo/trajectories
-          # Let the system use its default SSL cert path (Ubuntu vs RHEL differ)
-          LITELLM_DROP_PARAMS: "True"
-        run: |
-          uv run sweagent run \
-          --agent.model.name=gpt-4.1-mini \
-          --agent.model.per_instance_cost_limit=2.00 \
-          --env.repo.github_url="https://github.com/${{ github.repository }}" \
-          --problem_statement.github_url=https://github.com/${{ github.repository }}/issues/${{ github.event.issue.number }}
+          echo "SWE-agent issue-comment automation is disabled in this public fork."
+          echo "Do not run autonomous resolver agents from public issue text on persistent runners."
+          echo "Use a private fork or an explicitly reviewed workflow for trusted resolver runs."

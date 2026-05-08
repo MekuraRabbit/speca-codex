@@ -17,3 +17,48 @@ def test_target_info_workflows_write_local_checkout_contract():
         workflow = path.read_text(encoding="utf-8")
         assert '"local_checkout": "target_workspace"' in workflow
         assert '"language": ""' in workflow
+
+
+def test_public_audit_workflows_do_not_commit_logs():
+    workflow_paths = [
+        ROOT / ".github" / "workflows" / "01a-discovery.yml",
+        ROOT / ".github" / "workflows" / "01b-subgraph.yml",
+        ROOT / ".github" / "workflows" / "01e-properties.yml",
+        ROOT / ".github" / "workflows" / "02c-enrich-code.yml",
+        ROOT / ".github" / "workflows" / "03-audit-map.yml",
+        ROOT / ".github" / "workflows" / "04-audit-review.yml",
+        ROOT / ".github" / "workflows" / "full-audit.yml",
+    ]
+
+    for path in workflow_paths:
+        workflow = path.read_text(encoding="utf-8")
+        assert "git add outputs/logs/" not in workflow
+
+
+def test_public_audit_workflows_upload_logs_only_when_requested():
+    workflow_paths = [
+        ROOT / ".github" / "workflows" / "01a-discovery.yml",
+        ROOT / ".github" / "workflows" / "01b-subgraph.yml",
+        ROOT / ".github" / "workflows" / "01e-properties.yml",
+        ROOT / ".github" / "workflows" / "02c-enrich-code.yml",
+        ROOT / ".github" / "workflows" / "03-audit-map.yml",
+        ROOT / ".github" / "workflows" / "04-audit-review.yml",
+        ROOT / ".github" / "workflows" / "full-audit.yml",
+    ]
+
+    for path in workflow_paths:
+        workflow = path.read_text(encoding="utf-8")
+        assert "upload_logs:" in workflow
+        assert "if: ${{ always() && inputs.upload_logs }}" in workflow
+
+
+def test_full_audit_requires_explicit_public_output_acknowledgement():
+    workflow = (ROOT / ".github" / "workflows" / "full-audit.yml").read_text(
+        encoding="utf-8"
+    )
+
+    acknowledgement = "I_UNDERSTAND_THIS_PUSHES_AUDIT_OUTPUTS_TO_PUBLIC_BRANCHES"
+    assert acknowledgement in workflow
+    assert "public-output-guard" in workflow
+    assert "full-audit is disabled by default in this public fork" in workflow
+    assert "inputs.upload_logs" in workflow

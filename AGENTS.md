@@ -12,8 +12,8 @@ uv run python scripts/run_phase.py --phase 01a
 uv run python scripts/run_phase.py --phase 01a 01b 01e
 uv run python scripts/run_phase.py --target 04 --workers 4
 uv run python scripts/run_phase.py --phase 03 --force --workers 4 --max-concurrent 64
-uv run uvicorn server.app:app --host 127.0.0.1 --port 8000
-.venv/Scripts/python.exe -m uvicorn server.app:app --host 127.0.0.1 --port 8000
+uv run python -m server.app
+.venv/Scripts/python.exe -m server.app
 ```
 
 ## Codex App Workflow

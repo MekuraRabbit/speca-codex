@@ -161,18 +161,52 @@ def test_public_workflows_do_not_reference_stale_security_agent_repo():
     assert "origin master" not in workflow_text
 
 
-def test_issue_resolver_requires_explicit_maintainer_trigger():
+def test_mcp_setup_does_not_print_project_config_or_unmasked_tokens():
+    script = Path("scripts/setup_mcp.sh").read_text(encoding="utf-8")
+
+    assert "::add-mask::${RESOLVED_GH_TOKEN}" in script
+    assert '[ "${GITHUB_ACTIONS:-}" = "true" ]' in script
+    assert "cat .mcp.json" not in script
+    assert "Contents of .mcp.json" not in script
+    assert "intentionally not printed" in script
+
+
+def test_public_ai_resolver_workflows_are_disabled():
     resolver = Path(".github/workflows/issue-resolver.yml").read_text(encoding="utf-8")
     reusable = Path(".github/workflows/openhands-resolver.yml").read_text(encoding="utf-8")
+    sweagent = Path(".github/workflows/sweagent-issue-resolver.yml").read_text(encoding="utf-8")
 
-    assert "target_branch: \"main\"" in resolver
-    assert "github.event.label.name == 'fix-me'" in resolver
-    assert "contains(github.event.comment.body, vars.OPENHANDS_MACRO || '@openhands-agent')" in resolver
+    for workflow in (resolver, reusable, sweagent):
+        assert "workflow_dispatch:" in workflow
+        assert "Disabled in public fork" in workflow
+        assert "contents: read" in workflow
+        assert "contents: write" not in workflow
+        assert "issue_comment:" not in workflow
+        assert "pull_request_review" not in workflow
+        assert "LLM_API_KEY" not in workflow
+        assert "GITHUB_TOKEN" not in workflow
+
     codeowners = Path(".github/CODEOWNERS").read_text(encoding="utf-8")
 
     assert "@MekuraRabbit" in codeowners
     assert "@grandchildrice" not in codeowners
-    assert "github.actor == github.repository_owner" in resolver
-    assert "github.actor == github.repository_owner" in reusable
-    assert "Token length:" not in reusable
-    assert "(workdir:" not in reusable
+
+
+def test_public_api_launch_docs_use_guarded_entrypoint():
+    public_docs = [
+        Path("AGENTS.md"),
+        Path("README.md"),
+        Path("README.ja.md"),
+        Path("docs/CODEX_APP.md"),
+        Path("docs/CODEX_APP.ja.md"),
+    ]
+
+    for path in public_docs:
+        doc = path.read_text(encoding="utf-8")
+        assert "uvicorn server.app:app" not in doc
+        assert "-m server.app" in doc
+
+    launch_config = json.loads(Path(".codex/launch.json").read_text(encoding="utf-8"))
+    runtime_args = launch_config["configurations"][0]["runtimeArgs"]
+
+    assert runtime_args == ["-m", "server.app"]

@@ -170,14 +170,20 @@ From Codex App, launch `.codex/launch.json` entry `speca-api`. To start it
 manually on Windows:
 
 ```bash
-.venv/Scripts/python.exe -m uvicorn server.app:app --host 127.0.0.1 --port 8000
+.venv/Scripts/python.exe -m server.app
 ```
 
 On macOS/Linux:
 
 ```bash
-.venv/bin/python -m uvicorn server.app:app --host 127.0.0.1 --port 8000
+.venv/bin/python -m server.app
 ```
+
+> **Do not expose this API.** The SPECA API is a local single-user control
+> plane that can launch agent worker runs. It is unauthenticated and should
+> stay bound to loopback (`127.0.0.1`, `localhost`, or `::1`). Non-loopback
+> binds are refused unless `SPECA_ENABLE_REMOTE_API=1` is set for an explicitly
+> reviewed local environment.
 
 Check the server:
 
@@ -892,9 +898,10 @@ those aliases.
 | `SPECA_CODEX_MODEL` | Codex runners | Optional explicit Codex model override; API runs normally read the Codex App GUI model when `model` is omitted |
 | `SPECA_CODEX_REASONING_EFFORT` | Codex app-server runner | Optional explicit reasoning effort override (`low`, `medium`, `high`, `xhigh`, etc.) |
 | `SPECA_CODEX_SERVICE_TIER` | Codex app-server runner | Optional service tier override (`fast` or `flex`) |
-| `SPECA_API_HOST` | Local FastAPI server | Optional manual bind host override; defaults to `127.0.0.1` |
+| `SPECA_API_HOST` | Local FastAPI server | Optional manual bind host override; defaults to `127.0.0.1`; non-loopback hosts require `SPECA_ENABLE_REMOTE_API=1` |
 | `SPECA_API_PORT` | Local FastAPI server | Optional manual port override; defaults to `8000` |
 | `SPECA_API_RELOAD` | Local FastAPI server | Set to `1`/`true` to enable uvicorn reload for local development |
+| `SPECA_ENABLE_REMOTE_API` | Local FastAPI server | Explicitly allow non-loopback API binds; do not use for public networks |
 | `SPECA_ENABLE_API_RUNNER_DISPATCH` | Local FastAPI server | Opt-in gate for dispatching the OpenAI-compatible API runner through the local API |
 | `SPECA_API_RUNNER_BASE_URL_ALLOWLIST` | Local FastAPI server | Comma-separated API runner base URLs allowed when API runner dispatch is enabled |
 | `SPECA_API_RUNNER_KEY_ENV_ALLOWLIST` | Local FastAPI server | Comma-separated environment variable names allowed for API runner keys when API runner dispatch is enabled |

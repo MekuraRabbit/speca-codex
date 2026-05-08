@@ -22,6 +22,11 @@ on:
         required: false
         type: boolean
         default: false
+      upload_logs:
+        description: 'Upload outputs/logs as workflow artifacts; keep false unless the target is safe to disclose'
+        required: false
+        type: boolean
+        default: false
       bug_bounty_scope:
         description: |
           Bug Bounty Scope Definition (JSON format)
@@ -151,7 +156,6 @@ jobs:
         run: |
           git add outputs/ ':!outputs/logs/'
           if ! git diff --staged --quiet; then
-            git add outputs/logs/
             git commit -m "01e: properties"
             git push origin "${{ inputs.branch }}" --force-with-lease
           fi
@@ -163,7 +167,7 @@ jobs:
 
       - name: Upload Logs
         uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ always() && inputs.upload_logs }}
         with:
           name: step-3b-logs-${{ github.run_id }}
           path: outputs/logs/

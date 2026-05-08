@@ -68,6 +68,9 @@ check_prerequisites() {
     echo "  Set one of them: export GH_TOKEN=ghp_..."
     echo
   else
+    if [ "${GITHUB_ACTIONS:-}" = "true" ]; then
+      echo "::add-mask::${RESOLVED_GH_TOKEN}"
+    fi
     export GITHUB_PERSONAL_ACCESS_TOKEN="${RESOLVED_GH_TOKEN}"
     echo "GitHub token resolved (for github MCP server)."
   fi
@@ -208,9 +211,10 @@ claude mcp list
 if [ -f ".mcp.json" ]; then
   echo
   echo "=========================================="
-  echo "Contents of .mcp.json:"
+  echo ".mcp.json created:"
   echo "=========================================="
-  cat .mcp.json
+  echo "Project MCP configuration exists at .mcp.json."
+  echo "Contents are intentionally not printed because MCP env entries may contain secrets."
 else
   echo
   echo ".mcp.json not found. MCP servers might be registered at user scope."

@@ -41,14 +41,36 @@ on:
         required: false
         type: number
         default: 64
-
-permissions:
-  contents: write
+      allow_public_audit_outputs:
+        description: 'Type I_UNDERSTAND_THIS_PUSHES_AUDIT_OUTPUTS_TO_PUBLIC_BRANCHES to enable public branch pushes'
+        required: true
+        type: string
+        default: 'no'
+      upload_logs:
+        description: 'Upload outputs/logs as workflow artifacts; keep false unless the target is safe to disclose'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
+  public-output-guard:
+    if: ${{ inputs.allow_public_audit_outputs != 'I_UNDERSTAND_THIS_PUSHES_AUDIT_OUTPUTS_TO_PUBLIC_BRANCHES' }}
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+    steps:
+      - name: Refuse public audit output publication by default
+        run: |
+          echo "::error::full-audit is disabled by default in this public fork because it pushes generated audit artifacts to public branches."
+          echo "::error::Run full target audits in a private fork/repository, or explicitly acknowledge public artifact publication for toy/educational targets."
+          echo "::error::Set allow_public_audit_outputs to I_UNDERSTAND_THIS_PUSHES_AUDIT_OUTPUTS_TO_PUBLIC_BRANCHES to continue."
+          exit 1
+
   full-audit:
-    if: ${{ github.actor == github.repository_owner }}
+    if: ${{ github.actor == github.repository_owner && inputs.allow_public_audit_outputs == 'I_UNDERSTAND_THIS_PUSHES_AUDIT_OUTPUTS_TO_PUBLIC_BRANCHES' }}
     runs-on: self-hosted
+    permissions:
+      contents: write
 
     env:
       CLAUDE_CODE_PERMISSIONS: bypassPermissions
@@ -212,7 +234,6 @@ jobs:
         run: |
           git add outputs/ ':!outputs/logs/'
           if ! git diff --staged --quiet; then
-            git add outputs/logs/
             git commit -m "01a: discovery complete"
             git push origin "${{ steps.git_config.outputs.branch }}" --force-with-lease
           fi
@@ -229,7 +250,6 @@ jobs:
         run: |
           git add outputs/ ':!outputs/logs/'
           if ! git diff --staged --quiet; then
-            git add outputs/logs/
             git commit -m "01b: subgraph extraction complete"
             git push origin "${{ steps.git_config.outputs.branch }}" --force-with-lease
           fi
@@ -246,7 +266,6 @@ jobs:
         run: |
           git add outputs/ ':!outputs/logs/'
           if ! git diff --staged --quiet; then
-            git add outputs/logs/
             git commit -m "01e: property generation complete"
             git push origin "${{ steps.git_config.outputs.branch }}" --force-with-lease
           fi
@@ -266,7 +285,6 @@ jobs:
         run: |
           git add outputs/ ':!outputs/logs/'
           if ! git diff --staged --quiet; then
-            git add outputs/logs/
             git commit -m "02c: code pre-resolution complete"
             git push origin "${{ steps.git_config.outputs.branch }}" --force-with-lease
           fi
@@ -284,7 +302,6 @@ jobs:
         run: |
           git add outputs/ ':!outputs/logs/'
           if ! git diff --staged --quiet; then
-            git add outputs/logs/
             git commit -m "03: audit complete"
             git push origin "${{ steps.git_config.outputs.branch }}" --force-with-lease
           fi
@@ -302,7 +319,6 @@ jobs:
         run: |
           git add outputs/ ':!outputs/logs/'
           if ! git diff --staged --quiet; then
-            git add outputs/logs/
             git commit -m "04: review complete"
             git push origin "${{ steps.git_config.outputs.branch }}" --force-with-lease
           fi
@@ -336,7 +352,7 @@ jobs:
 
       - name: Upload All Logs
         uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ always() && inputs.upload_logs }}
         with:
           name: audit-logs-${{ github.run_id }}
           path: outputs/logs/
