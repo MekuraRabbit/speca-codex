@@ -1,7 +1,12 @@
 import json
+import os
+import shutil
+import subprocess
 import time
 import tomllib
 from pathlib import Path
+
+import pytest
 
 from server.discord import _build_embed
 from server.progress import ProgressBus
@@ -197,9 +202,79 @@ def test_mcp_setup_does_not_print_project_config_or_unmasked_tokens():
 
     assert "::add-mask::${RESOLVED_GH_TOKEN}" in script
     assert '[ "${GITHUB_ACTIONS:-}" = "true" ]' in script
+    assert '"${SERVER_COMMAND[@]}"' in script
+    assert "for dir in ${FILESYSTEM_DIRS}" not in script
     assert "cat .mcp.json" not in script
     assert "Contents of .mcp.json" not in script
     assert "intentionally not printed" in script
+
+
+def test_mcp_setup_preserves_newline_filesystem_dirs_with_spaces(tmp_path):
+    bash = shutil.which("bash")
+    if not bash:
+        pytest.skip("bash is not available")
+
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    log_path = tmp_path / "claude_args.log"
+
+    fake_claude = bin_dir / "claude"
+    fake_claude.write_text(
+        """#!/usr/bin/env bash
+set -euo pipefail
+if [ "${1:-}" = "mcp" ] && [ "${2:-}" = "list" ]; then
+  exit 0
+fi
+if [ "${1:-}" = "mcp" ] && [ "${2:-}" = "add" ]; then
+  {
+    echo "CALL"
+    for arg in "$@"; do
+      printf '[%s]\\n' "$arg"
+    done
+  } >> "${CLAUDE_ARGS_LOG}"
+  exit 0
+fi
+echo "unexpected claude call: $*" >&2
+exit 2
+""",
+        encoding="utf-8",
+        newline="\n",
+    )
+    fake_claude.chmod(0o755)
+
+    for tool in ("npx", "uvx"):
+        fake_tool = bin_dir / tool
+        fake_tool.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8", newline="\n")
+        fake_tool.chmod(0o755)
+
+    spaced_scope = tmp_path / "scope one"
+    plain_scope = tmp_path / "scope-two"
+    spaced_scope.mkdir()
+    plain_scope.mkdir()
+
+    env = os.environ.copy()
+    env["CLAUDE_ARGS_LOG"] = str(log_path)
+    env["FILESYSTEM_DIRS"] = f"{spaced_scope.name}\n{plain_scope.name}"
+    env["PATH"] = str(bin_dir) + os.pathsep + env.get("PATH", "")
+    for token_var in ("GITHUB_PERSONAL_ACCESS_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"):
+        env.pop(token_var, None)
+
+    subprocess.run(
+        [bash, str(Path.cwd() / "scripts/setup_mcp.sh")],
+        cwd=tmp_path,
+        env=env,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    calls = log_path.read_text(encoding="utf-8").split("CALL\n")
+    filesystem_call = next(call for call in calls if "\n[filesystem]\n" in call)
+
+    assert "scope one]" in filesystem_call
+    assert "scope-two]" in filesystem_call
+    assert "[scope]" not in filesystem_call
+    assert "[one]" not in filesystem_call
 
 
 def test_public_ai_resolver_workflows_are_disabled():
