@@ -696,7 +696,11 @@ def test_codex_app_runner_records_gui_model_source(tmp_path: Path):
     assert metadata["service_tier_source"] == "codex-gui"
 
 
-def test_codex_app_client_omits_model_when_defaulting_to_app_server(tmp_path: Path):
+def test_codex_app_client_omits_model_when_defaulting_to_app_server(
+    tmp_path: Path,
+    monkeypatch,
+):
+    monkeypatch.delenv("SPECA_CODEX_APP_EPHEMERAL_THREADS", raising=False)
     client = CodexAppServerClient(
         url="ws://127.0.0.1:1",
         cwd=tmp_path,
@@ -730,11 +734,52 @@ def test_codex_app_client_omits_model_when_defaulting_to_app_server(tmp_path: Pa
 
     thread_params = calls[0][1]
     turn_params = calls[1][1]
+    assert thread_params["ephemeral"] is True
     assert "model" not in thread_params
     assert "model" not in turn_params
     assert "effort" not in turn_params
     assert "serviceTier" not in thread_params
     assert "serviceTier" not in turn_params
+
+
+def test_codex_app_client_allows_persistent_threads_for_debugging(
+    tmp_path: Path,
+    monkeypatch,
+):
+    monkeypatch.setenv("SPECA_CODEX_APP_EPHEMERAL_THREADS", "0")
+    client = CodexAppServerClient(
+        url="ws://127.0.0.1:1",
+        cwd=tmp_path,
+        timeout_seconds=1,
+    )
+    calls: list[tuple[str, dict]] = []
+
+    async def fake_request(method: str, params=None):
+        calls.append((method, params or {}))
+        if method == "thread/start":
+            return {"thread": {"id": "thread-1"}}
+        if method == "turn/start":
+            client._completed[("thread-1", "turn-1")] = {
+                "threadId": "thread-1",
+                "turn": {"id": "turn-1", "status": "completed"},
+            }
+            return {"turn": {"id": "turn-1"}}
+        raise AssertionError(method)
+
+    client.request = fake_request  # type: ignore[method-assign]
+
+    asyncio.run(client.run_turn(
+        prompt="hello",
+        cwd=tmp_path,
+        model=None,
+        effort=None,
+        service_tier=None,
+        timeout_seconds=1,
+        developer_instructions="dev",
+    ))
+
+    thread_params = calls[0][1]
+    assert thread_params["ephemeral"] is False
 
 
 def test_codex_app_client_sends_model_effort_and_service_tier(tmp_path: Path):
