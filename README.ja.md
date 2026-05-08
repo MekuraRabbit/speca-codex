@@ -59,11 +59,12 @@ cd speca-codex
 uv sync
 ```
 
-Windows で既存 workflow 用の `sweagent` checkout に失敗する場合は、Codex App の SPECA API とテストに必要な軽量 venv だけを作れます。
+通常の `uv sync` は、local API、orchestrator、Codex runner 経路、テストに
+必要な依存だけを入れます。無効化済みの legacy resolver workflow を触る場合だけ、
+SWE-agent などの追加依存を入れてください。
 
 ```bash
-uv venv
-uv pip install --python .venv/Scripts/python.exe pytest fastapi pydantic httpx aiofiles tqdm "uvicorn[standard]"
+uv sync --group resolver
 ```
 
 ## Codex App での使い方

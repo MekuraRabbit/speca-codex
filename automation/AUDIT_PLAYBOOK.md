@@ -65,11 +65,11 @@ and output_dir=outputs/<run_name>.
    }
    ```
 5. Clone the target repository to `target_workspace/`
-6. Run pre-flight tests. On Windows, use the lightweight Codex App venv path
-   if `uv run` attempts to sync the legacy SWE-agent dependency:
+6. Run pre-flight tests. Legacy resolver dependencies are optional; add
+   `--group resolver` only when you are explicitly testing those workflows:
    ```bash
+   uv sync --group resolver
    uv run python -m pytest tests/ -v --tb=short
-   .venv/Scripts/python.exe -m pytest tests/ -v --tb=short
    ```
 
 **User approval point**: Confirm scope, target repo, and branch before proceeding.

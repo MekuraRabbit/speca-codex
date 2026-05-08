@@ -32,11 +32,11 @@ Before opening a PR:
 uv run python -m pytest tests/ -v --tb=short
 ```
 
-On Windows, if `uv sync` is blocked by the legacy SWE-agent dependency checkout,
-the lightweight Codex App environment used by this fork can run the tests with:
+Default `uv sync` excludes legacy resolver extras such as SWE-agent. Install
+them only when working on legacy resolver workflows:
 
-```powershell
-.venv/Scripts/python.exe -m pytest tests/ -v --tb=short
+```bash
+uv sync --group resolver
 ```
 
 ## Schema And Prompt Changes

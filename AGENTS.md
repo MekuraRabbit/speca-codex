@@ -21,8 +21,8 @@ uv run --no-sync python -m server.app
 
 - Use `.codex/launch.json` to start the SPECA API app server from Codex App.
   It calls `uv run --no-sync python -m server.app`, which reuses the existing
-  lightweight `.venv` on Windows/macOS/Linux without forcing a full `uv sync`
-  of the legacy SWE-agent dependency.
+  lightweight `.venv` on Windows/macOS/Linux. Legacy resolver extras such as
+  SWE-agent are optional and live outside the default dependency set.
 - The app server exposes:
   - `GET /api/health`
   - `GET /api/phases/`
