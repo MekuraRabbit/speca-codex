@@ -42,7 +42,7 @@ on:
         type: number
         default: 64
       allow_public_audit_outputs:
-        description: 'Type I_UNDERSTAND_THIS_PUSHES_AUDIT_OUTPUTS_TO_PUBLIC_BRANCHES to enable public branch pushes'
+        description: 'Type I_UNDERSTAND_THIS_PUSHES_AUDIT_OUTPUTS_TO_PUBLIC_BRANCHES to enable public audit-output branch pushes and legacy Claude bypassPermissions on a self-hosted runner'
         required: true
         type: string
         default: 'no'
@@ -62,6 +62,7 @@ jobs:
       - name: Refuse public audit output publication by default
         run: |
           echo "::error::full-audit is disabled by default in this public fork because it pushes generated audit artifacts to public branches."
+          echo "::error::It also runs the legacy Claude runner with bypassPermissions on a self-hosted runner."
           echo "::error::Run full target audits in a private fork/repository, or explicitly acknowledge public artifact publication for toy/educational targets."
           echo "::error::Set allow_public_audit_outputs to I_UNDERSTAND_THIS_PUSHES_AUDIT_OUTPUTS_TO_PUBLIC_BRANCHES to continue."
           exit 1

@@ -52,6 +52,26 @@ def test_public_audit_workflows_upload_logs_only_when_requested():
         assert "if: ${{ always() && inputs.upload_logs }}" in workflow
 
 
+def test_legacy_claude_workflows_require_bypass_acknowledgement():
+    workflow_paths = [
+        ROOT / ".github" / "workflows" / "01a-discovery.yml",
+        ROOT / ".github" / "workflows" / "01b-subgraph.yml",
+        ROOT / ".github" / "workflows" / "01e-properties.yml",
+        ROOT / ".github" / "workflows" / "02c-enrich-code.yml",
+        ROOT / ".github" / "workflows" / "03-audit-map.yml",
+        ROOT / ".github" / "workflows" / "04-audit-review.yml",
+    ]
+    acknowledgement = "I_UNDERSTAND_THIS_RUNS_LEGACY_CLAUDE_WITH_BYPASS_PERMISSIONS"
+
+    for path in workflow_paths:
+        workflow = path.read_text(encoding="utf-8")
+        assert "CLAUDE_CODE_PERMISSIONS: bypassPermissions" in workflow
+        assert "confirm_legacy_claude_bypass:" in workflow
+        assert acknowledgement in workflow
+        assert "legacy-claude-bypass-guard" in workflow
+        assert "This workflow runs the legacy Claude runner with bypassPermissions" in workflow
+
+
 def test_full_audit_requires_explicit_public_output_acknowledgement():
     workflow = (ROOT / ".github" / "workflows" / "full-audit.yml").read_text(
         encoding="utf-8"
@@ -61,4 +81,5 @@ def test_full_audit_requires_explicit_public_output_acknowledgement():
     assert acknowledgement in workflow
     assert "public-output-guard" in workflow
     assert "full-audit is disabled by default in this public fork" in workflow
+    assert "legacy Claude runner with bypassPermissions" in workflow
     assert "inputs.upload_logs" in workflow
