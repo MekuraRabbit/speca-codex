@@ -189,6 +189,104 @@ def test_anchors_unknown_relative_code_paths(tmp_path):
     assert "target_workspace/service/pkg/auth/guard.go" in target_files
 
 
+def test_normalizes_phase05_property_ids_to_code_challenge(tmp_path):
+    _write_json(
+        tmp_path / "TARGET_INFO.json",
+        {
+            "local_checkout": "target_workspace/damn-vulnerable-defi",
+            "language": "solidity",
+        },
+    )
+    _write_json(
+        tmp_path / "03_PARTIAL_W0B0.json",
+        {
+            "audit_items": [
+                {
+                    "property_id": "PROP-compromised-inv-033",
+                    "classification": "vulnerability",
+                    "code_path": (
+                        "target_workspace/damn-vulnerable-defi/contracts/puppet/"
+                        "PuppetPool.sol::borrow::L23-40"
+                    ),
+                    "attack_scenario": "Manipulate Uniswap spot price before borrowing.",
+                }
+            ],
+        },
+    )
+    _write_json(
+        tmp_path / "04_PARTIAL_W0B0.json",
+        {
+            "reviewed_items": [
+                {
+                    "property_id": "PROP-compromised-inv-033",
+                    "review_verdict": "CONFIRMED_VULNERABILITY",
+                    "adjusted_severity": "High",
+                }
+            ],
+        },
+    )
+
+    index = build_poc_candidate_index(tmp_path)
+    candidate = index["candidates"][0]
+
+    assert candidate["challenge"] == "puppet"
+    assert candidate["representative_property_id"] == "PROP-puppet-inv-033"
+    assert candidate["covered_property_ids"] == ["PROP-puppet-inv-033"]
+    assert candidate["source_items"][0]["property_id"] == "PROP-puppet-inv-033"
+    assert candidate["source_items"][0]["original_property_id"] == "PROP-compromised-inv-033"
+
+
+def test_renounce_candidates_are_quorum_degradation_potentials(tmp_path):
+    _write_json(
+        tmp_path / "TARGET_INFO.json",
+        {
+            "local_checkout": "target_workspace/damn-vulnerable-defi",
+            "language": "solidity",
+        },
+    )
+    _write_json(
+        tmp_path / "03_PARTIAL_W0B0.json",
+        {
+            "audit_items": [
+                {
+                    "property_id": "PROP-compromised-inv-003",
+                    "classification": "vulnerability",
+                    "code_path": (
+                        "target_workspace/damn-vulnerable-defi/contracts/compromised/"
+                        "TrustfulOracle.sol::constructor::L24-35"
+                    ),
+                    "attack_scenario": (
+                        "A trusted source can call renounceRole and reduce the oracle "
+                        "source set; if all sources renounce then median reads can revert."
+                    ),
+                }
+            ],
+        },
+    )
+    _write_json(
+        tmp_path / "04_PARTIAL_W0B0.json",
+        {
+            "reviewed_items": [
+                {
+                    "property_id": "PROP-compromised-inv-003",
+                    "review_verdict": "CONFIRMED_VULNERABILITY",
+                    "adjusted_severity": "Medium",
+                }
+            ],
+        },
+    )
+
+    index = build_poc_candidate_index(tmp_path)
+    candidate = index["candidates"][0]
+
+    assert candidate["attack_family"] == "oracle-source-quorum-degradation"
+    assert candidate["review_verdict"] == "CONFIRMED_POTENTIAL"
+    assert "potential availability risk" in candidate["attack_summary"]
+    assert candidate["recommended_output_path"].endswith(
+        "test/speca-poc/compromised/poc_oracle-source-quorum-degradation.challenge.js"
+    )
+
+
 def test_javascript_and_typescript_candidates_get_native_defaults(tmp_path):
     for language, suffix in [("javascript", ".test.js"), ("typescript", ".test.ts")]:
         output_dir = tmp_path / language
