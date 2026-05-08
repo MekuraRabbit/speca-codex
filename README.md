@@ -341,7 +341,8 @@ Concretely, the harness:
 - **Drives a worker runtime per batch**. Codex App server runs use `codex app-server` threads by default, with `codex exec` as a local fallback and the original Claude Code runner retained for legacy workflows.
 - **Resumes from `outputs/*_PARTIAL_*.json`** so a 10-implementation RQ1 run that's interrupted at hour 4 picks up exactly where it left off without re-spending tokens.
 - **Tracks token usage and optional budget guards** at the runner level. Normal Codex App summaries report token counts; raw runner/API payloads may still include estimated-cost fields for compatibility, but public summaries should not present them as actual API spend unless an API runner was explicitly used.
-- **Validates leniently** — Pydantic schema mismatches generate warnings, not aborts; partial results are first-class and never blocked on validation failures.
+- **Validates leniently by default** — Pydantic schema mismatches generate warnings instead of aborting, so partial results remain first-class recovery state during normal runs.
+- **Fails fast on schema drift when requested** — set `SPECA_STRICT_SCHEMA=1` in CI or fixture runs to raise before malformed partial outputs are saved.
 - **Shares one circuit breaker per phase** across all workers, so systemic issues (bad prompt, API outage, schema drift) trigger a fast abort instead of N parallel failures.
 
 In other words: the harness handles the messy parts of running a 100-target audit at scale, leaving the per-phase prompts to focus on auditing.
@@ -920,6 +921,7 @@ those aliases.
 | `SPECA_API_RUNNER_BASE_URL_ALLOWLIST` | Local FastAPI server | Comma-separated API runner base URLs allowed when API runner dispatch is enabled |
 | `SPECA_API_RUNNER_KEY_ENV_ALLOWLIST` | Local FastAPI server | Comma-separated environment variable names allowed for API runner keys when API runner dispatch is enabled |
 | `SPECA_ALLOW_UNVERIFIED_TARGET_CHECKOUT` | Phase 02c/03/04/05 pre-flight | Skip `TARGET_INFO.local_checkout` Git validation for trusted legacy/local runs only |
+| `SPECA_STRICT_SCHEMA` | Result collector / CI fixtures | Set to `1`/`true` to raise on partial-output schema validation failures before saving malformed partials |
 | `SPEC_URLS` | 01a | Comma-separated seed URLs to crawl |
 | `KEYWORDS` | 01a | Optional crawl keyword filter |
 | `FORCE_EXECUTE=1` | All phases | Bypass resume state (set automatically by `--force`) |

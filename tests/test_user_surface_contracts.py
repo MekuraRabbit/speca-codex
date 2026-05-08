@@ -129,6 +129,17 @@ def test_root_readme_describes_token_usage_without_api_cost_surface():
     assert "per-phase budget enforcement" not in readme
 
 
+def test_root_readme_documents_strict_schema_mode():
+    readme = Path("README.md").read_text(encoding="utf-8")
+    readme_ja = Path("README.ja.md").read_text(encoding="utf-8")
+
+    assert "SPECA_STRICT_SCHEMA" in readme
+    assert "schema validation failures" in readme
+    assert "malformed partials" in readme
+    assert "SPECA_STRICT_SCHEMA" in readme_ja
+    assert "malformed partial" in readme_ja
+
+
 def test_resolver_dependencies_are_not_default_install_surface():
     pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
     default_deps = "\n".join(pyproject["project"]["dependencies"]).lower()
