@@ -17,6 +17,7 @@ set -euo pipefail
 #   FILESYSTEM_DIRS  - Newline-separated directories for filesystem MCP (default: ".").
 #                      Legacy space-separated values are still accepted when no
 #                      newline is present.
+#   MCP_*_SPEC       - Optional package/version overrides for MCP server tools.
 #   GITHUB_TOKEN     - Required for github MCP server (GitHub API access)
 #
 # Phase-to-MCP-Server Mapping:
@@ -32,6 +33,12 @@ set -euo pipefail
 # =============================================================================
 
 FILESYSTEM_DIRS="${FILESYSTEM_DIRS:-.}"
+MCP_TREE_SITTER_SPEC="${MCP_TREE_SITTER_SPEC:-mcp-server-tree-sitter==0.7.0}"
+MCP_SERENA_SPEC="${MCP_SERENA_SPEC:-git+https://github.com/oraios/serena@v1.2.0}"
+MCP_SEMGREP_SPEC="${MCP_SEMGREP_SPEC:-semgrep-mcp==0.9.0}"
+MCP_FILESYSTEM_SPEC="${MCP_FILESYSTEM_SPEC:-@modelcontextprotocol/server-filesystem@2026.1.14}"
+MCP_FETCH_SPEC="${MCP_FETCH_SPEC:-mcp-server-fetch==2025.4.7}"
+MCP_GITHUB_SPEC="${MCP_GITHUB_SPEC:-@modelcontextprotocol/server-github@2025.4.8}"
 
 # =============================================================================
 # Prerequisite Checks
@@ -115,22 +122,22 @@ build_server_command() {
 
   case "${server_name}" in
     tree_sitter)
-      SERVER_COMMAND=(uvx mcp-server-tree-sitter)
+      SERVER_COMMAND=(uvx "${MCP_TREE_SITTER_SPEC}")
       ;;
     serena)
-      SERVER_COMMAND=(uvx --from git+https://github.com/oraios/serena serena start-mcp-server --open-web-dashboard False)
+      SERVER_COMMAND=(uvx --from "${MCP_SERENA_SPEC}" serena start-mcp-server --open-web-dashboard False)
       ;;
     semgrep)
-      SERVER_COMMAND=(uvx semgrep-mcp)
+      SERVER_COMMAND=(uvx "${MCP_SEMGREP_SPEC}")
       ;;
     filesystem)
-      SERVER_COMMAND=(npx -y @modelcontextprotocol/server-filesystem "${FILESYSTEM_ARGS[@]}")
+      SERVER_COMMAND=(npx -y "${MCP_FILESYSTEM_SPEC}" "${FILESYSTEM_ARGS[@]}")
       ;;
     fetch)
-      SERVER_COMMAND=(uvx mcp-server-fetch)
+      SERVER_COMMAND=(uvx "${MCP_FETCH_SPEC}")
       ;;
     github)
-      SERVER_COMMAND=(npx -y @modelcontextprotocol/server-github)
+      SERVER_COMMAND=(npx -y "${MCP_GITHUB_SPEC}")
       ;;
     *)
       echo "ERROR: Unknown MCP server '${server_name}'." >&2
