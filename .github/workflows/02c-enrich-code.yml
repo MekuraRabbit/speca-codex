@@ -54,6 +54,11 @@ on:
         required: false
         type: boolean
         default: false
+      upload_logs:
+        description: 'Upload outputs/logs as workflow artifacts; keep false unless the target is safe to disclose'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -286,7 +291,6 @@ jobs:
         run: |
           git add outputs/ ':!outputs/logs/'
           if ! git diff --staged --quiet; then
-            git add outputs/logs/
             git commit -m "02c: code pre-resolution for ${{ env.TARGET_REPO }}@${{ steps.target_info.outputs.short_sha }} (from ${{ github.ref_name }})"
             git push origin "${{ steps.audit_branch.outputs.branch_name }}" --force-with-lease
           fi
@@ -306,7 +310,7 @@ jobs:
 
       - name: Upload Logs
         uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ always() && inputs.upload_logs }}
         with:
           name: code-preresolve-logs-${{ github.run_id }}
           path: outputs/logs/

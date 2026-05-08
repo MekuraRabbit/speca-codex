@@ -23,6 +23,11 @@ on:
         required: false
         type: boolean
         default: false
+      upload_logs:
+        description: 'Upload outputs/logs as workflow artifacts; keep false unless the target is safe to disclose'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -105,7 +110,6 @@ jobs:
         run: |
           git add outputs/ ':!outputs/logs/'
           if ! git diff --staged --quiet; then
-            git add outputs/logs/
             if [ "${{ inputs.append_mode }}" = "true" ]; then
               git commit -m "01a: appended new URLs to discovery"
             else
@@ -124,7 +128,7 @@ jobs:
 
       - name: Upload Logs
         uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ always() && inputs.upload_logs }}
         with:
           name: step-1-logs-${{ github.run_id }}
           path: outputs/logs/

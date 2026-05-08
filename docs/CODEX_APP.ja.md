@@ -52,16 +52,22 @@ output_dir は outputs/audit_<target-name>、workers=4、max_concurrent=8。
 Codex App では [.codex/launch.json](../.codex/launch.json) の `speca-api` を起動します。手動で起動する場合:
 
 ```bash
-.venv/Scripts/python.exe -m uvicorn server.app:app --host 127.0.0.1 --port 8000
+.venv/Scripts/python.exe -m server.app
 ```
 
 `uv run` を使う場合:
 
 ```bash
-uv run uvicorn server.app:app --host 127.0.0.1 --port 8000
+uv run python -m server.app
 ```
 
 Windows で `uv run` が既存 workflow 用の `sweagent` checkout に失敗する場合は、`.venv/Scripts/python.exe` の軽量 venv 経路を使ってください。
+
+> **この API を公開しないでください。** SPECA API は agent worker run を
+> 起動できるローカル単一ユーザー向けの制御面です。認証はありません。
+> `127.0.0.1`、`localhost`、`::1` の loopback にだけ bind してください。
+> 非 loopback host への bind は、明示的に確認したローカル環境で
+> `SPECA_ENABLE_REMOTE_API=1` を設定した場合だけ許可されます。
 
 health check:
 

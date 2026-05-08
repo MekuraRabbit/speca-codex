@@ -7,6 +7,7 @@ import pytest
 from pydantic import ValidationError
 
 from server.models import PhaseDispatchRequest
+from server.app import resolve_api_bind_host
 
 
 @pytest.mark.parametrize(
@@ -217,3 +218,18 @@ def test_phase_dispatch_rejects_unallowlisted_api_runner_fields(monkeypatch):
 def test_phase_dispatch_rejects_non_loopback_app_server_urls(url: str):
     with pytest.raises(ValidationError):
         PhaseDispatchRequest(phase_id="03", app_server_url=url)
+
+
+@pytest.mark.parametrize("host", ["127.0.0.1", "localhost", "::1", "[::1]"])
+def test_api_bind_host_allows_loopback(host: str):
+    assert resolve_api_bind_host(host) == host
+
+
+@pytest.mark.parametrize("host", ["0.0.0.0", "", "192.168.1.10", "example.com"])
+def test_api_bind_host_rejects_non_loopback_by_default(host: str):
+    with pytest.raises(RuntimeError):
+        resolve_api_bind_host(host)
+
+
+def test_api_bind_host_accepts_non_loopback_with_explicit_remote_opt_in():
+    assert resolve_api_bind_host("0.0.0.0", remote_enabled=True) == "0.0.0.0"

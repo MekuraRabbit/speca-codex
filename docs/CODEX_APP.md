@@ -51,15 +51,21 @@ From Codex App, launch `speca-api` from `.codex/launch.json`.
 Manual equivalent:
 
 ```bash
-uv run uvicorn server.app:app --host 127.0.0.1 --port 8000
+uv run python -m server.app
 ```
+
+> **Do not expose this API.** The SPECA API is a local single-user control
+> plane that can launch agent worker runs. It is unauthenticated and should
+> stay bound to loopback (`127.0.0.1`, `localhost`, or `::1`). Non-loopback
+> binds are refused unless `SPECA_ENABLE_REMOTE_API=1` is set for an explicitly
+> reviewed local environment.
 
 On Windows, if `uv run` tries to sync the full project and fails while checking
 out the legacy SWE-agent dependency, use the lightweight venv path used by
 `.codex/launch.json`:
 
 ```bash
-.venv/Scripts/python.exe -m uvicorn server.app:app --host 127.0.0.1 --port 8000
+.venv/Scripts/python.exe -m server.app
 ```
 
 Use `--reload` only for interactive API development. For Codex App worker smoke

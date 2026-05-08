@@ -6,12 +6,7 @@
       "runtimeExecutable": ".venv/Scripts/python.exe",
       "runtimeArgs": [
         "-m",
-        "uvicorn",
-        "server.app:app",
-        "--host",
-        "127.0.0.1",
-        "--port",
-        "8000"
+        "server.app"
       ],
       "port": 8000
     }
