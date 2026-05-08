@@ -1,0 +1,46 @@
+name: python-ci
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "pyproject.toml"
+      - "uv.lock"
+      - "scripts/**"
+      - "server/**"
+      - "tests/**"
+      - "prompts/**"
+      - "schemas/**"
+      - ".claude/**"
+      - ".github/workflows/python-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "pyproject.toml"
+      - "uv.lock"
+      - "scripts/**"
+      - "server/**"
+      - "tests/**"
+      - "prompts/**"
+      - "schemas/**"
+      - ".claude/**"
+      - ".github/workflows/python-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Python 3.11
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run tests
+        run: uv run --frozen --python 3.11 python -m pytest tests/ -v --tb=short

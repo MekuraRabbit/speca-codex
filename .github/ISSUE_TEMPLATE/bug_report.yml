@@ -53,7 +53,7 @@ body:
       description: Minimal commands and inputs (`outputs/TARGET_INFO.json`, `BUG_BOUNTY_SCOPE.json`) needed to reproduce.
       render: shell
       placeholder: |
-        uv run python3 scripts/run_phase.py --phase 03 --workers 1
+        uv run python scripts/run_phase.py --phase 03 --workers 1
     validations:
       required: true
 
