@@ -179,8 +179,15 @@ def test_public_readmes_link_security_and_contribution_guides():
 
 def test_oss_metadata_uses_codex_fork_name():
     pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+    readme = Path("README.md").read_text(encoding="utf-8")
+    readme_ja = Path("README.ja.md").read_text(encoding="utf-8")
 
     assert pyproject["project"]["name"] == "speca-codex"
+    assert pyproject["project"]["readme"] == "README.md"
+    assert pyproject["project"]["license"]["file"] == "LICENSE"
+    assert "not as a published" in readme
+    assert "PyPI package" in readme
+    assert "PyPI package として配布していません" in readme_ja
 
 
 def test_public_workflows_do_not_reference_stale_security_agent_repo():

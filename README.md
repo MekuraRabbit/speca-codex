@@ -120,6 +120,9 @@ the local API, orchestrator, Codex runner path, and tests. Legacy resolver
 extras such as SWE-agent are optional; install them only when you are working
 on those disabled resolver workflows:
 
+This repository is currently distributed as source code, not as a published
+PyPI package. Clone the repository and run it with `uv` from the checkout.
+
 ```bash
 uv sync --group resolver
 ```

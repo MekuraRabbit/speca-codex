@@ -66,6 +66,9 @@ uv sync
 必要な依存だけを入れます。無効化済みの legacy resolver workflow を触る場合だけ、
 SWE-agent などの追加依存を入れてください。
 
+このリポジトリは現時点では PyPI package として配布していません。clone した
+checkout から `uv` で実行してください。
+
 ```bash
 uv sync --group resolver
 ```

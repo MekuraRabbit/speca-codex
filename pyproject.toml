@@ -1,7 +1,10 @@
 [project]
 name = "speca-codex"
 version = "0.0.0"
+description = "Codex App-compatible fork of SPECA for authorized specification-to-property audit workflows."
+readme = "README.md"
 requires-python = ">=3.11"
+license = { file = "LICENSE" }
 dependencies = [
   "aiofiles>=23.0,<25.0",
   "fastapi>=0.100",
