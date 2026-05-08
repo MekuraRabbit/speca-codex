@@ -103,6 +103,11 @@ curl -X POST http://127.0.0.1:8000/api/phases/dispatch \
 curl -N http://127.0.0.1:8000/api/runs/<run_id>/progress
 ```
 
+app server は軽量な run index を `<output_dir>/RUN_INFO.json` に保存します。
+再起動後の `/api/runs/` は `outputs/**/RUN_INFO.json` から記録を読み直します。
+再起動時点で `queued` または `running` だった run は、worker process が残っていないため
+`failed` として扱われます。
+
 ## Runner 選択
 
 Codex App server の既定:

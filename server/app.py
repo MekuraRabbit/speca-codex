@@ -21,7 +21,7 @@ if _scripts_dir not in sys.path:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    manager = RunManager()
+    manager = RunManager(load_existing=True)
     phases.run_manager = manager
     runs.run_manager = manager
     yield

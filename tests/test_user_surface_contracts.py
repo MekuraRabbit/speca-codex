@@ -261,3 +261,17 @@ def test_public_api_launch_docs_use_guarded_entrypoint():
         "-m",
         "server.app",
     ]
+
+
+def test_codex_app_docs_describe_run_info_persistence():
+    codex_doc = Path("docs/CODEX_APP.md").read_text(encoding="utf-8")
+    codex_doc_ja = Path("docs/CODEX_APP.ja.md").read_text(encoding="utf-8")
+
+    assert "RUN_INFO.json" in codex_doc
+    assert "outputs/**/RUN_INFO.json" in codex_doc
+    assert "queued" in codex_doc
+    assert "running" in codex_doc
+    assert "RUN_INFO.json" in codex_doc_ja
+    assert "outputs/**/RUN_INFO.json" in codex_doc_ja
+    assert "queued" in codex_doc_ja
+    assert "running" in codex_doc_ja

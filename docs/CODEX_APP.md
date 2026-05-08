@@ -108,6 +108,11 @@ Then stream progress:
 curl -N http://127.0.0.1:8000/api/runs/<run_id>/progress
 ```
 
+The app server writes a lightweight run index to
+`<output_dir>/RUN_INFO.json`. On restart, `/api/runs/` reloads those records
+from `outputs/**/RUN_INFO.json`; runs that were still `queued` or `running`
+are marked `failed` because their worker process no longer exists.
+
 ## Parallel Runs
 
 Each concurrent run must use a different `output_dir`.
