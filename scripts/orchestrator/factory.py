@@ -30,8 +30,8 @@ def create_orchestrator(
     Returns:
         A configured orchestrator instance for the phase.
     """
-    # Validate phase exists
-    config = get_phase_config(phase_id)
+    # Validate phase exists before falling back to the generic orchestrator.
+    get_phase_config(phase_id)
 
     # Select appropriate orchestrator class
     if phase_id.startswith("01"):
