@@ -23,7 +23,7 @@ from scripts.orchestrator.factory import create_orchestrator
 def test_create_orchestrator_selects_phase_specific_classes(phase_id, expected_type):
     orchestrator = create_orchestrator(phase_id, num_workers=2, max_concurrent=3)
 
-    assert isinstance(orchestrator, expected_type)
+    assert type(orchestrator) is expected_type
     assert orchestrator.num_workers == 2
     assert orchestrator.max_concurrent == 3
 
