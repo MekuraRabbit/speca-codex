@@ -11,9 +11,12 @@ set -euo pipefail
 #   bash scripts/setup_mcp.sh                    # Register all servers
 #   bash scripts/setup_mcp.sh --verify           # Verify registered servers
 #   FILESYSTEM_DIRS=". target_workspace" bash scripts/setup_mcp.sh
+#   FILESYSTEM_DIRS=$'.\ntarget workspace' bash scripts/setup_mcp.sh
 #
 # Environment Variables:
-#   FILESYSTEM_DIRS  - Space-separated directories for filesystem MCP (default: ".")
+#   FILESYSTEM_DIRS  - Newline-separated directories for filesystem MCP (default: ".").
+#                      Legacy space-separated values are still accepted when no
+#                      newline is present.
 #   GITHUB_TOKEN     - Required for github MCP server (GitHub API access)
 #
 # Phase-to-MCP-Server Mapping:
@@ -81,15 +84,59 @@ check_prerequisites() {
 # =============================================================================
 
 build_filesystem_args() {
-  local args=""
-  # shellcheck disable=SC2086 -- Intentional word splitting: FILESYSTEM_DIRS is a space-separated list
-  for dir in ${FILESYSTEM_DIRS}; do
+  FILESYSTEM_ARGS=()
+  local dirs=()
+  local dir
+
+  if [[ "${FILESYSTEM_DIRS}" == *$'\n'* ]]; then
+    while IFS= read -r dir || [ -n "${dir}" ]; do
+      dirs+=("${dir}")
+    done <<< "${FILESYSTEM_DIRS}"
+  else
+    # shellcheck disable=SC2206 -- Backward compatibility for legacy space-separated values.
+    dirs=(${FILESYSTEM_DIRS})
+  fi
+
+  for dir in "${dirs[@]}"; do
+    if [ -z "${dir}" ]; then
+      continue
+    fi
+
     # Resolve to absolute path
     local abs_dir
     abs_dir="$(cd "${dir}" 2>/dev/null && pwd)" || abs_dir="${dir}"
-    args="${args} ${abs_dir}"
+    FILESYSTEM_ARGS+=("${abs_dir}")
   done
-  echo "${args}"
+}
+
+build_server_command() {
+  local server_name="$1"
+  SERVER_COMMAND=()
+
+  case "${server_name}" in
+    tree_sitter)
+      SERVER_COMMAND=(uvx mcp-server-tree-sitter)
+      ;;
+    serena)
+      SERVER_COMMAND=(uvx --from git+https://github.com/oraios/serena serena start-mcp-server --open-web-dashboard False)
+      ;;
+    semgrep)
+      SERVER_COMMAND=(uvx semgrep-mcp)
+      ;;
+    filesystem)
+      SERVER_COMMAND=(npx -y @modelcontextprotocol/server-filesystem "${FILESYSTEM_ARGS[@]}")
+      ;;
+    fetch)
+      SERVER_COMMAND=(uvx mcp-server-fetch)
+      ;;
+    github)
+      SERVER_COMMAND=(npx -y @modelcontextprotocol/server-github)
+      ;;
+    *)
+      echo "ERROR: Unknown MCP server '${server_name}'." >&2
+      exit 1
+      ;;
+  esac
 }
 
 SERVERS=(
@@ -101,16 +148,7 @@ SERVERS=(
   "github"
 )
 
-FS_ARGS=$(build_filesystem_args)
-
-COMMANDS=(
-  "uvx mcp-server-tree-sitter"
-  "uvx --from git+https://github.com/oraios/serena serena start-mcp-server --open-web-dashboard False"
-  "uvx semgrep-mcp"
-  "npx -y @modelcontextprotocol/server-filesystem${FS_ARGS}"
-  "uvx mcp-server-fetch"
-  "npx -y @modelcontextprotocol/server-github"
-)
+build_filesystem_args
 
 DESCRIPTIONS=(
   "Code parsing and symbol extraction (Phase 01b, 03)"
@@ -173,8 +211,8 @@ echo
 
 for i in "${!SERVERS[@]}"; do
   SERVER_NAME="${SERVERS[$i]}"
-  SERVER_COMMAND="${COMMANDS[$i]}"
   SERVER_DESC="${DESCRIPTIONS[$i]}"
+  build_server_command "${SERVER_NAME}"
 
   echo "[$((i+1))/${#SERVERS[@]}] ${SERVER_NAME}: ${SERVER_DESC}"
 
@@ -185,12 +223,11 @@ for i in "${!SERVERS[@]}"; do
 
   echo "  → Registering..."
   # Build env flags for servers that need tokens
-  ENV_FLAGS=""
+  ENV_FLAGS=()
   if [ "${SERVER_NAME}" = "github" ] && [ -n "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]; then
-    ENV_FLAGS="--env GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_PERSONAL_ACCESS_TOKEN}"
+    ENV_FLAGS=(--env "GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_PERSONAL_ACCESS_TOKEN}")
   fi
-  # shellcheck disable=SC2086 -- Intentional word splitting: ENV_FLAGS and SERVER_COMMAND contain multiple arguments
-  if ! ADD_OUTPUT=$(claude mcp add --scope project --transport stdio ${ENV_FLAGS} "${SERVER_NAME}" -- ${SERVER_COMMAND} 2>&1); then
+  if ! ADD_OUTPUT=$(claude mcp add --scope project --transport stdio "${ENV_FLAGS[@]}" "${SERVER_NAME}" -- "${SERVER_COMMAND[@]}" 2>&1); then
     if echo "${ADD_OUTPUT}" | grep -qi "already exists"; then
       echo "  ✓ Already exists; skipping."
     else
