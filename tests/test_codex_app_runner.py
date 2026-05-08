@@ -4,6 +4,7 @@ import asyncio
 import json
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 from scripts.orchestrator.codex_app_runner import (
@@ -220,6 +221,238 @@ def test_codex_app_client_close_times_out_stuck_websocket(tmp_path: Path, monkey
         assert client._ws is None
 
     asyncio.run(run())
+
+
+def test_codex_app_client_retries_local_server_port_race(tmp_path: Path, monkeypatch):
+    import scripts.orchestrator.codex_app_runner as module
+
+    ports = iter([41001, 41002])
+    started: list[object] = []
+    connect_urls: list[str] = []
+
+    class FakeProcess:
+        def __init__(self, args: list[str], returncode: int | None):
+            self.args = args
+            self.returncode = returncode
+            self.terminated = False
+            self.killed = False
+
+        def poll(self):
+            return self.returncode
+
+        def terminate(self):
+            self.terminated = True
+            self.returncode = 0
+
+        def kill(self):
+            self.killed = True
+            self.returncode = -9
+
+        def wait(self, timeout=None):
+            return self.returncode
+
+    class FakeWebSocket:
+        def __aiter__(self):
+            return self
+
+        async def __anext__(self):
+            await asyncio.sleep(3600)
+            raise StopAsyncIteration
+
+        async def close(self):
+            return None
+
+    class FakeWebsockets:
+        @staticmethod
+        async def connect(url, *, max_size=None):
+            connect_urls.append(url)
+            if len(connect_urls) == 1:
+                raise OSError("simulated local port race")
+            return FakeWebSocket()
+
+    def fake_reserve_port() -> int:
+        return next(ports)
+
+    def fake_popen(args, **kwargs):
+        returncode = 1 if not started else None
+        process = FakeProcess(list(args), returncode)
+        started.append(process)
+        return process
+
+    monkeypatch.setattr(module.CodexAppServerClient, "_reserve_loopback_port", staticmethod(fake_reserve_port))
+    monkeypatch.setattr(module.subprocess, "Popen", fake_popen)
+    monkeypatch.setitem(sys.modules, "websockets", FakeWebsockets)
+
+    async def run() -> None:
+        client = CodexAppServerClient(
+            url=None,
+            cwd=tmp_path,
+            timeout_seconds=1,
+        )
+
+        async def fake_request(method: str, params=None):
+            assert method == "initialize"
+            return {}
+
+        client.request = fake_request  # type: ignore[method-assign]
+
+        await client.connect()
+        assert client.url == "ws://127.0.0.1:41002"
+        await client.close()
+
+    asyncio.run(run())
+
+    assert connect_urls == ["ws://127.0.0.1:41001", "ws://127.0.0.1:41002"]
+    assert len(started) == 2
+    assert started[0].args[-1] == "ws://127.0.0.1:41001"
+    assert started[1].args[-1] == "ws://127.0.0.1:41002"
+    assert started[0].terminated is False
+    assert started[1].terminated is True
+
+
+def test_codex_app_client_cleans_up_when_initialize_fails(tmp_path: Path, monkeypatch):
+    import scripts.orchestrator.codex_app_runner as module
+
+    process = None
+    websocket = None
+
+    class FakeProcess:
+        def __init__(self):
+            self.returncode = None
+            self.terminated = False
+            self.killed = False
+
+        def poll(self):
+            return self.returncode
+
+        def terminate(self):
+            self.terminated = True
+            self.returncode = 0
+
+        def kill(self):
+            self.killed = True
+            self.returncode = -9
+
+        def wait(self, timeout=None):
+            return self.returncode
+
+    class FakeWebSocket:
+        def __init__(self):
+            self.closed = False
+
+        def __aiter__(self):
+            return self
+
+        async def __anext__(self):
+            await asyncio.sleep(3600)
+            raise StopAsyncIteration
+
+        async def close(self):
+            self.closed = True
+
+    class FakeWebsockets:
+        @staticmethod
+        async def connect(url, *, max_size=None):
+            nonlocal websocket
+            websocket = FakeWebSocket()
+            return websocket
+
+    def fake_popen(args, **kwargs):
+        nonlocal process
+        process = FakeProcess()
+        return process
+
+    monkeypatch.setattr(module.CodexAppServerClient, "_reserve_loopback_port", staticmethod(lambda: 41001))
+    monkeypatch.setattr(module.subprocess, "Popen", fake_popen)
+    monkeypatch.setitem(sys.modules, "websockets", FakeWebsockets)
+
+    async def run() -> CodexAppServerClient:
+        client = CodexAppServerClient(
+            url=None,
+            cwd=tmp_path,
+            timeout_seconds=1,
+        )
+
+        async def fail_initialize(method: str, params=None):
+            assert method == "initialize"
+            raise module.CodexAppServerError("initialize failed")
+
+        client.request = fail_initialize  # type: ignore[method-assign]
+
+        try:
+            await client.connect()
+        except module.CodexAppServerError:
+            return client
+        raise AssertionError("connect should have failed during initialize")
+
+    client = asyncio.run(run())
+
+    assert process is not None
+    assert websocket is not None
+    assert process.terminated is True
+    assert websocket.closed is True
+    assert client._process is None
+    assert client._ws is None
+    assert client._reader_task is None
+
+
+def test_codex_app_client_does_not_retry_live_slow_local_server(tmp_path: Path, monkeypatch):
+    import scripts.orchestrator.codex_app_runner as module
+
+    started: list[object] = []
+    connect_urls: list[str] = []
+
+    class FakeProcess:
+        def __init__(self):
+            self.returncode = None
+            self.terminated = False
+
+        def poll(self):
+            return self.returncode
+
+        def terminate(self):
+            self.terminated = True
+            self.returncode = 0
+
+        def kill(self):
+            self.returncode = -9
+
+        def wait(self, timeout=None):
+            return self.returncode
+
+    class FakeWebsockets:
+        @staticmethod
+        async def connect(url, *, max_size=None):
+            connect_urls.append(url)
+            raise OSError("server still starting")
+
+    def fake_popen(args, **kwargs):
+        process = FakeProcess()
+        started.append(process)
+        return process
+
+    monkeypatch.setattr(module, "_LOCAL_SERVER_CONNECT_ATTEMPTS", 2)
+    monkeypatch.setattr(module.CodexAppServerClient, "_reserve_loopback_port", staticmethod(lambda: 41001))
+    monkeypatch.setattr(module.subprocess, "Popen", fake_popen)
+    monkeypatch.setitem(sys.modules, "websockets", FakeWebsockets)
+
+    async def run() -> None:
+        client = CodexAppServerClient(
+            url=None,
+            cwd=tmp_path,
+            timeout_seconds=1,
+        )
+        try:
+            await client.connect()
+        except module.CodexAppServerError:
+            return
+        raise AssertionError("connect should have failed")
+
+    asyncio.run(run())
+
+    assert len(started) == 1
+    assert started[0].terminated is True
+    assert connect_urls == ["ws://127.0.0.1:41001", "ws://127.0.0.1:41001"]
 
 
 def test_codex_app_runner_uses_absolute_output_root(tmp_path: Path, monkeypatch):
