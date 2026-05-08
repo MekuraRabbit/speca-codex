@@ -1206,11 +1206,11 @@ class Phase03Orchestrator(BaseOrchestrator):
                     print(
                         f"  OK {filepath}: {len(partial.properties_with_code)} properties validated"
                     )
+                    entries_raw = partial.model_dump().get("properties_with_code", [])
                 except ValidationError as ve:
                     _log_validation_warning(filepath, ve, prefix="02c->03")
                     validation_warnings += 1
-
-                entries_raw = data.get("properties_with_code", [])
+                    entries_raw = data.get("properties_with_code", [])
 
                 for entry in entries_raw:
                     if not isinstance(entry, dict):

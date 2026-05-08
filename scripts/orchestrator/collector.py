@@ -176,9 +176,33 @@ class ResultCollector:
                 code_scope = dict(code_scope)
                 code_scope["locations"] = [code_scope["locations"]]
                 entry["code_scope"] = code_scope
+            self._normalize_02c_location_roles(entry)
             self._filter_02c_locations_to_scope(entry)
             normalized.append(entry)
         return normalized
+
+    def _normalize_02c_location_roles(self, entry: dict[str, Any]) -> None:
+        """Normalize list-shaped 02c location roles before persisting JSON."""
+        code_scope = entry.get("code_scope")
+        if not isinstance(code_scope, dict):
+            return
+        locations = code_scope.get("locations")
+        if not isinstance(locations, list):
+            return
+
+        allowed_roles = {"primary", "caller", "callee", "related"}
+        for location in locations:
+            if not isinstance(location, dict) or not isinstance(location.get("role"), list):
+                continue
+            role = next(
+                (
+                    item.strip()
+                    for item in location["role"]
+                    if isinstance(item, str) and item.strip() in allowed_roles
+                ),
+                "",
+            )
+            location["role"] = role or "primary"
 
     def _filter_02c_locations_to_scope(self, entry: dict[str, Any]) -> None:
         """Remove 02c code locations outside BUG_BOUNTY_SCOPE components."""

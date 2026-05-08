@@ -163,6 +163,7 @@ Language: English only.
         ]
       }
       **Note**: Pass through all property fields from the input. The `code_scope` field is the new addition.
+      **Role field**: `role` MUST be a single JSON string exactly matching one of the allowed values. Never emit an array for `role`.
     </schema>
     <stdout>Max 10 lines: processed count and per-status breakdown.</stdout>
     <final_line>Output File: {{OUTPUT_FILE}}</final_line>

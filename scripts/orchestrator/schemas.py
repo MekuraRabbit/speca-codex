@@ -325,6 +325,24 @@ class CodeLocation(BaseModel):
     role: str = "primary"         # Role: "primary", "caller", "callee", "related"
     note: str = ""                # Phase 02c observation (e.g., "calls recompute instead of cached accessor")
 
+    @model_validator(mode="before")
+    @classmethod
+    def _normalize_role(cls, data: Any) -> Any:
+        """Accept list-shaped role values from older/loose worker outputs."""
+        if isinstance(data, dict) and isinstance(data.get("role"), list):
+            data = dict(data)
+            allowed_roles = {"primary", "caller", "callee", "related"}
+            role = next(
+                (
+                    item.strip()
+                    for item in data["role"]
+                    if isinstance(item, str) and item.strip() in allowed_roles
+                ),
+                "",
+            )
+            data["role"] = role or "primary"
+        return data
+
 
 class CodeScope(BaseModel):
     """Code location information for a checklist item.
