@@ -31,7 +31,7 @@ jobs:
       - name: Install uv (so `speca doctor` passes)
         uses: astral-sh/setup-uv@v6
         with:
-          version: "latest"
+          version: "0.11.11"
       - name: npm ci
         working-directory: cli
         run: npm ci

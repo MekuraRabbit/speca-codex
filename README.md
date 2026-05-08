@@ -837,11 +837,11 @@ The following MCP servers are registered by `scripts/setup_mcp.sh`:
 
 | Server | Command | Used In |
 |---|---|---|
-| `tree_sitter` | `uvx mcp-server-tree-sitter` | 02c |
-| `filesystem` | `npx -y @modelcontextprotocol/server-filesystem` | 01b, 02c |
-| `fetch` | `uvx mcp-server-fetch` | 01a |
+| `tree_sitter` | `uvx mcp-server-tree-sitter==0.7.0` | 02c |
+| `filesystem` | `npx -y @modelcontextprotocol/server-filesystem@2026.1.14` | 01b, 02c |
+| `fetch` | `uvx mcp-server-fetch==2025.4.7` | 01a |
 
-Note: Phases 01e, 03, and 04 use inlined prompts with no MCP servers (only built-in Read/Write/Grep/Glob tools).
+`scripts/setup_mcp.sh` pins MCP server package specs by default and accepts `MCP_*_SPEC` environment overrides when maintainers intentionally update the toolchain. Note: Phases 01e, 03, and 04 use inlined prompts with no MCP servers (only built-in Read/Write/Grep/Glob tools).
 
 ## Configuration
 

@@ -202,11 +202,44 @@ def test_mcp_setup_does_not_print_project_config_or_unmasked_tokens():
 
     assert "::add-mask::${RESOLVED_GH_TOKEN}" in script
     assert '[ "${GITHUB_ACTIONS:-}" = "true" ]' in script
+    assert "mcp-server-tree-sitter==0.7.0" in script
+    assert "git+https://github.com/oraios/serena@v1.2.0" in script
+    assert "semgrep-mcp==0.9.0" in script
+    assert "@modelcontextprotocol/server-filesystem@2026.1.14" in script
+    assert "mcp-server-fetch==2025.4.7" in script
+    assert "@modelcontextprotocol/server-github@2025.4.8" in script
     assert '"${SERVER_COMMAND[@]}"' in script
     assert "for dir in ${FILESYSTEM_DIRS}" not in script
+    assert "uvx mcp-server-fetch" not in script
+    assert "npx -y @modelcontextprotocol/server-filesystem" not in script
     assert "cat .mcp.json" not in script
     assert "Contents of .mcp.json" not in script
     assert "intentionally not printed" in script
+
+
+def test_public_workflows_pin_worker_tool_installs():
+    workflow_text = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in Path(".github/workflows").glob("*.yml")
+    )
+    user_surfaces = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in [
+            Path("README.md"),
+            Path("README.ja.md"),
+            Path("docs/SPECA_CLI_SPEC.md"),
+            Path("cli/src/lib/checks.ts"),
+        ]
+    )
+    unpinned_claude_install = "npm install -g @anthropic-ai/" + "claude-code"
+
+    assert "@anthropic-ai/claude-code@2.1.136" in workflow_text
+    assert "@anthropic-ai/claude-code@2.1.136" in user_surfaces
+    assert f"{unpinned_claude_install}\n" not in workflow_text
+    assert f"{unpinned_claude_install}`" not in user_surfaces
+    assert f'{unpinned_claude_install}",' not in user_surfaces
+    assert 'version: "latest"' not in workflow_text
+    assert workflow_text.count('version: "0.11.11"') >= 2
 
 
 def test_mcp_setup_preserves_newline_filesystem_dirs_with_spaces(tmp_path):
