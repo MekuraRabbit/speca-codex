@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Status** | Historical Claude-first design draft (v0.1); not the current Codex App runtime contract |
-| **Owner** | @grandchildrice |
+| **Owner** | Historical upstream draft; Codex fork maintenance: @MekuraRabbit |
 | **Last updated** | 2026-05-03 |
 | **Distribution** | `npx speca-cli` (npm package) |
 | **Related** | Top-level [README](../README.md), [benchmarks/README](../benchmarks/README.md), Python orchestrator under [`scripts/orchestrator/`](../scripts/orchestrator/) |
@@ -810,12 +810,12 @@ When vendoring, every lifted file must:
 
 | # | Question | Owner | Notes |
 |---|---|---|---|
-| Q1 | Does Anthropic plan to support subscription auth via SDK (not only via the `claude` CLI)? If yes, we can drop the CLI subprocess for chat. | @grandchildrice | If/when this lands, simplify §8.5 |
-| Q2 | Should `speca-cli` ship with prebuilt `node-pty` binaries for Windows native (not just WSL2)? | @grandchildrice | v1 targets WSL2; revisit if user demand exists |
+| Q1 | Does Anthropic plan to support subscription auth via SDK (not only via the `claude` CLI)? If yes, we can drop the CLI subprocess for chat. | historical note | If/when this lands, simplify §8.5 |
+| Q2 | Should `speca-cli` ship with prebuilt `node-pty` binaries for Windows native (not just WSL2)? | historical note | v1 targets WSL2; revisit if user demand exists |
 | Q3 | Where do we host the project-template library (§7.2)? Inline in the npm package, or fetched at first-run from the GitHub repo? | TBD | Inline is simpler; lazy fetch lets us update templates without npm releases |
 | Q4 | Should "ask Claude" support multi-finding context (e.g. "explain why these three findings cluster")? | TBD | Useful for triage; defer to v1.1 |
 | Q5 | Do we need a "headless run, attach later" mode (the user starts a run, closes their laptop, comes back to attach)? | TBD | Possible via PID file + shared `.speca/run.lock`; defer to v1.1 |
-| Q6 | What's the licence relationship between `speca-cli` (MIT) and the user's audit outputs? | @grandchildrice | Audit outputs belong to the user; the CLI does not exfiltrate them |
+| Q6 | What's the licence relationship between `speca-cli` (MIT) and the user's audit outputs? | historical note | Audit outputs belong to the user; the CLI does not exfiltrate them |
 
 ## 14. Glossary
 

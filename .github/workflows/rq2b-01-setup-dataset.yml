@@ -6,7 +6,7 @@ on:
       cache_dir:
         description: "Cache directory for ProFuzzBench"
         required: false
-        default: "~/.cache/security-agent/benchmarks/profuzzbench"
+        default: "~/.cache/speca/benchmarks/profuzzbench"
         type: string
 
 permissions:
@@ -14,11 +14,11 @@ permissions:
 
 jobs:
   setup-profuzzbench:
-    if: ${{ github.actor == 'grandchildrice' || github.actor == 'hirorogo' }}
+    if: ${{ github.actor == github.repository_owner }}
     runs-on: self-hosted
 
     env:
-      CACHE_DIR: ${{ inputs.cache_dir || '~/.cache/security-agent/benchmarks/profuzzbench' }}
+      CACHE_DIR: ${{ inputs.cache_dir || '~/.cache/speca/benchmarks/profuzzbench' }}
 
     steps:
       - name: Checkout

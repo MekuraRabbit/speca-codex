@@ -289,7 +289,25 @@ SPEC_URLS="https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7594.md" \
 - [server/](server): Codex App から使う FastAPI server
 - [scripts/orchestrator/paths.py](scripts/orchestrator/paths.py): run ごとの output root 解決
 - [docs/CODEX_APP.ja.md](docs/CODEX_APP.ja.md): Codex App 連携の詳細
+- [SECURITY.md](SECURITY.md): セキュリティ報告の手順
+- [CONTRIBUTING.md](CONTRIBUTING.md): issue / pull request の方針
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md): コミュニティ上の行動規範
 - [LICENSE](LICENSE): MIT License
+
+## セキュリティ報告
+
+このリポジトリ、GitHub Actions、runner isolation、生成物の扱いに関するセキュリティ上の問題は、公開 issue ではなく [SECURITY.md](SECURITY.md) の手順で報告してください。
+
+SPECA で第三者ターゲットを検証して得た候補 finding は、人間が検証したうえで、そのターゲットの disclosure policy や bug bounty 窓口に報告してください。このリポジトリの公開 issue に第三者ターゲットの未調整な脆弱性詳細を書かないでください。
+
+## 貢献
+
+issue や pull request は歓迎します。詳しい方針は [CONTRIBUTING.md](CONTRIBUTING.md) を見てください。
+
+- bug report / feature request は、再現手順や具体的な use-case を添えてください。
+- user-facing な説明や検証メモを変える場合は、`README.md` と `README.ja.md` の内容を揃えてください。
+- ログやスクリーンショットには、API key、token、account identifier、private repository 名、ローカル絶対パスを含めないでください。
+- セキュリティ上センシティブな内容は公開 issue に書かず、[SECURITY.md](SECURITY.md) の手順を使ってください。
 
 ## ライセンス
 

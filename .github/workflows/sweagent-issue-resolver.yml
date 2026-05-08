@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   run-swe-agent:
-    if: ${{ contains(github.event.comment.body, '@swe-agent') && (github.actor == 'grandchildrice' || github.actor == 'hirorogo') }}
+    if: ${{ contains(github.event.comment.body, '@swe-agent') && github.actor == github.repository_owner }}
     runs-on: self-hosted
 
     steps:
@@ -48,5 +48,5 @@ jobs:
           uv run sweagent run \
           --agent.model.name=gpt-4.1-mini \
           --agent.model.per_instance_cost_limit=2.00 \
-          --env.repo.github_url="https://github.com/NyxFoundation/security-agent" \
-          --problem_statement.github_url=https://github.com/NyxFoundation/security-agent/issues/${{ github.event.issue.number }}
+          --env.repo.github_url="https://github.com/${{ github.repository }}" \
+          --problem_statement.github_url=https://github.com/${{ github.repository }}/issues/${{ github.event.issue.number }}

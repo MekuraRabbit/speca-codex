@@ -64,24 +64,30 @@ permissions:
 
 jobs:
   auto-fix:
-    if: ${{ github.actor == 'grandchildrice' || github.actor == 'hirorogo' }}
-    # NOTE: 'workflow_call' bypass: when this workflow is invoked via workflow_call,
-    # github.event_name == 'workflow_call' is true, which bypasses the label/comment
-    # checks below (workflow_call events don't carry labels or comments).
-    # This is intentional — it allows the caller workflow to trigger unconditionally.
     if: |
-      github.event_name == 'workflow_call' ||
-      github.event.label.name == 'fix-me' ||
-      github.event.label.name == 'fix-me-experimental' ||
+      github.actor == github.repository_owner &&
       (
-        ((github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment') &&
-        contains(github.event.comment.body, inputs.macro || '@openhands-agent') &&
-        (github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'MEMBER')
+        github.event_name == 'workflow_call' ||
+        github.event.label.name == 'fix-me' ||
+        github.event.label.name == 'fix-me-experimental' ||
+        (
+          (github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment') &&
+          contains(github.event.comment.body, inputs.macro || '@openhands-agent') &&
+          (
+            github.event.comment.author_association == 'OWNER' ||
+            github.event.comment.author_association == 'COLLABORATOR' ||
+            github.event.comment.author_association == 'MEMBER'
+          )
         ) ||
 
-        (github.event_name == 'pull_request_review' &&
-        contains(github.event.review.body, inputs.macro || '@openhands-agent') &&
-        (github.event.review.author_association == 'OWNER' || github.event.review.author_association == 'COLLABORATOR' || github.event.review.author_association == 'MEMBER')
+        (
+          github.event_name == 'pull_request_review' &&
+          contains(github.event.review.body, inputs.macro || '@openhands-agent') &&
+          (
+            github.event.review.author_association == 'OWNER' ||
+            github.event.review.author_association == 'COLLABORATOR' ||
+            github.event.review.author_association == 'MEMBER'
+          )
         )
       )
 
@@ -189,12 +195,11 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const issueType = process.env.ISSUE_TYPE;
-            const runDir = process.env.RUN_DIR;
             github.rest.issues.createComment({
               issue_number: Number(process.env.ISSUE_NUMBER),
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `[OpenHands](https://github.com/OpenHands/OpenHands) started fixing the ${issueType}! Run key: \`${process.env.RUN_KEY}\` (workdir: \`${runDir}\`). Progress: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+              body: `[OpenHands](https://github.com/OpenHands/OpenHands) started fixing the ${issueType}. Run key: \`${process.env.RUN_KEY}\`. Progress: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
 
       - name: Install OpenHands
@@ -224,67 +229,6 @@ jobs:
             } else {
               console.log("Stable OpenHands selected (will use openhands-ai with uvx).");
             }
-
-      - name: Debug Python httpx connection
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          cd "$RUN_DIR"
-          cat > test_httpx.py << 'EOFPYTHON'
-          import httpx
-          import ssl
-          import sys
-          
-          print("=== Testing httpx connection to GitHub API ===")
-          print(f"Python version: {sys.version}")
-          
-          # Test 1: Basic GET request without authentication
-          print("\n--- Test 1: GET https://api.github.com (no auth) ---")
-          try:
-              with httpx.Client(timeout=30.0) as client:
-                  response = client.get("https://api.github.com")
-                  print(f"Status: {response.status_code}")
-                  print(f"Headers: {dict(response.headers)}")
-          except Exception as e:
-              print(f"ERROR: {type(e).__name__}: {e}")
-          
-          # Test 2: With SSL context (like OpenHands)
-          print("\n--- Test 2: GET with ssl.create_default_context() ---")
-          try:
-              ssl_context = ssl.create_default_context()
-              with httpx.Client(verify=ssl_context, timeout=30.0) as client:
-                  response = client.get("https://api.github.com")
-                  print(f"Status: {response.status_code}")
-          except Exception as e:
-              print(f"ERROR: {type(e).__name__}: {e}")
-              import traceback
-              traceback.print_exc()
-          
-          # Test 3: With authentication
-          print("\n--- Test 3: GET with Bearer token ---")
-          import os
-          token = os.environ.get("GITHUB_TOKEN", "")
-          if token:
-              print(f"Token length: {len(token)}")
-              try:
-                  ssl_context = ssl.create_default_context()
-                  headers = {"Authorization": f"Bearer {token}"}
-                  with httpx.Client(verify=ssl_context, timeout=30.0) as client:
-                      response = client.get("https://api.github.com", headers=headers)
-                      print(f"Status: {response.status_code}")
-              except Exception as e:
-                  print(f"ERROR: {type(e).__name__}: {e}")
-                  import traceback
-                  traceback.print_exc()
-          else:
-              print("No GITHUB_TOKEN found")
-          
-          print("\n=== Environment variables ===")
-          for key in ["HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "SSL_CERT_FILE", "REQUESTS_CA_BUNDLE"]:
-              print(f"{key}: {os.environ.get(key, '(not set)')}")
-          EOFPYTHON
-
-          uv run --python 3.12 --with httpx python test_httpx.py
 
       - name: Attempt to resolve issue (run in per-run dir)
         env:
@@ -401,15 +345,14 @@ jobs:
             }
 
             let body = '';
-            // PR/ブランチが実際に作成されたかを最優先で確認
             if (prNumber) {
-              body = "✅ PR created!";
+              body = "PR created.";
             } else if (branchName) {
-              body = "✅ Branch pushed!";
+              body = "Branch pushed.";
             } else if (resolutionSuccess) {
-              body = "✅ No changes needed";
+              body = "No changes needed.";
             } else {
-              body = "❌ Failed";
+              body = "Failed.";
             }
 
             body += `\n\nRun details: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;

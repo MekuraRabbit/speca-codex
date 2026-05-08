@@ -1,13 +1,13 @@
 <!--
 Thanks for contributing to SPECA! A few quick notes:
-- All PRs require approval from @grandchildrice (enforced via CODEOWNERS).
+- CODEOWNERS identifies @MekuraRabbit as the primary reviewer.
 - Please keep changes focused; pipeline phases are deliberately decoupled.
-- Our bot is allergic to scope creep — split unrelated changes into separate PRs.
+- Split unrelated changes into separate PRs.
 -->
 
 ## Summary
 
-<!-- 1–3 bullets describing what changed and why. Focus on the motivation, not the diff. -->
+<!-- 1-3 bullets describing what changed and why. Focus on the motivation, not the diff. -->
 -
 
 ## Type of change

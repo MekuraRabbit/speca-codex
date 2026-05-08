@@ -1,11 +1,11 @@
 blank_issues_enabled: false
 contact_links:
-  - name: 📖 Read the paper
+  - name: Read the paper
     url: https://arxiv.org/abs/2604.26495
     about: Background, methodology, and full evaluation results.
-  - name: 📊 Reproduce upstream benchmarks
+  - name: Reproduce upstream benchmarks
     url: https://github.com/NyxFoundation/speca/blob/main/benchmarks/README.md
     about: Upstream instructions for reproducing RQ1 (Sherlock) and RQ2 (RepoAudit) end-to-end.
-  - name: 🛡️ Report a security vulnerability
+  - name: Report a security vulnerability
     url: https://github.com/MekuraRabbit/speca-codex/security/advisories/new
     about: For security-sensitive reports, use a private security advisory rather than a public issue.

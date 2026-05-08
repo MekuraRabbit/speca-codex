@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Please describe the *problem* you're trying to solve before describing the *solution* — it helps us evaluate alternative designs.
+        Please describe the *problem* you're trying to solve before describing the *solution*. It helps us evaluate alternative designs.
 
   - type: textarea
     id: motivation

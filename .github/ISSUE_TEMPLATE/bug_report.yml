@@ -6,8 +6,9 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for filing a bug report. Please include enough information to reproduce — without a reproducer the bug is hard to triage.
+        Thanks for filing a bug report. Please include enough information to reproduce the issue. Without a reproducer, the bug is hard to triage.
         Before submitting, please [search existing issues](https://github.com/MekuraRabbit/speca-codex/issues?q=is%3Aissue) to avoid duplicates.
+        For security-sensitive issues, use the private reporting process in SECURITY.md instead of a public issue.
 
   - type: dropdown
     id: phase
@@ -83,7 +84,7 @@ body:
     id: logs
     attributes:
       label: Logs / output
-      description: Relevant excerpts from `outputs/` or `outputs/logs/`. **Please redact any API keys or secrets.**
+      description: Relevant excerpts from `outputs/` or `outputs/logs/`. Please redact API keys, tokens, account identifiers, private repository names, and local absolute paths.
       render: shell
     validations:
       required: false
@@ -91,9 +92,9 @@ body:
   - type: checkboxes
     id: terms
     attributes:
-      label: Code of Conduct
+      label: Checklist
       options:
         - label: I have searched existing issues and confirmed this is not a duplicate.
           required: true
-        - label: I have removed any API keys, tokens, or secrets from the logs above.
+        - label: I have removed API keys, tokens, account identifiers, private repository names, and local absolute paths from the logs above.
           required: true

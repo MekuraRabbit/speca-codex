@@ -44,14 +44,14 @@ jobs:
   # 1. Generate matrix & run pre-flight tests (once)
   # ------------------------------------------------------------------
   setup:
-    if: ${{ github.actor == 'grandchildrice' || github.actor == 'hirorogo' }}
+    if: ${{ github.actor == github.repository_owner }}
     runs-on: self-hosted
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: master
+          ref: main
           fetch-depth: 1
 
       - name: "Pre-flight: Schema & Config Tests"
@@ -101,7 +101,7 @@ jobs:
   # 2. Audit each project in parallel
   # ------------------------------------------------------------------
   audit:
-    if: ${{ github.actor == 'grandchildrice' || github.actor == 'hirorogo' }}
+    if: ${{ github.actor == github.repository_owner }}
     needs: setup
     runs-on: self-hosted
     strategy:
@@ -116,7 +116,7 @@ jobs:
       - name: Checkout SPECA
         uses: actions/checkout@v4
         with:
-          ref: master
+          ref: main
           fetch-depth: 1
 
       - name: Setup outputs
@@ -249,19 +249,18 @@ jobs:
           echo "Phase 03 outputs: **${RESULTS}** files" >> $GITHUB_STEP_SUMMARY
 
   # ------------------------------------------------------------------
-  # 3. Collect all results and push to master
+  # 3. Collect all results and push to main
   # ------------------------------------------------------------------
   collect:
-    if: ${{ github.actor == 'grandchildrice' || github.actor == 'hirorogo' }}
     needs: audit
-    if: always()
+    if: ${{ always() && github.actor == github.repository_owner }}
     runs-on: self-hosted
 
     steps:
-      - name: Checkout master
+      - name: Checkout main
         uses: actions/checkout@v4
         with:
-          ref: master
+          ref: main
           fetch-depth: 1
 
       - name: Configure Git
@@ -315,14 +314,14 @@ jobs:
           uv run python3 benchmarks/rq2a/generate_human_review.py \
             --results-dir benchmarks/results/rq2a/speca_sonnet4
 
-      - name: Push to master
+      - name: Push to main
         run: |
           set -euo pipefail
           git add benchmarks/results/rq2a/speca_sonnet4/
           if ! git diff --staged --quiet; then
             git commit -m "rq2a: phase 03 audit map results [Claude Sonnet 4] (run ${{ github.run_id }}, attempt ${{ github.run_attempt }})"
             for i in 1 2 3; do
-              if git pull --rebase origin master && git push origin master; then
+              if git pull --rebase origin main && git push origin main; then
                 echo "Pushed successfully"
                 break
               fi

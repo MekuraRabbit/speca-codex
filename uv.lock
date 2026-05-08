@@ -2505,7 +2505,7 @@ wheels = [
 ]
 
 [[package]]
-name = "security-agent"
+name = "speca-codex"
 version = "0.0.0"
 source = { virtual = "." }
 dependencies = [

@@ -6,7 +6,7 @@ on:
       cache_dir:
         description: "Cache directory for RepoAudit benchmark"
         required: false
-        default: "~/.cache/security-agent/benchmarks/repoaudit"
+        default: "~/.cache/speca/benchmarks/repoaudit"
         type: string
 
 permissions:
@@ -14,11 +14,11 @@ permissions:
 
 jobs:
   setup-repoaudit:
-    if: ${{ github.actor == 'grandchildrice' || github.actor == 'hirorogo' }}
+    if: ${{ github.actor == github.repository_owner }}
     runs-on: self-hosted
 
     env:
-      CACHE_DIR: ${{ inputs.cache_dir || '~/.cache/security-agent/benchmarks/repoaudit' }}
+      CACHE_DIR: ${{ inputs.cache_dir || '~/.cache/speca/benchmarks/repoaudit' }}
 
     steps:
       - name: Checkout

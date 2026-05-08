@@ -1,27 +1,27 @@
-# SPECA — Code Owners
+# SPECA Code Owners
 #
-# Ownership rules for review approval. Branch protection on `main` requires
-# at least one approving review from a code owner before a PR can merge.
-# (See repository Settings → Branches → main.)
+# Ownership rules for review routing. CODEOWNERS only becomes an enforced
+# merge requirement when the repository's branch protection rules require code
+# owner review on `main`.
 #
-# Last entry that matches a path wins. The catch-all line ensures every PR
-# requires @grandchildrice's approval; the more specific entries are listed
-# only for visibility — they currently resolve to the same reviewer.
+# Last entry that matches a path wins. The catch-all line routes every PR to
+# @MekuraRabbit; the more specific entries are listed only for visibility
+# because they currently resolve to the same reviewer.
 
-# Catch-all: every change requires approval from @grandchildrice
-*                              @grandchildrice
+# Catch-all: every change routes to the repository owner
+*                              @MekuraRabbit
 
 # Pipeline / harness changes
-/scripts/orchestrator/         @grandchildrice
-/scripts/run_phase.py          @grandchildrice
-/prompts/                      @grandchildrice
+/scripts/orchestrator/         @MekuraRabbit
+/scripts/run_phase.py          @MekuraRabbit
+/prompts/                      @MekuraRabbit
 
 # Inter-phase data contracts
-/scripts/orchestrator/schemas.py  @grandchildrice
-/scripts/orchestrator/config.py   @grandchildrice
+/scripts/orchestrator/schemas.py  @MekuraRabbit
+/scripts/orchestrator/config.py   @MekuraRabbit
 
 # Benchmarks and evaluation harnesses
-/benchmarks/                   @grandchildrice
+/benchmarks/                   @MekuraRabbit
 
 # CI workflows
-/.github/workflows/            @grandchildrice
+/.github/workflows/            @MekuraRabbit

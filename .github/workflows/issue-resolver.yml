@@ -19,14 +19,37 @@ permissions:
 
 jobs:
   call-openhands-resolver:
-    if: ${{ github.actor == 'grandchildrice' || github.actor == 'hirorogo' }}
+    if: |
+      github.actor == github.repository_owner &&
+      (
+        github.event.label.name == 'fix-me' ||
+        github.event.label.name == 'fix-me-experimental' ||
+        (
+          (github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment') &&
+          contains(github.event.comment.body, vars.OPENHANDS_MACRO || '@openhands-agent') &&
+          (
+            github.event.comment.author_association == 'OWNER' ||
+            github.event.comment.author_association == 'COLLABORATOR' ||
+            github.event.comment.author_association == 'MEMBER'
+          )
+        ) ||
+        (
+          github.event_name == 'pull_request_review' &&
+          contains(github.event.review.body, vars.OPENHANDS_MACRO || '@openhands-agent') &&
+          (
+            github.event.review.author_association == 'OWNER' ||
+            github.event.review.author_association == 'COLLABORATOR' ||
+            github.event.review.author_association == 'MEMBER'
+          )
+        )
+      )
     uses: ./.github/workflows/openhands-resolver.yml
     with:
       macro: ${{ vars.OPENHANDS_MACRO || '@openhands-agent' }}
       max_iterations: ${{ fromJson(vars.OPENHANDS_MAX_ITER || '200') }}
       base_container_image: ${{ vars.OPENHANDS_BASE_CONTAINER_IMAGE || '' }}
       LLM_MODEL: "openai/qwen3-coder-30b-a3b-instruct"
-      target_branch: "master"
+      target_branch: "main"
       runner: "self-hosted"
     secrets:
       LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
