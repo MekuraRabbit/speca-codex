@@ -60,6 +60,10 @@ class CodexAppServerError(RuntimeError):
     """Raised when the Codex app-server protocol fails."""
 
 
+class _LocalAppServerExited(CodexAppServerError):
+    """Raised when an owned local app-server exits before websocket readiness."""
+
+
 @dataclass
 class TurnCapture:
     """Per-turn app-server telemetry captured for reducer/diff collection."""
@@ -127,17 +131,21 @@ class CodexAppServerClient:
             await self._start_and_connect_local_server(websockets)
 
         self._reader_task = asyncio.create_task(self._reader_loop())
-        await self.request(
-            "initialize",
-            {
-                "clientInfo": {
-                    "name": "speca",
-                    "title": "SPECA",
-                    "version": "0.1.0",
+        try:
+            await self.request(
+                "initialize",
+                {
+                    "clientInfo": {
+                        "name": "speca",
+                        "title": "SPECA",
+                        "version": "0.1.0",
+                    },
+                    "capabilities": {"experimentalApi": True},
                 },
-                "capabilities": {"experimentalApi": True},
-            },
-        )
+            )
+        except Exception:
+            await self.close()
+            raise
 
     async def close(self) -> None:
         if self._reader_task is not None:
@@ -175,15 +183,20 @@ class CodexAppServerClient:
             try:
                 await self._connect_websocket(websockets)
                 return
-            except CodexAppServerError as e:
+            except _LocalAppServerExited as e:
                 last_error = e
                 await self._stop_owned_process()
                 self.url = None
+                continue
+            except CodexAppServerError as e:
+                await self._stop_owned_process()
+                self.url = None
+                raise
 
         raise CodexAppServerError(
             "Could not start local Codex app-server after "
             f"{_LOCAL_SERVER_START_ATTEMPTS} attempts: {last_error}"
-        )
+        ) from last_error
 
     async def _connect_websocket(self, websockets: Any) -> None:
         last_error: Exception | None = None
@@ -194,7 +207,10 @@ class CodexAppServerClient:
             except Exception as e:  # pragma: no cover - timing dependent
                 last_error = e
                 if self._process and self._process.poll() is not None:
-                    break
+                    raise _LocalAppServerExited(
+                        f"Local Codex app-server exited before websocket connection "
+                        f"to {self.url} (exit code {self._process.returncode}): {last_error}"
+                    ) from e
                 await asyncio.sleep(0.25)
 
         raise CodexAppServerError(f"Could not connect to {self.url}: {last_error}")
