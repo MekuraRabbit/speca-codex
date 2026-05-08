@@ -83,7 +83,7 @@ export const checkClaude = (): Promise<CheckResult> =>
   probeBinary(
     "claude",
     ["--version"],
-    "npm install -g @anthropic-ai/claude-code",
+    "npm install -g @anthropic-ai/claude-code@2.1.136",
     true,
   );
 

@@ -222,12 +222,24 @@ def test_public_workflows_pin_worker_tool_installs():
         path.read_text(encoding="utf-8")
         for path in Path(".github/workflows").glob("*.yml")
     )
-    cli_ci = Path(".github/workflows/cli-ci.yml").read_text(encoding="utf-8")
+    user_surfaces = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in [
+            Path("README.md"),
+            Path("README.ja.md"),
+            Path("docs/SPECA_CLI_SPEC.md"),
+            Path("cli/src/lib/checks.ts"),
+        ]
+    )
+    unpinned_claude_install = "npm install -g @anthropic-ai/" + "claude-code"
 
     assert "@anthropic-ai/claude-code@2.1.136" in workflow_text
-    assert "npm install -g @anthropic-ai/claude-code\n" not in workflow_text
+    assert "@anthropic-ai/claude-code@2.1.136" in user_surfaces
+    assert f"{unpinned_claude_install}\n" not in workflow_text
+    assert f"{unpinned_claude_install}`" not in user_surfaces
+    assert f'{unpinned_claude_install}",' not in user_surfaces
     assert 'version: "latest"' not in workflow_text
-    assert 'version: "0.11.11"' in cli_ci
+    assert workflow_text.count('version: "0.11.11"') >= 2
 
 
 def test_mcp_setup_preserves_newline_filesystem_dirs_with_spaces(tmp_path):
