@@ -379,6 +379,11 @@ class TestEnums:
     def test_review_verdict_values(self):
         assert ReviewVerdict.CONFIRMED == "Confirmed"
         assert ReviewVerdict.DISPUTED == "Disputed"
+        assert ReviewVerdict.CONFIRMED_VULNERABILITY == "CONFIRMED_VULNERABILITY"
+        assert ReviewVerdict.CONFIRMED_POTENTIAL == "CONFIRMED_POTENTIAL"
+        assert ReviewVerdict.DISPUTED_FP == "DISPUTED_FP"
+        assert ReviewVerdict.NEEDS_MANUAL_REVIEW == "NEEDS_MANUAL_REVIEW"
+        assert ReviewVerdict.PASS_THROUGH == "PASS_THROUGH"
 
     def test_reachability_classification_values(self):
         assert ReachabilityClassification.EXTERNAL_REACHABLE == "external-reachable"
@@ -804,14 +809,29 @@ class TestPhase04Partial:
         partial = Phase04Partial(
             reviewed_items=[
                 {
-                    "check_id": "CHK-001",
-                    "review_verdict": "Confirmed",
+                    "property_id": "PROP-001",
+                    "review_verdict": "CONFIRMED_VULNERABILITY",
+                    "original_classification": "vulnerability",
                     "adjusted_severity": "High",
+                    "reviewer_notes": "An attacker can trigger this via HTTP.",
+                    "spec_reference": "",
                 }
             ]
         )
         assert len(partial.reviewed_items) == 1
-        assert partial.reviewed_items[0].review_verdict == "Confirmed"
+        assert partial.reviewed_items[0].review_verdict == "CONFIRMED_VULNERABILITY"
+        assert partial.reviewed_items[0].original_classification == "vulnerability"
+
+    def test_rejects_unknown_review_verdict(self):
+        with pytest.raises(Exception):
+            Phase04Partial(
+                reviewed_items=[
+                    {
+                        "property_id": "PROP-001",
+                        "review_verdict": "CONFIRMED_VULNERABILTY",
+                    }
+                ]
+            )
 
     def test_reviewed_item_defaults(self):
         item = ReviewedItem(check_id="CHK-002")
@@ -920,8 +940,38 @@ class TestTargetInfo:
             target_repo="ethereum/go-ethereum",
             target_ref_type="branch",
             target_ref_label="master",
+            target_commit="abc1234deadbeef",
+            local_checkout="target_workspace/go-ethereum",
+            language="go",
         )
         assert info.target_repo == "ethereum/go-ethereum"
+        assert info.target_commit_short == "abc1234deadb"
+        assert info.local_checkout == "target_workspace/go-ethereum"
+
+    def test_legacy_target_aliases_are_normalized(self):
+        info = TargetInfo(
+            repo="https://github.com/ethereum/go-ethereum",
+            commit="abc1234deadbeef",
+            local_checkout="target_workspace/go-ethereum",
+            language="go",
+        )
+
+        assert info.target_repo == "https://github.com/ethereum/go-ethereum"
+        assert info.target_commit == "abc1234deadbeef"
+        assert info.target_commit_short == "abc1234deadb"
+
+    def test_rejects_empty_target_info(self):
+        with pytest.raises(Exception):
+            TargetInfo.model_validate({})
+
+    def test_rejects_target_info_without_local_checkout(self):
+        with pytest.raises(Exception):
+            TargetInfo.model_validate(
+                {
+                    "target_repo": "ethereum/go-ethereum",
+                    "target_commit": "abc1234deadbeef",
+                }
+            )
 
 
 # =========================================================================

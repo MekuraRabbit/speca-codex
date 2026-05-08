@@ -98,7 +98,7 @@ the worker turns.
 - **Node.js 20+** (for worker CLIs and MCP servers)
 - **Codex CLI** for Codex app-server and local fallback workers (`npm install -g @openai/codex`, or use the Codex desktop app bundle)
 - **Claude Code CLI** only for legacy Claude-runner workflows
-- **`git`** — Phase 03 auto-clones the target repository at the commit pinned in `outputs/TARGET_INFO.json`
+- **`git`** — used to prepare and verify the target checkout pinned in `outputs/TARGET_INFO.json`
 
 ### Install
 
@@ -228,7 +228,7 @@ For a CLI run that executes dependencies up to `04`:
 ```bash
 # Place these two files first:
 #   outputs/BUG_BOUNTY_SCOPE.json   # required by Phase 01e
-#   outputs/TARGET_INFO.json        # required by Phase 02c/03
+#   outputs/TARGET_INFO.json        # required by Phase 02c/03/04/05
 
 uv run python scripts/run_phase.py --target 04 --runner codex-app --workers 4 --max-concurrent 8
 ```
@@ -602,7 +602,7 @@ Reduces token consumption in Phase 03 by ~40-60%.
 | | |
 |---|---|
 | **Prompt** | `prompts/03_auditmap_worker_inline.md` (inlined — no skill fork) |
-| **Input** | `outputs/02c_PARTIAL_*.json` + Target codebase (auto-cloned from `TARGET_INFO.json`) |
+| **Input** | `outputs/02c_PARTIAL_*.json` + pinned local checkout from `TARGET_INFO.local_checkout` |
 | **Output** | `outputs/03_PARTIAL_*.json` |
 | **Worker model** | Legacy Claude default: Sonnet. Codex App runs use the GUI-selected model/reasoning effort unless `model` is passed explicitly. |
 
@@ -839,18 +839,28 @@ Defines the trust model and severity rubric for the target. Phase 01e aborts (`s
 
 `deployment_context.target_share.value` ∈ [0, 1] is used by Phase 04 as an optional severity cap (e.g. a single-client bug below a 33% network-share threshold gets downgraded).
 
-### `outputs/TARGET_INFO.json` — *required by Phase 02c / 03 / 04*
+### `outputs/TARGET_INFO.json` — *required by Phase 02c / 03 / 04 / 05*
 
-Pins the target repository and commit. Phase 03 will `git clone` to this exact ref:
+Pins the target repository, commit, and local checkout used by worker phases.
+Prepare the checkout locally at `local_checkout`; SPECA workers treat that path
+as the exact target code root.
 
 ```json
 {
-  "name":   "go-ethereum",
-  "repo":   "https://github.com/ethereum/go-ethereum",
-  "commit": "abc1234deadbeef...",
+  "target_repo": "ethereum/go-ethereum",
+  "target_ref_type": "branch",
+  "target_ref_label": "master",
+  "target_commit": "abc1234deadbeef...",
+  "target_commit_short": "abc1234deadb",
+  "local_checkout": "target_workspace/go-ethereum",
   "language": "go"
 }
 ```
+
+Use the canonical field names shown above for files and JSON Schema
+validation. Python helpers still normalize older local `repo` / `commit`
+aliases before validation, but new runs and external tools should not rely on
+those aliases.
 
 ### Environment Variables
 

@@ -164,7 +164,9 @@ jobs:
             "target_ref_type": "commit",
             "target_ref_label": "${{ matrix.target_commit }}",
             "target_commit": "${FULL_SHA}",
-            "target_commit_short": "${SHORT_SHA}"
+            "target_commit_short": "${SHORT_SHA}",
+            "local_checkout": "target_workspace",
+            "language": ""
           }
           HEREDOC
 
