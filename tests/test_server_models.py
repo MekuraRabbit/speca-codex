@@ -100,6 +100,20 @@ def test_phase_dispatch_accepts_codex_effort_and_service_tier():
     assert request.service_tier == "fast"
 
 
+@pytest.mark.parametrize("field", ["target_repo", "target_ref_type", "audit_scope"])
+def test_phase_dispatch_rejects_unimplemented_target_setup_fields(field: str):
+    with pytest.raises(ValidationError, match="not API dispatch setup fields yet"):
+        PhaseDispatchRequest(phase_id="02c", **{field: "value"})
+
+
+def test_phase_dispatch_schema_omits_unimplemented_target_setup_fields():
+    properties = PhaseDispatchRequest.model_json_schema()["properties"]
+
+    assert "target_repo" not in properties
+    assert "target_ref_type" not in properties
+    assert "audit_scope" not in properties
+
+
 def test_phase_dispatch_normalizes_output_dir():
     request = PhaseDispatchRequest(
         phase_id="03",

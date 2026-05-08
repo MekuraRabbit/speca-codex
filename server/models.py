@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from .path_safety import normalize_output_dir, normalize_worktree_root
 
@@ -20,6 +20,8 @@ if _SCRIPTS_DIR not in sys.path:
 
 
 class PhaseDispatchRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     phase_id: str
     workers: int = Field(default=4, ge=1, le=64)
     max_concurrent: int = Field(default=8, ge=1, le=64)
@@ -57,10 +59,27 @@ class PhaseDispatchRequest(BaseModel):
     # Phase-specific inputs
     keywords: str | None = None
     spec_urls: str | None = None
-    target_repo: str | None = None
-    target_ref_type: str | None = None
-    audit_scope: str | None = None
     min_severity: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def reject_unimplemented_target_setup_fields(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+
+        unused_fields = [
+            name
+            for name in ("target_repo", "target_ref_type", "audit_scope")
+            if name in data
+        ]
+        if unused_fields:
+            raise ValueError(
+                ", ".join(unused_fields)
+                + " are not API dispatch setup fields yet. Prepare "
+                "outputs/TARGET_INFO.json and outputs/BUG_BOUNTY_SCOPE.json "
+                "before dispatching target-code phases."
+            )
+        return data
 
     @field_validator("phase_id")
     @classmethod

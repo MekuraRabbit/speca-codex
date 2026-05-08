@@ -47,6 +47,11 @@ output_dir は outputs/audit_<target-name>、workers=4、max_concurrent=8。
 
 以下の `curl` 例は、Codex が内部で実行する API 操作を手動でも確認できるようにしたものです。
 
+dispatch API は、request field から target repository を clone したり audit scope
+を作ったりしません。target-code phase の前に `outputs/TARGET_INFO.json` と
+`outputs/BUG_BOUNTY_SCOPE.json` を用意してください。実際の setup endpoint が
+できるまでは、`target_repo`、`target_ref_type`、`audit_scope` は拒否されます。
+
 ## SPECA API の起動
 
 Codex App では [.codex/launch.json](../.codex/launch.json) の `speca-api` を起動します。手動で起動する場合:

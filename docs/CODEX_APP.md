@@ -44,6 +44,11 @@ and final outputs.
 The `curl` examples below show the underlying API operations for manual
 debugging and reproducibility.
 
+The dispatch API does not clone a target repository or derive audit scope from
+request fields. Before target-code phases, prepare `outputs/TARGET_INFO.json`
+and `outputs/BUG_BOUNTY_SCOPE.json`; `target_repo`, `target_ref_type`, and
+`audit_scope` are rejected until a real setup endpoint exists.
+
 ## Start The App Server
 
 From Codex App, launch `speca-api` from `.codex/launch.json`.
