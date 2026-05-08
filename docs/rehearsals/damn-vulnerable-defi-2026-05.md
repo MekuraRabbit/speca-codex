@@ -1,14 +1,13 @@
 # Damn Vulnerable DeFi Local Rehearsal, May 2026
 
-This note records a sanitized local rehearsal of the Codex App runner path
-against [OpenZeppelin Damn Vulnerable DeFi](https://github.com/OpenZeppelin/damn-vulnerable-defi).
+This note records a local rehearsal of the Codex App runner path against
+[OpenZeppelin Damn Vulnerable DeFi](https://github.com/OpenZeppelin/damn-vulnerable-defi).
 Damn Vulnerable DeFi is an intentionally vulnerable educational benchmark. This
 run is useful as a compatibility and quality check for this fork, but it is not
 production audit evidence and does not claim discovery of unknown vulnerabilities
 in a live protocol.
 
-No personal local paths, usernames, raw chat logs, API tokens, or worker traces
-are included here. Paths are repository-relative.
+Paths in this note are repository-relative.
 
 ## Scope
 

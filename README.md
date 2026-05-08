@@ -272,7 +272,7 @@ In the May 2026 local rehearsal:
 - The scoped run did not require external target fetches, RPC calls, registries,
   explorers, deployments, or account infrastructure.
 
-A sanitized reproduction note is available at
+A reproduction note is available at
 [`docs/rehearsals/damn-vulnerable-defi-2026-05.md`](docs/rehearsals/damn-vulnerable-defi-2026-05.md).
 
 Limitations:
