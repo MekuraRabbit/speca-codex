@@ -30,6 +30,7 @@ from .codex_adapter import (
     codex_service_tier_from_config,
 )
 from .codex_bin import resolve_codex_bin
+from .codex_sandbox import codex_app_sandbox_policy, codex_sandbox_mode
 from .runner import ClaudeRunner
 
 
@@ -90,10 +91,18 @@ class CodexAppServerClient:
         url: str | None,
         cwd: Path,
         timeout_seconds: int,
+        sandbox_mode: str = "workspace-write",
+        sandbox_policy: dict[str, Any] | None = None,
     ) -> None:
         self.url = url
         self.cwd = cwd
         self.timeout_seconds = timeout_seconds
+        self.sandbox_mode = sandbox_mode
+        self.sandbox_policy = sandbox_policy or {
+            "type": "workspaceWrite",
+            "networkAccess": False,
+            "writableRoots": [],
+        }
         self._owns_process = url is None
         self._process: subprocess.Popen[Any] | None = None
         self._ws: Any = None
@@ -316,8 +325,8 @@ class CodexAppServerClient:
     async def _answer_server_request(self, message: dict[str, Any]) -> None:
         """Respond conservatively to server-initiated requests.
 
-        Normal SPECA app-server runs use approvalPolicy="never" and
-        sandbox="danger-full-access", so approvals should not appear. If they
+        Normal SPECA app-server runs use approvalPolicy="never" and an
+        explicit scheduler-selected sandbox, so approvals should not appear. If they
         do, decline instead of silently granting privileges.
         """
         method = str(message.get("method", ""))
@@ -448,7 +457,7 @@ class CodexAppServerClient:
         thread_params: dict[str, Any] = {
             "cwd": str(cwd),
             "approvalPolicy": "never",
-            "sandbox": "danger-full-access",
+            "sandbox": self.sandbox_mode,
             "serviceName": "speca",
             "developerInstructions": developer_instructions,
             "ephemeral": _ephemeral_threads_enabled(),
@@ -475,7 +484,7 @@ class CodexAppServerClient:
                 ],
                 "cwd": str(cwd),
                 "approvalPolicy": "never",
-                "sandboxPolicy": {"type": "dangerFullAccess"},
+                "sandboxPolicy": self.sandbox_policy,
                 **({"model": model} if model else {}),
                 **({"effort": effort} if effort else {}),
                 **({"serviceTier": service_tier} if service_tier else {}),
@@ -523,6 +532,11 @@ class CodexAppRunner(ClaudeRunner):
                     or self.config.runtime_env.get("SPECA_CODEX_APP_SERVER_URL"),
                     cwd=Path.cwd(),
                     timeout_seconds=self.config.timeout_seconds,
+                    sandbox_mode=codex_sandbox_mode(self.config),
+                    sandbox_policy=codex_app_sandbox_policy(
+                        self.config,
+                        writable_roots=[self.output_dir],
+                    ),
                 )
                 await self._client.connect()
             return self._client

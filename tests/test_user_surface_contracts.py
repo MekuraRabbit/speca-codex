@@ -397,3 +397,18 @@ def test_codex_app_docs_describe_ephemeral_thread_default():
         doc = path.read_text(encoding="utf-8")
         assert "SPECA_CODEX_APP_EPHEMERAL_THREADS" in doc
         assert "ephemeral" in doc
+
+
+def test_codex_docs_describe_sandbox_defaults():
+    public_docs = [
+        Path("README.md"),
+        Path("README.ja.md"),
+        Path("docs/CODEX_APP.md"),
+        Path("docs/CODEX_APP.ja.md"),
+    ]
+
+    for path in public_docs:
+        doc = path.read_text(encoding="utf-8")
+        assert "SPECA_CODEX_SANDBOX" in doc
+        assert "workspace-write" in doc
+        assert "danger-full-access" in doc

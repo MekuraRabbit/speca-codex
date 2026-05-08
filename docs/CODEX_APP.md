@@ -68,6 +68,13 @@ full project sync of legacy workflow dependencies.
 > binds are refused unless `SPECA_ENABLE_REMOTE_API=1` is set for an explicitly
 > reviewed local environment.
 
+Codex worker turns default to the `workspace-write` sandbox. Phase `01a` and
+`01b` allow sandboxed network access because they fetch operator-provided
+specification URLs; later target-code phases keep sandboxed network access off
+unless `SPECA_CODEX_SANDBOX_NETWORK=1` is set. Use
+`SPECA_CODEX_SANDBOX=danger-full-access` only for trusted local runs that are
+externally sandboxed and authorized.
+
 On Windows, if you want to bypass the launcher and call the lightweight venv
 directly:
 

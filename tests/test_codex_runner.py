@@ -8,7 +8,9 @@ from scripts.orchestrator.codex_runner import CodexRunner
 from scripts.orchestrator.config import get_phase_config
 
 
-def test_codex_runner_command_uses_codex_exec_stdin():
+def test_codex_runner_command_uses_codex_exec_stdin(monkeypatch):
+    monkeypatch.delenv("SPECA_CODEX_SANDBOX", raising=False)
+    monkeypatch.delenv("SPECA_CODEX_SANDBOX_NETWORK", raising=False)
     config = get_phase_config("03")
     runner = CodexRunner(config, asyncio.Semaphore(1))
 
@@ -17,8 +19,36 @@ def test_codex_runner_command_uses_codex_exec_stdin():
     assert "exec" in cmd
     assert "--json" in cmd
     assert "--skip-git-repo-check" in cmd
+    assert "--dangerously-bypass-approvals-and-sandbox" not in cmd
+    sandbox_index = cmd.index("--sandbox")
+    assert cmd[sandbox_index + 1] == "workspace-write"
+    assert 'approval_policy="never"' in cmd
+    assert "sandbox_workspace_write.network_access=false" in cmd
+    assert "--add-dir" in cmd
     assert cmd[-1] == "-"
     assert stdin_bytes == b"hello"
+
+
+def test_codex_runner_allows_explicit_danger_full_access(monkeypatch):
+    monkeypatch.setenv("SPECA_CODEX_SANDBOX", "danger-full-access")
+    config = get_phase_config("03")
+    runner = CodexRunner(config, asyncio.Semaphore(1))
+
+    cmd, _ = runner._build_cmd("hello")
+
+    assert "--dangerously-bypass-approvals-and-sandbox" in cmd
+    assert "--sandbox" not in cmd
+
+
+def test_codex_runner_enables_network_for_spec_fetch_phases(monkeypatch):
+    monkeypatch.delenv("SPECA_CODEX_SANDBOX", raising=False)
+    monkeypatch.delenv("SPECA_CODEX_SANDBOX_NETWORK", raising=False)
+    config = get_phase_config("01b")
+    runner = CodexRunner(config, asyncio.Semaphore(1))
+
+    cmd, _ = runner._build_cmd("hello")
+
+    assert "sandbox_workspace_write.network_access=true" in cmd
 
 
 def test_codex_runner_does_not_pass_claude_model_alias():
