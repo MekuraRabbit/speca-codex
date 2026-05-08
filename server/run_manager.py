@@ -13,6 +13,9 @@ from typing import Any
 from .progress import ProgressBus
 
 
+RUN_ID_HEX_LENGTH = 16
+
+
 class RunStatus(str, Enum):
     QUEUED = "queued"
     RUNNING = "running"
@@ -66,7 +69,7 @@ class RunManager:
                     f"A run is already active for output_dir={output_dir!r}"
                 )
 
-        run_id = str(uuid.uuid4())[:8]
+        run_id = self._generate_run_id()
         bus = ProgressBus()
         run = RunInfo(
             run_id=run_id,
@@ -79,6 +82,12 @@ class RunManager:
         )
         self._runs[run_id] = run
         return run
+
+    def _generate_run_id(self) -> str:
+        while True:
+            run_id = uuid.uuid4().hex[:RUN_ID_HEX_LENGTH]
+            if run_id not in self._runs:
+                return run_id
 
     @staticmethod
     def _output_dir_key(output_dir: str) -> str:
