@@ -51,6 +51,7 @@ upstream research implementation, use [NyxFoundation/speca](https://github.com/N
 - [Why SPECA?](#why-speca)
 - [Quick Start](#quick-start)
 - [Demo](#demo)
+- [Local Validation](#local-validation)
 - [Architecture](#architecture)
 - [Phases](#phases)
 - [Running on GitHub Actions](#running-on-github-actions)
@@ -250,6 +251,36 @@ target with a fresh `output_dir`.
 Some inherited GitHub Actions workflows can still be useful as references for
 legacy benchmark reproduction, but normal Codex App usage should start from the
 local API and `codex app-server` runner.
+
+## Local Validation
+
+This fork has been exercised in one known-good local rehearsal against
+[OpenZeppelin's Damn Vulnerable DeFi](https://github.com/OpenZeppelin/damn-vulnerable-defi),
+an intentionally vulnerable educational benchmark. Treat this as a compatibility
+and quality check for the Codex App runner path, not as production audit
+evidence or a claim that SPECA discovered unknown vulnerabilities in a live
+protocol.
+
+In the May 2026 local rehearsal:
+
+- Phase 03/04 completed against the pinned local checkout and accounted for
+  all 187 input properties.
+- Phase 05 grouped the Phase 04 confirmed/potential findings into 9
+  representative PoC candidates.
+- All 9 representative PoC tests were manually implemented under the pinned
+  target checkout and passed locally.
+- The scoped run did not require external target fetches, RPC calls, registries,
+  explorers, deployments, or account infrastructure.
+
+Limitations:
+
+- Damn Vulnerable DeFi is an educational target with intentionally planted
+  vulnerabilities; this is not evidence of performance on arbitrary production
+  repositories.
+- Phase 03 finding counts are property-level signals, not counts of independent
+  vulnerabilities.
+- Phase 05 currently selects and structures PoC candidates. It does not yet
+  fully automate exploit test implementation.
 
 ## Architecture
 

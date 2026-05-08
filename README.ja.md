@@ -181,6 +181,26 @@ uv run python scripts/run_phase.py --phase 05 --output-dir outputs/<run>
 
 API から実行する場合は、各 phase を順番に dispatch します。長い run や source 差分がありうる run では `isolated_worktrees` を有効にしてください。
 
+## ローカル検証結果
+
+この fork では、教育用に意図的な脆弱性を含む
+[OpenZeppelin Damn Vulnerable DeFi](https://github.com/OpenZeppelin/damn-vulnerable-defi)
+を対象に、Codex App runner 経由のローカル rehearsal を 1 回通しています。
+これは Codex App 対応経路の互換性と品質を確認するための検証であり、実運用プロトコルの監査実績や未知の脆弱性発見を主張するものではありません。
+
+2026 年 5 月のローカル rehearsal では:
+
+- pinned local checkout に対して Phase 03/04 を完了し、入力 property 187 件すべてを accounted にしました。
+- Phase 04 の confirmed / potential finding から、Phase 05 で 9 件の代表 PoC 候補を作成しました。
+- 9 件すべての代表 PoC test を pinned target checkout 配下に手動実装し、ローカルで passing を確認しました。
+- 許可した教育用ターゲット範囲内で完結し、外部 target fetch、RPC、registry、explorer、deployment、account infrastructure は不要でした。
+
+注意点:
+
+- Damn Vulnerable DeFi は教育目的の intentionally vulnerable target です。この結果は任意の本番 repository に対する性能を示すものではありません。
+- Phase 03 の finding 数は property 単位の信号であり、独立した脆弱性数ではありません。
+- Phase 05 は PoC 候補の選択と構造化を行う段階です。現時点では exploit test の実装まで完全自動化するものではありません。
+
 ## 並列 run
 
 複数の run を同時に動かす場合は、必ず別の `output_dir` を指定します。
