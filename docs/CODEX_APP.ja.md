@@ -57,16 +57,21 @@ dispatch API は、request field から target repository を clone したり au
 Codex App では [.codex/launch.json](../.codex/launch.json) の `speca-api` を起動します。手動で起動する場合:
 
 ```bash
+uv run --no-sync python -m server.app
+```
+
+`--no-sync` を使うので、既存の軽量 `.venv` を使い、legacy workflow
+dependency の full sync を強制しません。
+
+軽量 venv を直接呼びたい場合:
+
+```bash
 .venv/Scripts/python.exe -m server.app
 ```
 
-`uv run` を使う場合:
-
 ```bash
-uv run python -m server.app
+.venv/bin/python -m server.app
 ```
-
-Windows で `uv run` が既存 workflow 用の `sweagent` checkout に失敗する場合は、`.venv/Scripts/python.exe` の軽量 venv 経路を使ってください。
 
 > **この API を公開しないでください。** SPECA API は agent worker run を
 > 起動できるローカル単一ユーザー向けの制御面です。認証はありません。

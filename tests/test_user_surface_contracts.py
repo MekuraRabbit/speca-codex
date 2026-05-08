@@ -204,9 +204,29 @@ def test_public_api_launch_docs_use_guarded_entrypoint():
     for path in public_docs:
         doc = path.read_text(encoding="utf-8")
         assert "uvicorn server.app:app" not in doc
+        assert "uv run python -m server.app" not in doc
+        assert "uv run --no-sync python -m server.app" in doc
         assert "-m server.app" in doc
 
-    launch_config = json.loads(Path(".codex/launch.json").read_text(encoding="utf-8"))
-    runtime_args = launch_config["configurations"][0]["runtimeArgs"]
+    codex_app_docs = [
+        Path("README.md"),
+        Path("README.ja.md"),
+        Path("docs/CODEX_APP.md"),
+        Path("docs/CODEX_APP.ja.md"),
+    ]
+    for path in codex_app_docs:
+        doc = path.read_text(encoding="utf-8")
+        assert ".venv/Scripts/python.exe -m server.app" in doc
+        assert ".venv/bin/python -m server.app" in doc
 
-    assert runtime_args == ["-m", "server.app"]
+    launch_config = json.loads(Path(".codex/launch.json").read_text(encoding="utf-8"))
+    launch_entry = launch_config["configurations"][0]
+
+    assert launch_entry["runtimeExecutable"] == "uv"
+    assert launch_entry["runtimeArgs"] == [
+        "run",
+        "--no-sync",
+        "python",
+        "-m",
+        "server.app",
+    ]
