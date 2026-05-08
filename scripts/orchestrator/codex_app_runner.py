@@ -36,6 +36,7 @@ from .runner import ClaudeRunner
 _CODEX_BIN = resolve_codex_bin()
 _READER_CANCEL_TIMEOUT_SECONDS = 2
 _WEBSOCKET_CLOSE_TIMEOUT_SECONDS = 5
+_FALSY = {"0", "false", "no", "off"}
 
 
 def _int_token(value: Any) -> int:
@@ -46,6 +47,11 @@ def _int_token(value: Any) -> int:
     if isinstance(value, float):
         return max(0, int(value))
     return 0
+
+
+def _ephemeral_threads_enabled() -> bool:
+    value = os.environ.get("SPECA_CODEX_APP_EPHEMERAL_THREADS", "")
+    return value.strip().lower() not in _FALSY
 
 
 class CodexAppServerError(RuntimeError):
@@ -402,7 +408,7 @@ class CodexAppServerClient:
             "sandbox": "danger-full-access",
             "serviceName": "speca",
             "developerInstructions": developer_instructions,
-            "ephemeral": False,
+            "ephemeral": _ephemeral_threads_enabled(),
         }
         if model:
             thread_params["model"] = model

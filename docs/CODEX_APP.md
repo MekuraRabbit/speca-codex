@@ -224,6 +224,12 @@ Source diffs are collected for isolated worktree runs. Non-isolated runs still
 record thread metadata, but suppress workspace diffs so unrelated local changes
 are not swept into run metadata.
 
+Codex app-server threads are created as ephemeral by default. SPECA still writes
+thread ids, turn ids, token usage, and optional diffs under
+`<output_dir>/codex_app_threads/`; the ephemeral setting only avoids keeping
+the worker threads in Codex's persistent local thread store. For local debugging
+only, set `SPECA_CODEX_APP_EPHEMERAL_THREADS=0` before dispatching a run.
+
 Explicit Claude fallback for old local/CI workflows:
 
 ```json

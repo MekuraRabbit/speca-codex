@@ -239,6 +239,13 @@ SPECA の出力 artifact は、prompt 内で指定された絶対 path の `outp
 
 `CodexAppRunner` は thread id と turn id を `<output_dir>/codex_app_threads/` に保存します。source diff は isolated worktree run のときだけ回収します。非 isolated run では、手元の未コミット差分を run metadata に巻き込まないように workspace diff を抑制します。
 
+Codex app-server thread は既定で ephemeral として作成されます。SPECA は
+thread id、turn id、token usage、必要に応じた diff を
+`<output_dir>/codex_app_threads/` に保存します。ephemeral 設定は、worker
+thread を Codex の永続的なローカル thread store に残さないためのものです。
+ローカルデバッグで persistent thread が必要な場合だけ、
+`SPECA_CODEX_APP_EPHEMERAL_THREADS=0` を設定してから run を dispatch してください。
+
 API から見る場合:
 
 ```bash

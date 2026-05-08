@@ -922,6 +922,7 @@ those aliases.
 | `SPECA_API_RUNNER_KEY_ENV_ALLOWLIST` | Local FastAPI server | Comma-separated environment variable names allowed for API runner keys when API runner dispatch is enabled |
 | `SPECA_ALLOW_UNVERIFIED_TARGET_CHECKOUT` | Phase 02c/03/04/05 pre-flight | Skip `TARGET_INFO.local_checkout` Git validation for trusted legacy/local runs only |
 | `SPECA_STRICT_SCHEMA` | Result collector / CI fixtures | Set to `1`/`true` to raise on partial-output schema validation failures before saving malformed partials |
+| `SPECA_CODEX_APP_EPHEMERAL_THREADS` | Codex app-server runner | Defaults to ephemeral worker threads; set to `0` only for local debugging when Codex thread persistence is needed |
 | `SPEC_URLS` | 01a | Comma-separated seed URLs to crawl |
 | `KEYWORDS` | 01a | Optional crawl keyword filter |
 | `FORCE_EXECUTE=1` | All phases | Bypass resume state (set automatically by `--force`) |

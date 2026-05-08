@@ -275,3 +275,17 @@ def test_codex_app_docs_describe_run_info_persistence():
     assert "outputs/**/RUN_INFO.json" in codex_doc_ja
     assert "queued" in codex_doc_ja
     assert "running" in codex_doc_ja
+
+
+def test_codex_app_docs_describe_ephemeral_thread_default():
+    public_docs = [
+        Path("README.md"),
+        Path("README.ja.md"),
+        Path("docs/CODEX_APP.md"),
+        Path("docs/CODEX_APP.ja.md"),
+    ]
+
+    for path in public_docs:
+        doc = path.read_text(encoding="utf-8")
+        assert "SPECA_CODEX_APP_EPHEMERAL_THREADS" in doc
+        assert "ephemeral" in doc
