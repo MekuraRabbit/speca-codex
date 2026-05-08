@@ -133,11 +133,12 @@ def _merge_candidate_input(
     audit: dict[str, Any],
     target_info: dict[str, Any],
 ) -> dict[str, Any]:
-    prop_id = _item_id(review)
+    original_prop_id = _item_id(review)
     target_checkout = _target_checkout(target_info)
     target_files = _target_files(audit, target_checkout)
     primary_file = target_files[0] if target_files else ""
-    challenge = _challenge_from_paths(target_files) or _challenge_from_property_id(prop_id)
+    challenge = _challenge_from_paths(target_files) or _challenge_from_property_id(original_prop_id)
+    prop_id = _normalized_property_id(original_prop_id, challenge)
     symbol = _primary_symbol(audit)
     attack_text = " ".join(
         str(value)
@@ -155,6 +156,7 @@ def _merge_candidate_input(
 
     return {
         "property_id": prop_id,
+        "original_property_id": original_prop_id,
         "review_verdict": review.get("review_verdict", ""),
         "adjusted_severity": review.get("adjusted_severity", ""),
         "reviewer_notes": review.get("reviewer_notes", ""),
@@ -185,6 +187,7 @@ def _build_candidate(
     attack_family = representative["attack_family"] or "finding"
     target_checkout = _target_checkout(target_info)
     output_path = _recommended_output_path(target_checkout, challenge, attack_family, target_info)
+    review_verdict = _candidate_review_verdict(representative)
 
     return {
         "candidate_id": _candidate_id(challenge, attack_family, covered_ids),
@@ -194,7 +197,7 @@ def _build_candidate(
         "covered_count": len(covered_ids),
         "challenge": challenge,
         "attack_family": attack_family,
-        "review_verdict": representative["review_verdict"],
+        "review_verdict": review_verdict,
         "adjusted_severity": representative["adjusted_severity"],
         "spec_reference": representative["spec_reference"],
         "target_files": sorted({path for item in sorted_items for path in item["target_files"]}),
@@ -206,17 +209,24 @@ def _build_candidate(
         "run_command": _run_command(output_path, target_info),
         "target_local_checkout": target_checkout,
         "source_items": [
-            {
-                "property_id": item["property_id"],
-                "review_verdict": item["review_verdict"],
-                "adjusted_severity": item["adjusted_severity"],
-                "primary_file": item["primary_file"],
-                "primary_symbol": item["primary_symbol"],
-            }
+            _source_item_for_output(item)
             for item in sorted_items
         ],
         "status": "candidate",
     }
+
+
+def _source_item_for_output(item: dict[str, Any]) -> dict[str, Any]:
+    source_item = {
+        "property_id": item["property_id"],
+        "review_verdict": item["review_verdict"],
+        "adjusted_severity": item["adjusted_severity"],
+        "primary_file": item["primary_file"],
+        "primary_symbol": item["primary_symbol"],
+    }
+    if item.get("original_property_id") and item["original_property_id"] != item["property_id"]:
+        source_item["original_property_id"] = item["original_property_id"]
+    return source_item
 
 
 def _candidate_sort_key(item: dict[str, Any]) -> tuple[int, int, int, str]:
@@ -292,6 +302,17 @@ def _challenge_from_property_id(prop_id: str) -> str:
     return match.group(1) if match else "unknown"
 
 
+def _normalized_property_id(prop_id: str, challenge: str) -> str:
+    if not prop_id or not challenge or challenge == "unknown":
+        return prop_id
+    return re.sub(
+        r"^PROP-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*-(pre|post|inv|asm)-",
+        f"PROP-{challenge}-\\1-",
+        prop_id,
+        count=1,
+    )
+
+
 def _primary_symbol(audit: dict[str, Any]) -> str:
     code_path = str(audit.get("code_path") or "")
     parts = code_path.split("::")
@@ -308,8 +329,8 @@ def _primary_symbol(audit: dict[str, Any]) -> str:
 
 def _attack_family(challenge: str, symbol: str, text: str) -> str:
     haystack = f"{challenge} {symbol} {text}".lower()
-    if "renounce" in haystack:
-        return "oracle-source-renounce-dos"
+    if _has_oracle_source_quorum_context(challenge, symbol, text):
+        return "oracle-source-quorum-degradation"
 
     known_challenge_families = {
         "truster": "unauthorized-token-approval",
@@ -387,12 +408,74 @@ def _candidate_id(challenge: str, attack_family: str, covered_ids: list[str]) ->
     return f"POC-{_slug(challenge, 24)}-{_slug(attack_family, 40)}-{digest}"
 
 
+def _candidate_review_verdict(item: dict[str, Any]) -> str:
+    if (
+        item.get("attack_family") == "oracle-source-quorum-degradation"
+        and _item_has_oracle_source_quorum_context(item)
+    ):
+        return "CONFIRMED_POTENTIAL"
+    return str(item.get("review_verdict", ""))
+
+
 def _summary_for_candidate(item: dict[str, Any]) -> str:
+    if (
+        item.get("attack_family") == "oracle-source-quorum-degradation"
+        and _item_has_oracle_source_quorum_context(item)
+    ):
+        return (
+            "A current oracle source, or an attacker holding that source key, can call "
+            "renounceRole(TRUSTED_SOURCE_ROLE, source) directly on the oracle. This "
+            "degrades oracle quorum and is a potential availability risk; a full median "
+            "DoS requires the source set to become empty."
+        )
     for key in ("attack_scenario", "audit_summary", "reviewer_notes"):
         value = str(item.get(key) or "").strip()
         if value:
             return value
     return f"Representative PoC candidate for {item['property_id']}."
+
+
+def _item_has_oracle_source_quorum_context(item: dict[str, Any]) -> bool:
+    text = " ".join(
+        str(item.get(key) or "")
+        for key in (
+            "attack_scenario",
+            "audit_summary",
+            "reviewer_notes",
+            "code_path",
+            "primary_file",
+        )
+    )
+    return _has_oracle_source_quorum_context(
+        str(item.get("challenge") or ""),
+        str(item.get("primary_symbol") or ""),
+        text,
+    )
+
+
+def _has_oracle_source_quorum_context(challenge: str, symbol: str, text: str) -> bool:
+    haystack = f"{challenge} {symbol} {text}".lower()
+    if "renounce" not in haystack:
+        return False
+
+    oracle_terms = (
+        "oracle",
+        "trustfuloracle",
+        "postprice",
+        "median",
+    )
+    source_quorum_terms = (
+        "source",
+        "trusted_source_role",
+        "trusted source",
+        "source set",
+        "quorum",
+        "median",
+    )
+    return (
+        any(term in haystack for term in oracle_terms)
+        and any(term in haystack for term in source_quorum_terms)
+    )
 
 
 def _safe_relative_path(path: str) -> str:
