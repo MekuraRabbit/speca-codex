@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import os
+import sys
+from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import urlparse
 
@@ -12,6 +14,9 @@ from .path_safety import normalize_output_dir, normalize_worktree_root
 
 
 _TRUTHY = {"1", "true", "yes", "on"}
+_SCRIPTS_DIR = str(Path(__file__).resolve().parent.parent / "scripts")
+if _SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR)
 
 
 class PhaseDispatchRequest(BaseModel):
@@ -60,7 +65,7 @@ class PhaseDispatchRequest(BaseModel):
     @field_validator("phase_id")
     @classmethod
     def validate_phase_id(cls, value: str) -> str:
-        from scripts.orchestrator.config import PHASE_CONFIGS
+        from orchestrator.config import PHASE_CONFIGS
 
         if value not in PHASE_CONFIGS:
             allowed = ", ".join(PHASE_CONFIGS)

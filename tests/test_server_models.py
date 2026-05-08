@@ -1,5 +1,8 @@
 """Tests for API request models."""
 
+import sys
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
@@ -24,6 +27,51 @@ def test_phase_dispatch_accepts_loopback_app_server_urls(url: str):
 def test_phase_dispatch_rejects_unknown_phase_id():
     with pytest.raises(ValidationError):
         PhaseDispatchRequest(phase_id="99")
+
+
+def test_phase_dispatch_validator_resolves_config_without_repo_root(monkeypatch):
+    repo_root = Path(__file__).resolve().parents[1]
+    scripts_dir = str(repo_root / "scripts")
+    module_names = (
+        "scripts",
+        "scripts.orchestrator",
+        "scripts.orchestrator.config",
+        "orchestrator",
+        "orchestrator.config",
+    )
+    saved_modules = {
+        name: sys.modules.pop(name, None)
+        for name in module_names
+    }
+
+    try:
+        monkeypatch.setattr(
+            sys,
+            "path",
+            [
+                entry
+                for entry in sys.path
+                if Path(entry or ".").resolve() != repo_root
+            ],
+        )
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+
+        request = PhaseDispatchRequest(phase_id="03")
+
+        assert request.phase_id == "03"
+        assert "orchestrator.config" in sys.modules
+        assert "scripts.orchestrator.config" not in sys.modules
+    finally:
+        for name in module_names:
+            sys.modules.pop(name, None)
+        sys.modules.update(
+            {
+                name: module
+                for name, module in saved_modules.items()
+                if module is not None
+            }
+        )
 
 
 def test_phase_dispatch_enables_codex_gui_model_by_default():
