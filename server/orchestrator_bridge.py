@@ -201,6 +201,48 @@ async def _run_phase(run: RunInfo, manager: RunManager) -> None:
         run.status = RunStatus.RUNNING
 
         with output_root_context(run.output_dir):
+            if phase_id == "05":
+                from orchestrator.phase05_candidates import write_poc_candidate_index
+
+                output_root = get_output_root()
+                candidate_path = output_root / "05_POC_CANDIDATES.json"
+                if inputs.get("force") and candidate_path.exists():
+                    candidate_path.unlink()
+
+                await run.bus.publish(ProgressEvent(
+                    type=EventType.PHASE_START,
+                    data={
+                        "phase_id": phase_id,
+                        "phase_name": "PoC Candidate Selection",
+                        "max_budget_usd": 0,
+                    },
+                ))
+                index = write_poc_candidate_index(output_root, candidate_path)
+                metadata = index.get("metadata", {})
+                result = {
+                    "total_results": metadata.get("candidate_count", 0),
+                    "reviewed_candidate_items": metadata.get(
+                        "reviewed_candidate_items",
+                        0,
+                    ),
+                    "output_dir": str(get_output_root()),
+                    "candidate_file": str(candidate_path),
+                }
+                await run.bus.publish(ProgressEvent(
+                    type=EventType.PHASE_COMPLETE,
+                    data={
+                        "phase_id": phase_id,
+                        "total_results": result["total_results"],
+                        "failed_batches": 0,
+                        "estimated_token_cost": None,
+                        "cost": None,
+                    },
+                ))
+                manager.mark_complete(run.run_id, result=result)
+                await run.bus.close()
+                await send_phase_result(run)
+                return
+
             orch = create_orchestrator(
                 phase_id,
                 num_workers=inputs.get("workers", 4),
