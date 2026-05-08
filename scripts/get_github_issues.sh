@@ -8,9 +8,10 @@ Usage: get_github_issues.sh [options] [<repo1> ...]
 Options:
   --repos list        Comma or space separated repositories (repeatable)
   --keywords list     Comma or space separated keywords; defaults to "fulu"
+  --output path       Output JSON path; defaults to outputs/00_SIMILAR_ISSUES.json
 
 Notes:
-  - Append results to security-agent/outputs/00_SIMILAR_ISSUES.json for reuse in /03_auditmap prompts.
+  - Writes a repository-keyed JSON object for reuse by later SPECA prompts.
 USAGE
 }
 
@@ -125,11 +126,10 @@ parse_keywords() {
   keywords_terms="$*"
 }
 
-ensure_tools_present
-
 keywords_input=""
 keywords_terms=""
 repos=""
+out_file="outputs/00_SIMILAR_ISSUES.json"
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -192,6 +192,25 @@ while [ "$#" -gt 0 ]; do
       append_repos_from_string "$repo_values"
       shift
       ;;
+    --output)
+      shift || { usage; exit 1; }
+      out_file=${1:-}
+      if [ -z "$out_file" ]; then
+        echo "Missing value for --output" >&2
+        usage
+        exit 1
+      fi
+      shift
+      ;;
+    --output=*)
+      out_file=${1#*=}
+      if [ -z "$out_file" ]; then
+        echo "Missing value for --output" >&2
+        usage
+        exit 1
+      fi
+      shift
+      ;;
     --help|-h)
       usage
       exit 0
@@ -231,7 +250,8 @@ if [ -z "$keywords_terms" ]; then
   keywords_terms="fulu"
 fi
 
-out_file="security-agent/outputs/00_SIMILAR_ISSUES.json"
+ensure_tools_present
+
 mkdir -p "$(dirname "$out_file")"
 
 workspace=$(mktemp -d)
