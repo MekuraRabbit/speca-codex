@@ -21,6 +21,7 @@ import os
 import tempfile
 from pathlib import Path
 import pytest
+from pydantic import ValidationError
 
 # Ensure the scripts directory is importable
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
@@ -1402,6 +1403,27 @@ class TestResultCollector:
                 assert summary["total_saves"] == 1
                 # The malformed data may or may not trigger errors depending on
                 # how lenient the Pydantic model is; at minimum the save should work
+            finally:
+                os.chdir(old_cwd)
+
+    def test_strict_schema_rejects_malformed_output(self, monkeypatch):
+        """Strict mode should fail before saving malformed partials."""
+        monkeypatch.setenv("SPECA_STRICT_SCHEMA", "1")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            old_cwd = os.getcwd()
+            os.chdir(tmpdir)
+            try:
+                config = self._make_config("01e")
+                collector = ResultCollector(config)
+                results = [{"garbage_key": "not a property"}]
+
+                with pytest.raises(ValidationError):
+                    collector.save_partial(results, worker_id=0, batch_index=1)
+
+                assert not list(Path("outputs").glob("01e_PARTIAL_*.json"))
+                summary = collector.get_validation_summary()
+                assert summary["total_saves"] == 1
+                assert summary["validation_errors"] == 1
             finally:
                 os.chdir(old_cwd)
 

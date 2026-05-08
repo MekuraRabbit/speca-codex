@@ -40,6 +40,14 @@ _PHASE_OUTPUT_MODELS: dict[str, type] = {
 }
 
 
+_TRUTHY = {"1", "true", "yes", "on"}
+
+
+def strict_schema_enabled() -> bool:
+    """Return whether collector validation failures should block saves."""
+    return os.environ.get("SPECA_STRICT_SCHEMA", "").strip().lower() in _TRUTHY
+
+
 class ResultCollector:
     """
     Collects and saves results from phase execution.
@@ -54,6 +62,7 @@ class ResultCollector:
         self.config = config
         self.output_dir = get_output_root()
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.strict_schema = strict_schema_enabled()
 
         # Validation statistics (accessible for monitoring / circuit breaker)
         self.total_saves: int = 0
@@ -308,9 +317,10 @@ class ResultCollector:
         """
         Validate *output_data* against the phase-specific Pydantic model.
 
-        Validation is **lenient**: warnings are printed to stderr and counters
-        are incremented, but the save is never blocked.  This allows downstream
-        resume logic to work even with partially malformed outputs.
+        By default, validation is lenient: warnings are printed to stderr and
+        counters are incremented, but the save is never blocked. Set
+        ``SPECA_STRICT_SCHEMA=1`` to make validation failures raise before
+        writing the partial file.
         """
         # 1. Validate metadata envelope
         meta_raw = output_data.get("metadata", {})
@@ -325,6 +335,8 @@ class ResultCollector:
             )
             for err in ve.errors():
                 print(f"    {err['loc']}: {err['msg']}", file=sys.stderr)
+            if self.strict_schema:
+                raise
 
         # 2. Validate result payload against phase-specific model
         model_cls = _PHASE_OUTPUT_MODELS.get(self.config.phase_id)
@@ -343,6 +355,8 @@ class ResultCollector:
             )
             for err in ve.errors():
                 print(f"    {err['loc']}: {err['msg']}", file=sys.stderr)
+            if self.strict_schema:
+                raise
 
     def get_validation_summary(self) -> dict[str, int]:
         """Return a summary of validation statistics."""
