@@ -1,89 +1,89 @@
-
-
-
 ---
-Description: Bug-Bounty Report Builder
-Usage: `/06_report VULN_ID=... REPORT_TYPE=... [SEVERITY=...]`
-Example: `/06_report VULN_ID="0023344" REPORT_TYPE="ETHEREUM" SEVERITY="critical"`
+Description: Bug-bounty report builder for a reviewed SPECA finding or PoC candidate
+Usage: `/06_report OUTPUT_DIR=... REPORT_TYPE=... [CANDIDATE_ID=...] [PROPERTY_ID=...] [SEVERITY=...] [OUTPUT_PATH=...]`
+Example: `/06_report OUTPUT_DIR="outputs/rehearsal_dvd" CANDIDATE_ID="POC-truster-unauthorized-token-approval-76774102" REPORT_TYPE="IMMUNEFI" SEVERITY="high"`
 Arguments:
-- **$VULN_ID**         : `audit_items[].id` in `03_AUDITMAP.json`
-- **$REPORT_TYPE**     : One of `CANTINA`, `CODE4RENA`, `ETHEREUM`, `IMMUNEFI`, `SHERLOCK`
-- **$SEVERITY**        : Optional override (e.g. `critical`, `high`, `medium`, `low`)
+- **$OUTPUT_DIR**    : SPECA run output directory containing `TARGET_INFO.json`, `03_PARTIAL_*.json`, `04_PARTIAL_*.json`, and optionally `05_POC_CANDIDATES.json` / `05_POC_RESULT_*.json`.
+- **$REPORT_TYPE**   : One of `CANTINA`, `CODE4RENA`, `ETHEREUM`, `IMMUNEFI`, `SHERLOCK`.
+- **$CANDIDATE_ID**  : Optional `candidates[].candidate_id` from `05_POC_CANDIDATES.json`.
+- **$PROPERTY_ID**   : Optional Phase 04 `reviewed_items[].property_id`; required when `CANDIDATE_ID` is omitted.
+- **$SEVERITY**      : Optional override (`critical`, `high`, `medium`, `low`, `informational`).
+- **$OUTPUT_PATH**   : Optional report path. Default: `$OUTPUT_DIR/report_<title_slug>.md`.
 ---
 
-Generate a complete **Markdown bug-bounty report** tailored to the selected bounty program.
+Generate exactly one Markdown bug-bounty report from current SPECA outputs.
 
-**Always use /serena for these development tasks to maximize token efficiency:**
+# Data Contract
 
+1. Resolve `$OUTPUT_DIR` relative to the current workspace unless it is absolute.
+2. Load only files inside `$OUTPUT_DIR`:
+   - `TARGET_INFO.json`
+   - `03_PARTIAL_*.json` with `audit_items[]`
+   - `04_PARTIAL_*.json` with `reviewed_items[]`
+   - `05_POC_CANDIDATES.json` when `$CANDIDATE_ID` is provided
+   - `05_POC_RESULT_<candidate_id>.json` when present
+3. Load the report template from `docs/report_templates/<report_type_lower>.md`.
+4. Do not read repository-root `outputs/` as a fallback when `$OUTPUT_DIR` points elsewhere.
+5. Do not read target code except for the files named by the selected finding or candidate, and only under `TARGET_INFO.local_checkout`.
 
-# 📥 Auto-load from 03_AUDITMAP.json
-1. **Read** `security-agent/outputs/03_AUDITMAP.json`.
-2. **Locate** the entry where `audit_items[].id == $VULN_ID`.
-3. **Extract**
-   - `SNIPPET`        <- `audit_items[].snippet`
-   - `SRC_FILE`       <- `audit_items[].file`
-   - `SRC_FUNCTION`   <- infer the enclosing function or method name (fallback: short descriptive label)
-   - `UT_PATH`        <- first `poc_tests[].file` with `"type": "unit"`
-   - `IT_PATH`        <- first `integration_tests[].file` (if any)
-   - `VULN_TITLE_RAW` <- `audit_items[].description`
-   - `VULN_TITLE`     <- text before the first colon (`:`) in `VULN_TITLE_RAW`, or the full string if no colon exists. If empty, craft a concise fallback title without embedding `$VULN_ID`.
-   - `TITLE_SLUG`     <- `VULN_TITLE` transformed to lowercase snake_case containing only ASCII letters, digits, and underscores (convert spaces/punctuation to underscores, collapse repeats, strip leading/trailing underscores). If the slug length exceeds 40 characters, remove filler words or truncate cleanly so the final slug ≤ 40 characters.
-4. **If not found** → abort with
-   `"Vulnerability '$VULN_ID' not found in 03_AUDITMAP.json"`.
-5. **Resolve template** → map `$REPORT_TYPE` to `security-agent/docs/report_templates/{{REPORT_TYPE}}.md`; abort if the file does not exist.
+# Selection Rules
 
-# 🎯 Goal
-1. **Read** `security-agent/docs/report_templete_{{REPORT_TYPE}}.md` for the selected `$REPORT_TYPE` and fill *all* placeholders while preserving heading order and stylistic expectations.
-2. Use internal data sources (Ethereum specs, audit map, bounty rules) strictly for authoring context—never surface repository paths or filenames in the final report.
-   - Pull from `security-agent/docs/ethereum/spec_*`, `security-agent/outputs/01_SPEC.json`, and `security-agent/outputs/03_AUDITMAP.json` as needed, but redact those identifiers from the deliverable.
-   - When `$SEVERITY` is omitted, consult `security-agent/outputs/01_BOUNTY_GUIDELINE.md` to derive a justified classification.
-   - Strip or rewrite any internal markers (e.g. `AP`, `SR`, `NORMATIVE_ID`, `@audit`, `@audit-ok`) so the public report contains only neutral wording.
-3. Embed **verbatim PoC code** from sanitized sources:
-   - Unit test → `{{UT_PATH}}`
-   - Integration test → `{{IT_PATH}}` (if present)
-   Provide human-friendly labels and run commands that omit `security-agent/` prefixes or other repository-only context, explicitly including the test file path(s) and exact command(s) needed to execute them.
+If `$CANDIDATE_ID` is provided:
+1. Find `candidates[]` in `05_POC_CANDIDATES.json` where `candidate_id == $CANDIDATE_ID`.
+2. Use its `representative_property_id`, `covered_property_ids`, `source_items`, `target_files`, `attack_summary`, `recommended_output_path`, `run_command`, and matching `05_POC_RESULT_<candidate_id>.json` when available.
+3. Join the representative property back to Phase 04 `reviewed_items[]` and Phase 03 `audit_items[]` by indexing all known identifiers: candidate `representative_property_id`, every `covered_property_ids[]` value, every `source_items[].property_id`, and every `source_items[].original_property_id`.
+4. Phase 05 may normalize property IDs for challenge grouping. When `source_items[].original_property_id` is present, treat it as the preferred lookup key for the original Phase 03/04 evidence, with the normalized `property_id` as a display/coverage key.
+5. If missing, abort with: `Candidate '<id>' not found in 05_POC_CANDIDATES.json`.
 
-# 📤 Output
-Write exactly **one Markdown file**:
-`security-agent/outputs/report_{{TITLE_SLUG}}.md`
-(no extra headings, no missing sections).
-Ensure the filename component `report_{{TITLE_SLUG}}.md` stays ≤ 55 characters; reduce the slug length further if necessary before writing.
+If `$PROPERTY_ID` is provided:
+1. Find the Phase 04 `reviewed_items[]` entry where `property_id == $PROPERTY_ID`.
+2. Use only entries with `review_verdict` equal to `CONFIRMED_VULNERABILITY` or `CONFIRMED_POTENTIAL`, unless the user explicitly asks for a disputed report draft.
+3. Join to Phase 03 `audit_items[]` by `property_id`, `check_id`, or `checklist_id`.
+4. If missing, abort with: `Property '<id>' not found in 04_PARTIAL_*.json`.
 
-# 📝 Mandatory Sections
+# Report Inputs
 
-Must Follow template
+Use these current fields when available:
+- Phase 03: `classification`, `code_path`, `code_scope`, `proof_trace`, `attack_scenario`, `summary`, `checklist_id`.
+- Phase 04: `review_verdict`, `original_classification`, `adjusted_severity`, `reviewer_notes`, `spec_reference`, `final_recommendation`.
+- Phase 05 candidate: `candidate_id`, `attack_summary`, `covered_property_ids`, `source_items[].property_id`, `source_items[].original_property_id`, `target_files`, `primary_file`, `primary_symbol`, `recommended_output_path`, `run_command`, `target_local_checkout`.
+- Phase 05 result: PoC file path, command, execution status, stdout/stderr summary, and any reproduction notes.
+- Target info: `target_repo`, `target_commit`, `target_commit_short`, `local_checkout`, `language`.
 
-# 🛠️ Generation Workflow
-```
-1. Resolve `$REPORT_TYPE` → load `security-agent/docs/report_templates/{{REPORT_TYPE}}.md` and collect placeholders like {{SEVERITY}}, {{POC}}.
-2. Determine severity: if `$SEVERITY` argument is present, normalise and apply it; otherwise compute Impact × Likelihood using `security-agent/outputs/01_BOUNTY_GUIDELINE.md` and record the rationale internally.
-3. Read PoC files (UT_PATH and IT_PATH) and include in fenced code blocks, ensuring each snippet is accompanied by the file path and explicit test command.
-4. Grab ~10 lines of source around the vulnerable logic, annotating references using `SRC_FILE` + `SRC_FUNCTION` only (no raw line numbers, GitHub URLs, or absolute paths).
-5. Replace all placeholders; verify none remain.
-6. Save Markdown to output path.
-```
+# Authoring Rules
 
-# 🧪 Self-Check
-- Re-open the written file → scan for `{{` or `}}`; abort if any remain.
-- Confirm the heading sequence matches the template exactly.
-- Ensure the PoC section explicitly lists the test file path(s) and exact command(s) required to reproduce the issue.
-- Search the rendered Markdown for forbidden internal identifiers (`AP`, `SR`, `NORMATIVE_ID`, `@audit`, `@audit-ok`) and replace any occurrences with public-friendly phrasing before finalizing.
+- Treat SPECA output IDs and local paths as internal evidence. The public report may mention concise file paths only when the bounty template requires evidence; never include absolute local paths.
+- Never include `OUTPUT_DIR`, raw partial filenames, Codex thread IDs, app-server logs, or local machine usernames.
+- Do not claim exploitability beyond the Phase 04 verdict and PoC result evidence.
+- When `$SEVERITY` is omitted, use Phase 04 `adjusted_severity`; if missing, derive severity from impact and clearly state the rationale.
+- If a PoC result is absent, label the reproduction section as a proposed PoC plan rather than a verified exploit.
+- All public links must be fully-qualified `https://` links.
 
-# ⛔ Constraints
-- **Do not** wrap Markdown in JSON.
-- No public URLs for PoC code; assume local testnet execution.
-- Never mention internal identifiers like `03_AUDITMAP`, `AP`, `SR`, or any `security-agent/` paths in the generated report.
-- All links must be fully-qualified `https://`.
-- Redact or translate away any occurrences of `AP`, `SR`, `NORMATIVE_ID`, `@audit`, or `@audit-ok` so they never reach the delivered document.
+# Output
 
-# ✅ Success Criteria
-- Entry with `id == $VULN_ID` found.
-- `report_{{TITLE_SLUG}}.md` created and passes placeholder audit.
-- PoCs compile via the project’s test runner, e.g.
-  ```bash
-  # Unit test
-  <runner_for_project> <args_to_run> {{UT_PATH}}
-  # Integration test (if present)
-  <runner_for_project> <args_to_run> {{IT_PATH}}
-  ```
-- Severity matches the `$SEVERITY` argument when provided; otherwise it is derived using `security-agent/outputs/01_BOUNTY_GUIDELINE.md` with clear internal justification.
+Write exactly one Markdown file:
+- `$OUTPUT_PATH` when provided, or
+- `$OUTPUT_DIR/report_<title_slug>.md`.
+
+The slug must be lowercase ASCII, use underscores, and keep the filename under 55 characters.
+
+# Required Sections
+
+Follow the selected template's heading order. If the template is sparse, include:
+
+1. Summary
+2. Severity
+3. Affected Component
+4. Root Cause
+5. Impact
+6. Proof of Concept or Reproduction Plan
+7. Recommended Fix
+8. Evidence and Scope Notes
+
+# Self-Check
+
+Before finishing:
+- Reopen the written file and verify no `{{...}}` placeholders remain.
+- Confirm the report does not contain absolute paths, `codex_app_threads`, `logs/`, `03_PARTIAL_`, `04_PARTIAL_`, `05_POC_CANDIDATES`, or `TARGET_INFO`.
+- Confirm every claim maps back to Phase 03/04 evidence or Phase 05 PoC evidence.
+- Confirm the output file is inside `$OUTPUT_DIR` unless the user supplied an explicit `$OUTPUT_PATH`.

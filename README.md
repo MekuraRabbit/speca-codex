@@ -757,18 +757,18 @@ uv run python scripts/run_phase.py --phase 05 --output-dir outputs/rehearsal_dvd
 | | |
 |---|---|
 | **Prompt** | `prompts/06_report.md` |
-| **Usage** | `/06_report VULN_ID=... REPORT_TYPE=ETHEREUM` |
+| **Usage** | `/06_report OUTPUT_DIR=outputs/<run> CANDIDATE_ID=... REPORT_TYPE=ETHEREUM` |
 
-Generates a platform-tailored Markdown bug-bounty report (CANTINA, CODE4RENA, ETHEREUM, IMMUNEFI, SHERLOCK). Fills template placeholders with sanitized data, embeds PoC code with run commands, and derives severity from bounty guidelines when not specified.
+Generates a platform-tailored Markdown bug-bounty report (CANTINA, CODE4RENA, ETHEREUM, IMMUNEFI, SHERLOCK) from current SPECA run artifacts. It reads Phase 03/04 partials and optional Phase 05 candidate/result files from the selected `OUTPUT_DIR`, fills template placeholders with sanitized data, embeds verified PoC evidence when available, and avoids raw worker logs or local absolute paths.
 
 ### Phase 06b: Full Audit Report (Manual)
 
 | | |
 |---|---|
 | **Prompt** | `prompts/06b_audit_report.md` |
-| **Usage** | `/07_audit_report OUTPUT_PATH=outputs/AUDIT_REPORT.md` |
+| **Usage** | `/07_audit_report OUTPUT_DIR=outputs/<run> OUTPUT_PATH=outputs/<run>/AUDIT_REPORT.md` |
 
-Compiles a publication-ready security assessment report covering all findings. Includes: Cover Page, Executive Summary, Scope, System Overview, Methodology, Specification Traceability, Finding Classification, Findings Summary, Detailed Findings, Re-Verification, Operational Recommendations, and Appendix. All internal IDs are sanitized to sequential labels (e.g., Finding-01, Gap-02).
+Compiles a publication-ready security assessment report covering the selected SPECA run. It summarizes scope, methodology, traceability, Phase 04 finding verdicts, Phase 05 PoC candidate coverage, limitations, and recommendations. Internal IDs are sanitized to sequential labels (for example, `Finding-01`) and generated claims must be grounded in the loaded run artifacts.
 
 ## Running on GitHub Actions
 

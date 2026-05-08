@@ -177,6 +177,8 @@ def test_codex_app_runner_skips_lfs_smudge_when_creating_worktree(tmp_path: Path
     monkeypatch.setattr(runner, "_looks_like_worktree", lambda path: False)
 
     def fake_run(cmd, **kwargs):
+        if cmd[3:5] == ["rev-parse", "--verify"]:
+            return subprocess.CompletedProcess(cmd, 0, stdout="abc123\n", stderr="")
         seen["cmd"] = cmd
         seen["env"] = kwargs.get("env")
         return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
@@ -190,6 +192,84 @@ def test_codex_app_runner_skips_lfs_smudge_when_creating_worktree(tmp_path: Path
     assert isinstance(env, dict)
     assert env["GIT_LFS_SKIP_SMUDGE"] == "1"
     assert env["GIT_TERMINAL_PROMPT"] == "0"
+
+
+def test_codex_app_runner_rejects_dirty_existing_worktree(tmp_path: Path, monkeypatch):
+    import scripts.orchestrator.codex_app_runner as module
+
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    worktree_root = repo_root / ".codex" / "worktrees"
+    output_dir = tmp_path / "outputs" / "inst"
+
+    with output_root_context(output_dir):
+        config = get_phase_config("03")
+        config.workdir = str(repo_root)
+        config.isolated_worktrees = True
+        runner = CodexAppRunner(config, asyncio.Semaphore(1))
+
+    worktree = worktree_root / f"03_{runner._slug(str(runner.output_dir.resolve()))}_w0"
+    worktree.mkdir(parents=True)
+    (worktree / ".git").write_text("gitdir: ../main/.git/worktrees/test\n", encoding="utf-8")
+
+    monkeypatch.setattr(runner, "_git_repo_root", lambda cwd: repo_root)
+
+    def fake_run(cmd, **kwargs):
+        if cmd[3:5] == ["rev-parse", "--verify"]:
+            return subprocess.CompletedProcess(cmd, 0, stdout="abc123\n", stderr="")
+        if cmd[3:5] == ["status", "--porcelain"]:
+            return subprocess.CompletedProcess(cmd, 0, stdout=" M prompts/03.md\n", stderr="")
+        raise AssertionError(f"unexpected command: {cmd}")
+
+    monkeypatch.setattr(module.subprocess, "run", fake_run)
+
+    try:
+        runner._batch_cwd(worker_id=0)
+    except RuntimeError as exc:
+        assert "Refusing to reuse dirty isolated worktree" in str(exc)
+    else:
+        raise AssertionError("dirty existing worktree should be rejected")
+
+
+def test_codex_app_runner_refreshes_clean_existing_worktree(tmp_path: Path, monkeypatch):
+    import scripts.orchestrator.codex_app_runner as module
+
+    commands: list[list[str]] = []
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    output_dir = tmp_path / "outputs" / "inst"
+
+    with output_root_context(output_dir):
+        config = get_phase_config("03")
+        config.workdir = str(repo_root)
+        config.isolated_worktrees = True
+        config.worktree_base_ref = "origin/main"
+        runner = CodexAppRunner(config, asyncio.Semaphore(1))
+
+    worktree = repo_root / ".codex" / "worktrees" / f"03_{runner._slug(str(runner.output_dir.resolve()))}_w0"
+    worktree.mkdir(parents=True)
+    (worktree / ".git").write_text("gitdir: ../main/.git/worktrees/test\n", encoding="utf-8")
+
+    monkeypatch.setattr(runner, "_git_repo_root", lambda cwd: repo_root)
+
+    def fake_run(cmd, **kwargs):
+        commands.append(cmd)
+        if cmd[3:5] == ["rev-parse", "--verify"]:
+            assert cmd[-1] == "origin/main^{commit}"
+            return subprocess.CompletedProcess(cmd, 0, stdout="def456\n", stderr="")
+        if cmd[3:5] == ["status", "--porcelain"]:
+            return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+        if cmd[3:6] == ["checkout", "--detach", "def456"]:
+            env = kwargs.get("env")
+            assert env["GIT_LFS_SKIP_SMUDGE"] == "1"
+            assert env["GIT_TERMINAL_PROMPT"] == "0"
+            return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+        raise AssertionError(f"unexpected command: {cmd}")
+
+    monkeypatch.setattr(module.subprocess, "run", fake_run)
+
+    assert runner._batch_cwd(worker_id=0) == worktree.resolve()
+    assert any(cmd[3:6] == ["checkout", "--detach", "def456"] for cmd in commands)
 
 
 def test_codex_app_runner_executes_with_fake_app_server(tmp_path: Path):

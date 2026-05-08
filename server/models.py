@@ -57,6 +57,16 @@ class PhaseDispatchRequest(BaseModel):
     audit_scope: str | None = None
     min_severity: str | None = None
 
+    @field_validator("phase_id")
+    @classmethod
+    def validate_phase_id(cls, value: str) -> str:
+        from scripts.orchestrator.config import PHASE_CONFIGS
+
+        if value not in PHASE_CONFIGS:
+            allowed = ", ".join(PHASE_CONFIGS)
+            raise ValueError(f"unknown phase_id '{value}'; expected one of: {allowed}")
+        return value
+
     @field_validator("output_dir")
     @classmethod
     def validate_output_dir(cls, value: str | None) -> str | None:

@@ -21,6 +21,11 @@ def test_phase_dispatch_accepts_loopback_app_server_urls(url: str):
     assert request.app_server_url == url
 
 
+def test_phase_dispatch_rejects_unknown_phase_id():
+    with pytest.raises(ValidationError):
+        PhaseDispatchRequest(phase_id="99")
+
+
 def test_phase_dispatch_enables_codex_gui_model_by_default():
     request = PhaseDispatchRequest(phase_id="03")
 
