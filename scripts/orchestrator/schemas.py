@@ -13,7 +13,7 @@ Each model corresponds to a specific data structure used in the pipeline.
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -116,9 +116,18 @@ class AuditClassification(str, Enum):
 
 class ReviewVerdict(str, Enum):
     """Review verdict from Phase 04."""
+
+    # Legacy Claude-era verdicts kept for backward compatibility with old partials.
     CONFIRMED = "Confirmed"
     DISPUTED = "Disputed"
     NEEDS_MORE_INFO = "Needs More Info"
+    # Current Phase 04 prompt verdicts.
+    CONFIRMED_VULNERABILITY = "CONFIRMED_VULNERABILITY"
+    CONFIRMED_POTENTIAL = "CONFIRMED_POTENTIAL"
+    DISPUTED_FP = "DISPUTED_FP"
+    DOWNGRADED = "DOWNGRADED"
+    NEEDS_MANUAL_REVIEW = "NEEDS_MANUAL_REVIEW"
+    PASS_THROUGH = "PASS_THROUGH"
 
 
 class ChecklistMindset(str, Enum):
@@ -506,9 +515,11 @@ class ReviewedItem(BaseModel):
     property_id: str = ""
     check_id: str = ""  # Kept for downstream compatibility
     original_finding: OriginalFinding = Field(default_factory=OriginalFinding)
-    review_verdict: ReviewVerdict | str = ""
+    review_verdict: ReviewVerdict | Literal[""] = ""
+    original_classification: str = ""
     adjusted_severity: str = ""
     reviewer_notes: str = ""
+    spec_reference: str = ""
     final_recommendation: str = ""
 
 
@@ -557,14 +568,48 @@ class PartialMetadata(BaseModel):
 class TargetInfo(BaseModel):
     """Target repository information (outputs/TARGET_INFO.json).
 
-    Created by the 02c CI workflow before Phase 02c runs. Consumed by
-    Phases 02c, 03, and 04 for target repository/commit consistency.
+    Consumed by Phases 02c, 03, 04, and 05 for target repository/commit
+    consistency and local checkout anchoring. The public schema uses canonical
+    ``target_repo``/``target_commit`` fields; the Python model normalizes older
+    local ``repo``/``commit`` aliases before validation for compatibility.
     """
-    target_repo: str
+    model_config = ConfigDict(extra="allow")
+
+    target_repo: str = Field(min_length=1, pattern=r"\S")
     target_ref_type: str = ""
     target_ref_label: str = ""
-    target_commit: str = ""
+    target_commit: str = Field(min_length=1, pattern=r"\S")
     target_commit_short: str = ""
+    local_checkout: str = Field(min_length=1, pattern=r"\S")
+    language: str = ""
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_legacy_aliases(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        normalized = dict(data)
+        if not normalized.get("target_repo") and normalized.get("repo"):
+            normalized["target_repo"] = normalized["repo"]
+        if not normalized.get("target_commit") and normalized.get("commit"):
+            normalized["target_commit"] = normalized["commit"]
+        if not normalized.get("target_commit_short") and normalized.get("target_commit"):
+            normalized["target_commit_short"] = str(normalized["target_commit"])[:12]
+        return normalized
+
+    @model_validator(mode="after")
+    def require_pinned_local_checkout(self) -> "TargetInfo":
+        missing = [
+            field
+            for field in ("target_repo", "target_commit", "local_checkout")
+            if not str(getattr(self, field, "")).strip()
+        ]
+        if missing:
+            raise ValueError(
+                "TARGET_INFO requires non-empty "
+                + ", ".join(missing)
+            )
+        return self
 
 
 # ---------------------------------------------------------------------------

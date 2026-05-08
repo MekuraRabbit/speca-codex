@@ -31,6 +31,16 @@ Execution hint: This worker prompt is invoked by the phase-04 async orchestrator
   ## 1. Setup (once per batch)
 
   Read <ref id="queue"/> for `item_ids` and `context_file`. Read <ref id="context"/> for item data.
+  Each context item contains:
+  - `property_id`
+  - `audit_result`: the Phase 03 finding with fields such as `classification`,
+    `code_path`, `proof_trace`, `attack_scenario`, and `checklist_id`
+  - original property context fields (`text`, `assertion`, `covers`, `severity`, `type`)
+
+  Whenever this prompt says "Phase 03's classification", "finding", "code path",
+  "proof trace", or "attack scenario", read it from the item's `audit_result`
+  object unless the field is explicitly present at top level.
+
   Derive `OUTPUT_ROOT` from the directory containing the absolute queue/context/output
   paths. Whenever this prompt says `outputs/...`, read from that `OUTPUT_ROOT`;
   do not probe repository-root `outputs/` as a fallback.
@@ -56,7 +66,7 @@ Execution hint: This worker prompt is invoked by the phase-04 async orchestrator
   Process each item through the gates below **in order**. If a gate triggers DISPUTED_FP,
   record the reason and **skip remaining gates**. This is a filter — exit early when possible.
 
-  Items with `classification` = not-a-vulnerability, out-of-scope, or informational → **PASS_THROUGH** (skip all gates).
+  Items with `audit_result.classification` = not-a-vulnerability, out-of-scope, or informational → **PASS_THROUGH** (skip all gates).
 
   **Only these 3 gates may produce DISPUTED_FP. No other reasoning may dispute a finding.**
 
@@ -80,7 +90,8 @@ Execution hint: This worker prompt is invoked by the phase-04 async orchestrator
   ### Gate 2: Trust Boundary (catches findings whose attack path relies on a trusted data source)
 
   Read `trust_assumptions` from BUG_BOUNTY_SCOPE.json.
-  Look up the **data source name** that Phase 03's attack path depends on
+  Look up the **data source name** that Phase 03's `audit_result.attack_scenario`
+  or `audit_result.proof_trace` depends on
   (e.g., "Engine API", "local IPC", "P2P gossip", "execution layer").
 
   **Decision is purely a lookup — match Phase 03's entry point against trust_assumptions:**

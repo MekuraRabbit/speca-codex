@@ -1,8 +1,21 @@
 {
-  "description": "Target repository information (outputs/TARGET_INFO.json).\n\nCreated by the 02c CI workflow before Phase 02c runs. Consumed by\nPhases 02c, 03, and 04 for target repository/commit consistency.",
+  "additionalProperties": true,
+  "description": "Target repository information (outputs/TARGET_INFO.json).\n\nConsumed by Phases 02c, 03, 04, and 05 for target repository/commit\nconsistency and local checkout anchoring. The public schema uses canonical\n``target_repo``/``target_commit`` fields; the Python model normalizes older\nlocal ``repo``/``commit`` aliases before validation for compatibility.",
   "properties": {
-    "target_commit": {
+    "language": {
       "default": "",
+      "title": "Language",
+      "type": "string"
+    },
+    "local_checkout": {
+      "minLength": 1,
+      "pattern": "\\S",
+      "title": "Local Checkout",
+      "type": "string"
+    },
+    "target_commit": {
+      "minLength": 1,
+      "pattern": "\\S",
       "title": "Target Commit",
       "type": "string"
     },
@@ -22,12 +35,16 @@
       "type": "string"
     },
     "target_repo": {
+      "minLength": 1,
+      "pattern": "\\S",
       "title": "Target Repo",
       "type": "string"
     }
   },
   "required": [
-    "target_repo"
+    "target_repo",
+    "target_commit",
+    "local_checkout"
   ],
   "title": "TargetInfo",
   "type": "object"

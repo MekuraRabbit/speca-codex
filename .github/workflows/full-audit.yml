@@ -156,7 +156,9 @@ jobs:
             "target_ref": "${REF_LABEL}",
             "target_ref_label": "${REF_LABEL}",
             "target_commit": "${COMMIT}",
-            "target_commit_short": "${COMMIT_SHORT}"
+            "target_commit_short": "${COMMIT_SHORT}",
+            "local_checkout": "target_workspace",
+            "language": ""
           }
           JSON
 

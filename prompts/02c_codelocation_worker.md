@@ -22,15 +22,32 @@ Language: English only.
     ## Step 1: Setup
 
     Read <ref id="queue"/> to get `item_ids` and `context_file` path. Read <ref id="context"/> to get item data (keyed by ID). For each ID in `item_ids`, look up the item data in context.
+    Derive `OUTPUT_ROOT` from the directory containing the absolute queue/context/output
+    paths. Whenever this prompt says `outputs/...`, read from that `OUTPUT_ROOT`;
+    do not probe repository-root `outputs/` as a fallback.
 
-    Read `outputs/TARGET_INFO.json`. It contains:
+    Read `TARGET_INFO.json` from `OUTPUT_ROOT`. It contains:
     - `target_repo`: repository identifier (e.g. "OffchainLabs/prysm")
+    - `target_commit`: pinned target commit
+    - `local_checkout`: local target checkout root
+    - `language`: primary target language *(optional)*
     - `target_layer` *(optional)*: the functional layer this target belongs to (e.g. "consensus", "execution", "l2-node", "validator-runtime")
     - `out_of_scope_spec_layers` *(optional)*: list of spec layer strings that are out of scope for this target (e.g. `["execution"]`)
 
-    Register the cloned repository at `target_workspace/` with Tree-sitter MCP.
+    Resolve the target checkout root from `TARGET_INFO.local_checkout`:
+    - If `local_checkout` is absolute, use it as-is.
+    - If `local_checkout` is relative, resolve it relative to the worker's current
+      workspace/cwd, not relative to `OUTPUT_ROOT`.
+    - Never construct `OUTPUT_ROOT/local_checkout`, `OUTPUT_ROOT/target_workspace`,
+      `outputs/target_workspace`, or `outputs/<run>/target_workspace`.
 
-    Read `outputs/01b_SUBGRAPH_INDEX.json` for spec-level context. This index maps
+    Treat the resolved checkout as the exact target code root. Register only this
+    checkout with Tree-sitter MCP. All source reads/searches must stay under this
+    checkout; do not list or search the checkout parent, sibling checkouts, the
+    SPECA repository root, live URLs, RPC endpoints, registries, explorers, or
+    deployment/account infrastructure.
+
+    Read `01b_SUBGRAPH_INDEX.json` from `OUTPUT_ROOT` for spec-level context. This index maps
     specification titles to their subgraphs (name + mermaid file path). For each
     property, match keywords from `text`/`assertion` against subgraph names to identify
     the relevant spec. Read the corresponding `.mmd` mermaid file to extract
@@ -50,7 +67,11 @@ Language: English only.
 
     ## Step 2.5: Repository Orientation (once per batch)
 
-    Before resolving any item, run a single Glob on `target_workspace/*/` to list top-level directories. Build a mental map of which packages handle which domains (e.g. crypto, networking, state, consensus, validation, p2p, database). Reuse this map for all items in the batch — it tells you where to narrow searches and which properties are out of scope.
+    Before resolving any item, run a single Glob on the resolved target checkout's
+    immediate children to list top-level directories. Build a mental map of which
+    packages handle which domains (e.g. crypto, networking, state, consensus,
+    validation, p2p, database). Reuse this map for all items in the batch — it
+    tells you where to narrow searches and which properties are out of scope.
 
     ## Step 3: Code Resolution (per in-scope item)
 
@@ -67,7 +88,10 @@ Language: English only.
 
     ### 3b. Search — Most Specific First
 
-    Grep `target_workspace/` for the most specific identifier. If it matches function/type definitions, record the location and move on. Use Tree-sitter MCP `get_symbols` or `find_text` when a directory-scoped search is more efficient.
+    Grep only under the resolved target checkout for the most specific identifier.
+    If it matches function/type definitions, record the location and move on. Use
+    Tree-sitter MCP `get_symbols` or `find_text` when a directory-scoped search is
+    more efficient.
 
     ### 3c. Broaden If Needed
 

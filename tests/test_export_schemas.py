@@ -117,3 +117,12 @@ def test_committed_schemas_in_sync_with_source(export_module):
         "Re-run `python scripts/export_schemas.py` and commit the result.\n"
         + "\n".join(f"  {d}" for d in diffs)
     )
+
+
+def test_target_info_schema_rejects_empty_core_strings():
+    schema = json.loads((SCHEMAS_DIR / "TargetInfo.schema.json").read_text(encoding="utf-8"))
+
+    for field in ("target_repo", "target_commit", "local_checkout"):
+        prop = schema["properties"][field]
+        assert prop["minLength"] == 1
+        assert prop["pattern"] == "\\S"

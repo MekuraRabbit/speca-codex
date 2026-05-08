@@ -261,6 +261,8 @@ jobs:
               "target_ref_label": os.environ["TARGET_REF_LABEL"],
               "target_commit": os.environ["TARGET_COMMIT"],
               "target_commit_short": os.environ["TARGET_COMMIT_SHORT"],
+              "local_checkout": "target_workspace",
+              "language": "",
           }
 
           Path("outputs").mkdir(parents=True, exist_ok=True)

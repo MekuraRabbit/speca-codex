@@ -22,7 +22,13 @@
       "enum": [
         "Confirmed",
         "Disputed",
-        "Needs More Info"
+        "Needs More Info",
+        "CONFIRMED_VULNERABILITY",
+        "CONFIRMED_POTENTIAL",
+        "DISPUTED_FP",
+        "DOWNGRADED",
+        "NEEDS_MANUAL_REVIEW",
+        "PASS_THROUGH"
       ],
       "title": "ReviewVerdict",
       "type": "string"
@@ -45,6 +51,11 @@
           "title": "Final Recommendation",
           "type": "string"
         },
+        "original_classification": {
+          "default": "",
+          "title": "Original Classification",
+          "type": "string"
+        },
         "original_finding": {
           "$ref": "#/$defs/OriginalFinding"
         },
@@ -59,6 +70,7 @@
               "$ref": "#/$defs/ReviewVerdict"
             },
             {
+              "const": "",
               "type": "string"
             }
           ],
@@ -68,6 +80,11 @@
         "reviewer_notes": {
           "default": "",
           "title": "Reviewer Notes",
+          "type": "string"
+        },
+        "spec_reference": {
+          "default": "",
+          "title": "Spec Reference",
           "type": "string"
         }
       },
