@@ -45,6 +45,11 @@ def test_phase04_prompt_keeps_downgrade_separate_from_verdict():
 
     assert "`severity_action` to `DOWNGRADED`" in prompt
     assert "Do not use `DOWNGRADED` as a `review_verdict` for new outputs" in prompt
+    assert "non-standard" in prompt
+    assert "underlying asset" in prompt
+    assert "fee-on-transfer, deflationary, rebasing" in prompt
+    assert "Keep it as\n     `CONFIRMED_POTENTIAL`" in prompt
+    assert "cap `adjusted_severity` at `Low`" in prompt
     assert '"severity_action": "NONE | DOWNGRADED"' in prompt
     assert (
         '"review_verdict": "CONFIRMED_VULNERABILITY | CONFIRMED_POTENTIAL | '
