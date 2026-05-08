@@ -2,16 +2,22 @@
 
 from __future__ import annotations
 
+import os
 from typing import Any, Literal
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+from .path_safety import normalize_output_dir, normalize_worktree_root
+
+
+_TRUTHY = {"1", "true", "yes", "on"}
 
 
 class PhaseDispatchRequest(BaseModel):
     phase_id: str
-    workers: int = 4
-    max_concurrent: int = 8
+    workers: int = Field(default=4, ge=1, le=64)
+    max_concurrent: int = Field(default=8, ge=1, le=64)
     force: bool = False
     output_dir: str | None = None
     runner: Literal[
@@ -51,6 +57,16 @@ class PhaseDispatchRequest(BaseModel):
     audit_scope: str | None = None
     min_severity: str | None = None
 
+    @field_validator("output_dir")
+    @classmethod
+    def validate_output_dir(cls, value: str | None) -> str | None:
+        return normalize_output_dir(value)
+
+    @field_validator("worktree_root")
+    @classmethod
+    def validate_worktree_root(cls, value: str | None) -> str | None:
+        return normalize_worktree_root(value)
+
     @field_validator("app_server_url")
     @classmethod
     def validate_app_server_url(cls, value: str | None) -> str | None:
@@ -65,6 +81,46 @@ class PhaseDispatchRequest(BaseModel):
             raise ValueError("app_server_url must point to a loopback host")
 
         return value
+
+    @model_validator(mode="after")
+    def validate_api_runner_dispatch(self) -> "PhaseDispatchRequest":
+        runner = (self.runner or "").replace("_", "-").lower()
+        if runner != "api":
+            if self.api_base_url or self.api_key_env:
+                raise ValueError("api_base_url/api_key_env require runner='api'")
+            return self
+
+        if os.environ.get("SPECA_ENABLE_API_RUNNER_DISPATCH", "").lower() not in _TRUTHY:
+            raise ValueError(
+                "API runner dispatch is disabled by default; set "
+                "SPECA_ENABLE_API_RUNNER_DISPATCH=1 to opt in"
+            )
+
+        if self.api_base_url:
+            allowed_bases = _csv_env("SPECA_API_RUNNER_BASE_URL_ALLOWLIST")
+            if self.api_base_url not in allowed_bases:
+                raise ValueError(
+                    "api_base_url must be listed in "
+                    "SPECA_API_RUNNER_BASE_URL_ALLOWLIST"
+                )
+
+        if self.api_key_env:
+            allowed_keys = _csv_env("SPECA_API_RUNNER_KEY_ENV_ALLOWLIST")
+            if self.api_key_env not in allowed_keys:
+                raise ValueError(
+                    "api_key_env must be listed in "
+                    "SPECA_API_RUNNER_KEY_ENV_ALLOWLIST"
+                )
+
+        return self
+
+
+def _csv_env(name: str) -> set[str]:
+    return {
+        item.strip()
+        for item in os.environ.get(name, "").split(",")
+        if item.strip()
+    }
 
 
 class RunResponse(BaseModel):

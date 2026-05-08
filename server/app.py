@@ -45,8 +45,18 @@ async def health() -> dict[str, str]:
 
 
 def main() -> None:
+    import os
     import uvicorn
-    uvicorn.run("server.app:app", host="0.0.0.0", port=8000, reload=True)
+
+    host = os.environ.get("SPECA_API_HOST", "127.0.0.1")
+    port = int(os.environ.get("SPECA_API_PORT", "8000"))
+    reload = os.environ.get("SPECA_API_RELOAD", "").lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    uvicorn.run("server.app:app", host=host, port=port, reload=reload)
 
 
 if __name__ == "__main__":

@@ -860,6 +860,12 @@ Pins the target repository and commit. Phase 03 will `git clone` to this exact r
 | `SPECA_CODEX_MODEL` | Codex runners | Optional explicit Codex model override; API runs normally read the Codex App GUI model when `model` is omitted |
 | `SPECA_CODEX_REASONING_EFFORT` | Codex app-server runner | Optional explicit reasoning effort override (`low`, `medium`, `high`, `xhigh`, etc.) |
 | `SPECA_CODEX_SERVICE_TIER` | Codex app-server runner | Optional service tier override (`fast` or `flex`) |
+| `SPECA_API_HOST` | Local FastAPI server | Optional manual bind host override; defaults to `127.0.0.1` |
+| `SPECA_API_PORT` | Local FastAPI server | Optional manual port override; defaults to `8000` |
+| `SPECA_API_RELOAD` | Local FastAPI server | Set to `1`/`true` to enable uvicorn reload for local development |
+| `SPECA_ENABLE_API_RUNNER_DISPATCH` | Local FastAPI server | Opt-in gate for dispatching the OpenAI-compatible API runner through the local API |
+| `SPECA_API_RUNNER_BASE_URL_ALLOWLIST` | Local FastAPI server | Comma-separated API runner base URLs allowed when API runner dispatch is enabled |
+| `SPECA_API_RUNNER_KEY_ENV_ALLOWLIST` | Local FastAPI server | Comma-separated environment variable names allowed for API runner keys when API runner dispatch is enabled |
 | `SPEC_URLS` | 01a | Comma-separated seed URLs to crawl |
 | `KEYWORDS` | 01a | Optional crawl keyword filter |
 | `FORCE_EXECUTE=1` | All phases | Bypass resume state (set automatically by `--force`) |

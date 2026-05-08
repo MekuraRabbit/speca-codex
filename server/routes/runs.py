@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 
 from ..models import RunResponse
+from ..path_safety import resolve_child_path
 from ..run_manager import RunManager
 
 router = APIRouter(prefix="/api/runs", tags=["runs"])
@@ -69,7 +70,7 @@ async def get_run_diffs(
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
 
-    meta_dir = Path(run.output_dir) / "codex_app_threads"
+    meta_dir = (Path(run.output_dir) / "codex_app_threads").resolve()
     if not meta_dir.exists():
         return []
 
@@ -85,11 +86,12 @@ async def get_run_diffs(
         diff_file = item.get("diff_file")
         if include_content and isinstance(diff_file, str) and diff_file:
             try:
-                item["diff"] = Path(diff_file).read_text(
+                diff_path = resolve_child_path(diff_file, meta_dir, "diff_file")
+                item["diff"] = diff_path.read_text(
                     encoding="utf-8",
                     errors="replace",
                 )
-            except OSError:
+            except (OSError, ValueError):
                 item["diff"] = ""
         result.append(item)
     return result
