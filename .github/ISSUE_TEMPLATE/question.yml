@@ -1,0 +1,52 @@
+name: Question
+description: Ask about setup, usage, expected behavior, or the Codex fork
+title: "[Question] "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for setup and usage questions that are safe to discuss publicly.
+        For security-sensitive reports, use the private reporting process in SECURITY.md instead of a public issue.
+
+  - type: dropdown
+    id: topic
+    attributes:
+      label: Topic
+      options:
+        - "Setup / installation"
+        - "Codex App runner"
+        - "Legacy Claude runner"
+        - "Pipeline phase behavior"
+        - "Rehearsal / validation results"
+        - "Documentation"
+        - "Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What are you trying to understand or decide?
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Include relevant commands, phase IDs, runner choice, and sanitized output if helpful.
+      render: shell
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched existing issues and confirmed this question has not already been answered.
+          required: true
+        - label: I have removed API keys, tokens, account identifiers, private repository names, and local absolute paths from any logs above.
+          required: true

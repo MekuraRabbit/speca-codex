@@ -23,7 +23,7 @@ Thanks for contributing to SPECA! A few quick notes:
 ## Test plan
 
 <!-- How was this verified? Concrete commands and expected output, ideally. -->
-- [ ] `uv run python3 -m pytest tests/ -v --tb=short` passes
+- [ ] `uv run python -m pytest tests/ -v --tb=short` passes
 - [ ]
 
 ## Schema / contract impact
