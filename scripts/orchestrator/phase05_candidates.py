@@ -13,11 +13,15 @@ from typing import Any
 CANDIDATE_VERDICTS = {
     "CONFIRMED_VULNERABILITY",
     "CONFIRMED_POTENTIAL",
+    # Legacy Phase 04 partials used DOWNGRADED as a verdict for findings that
+    # survived review but had their severity capped. Keep them reportable.
+    "DOWNGRADED",
 }
 
 VERDICT_RANK = {
     "CONFIRMED_VULNERABILITY": 0,
-    "CONFIRMED_POTENTIAL": 1,
+    "DOWNGRADED": 1,
+    "CONFIRMED_POTENTIAL": 2,
 }
 
 SEVERITY_RANK = {
@@ -158,6 +162,7 @@ def _merge_candidate_input(
         "property_id": prop_id,
         "original_property_id": original_prop_id,
         "review_verdict": review.get("review_verdict", ""),
+        "severity_action": _severity_action(review),
         "adjusted_severity": review.get("adjusted_severity", ""),
         "reviewer_notes": review.get("reviewer_notes", ""),
         "spec_reference": review.get("spec_reference", ""),
@@ -198,6 +203,7 @@ def _build_candidate(
         "challenge": challenge,
         "attack_family": attack_family,
         "review_verdict": review_verdict,
+        "severity_action": representative["severity_action"],
         "adjusted_severity": representative["adjusted_severity"],
         "spec_reference": representative["spec_reference"],
         "target_files": sorted({path for item in sorted_items for path in item["target_files"]}),
@@ -220,6 +226,7 @@ def _source_item_for_output(item: dict[str, Any]) -> dict[str, Any]:
     source_item = {
         "property_id": item["property_id"],
         "review_verdict": item["review_verdict"],
+        "severity_action": item["severity_action"],
         "adjusted_severity": item["adjusted_severity"],
         "primary_file": item["primary_file"],
         "primary_symbol": item["primary_symbol"],
@@ -415,6 +422,15 @@ def _candidate_review_verdict(item: dict[str, Any]) -> str:
     ):
         return "CONFIRMED_POTENTIAL"
     return str(item.get("review_verdict", ""))
+
+
+def _severity_action(review: dict[str, Any]) -> str:
+    action = str(review.get("severity_action") or "")
+    if action:
+        return action
+    if str(review.get("review_verdict") or "") == "DOWNGRADED":
+        return "DOWNGRADED"
+    return ""
 
 
 def _summary_for_candidate(item: dict[str, Any]) -> str:

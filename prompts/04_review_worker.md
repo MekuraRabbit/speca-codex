@@ -121,7 +121,10 @@ Execution hint: This worker prompt is invoked by the phase-04 async orchestrator
   1. Read impact thresholds for each severity level.
   2. If `deployment_context.client_diversity` exists, find the target's network share.
      This share caps the maximum severity for a single-component bug.
-  3. If original severity exceeds the cap → DOWNGRADED.
+  3. If original severity exceeds the cap, keep the substantive `review_verdict`
+     (`CONFIRMED_VULNERABILITY` or `CONFIRMED_POTENTIAL`), set
+     `severity_action` to `DOWNGRADED`, and set `adjusted_severity` to the capped
+     severity. Do not use `DOWNGRADED` as a `review_verdict` for new outputs.
 
   ## 4. Verdict
 
@@ -146,7 +149,8 @@ Execution hint: This worker prompt is invoked by the phase-04 async orchestrator
     "reviewed_items": [
       {
         "property_id": "...",
-        "review_verdict": "CONFIRMED_VULNERABILITY | CONFIRMED_POTENTIAL | DISPUTED_FP | DOWNGRADED | NEEDS_MANUAL_REVIEW | PASS_THROUGH",
+        "review_verdict": "CONFIRMED_VULNERABILITY | CONFIRMED_POTENTIAL | DISPUTED_FP | NEEDS_MANUAL_REVIEW | PASS_THROUGH",
+        "severity_action": "NONE | DOWNGRADED",
         "original_classification": "vulnerability | potential-vulnerability",
         "adjusted_severity": "Critical | High | Medium | Low | Informational",
         "reviewer_notes": "2-3 sentences: gate that triggered + evidence, or severity reasoning",
@@ -162,11 +166,13 @@ Execution hint: This worker prompt is invoked by the phase-04 async orchestrator
   </instructions>
 
   <quality_gates>
-    1. Every item has exactly the 6 keys shown in the schema.
+    1. Every item has exactly the 7 keys shown in the schema.
     2. DISPUTED_FP always states WHICH gate (1, 2, or 3) triggered and WHY.
     3. CONFIRMED_VULNERABILITY always includes a concrete attack sentence.
     4. adjusted_severity is justified against BUG_BOUNTY_SCOPE.json thresholds.
     5. Verdict is consistent with gate outcomes — no DISPUTED_FP if all 3 gates passed.
+    6. Severity caps use `severity_action: "DOWNGRADED"` and never
+       `review_verdict: "DOWNGRADED"` in new outputs.
   </quality_gates>
 </task>
 

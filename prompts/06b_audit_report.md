@@ -81,7 +81,8 @@ Include a table:
 | Reference | Title | Phase 04 Verdict | Severity | Affected Component | PoC Status |
 |-----------|-------|------------------|----------|--------------------|------------|
 
-Use Phase 04 `review_verdict`, `adjusted_severity`, `reviewer_notes`, and Phase 03 `proof_trace` / `attack_scenario`.
+Use Phase 04 `review_verdict`, `severity_action`, `adjusted_severity`,
+`reviewer_notes`, and Phase 03 `proof_trace` / `attack_scenario`.
 
 ## 6. Detailed Findings
 For each confirmed or potential finding:
@@ -94,7 +95,11 @@ For each confirmed or potential finding:
 - PoC candidate or result, when available
 - Recommendation
 
-For `DISPUTED_FP`, `DOWNGRADED`, `NEEDS_MANUAL_REVIEW`, and `PASS_THROUGH`, summarize counts and representative reasons rather than writing full vulnerability sections unless the user asks.
+For `DISPUTED_FP`, `NEEDS_MANUAL_REVIEW`, and `PASS_THROUGH`, summarize counts
+and representative reasons rather than writing full vulnerability sections
+unless the user asks. Treat legacy `DOWNGRADED` verdicts as reportable findings
+with a severity cap, and label new `severity_action: "DOWNGRADED"` entries as
+downgraded without removing them from detailed findings.
 
 ## 7. PoC Candidate Coverage
 If Phase 05 outputs exist:

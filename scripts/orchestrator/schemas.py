@@ -516,6 +516,7 @@ class ReviewedItem(BaseModel):
     check_id: str = ""  # Kept for downstream compatibility
     original_finding: OriginalFinding = Field(default_factory=OriginalFinding)
     review_verdict: ReviewVerdict | Literal[""] = ""
+    severity_action: Literal["", "NONE", "DOWNGRADED"] = ""
     original_classification: str = ""
     adjusted_severity: str = ""
     reviewer_notes: str = ""

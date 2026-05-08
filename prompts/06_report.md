@@ -37,7 +37,10 @@ If `$CANDIDATE_ID` is provided:
 
 If `$PROPERTY_ID` is provided:
 1. Find the Phase 04 `reviewed_items[]` entry where `property_id == $PROPERTY_ID`.
-2. Use only entries with `review_verdict` equal to `CONFIRMED_VULNERABILITY` or `CONFIRMED_POTENTIAL`, unless the user explicitly asks for a disputed report draft.
+2. Use only entries with `review_verdict` equal to `CONFIRMED_VULNERABILITY` or
+   `CONFIRMED_POTENTIAL`, plus legacy `DOWNGRADED` entries that represent
+   findings whose severity was capped. For disputed/non-finding drafts, require
+   the user to ask explicitly.
 3. Join to Phase 03 `audit_items[]` by `property_id`, `check_id`, or `checklist_id`.
 4. If missing, abort with: `Property '<id>' not found in 04_PARTIAL_*.json`.
 
@@ -45,7 +48,7 @@ If `$PROPERTY_ID` is provided:
 
 Use these current fields when available:
 - Phase 03: `classification`, `code_path`, `code_scope`, `proof_trace`, `attack_scenario`, `summary`, `checklist_id`.
-- Phase 04: `review_verdict`, `original_classification`, `adjusted_severity`, `reviewer_notes`, `spec_reference`, `final_recommendation`.
+- Phase 04: `review_verdict`, `severity_action`, `original_classification`, `adjusted_severity`, `reviewer_notes`, `spec_reference`, `final_recommendation`.
 - Phase 05 candidate: `candidate_id`, `attack_summary`, `covered_property_ids`, `source_items[].property_id`, `source_items[].original_property_id`, `target_files`, `primary_file`, `primary_symbol`, `recommended_output_path`, `run_command`, `target_local_checkout`.
 - Phase 05 result: PoC file path, command, execution status, stdout/stderr summary, and any reproduction notes.
 - Target info: `target_repo`, `target_commit`, `target_commit_short`, `local_checkout`, `language`.

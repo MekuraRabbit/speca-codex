@@ -677,7 +677,7 @@ Filters false positives from Phase 03 findings via a recall-safe 3-gate pipeline
 2. **Gate 2 (Trust Boundary):** Look up the attack path's data source in `trust_assumptions` from BUG_BOUNTY_SCOPE.json — if trust level is TRUSTED/SEMI_TRUSTED and no untrusted path also reaches the code → DISPUTED_FP. No code analysis; purely a lookup.
 3. **Gate 3 (Scope Check):** Check `out_of_scope`, `conditional_scope`, and `in_scope.scope_restriction` in BUG_BOUNTY_SCOPE.json — finding falls under an excluded category → DISPUTED_FP.
 
-Items that pass all gates undergo severity calibration against `severity_classification` thresholds (with optional network-share-based severity cap from `deployment_context.client_diversity`). Non-findings (not-a-vulnerability, out-of-scope, informational) early-exit as PASS_THROUGH. Verdicts: CONFIRMED_VULNERABILITY, CONFIRMED_POTENTIAL, DISPUTED_FP, DOWNGRADED, NEEDS_MANUAL_REVIEW, PASS_THROUGH.
+Items that pass all gates undergo severity calibration against `severity_classification` thresholds (with optional network-share-based severity cap from `deployment_context.client_diversity`). Non-findings (not-a-vulnerability, out-of-scope, informational) early-exit as PASS_THROUGH. Verdicts: CONFIRMED_VULNERABILITY, CONFIRMED_POTENTIAL, DISPUTED_FP, NEEDS_MANUAL_REVIEW, PASS_THROUGH. Severity caps are recorded separately as `severity_action: "DOWNGRADED"` so downgraded findings still flow into Phase 05.
 
 <details>
 <summary>Output example — CONFIRMED_VULNERABILITY</summary>
@@ -688,6 +688,7 @@ Items that pass all gates undergo severity calibration against `severity_classif
     {
       "property_id": "PROP-6a4369e9-pre-009",
       "review_verdict": "CONFIRMED_VULNERABILITY",
+      "severity_action": "DOWNGRADED",
       "original_classification": "vulnerability",
       "adjusted_severity": "Medium",
       "reviewer_notes": "Spec requires: 'data_column_sidecars_by_root must reject requests exceeding MAX_REQUEST_DATA_COLUMN_SIDECARS'. Code reading verified: codec.rs:562-570 validates number of identifiers <=128, each identifier can have <=128 columns, enabling 128x128=16384 total columns. Handler rpc_methods.rs:408-460 lacks total column validation. Severity calibrated to Medium per BUG_BOUNTY_SCOPE.json: client market share <5%.",
@@ -708,6 +709,7 @@ Items that pass all gates undergo severity calibration against `severity_classif
     {
       "property_id": "PROP-6a4369e9-inv-010",
       "review_verdict": "DISPUTED_FP",
+      "severity_action": "NONE",
       "original_classification": "vulnerability",
       "adjusted_severity": "Informational",
       "reviewer_notes": "Phase 03 misunderstood the validation architecture. The array length validation DOES exist and IS enforced on all paths (gossip, RPC, and database loads). The claim of 'out-of-bounds panic' is false — the length check at kzg_utils.rs:84-89 prevents any indexing operation.",
@@ -727,6 +729,7 @@ Items that pass all gates undergo severity calibration against `severity_classif
     {
       "property_id": "PROP-57888860-inv-006",
       "review_verdict": "CONFIRMED_POTENTIAL",
+      "severity_action": "DOWNGRADED",
       "original_classification": "vulnerability",
       "adjusted_severity": "Low",
       "reviewer_notes": "Code reading verified: reconstruction.go:79 iterates Go map (sidecarByIndex) which has randomized iteration order, building cellsIndices without sorting before passing to RecoverCellsAndKZGProofs (line 86). Spec SG-024 explicitly requires 'assert cell_indices == sorted(cell_indices)'. Downgraded from Medium to Low: single-client bug affecting Prysm (31% CL share), below the 33% threshold for Medium severity.",

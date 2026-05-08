@@ -125,6 +125,137 @@ def test_ignores_non_candidate_phase04_items(tmp_path):
     assert index["candidates"] == []
 
 
+def test_includes_legacy_downgraded_phase04_items(tmp_path):
+    _write_json(
+        tmp_path / "TARGET_INFO.json",
+        {
+            "local_checkout": "target_workspace/damn-vulnerable-defi",
+            "language": "solidity",
+        },
+    )
+    _write_json(
+        tmp_path / "03_PARTIAL_W0B0.json",
+        {
+            "audit_items": [
+                {
+                    "property_id": "PROP-side-entrance-inv-001",
+                    "classification": "vulnerability",
+                    "code_path": (
+                        "contracts/side-entrance/SideEntranceLenderPool.sol"
+                        "::flashLoan::L31-38"
+                    ),
+                    "attack_scenario": (
+                        "A borrower can deposit during flashLoan and then withdraw "
+                        "credited pool funds."
+                    ),
+                }
+            ],
+        },
+    )
+    _write_json(
+        tmp_path / "04_PARTIAL_W0B0.json",
+        {
+            "reviewed_items": [
+                {
+                    "property_id": "PROP-side-entrance-inv-001",
+                    "review_verdict": "DOWNGRADED",
+                    "adjusted_severity": "Low",
+                    "reviewer_notes": (
+                        "Finding survived review, but severity was capped by scope."
+                    ),
+                }
+            ],
+        },
+    )
+
+    index = build_poc_candidate_index(tmp_path)
+    candidate = index["candidates"][0]
+
+    assert index["metadata"]["reviewed_candidate_items"] == 1
+    assert candidate["review_verdict"] == "DOWNGRADED"
+    assert candidate["severity_action"] == "DOWNGRADED"
+    assert candidate["covered_property_ids"] == ["PROP-side-entrance-inv-001"]
+    assert candidate["source_items"][0]["severity_action"] == "DOWNGRADED"
+
+
+def test_mixed_downgraded_group_prefers_substantive_verdict(tmp_path):
+    _write_json(
+        tmp_path / "TARGET_INFO.json",
+        {
+            "local_checkout": "target_workspace/damn-vulnerable-defi",
+            "language": "solidity",
+        },
+    )
+    _write_json(
+        tmp_path / "03_PARTIAL_W0B0.json",
+        {
+            "audit_items": [
+                {
+                    "property_id": "PROP-truster-asm-010",
+                    "classification": "vulnerability",
+                    "code_path": (
+                        "contracts/truster/TrusterLenderPool.sol"
+                        "::TrusterLenderPool.flashLoan::L14-32"
+                    ),
+                    "summary": (
+                        "Attacker calls approve through flashLoan and then "
+                        "transferFrom drains the pool."
+                    ),
+                },
+                {
+                    "property_id": "PROP-truster-inv-011",
+                    "classification": "vulnerability",
+                    "code_path": (
+                        "contracts/truster/TrusterLenderPool.sol"
+                        "::TrusterLenderPool.flashLoan::L14-32"
+                    ),
+                    "summary": "Duplicate approve and transferFrom root cause.",
+                },
+            ],
+        },
+    )
+    _write_json(
+        tmp_path / "04_PARTIAL_W0B0.json",
+        {
+            "reviewed_items": [
+                {
+                    "property_id": "PROP-truster-asm-010",
+                    "review_verdict": "CONFIRMED_VULNERABILITY",
+                    "severity_action": "DOWNGRADED",
+                    "adjusted_severity": "Medium",
+                    "reviewer_notes": "Confirmed finding with a scoped severity cap.",
+                },
+                {
+                    "property_id": "PROP-truster-inv-011",
+                    "review_verdict": "DOWNGRADED",
+                    "adjusted_severity": "Low",
+                    "reviewer_notes": "Legacy partial used DOWNGRADED as the verdict.",
+                },
+            ],
+        },
+    )
+
+    index = build_poc_candidate_index(tmp_path)
+    candidate = index["candidates"][0]
+
+    assert index["metadata"]["reviewed_candidate_items"] == 2
+    assert index["metadata"]["candidate_count"] == 1
+    assert candidate["review_verdict"] == "CONFIRMED_VULNERABILITY"
+    assert candidate["severity_action"] == "DOWNGRADED"
+    assert candidate["covered_property_ids"] == [
+        "PROP-truster-asm-010",
+        "PROP-truster-inv-011",
+    ]
+    assert [item["review_verdict"] for item in candidate["source_items"]] == [
+        "CONFIRMED_VULNERABILITY",
+        "DOWNGRADED",
+    ]
+    assert [item["severity_action"] for item in candidate["source_items"]] == [
+        "DOWNGRADED",
+        "DOWNGRADED",
+    ]
+
+
 def test_anchors_unknown_relative_code_paths(tmp_path):
     _write_json(
         tmp_path / "TARGET_INFO.json",
