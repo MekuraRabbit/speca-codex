@@ -75,3 +75,14 @@ def test_github_issue_helper_uses_current_outputs_path():
     assert "outputs/00_SIMILAR_ISSUES.json" in script
     assert "--output path" in script
     assert "security-agent/outputs" not in script
+
+
+def test_web_readme_describes_design_only_surface():
+    readme = Path("web/README.md").read_text(encoding="utf-8")
+    design = Path("web/WEB_APP_DESIGN.md").read_text(encoding="utf-8")
+
+    assert "not a runnable frontend application yet" in readme
+    assert "React + TypeScript + Vite" not in readme
+    assert "template provides" not in readme
+    assert "ann.md" not in design
+    assert "security-agent/" not in design
