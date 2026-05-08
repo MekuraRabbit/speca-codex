@@ -1,19 +1,19 @@
-# Full Audit Automation
+# Codex App Audit Playbook
 
-Runs the complete SPECA pipeline from a bug bounty URL. The user provides
-only the bug bounty program URL and target repository — everything else is
-automated. The user only needs to approve each step.
+Operator playbook for running the SPECA pipeline from Codex App against an
+authorized bug bounty scope and target repository. This is a checklist for a
+Codex-guided workflow, not an implemented `/audit` slash command.
 
 ## Usage
 
-```
-/audit <bug_bounty_url> <target_repo> [options]
-```
+Ask Codex App to follow this playbook and provide the required inputs:
 
-Examples:
-```
-/audit https://immunefi.com/bounty/ethereum ethereum/go-ethereum
-/audit https://hackerone.com/cosmos cosmos/cosmos-sdk --workers 4
+```text
+Follow automation/AUDIT_PLAYBOOK.md for an authorized SPECA run.
+Bug bounty URL: <bug_bounty_url>
+Target repository: <owner/repo>
+Use Codex App runner, workers=<workers>, max_concurrent=<max_concurrent>,
+and output_dir=outputs/<run_name>.
 ```
 
 ## Required inputs
@@ -28,7 +28,7 @@ Examples:
 | Input | Default | Description |
 |-------|---------|-------------|
 | `--workers` | `4` | Number of parallel workers |
-| `--max-concurrent` | `64` | Max concurrent Claude calls |
+| `--max-concurrent` | `8` | Max concurrent worker turns |
 | `--branch` | auto-generated | Git branch name to use |
 | `--spec-urls` | (extracted from bug bounty page) | Comma-separated spec URLs |
 | `--keywords` | (extracted from bug bounty page) | Comma-separated search keywords |
@@ -65,7 +65,12 @@ Examples:
    }
    ```
 5. Clone the target repository to `target_workspace/`
-6. Run pre-flight tests: `uv run python3 -m pytest tests/ -v --tb=short`
+6. Run pre-flight tests. On Windows, use the lightweight Codex App venv path
+   if `uv run` attempts to sync the legacy SWE-agent dependency:
+   ```bash
+   uv run python -m pytest tests/ -v --tb=short
+   .venv/Scripts/python.exe -m pytest tests/ -v --tb=short
+   ```
 
 **User approval point**: Confirm scope, target repo, and branch before proceeding.
 
@@ -74,7 +79,7 @@ Examples:
 ```bash
 KEYWORDS="<extracted_keywords>" \
 SPEC_URLS="<extracted_spec_urls>" \
-uv run python3 scripts/run_phase.py --phase 01a
+uv run python scripts/run_phase.py --phase 01a --runner codex-app
 ```
 
 Discovers specification documents from the provided URLs and keywords.
@@ -85,7 +90,7 @@ Commit and push results.
 ### Step 2: Phase 01b — Subgraph Extraction
 
 ```bash
-uv run python3 scripts/run_phase.py --phase 01b --workers $WORKERS
+uv run python scripts/run_phase.py --phase 01b --runner codex-app --workers $WORKERS
 ```
 
 Extracts program graphs (Mermaid state diagrams) from discovered specs.
@@ -96,7 +101,7 @@ Commit and push results.
 ### Step 3: Phase 01e — Property Generation
 
 ```bash
-uv run python3 scripts/run_phase.py --phase 01e --workers $WORKERS
+uv run python scripts/run_phase.py --phase 01e --runner codex-app --workers $WORKERS
 ```
 
 Generates formal security properties using STRIDE + CWE Top 25 analysis.
@@ -108,7 +113,7 @@ Commit and push results.
 ### Step 4: Phase 02c — Code Pre-resolution
 
 ```bash
-uv run python3 scripts/run_phase.py --phase 02c --workers $WORKERS --max-concurrent $MAX_CONCURRENT
+uv run python scripts/run_phase.py --phase 02c --runner codex-app --workers $WORKERS --max-concurrent $MAX_CONCURRENT
 ```
 
 Pre-resolves code locations for properties against the target repository.
@@ -120,7 +125,7 @@ Commit and push results.
 ### Step 5: Phase 03 — Audit Map
 
 ```bash
-uv run python3 scripts/run_phase.py --phase 03 --workers $WORKERS --max-concurrent $MAX_CONCURRENT
+uv run python scripts/run_phase.py --phase 03 --runner codex-app --workers $WORKERS --max-concurrent $MAX_CONCURRENT
 ```
 
 Proof-based formal audit (Map -> Prove -> Stress-Test) against target code.
@@ -131,7 +136,7 @@ Commit and push results.
 ### Step 6: Phase 04 — Review
 
 ```bash
-uv run python3 scripts/run_phase.py --phase 04 --workers $WORKERS --max-concurrent $MAX_CONCURRENT
+uv run python scripts/run_phase.py --phase 04 --runner codex-app --workers $WORKERS --max-concurrent $MAX_CONCURRENT
 ```
 
 3-gate FP filter (Dead Code -> Trust Boundary -> Scope Check) + severity calibration.
@@ -145,7 +150,8 @@ Commit and push results.
 
 After all phases complete:
 1. Print summary table: total properties, confirmed vulnerabilities, FPs filtered, by severity
-2. Provide the web client URL for detailed exploration: `cd web && npm run dev`
+2. Point to generated outputs and logs for detailed review. `web/` currently
+   contains design notes only; it is not a runnable client yet.
 3. Create a summary commit with all results
 
 ## Error handling
@@ -157,7 +163,9 @@ After all phases complete:
 
 ## Environment requirements
 
-- `claude` CLI installed and authenticated
+- Codex App or Codex CLI installed and authenticated for Codex runner use
+- `claude` CLI installed and authenticated only when explicitly using the
+  legacy Claude runner
 - `uv` installed (Python package manager)
 - MCP servers configured: `bash scripts/setup_mcp.sh`
 - Git configured with push access to the repository
@@ -165,6 +173,6 @@ After all phases complete:
 ## Notes
 
 - Each phase commits and pushes results immediately after completion
-- The web client (`web/`) can be started at any time to monitor progress
-- All UI is in Japanese — results are visible at `http://localhost:5173`
-- Token and repo are configured in the web client's Settings page
+- `web/` is design-only today. Use the Codex App progress stream, generated
+  partial JSON files, logs, and thread metadata to monitor runs.
+- Token usage is reported by the runner output when available.
