@@ -2,11 +2,17 @@
 
 | | |
 |---|---|
-| **Status** | Draft (v0.1) |
+| **Status** | Historical Claude-first design draft (v0.1); not the current Codex App runtime contract |
 | **Owner** | @grandchildrice |
 | **Last updated** | 2026-05-03 |
 | **Distribution** | `npx speca-cli` (npm package) |
 | **Related** | Top-level [README](../README.md), [benchmarks/README](../benchmarks/README.md), Python orchestrator under [`scripts/orchestrator/`](../scripts/orchestrator/) |
+
+> **Codex fork note:** This document is preserved as the original `speca-cli`
+> TUI design memo. The current Codex-friendly entry point is the Codex App /
+> FastAPI integration documented in [CODEX_APP.md](CODEX_APP.md). The CLI in
+> [`cli/`](../cli/) is still an early prototype and does not implement the full
+> workflow described here.
 
 ## 1. Overview
 
@@ -707,10 +713,12 @@ These are concrete failure modes encountered by the upstream projects — we enc
 
 | Mode | Trigger | Behaviour |
 |---|---|---|
-| **Embedded** | Default, when no SPECA repo is detected | Auto-clone `https://github.com/NyxFoundation/speca` into `~/.cache/speca/<version>/` and pin to the same tag as the npm package |
+| **Embedded** | Default, when no SPECA repo is detected | Auto-clone `https://github.com/MekuraRabbit/speca-codex` into `~/.cache/speca/<version>/` and pin to the same tag as the npm package |
 | **Linked** | `SPECA_REPO=/path/to/speca` env var or `speca config set runner.repo_path …` | Use the user's own checkout (developer flow) |
 
-Version pinning: the npm package version is the SPECA repo tag. So `speca-cli@1.4.2` clones `NyxFoundation/speca@v1.4.2`. The `speca doctor` command warns when the linked checkout drifts from the npm version.
+Version pinning: the npm package version is the SPECA Codex fork tag. So
+`speca-cli@1.4.2` clones `MekuraRabbit/speca-codex@v1.4.2`. The `speca
+doctor` command warns when the linked checkout drifts from the npm version.
 
 ### 10.3 Performance & UX targets
 

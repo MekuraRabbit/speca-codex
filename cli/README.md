@@ -3,8 +3,10 @@
 TUI front-end prototype for the [SPECA Codex fork](https://github.com/MekuraRabbit/speca-codex) security-audit pipeline.
 
 > **Status:** early prototype. `version`, `doctor`, `auth login`, and `auth status`
-> exist; run orchestration and browsing are still future work. The broader CLI
-> design is in [`docs/SPECA_CLI_SPEC.md`](../docs/SPECA_CLI_SPEC.md).
+> exist; run orchestration and browsing are still future work. The broader
+> historical CLI design is in
+> [`docs/SPECA_CLI_SPEC.md`](../docs/SPECA_CLI_SPEC.md); the current Codex App
+> runner path is documented in [`docs/CODEX_APP.md`](../docs/CODEX_APP.md).
 
 ## Quick start (development)
 

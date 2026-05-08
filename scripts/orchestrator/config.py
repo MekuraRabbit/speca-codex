@@ -212,7 +212,7 @@ PHASE_CONFIGS: dict[str, PhaseConfig] = {
     "02c": PhaseConfig(
         phase_id="02c",
         name="Code Location Pre-resolution",
-        description="Pre-resolve code locations for properties using multi-tier fallback (MCP → Glob/Grep)",
+        description="Pre-resolve code locations for properties using multi-tier fallback (MCP -> Glob/Grep)",
         skill_path=Path("prompts/02c_codelocation_worker.md"),  # Unused — no skill fork
         prompt_path=Path("prompts/02c_codelocation_worker.md"),
         queue_pattern="outputs/02c_QUEUE_{worker_id}.json",

@@ -498,11 +498,14 @@ class CodexAppRunner(ClaudeRunner):
         context_path = self.output_dir / f"{phase_id}_CONTEXT_W{worker_id}B{batch_index}_{timestamp}.json"
         log_file = self.log_dir / f"{phase_id}_w{worker_id}b{batch_index}_{timestamp}.appserver.jsonl"
 
-        if directory_mode:
+        if phase_id == "01a":
+            result_parse_path = self.output_dir / f"01a_STATE_W{worker_id}B{batch_index}_{timestamp}.json"
+            output_kwargs: dict[str, str] = {"output_file": str(result_parse_path)}
+        elif directory_mode:
             batch_output_dir = self.output_dir / "graphs" / f"batch_w{worker_id}b{batch_index}_{timestamp}"
             batch_output_dir.mkdir(parents=True, exist_ok=True)
             result_parse_path = batch_output_dir / ".no_result_file"
-            output_kwargs: dict[str, str] = {"output_dir": str(batch_output_dir)}
+            output_kwargs = {"output_dir": str(batch_output_dir)}
         else:
             result_parse_path = self.output_dir / f"{partial_base}_W{worker_id}B{batch_index}_{timestamp}.json"
             output_kwargs = {"output_file": str(result_parse_path)}
@@ -512,7 +515,8 @@ class CodexAppRunner(ClaudeRunner):
         self._save_json(queue_path, queue_payload)
         self._save_json(context_path, context_payload)
 
-        prompt_content = self._build_prompt(
+        batch_kwargs = self._batch_prompt_kwargs(
+            batch,
             worker_id=worker_id,
             queue_file=str(queue_path),
             context_file=str(context_path),
@@ -521,6 +525,7 @@ class CodexAppRunner(ClaudeRunner):
             timestamp=timestamp,
             **output_kwargs,
         )
+        prompt_content = self._build_prompt(**batch_kwargs)
         cwd = self._batch_cwd(worker_id)
         client = await self._get_client()
         requested_model, model_source = codex_model_selection_from_config(self.config)
@@ -614,7 +619,7 @@ class CodexAppRunner(ClaudeRunner):
             results = self._parse_results_from_log(log_file)
         if directory_mode and not results:
             results = self._parse_directory_results(batch_output_dir, context_path)
-        if not directory_mode and results:
+        if self._should_delete_result_file(directory_mode) and results:
             result_parse_path.unlink(missing_ok=True)
         return results
 

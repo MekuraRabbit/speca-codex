@@ -295,7 +295,7 @@ class ResultCollector:
         except ValidationError as ve:
             self.validation_warnings += 1
             print(
-                f"⚠️  Output metadata validation warning ({output_path.name}): "
+                f"Warning: Output metadata validation warning ({output_path.name}): "
                 f"{ve.error_count()} error(s)",
                 file=sys.stderr,
             )
@@ -313,7 +313,7 @@ class ResultCollector:
         except ValidationError as ve:
             self.validation_errors += 1
             print(
-                f"⚠️  Output schema validation warning ({output_path.name}): "
+                f"Warning: Output schema validation warning ({output_path.name}): "
                 f"{ve.error_count()} error(s)",
                 file=sys.stderr,
             )

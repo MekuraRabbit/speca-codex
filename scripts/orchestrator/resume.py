@@ -261,7 +261,20 @@ class ResumeManager:
         # Track already-counted log files to avoid double-counting
         counted_logs: set[str] = set()
 
-        # 1. Delete PARTIAL files (file mode)
+        # 1. Delete singleton output files, such as 01a_STATE.json.
+        # PARTIAL globs are handled below; singleton outputs otherwise survive
+        # a failed forced rerun and can be consumed as stale state.
+        if "*" not in self.config.output_pattern:
+            output_path = self.output_dir / Path(self.config.output_pattern).name
+            if output_path.exists() and output_path.is_file():
+                if dry_run:
+                    print(f"Would delete: {output_path}")
+                else:
+                    output_path.unlink()
+                    print(f"Deleted: {output_path}")
+                count += 1
+
+        # 2. Delete PARTIAL files (file mode)
         pattern = str(self.output_dir / f"{self.config.phase_id}_PARTIAL_*.json")
         for filepath in glob.glob(pattern):
             if dry_run:
@@ -271,7 +284,7 @@ class ResumeManager:
                 print(f"Deleted: {filepath}")
             count += 1
 
-        # 2. Delete directory outputs (directory mode)
+        # 3. Delete directory outputs (directory mode)
         if self.config.output_mode == "directory":
              graphs_dir = self.output_dir / "graphs"
              if graphs_dir.exists():
@@ -296,7 +309,7 @@ class ResumeManager:
                                  print(f"Deleted log: {log}")
                              count += 1
 
-        # 3. Delete leftover logs (file mode or orphaned)
+        # 4. Delete leftover logs (file mode or orphaned)
         # _get_log_files_for_batch handles directory mode logs.
         # For file mode, logs are: {phase_id}_w{worker}b{batch}_{timestamp}.log.jsonl
         log_pattern = str(self.logs_dir / f"{self.config.phase_id}_*.log.jsonl")
