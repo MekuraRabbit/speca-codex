@@ -254,12 +254,13 @@ local API and `codex app-server` runner.
 
 ## Local Validation
 
-This fork has been exercised in one known-good local rehearsal against
+This fork has been exercised in local rehearsals against
 [OpenZeppelin's Damn Vulnerable DeFi](https://github.com/OpenZeppelin/damn-vulnerable-defi),
-an intentionally vulnerable educational benchmark. Treat this as a compatibility
-and quality check for the Codex App runner path, not as production audit
-evidence or a claim that SPECA discovered unknown vulnerabilities in a live
-protocol.
+an intentionally vulnerable educational benchmark, and the ERC-4626 portion of
+[OpenZeppelin Contracts](https://github.com/OpenZeppelin/openzeppelin-contracts).
+Treat these as compatibility and quality checks for the Codex App runner path,
+not as production audit evidence or claims that SPECA discovered unknown
+vulnerabilities in live protocols.
 
 In the May 2026 local rehearsal:
 
@@ -275,11 +276,28 @@ In the May 2026 local rehearsal:
 A reproduction note is available at
 [`docs/rehearsals/damn-vulnerable-defi-2026-05.md`](docs/rehearsals/damn-vulnerable-defi-2026-05.md).
 
+A second May 2026 smoke rehearsal covered OpenZeppelin Contracts ERC-4626
+`v5.6.1`:
+
+- Phase 03/04 completed for 125 generated ERC-4626-focused properties.
+- The original Phase 05 candidate index produced 6 PoC candidates.
+- Post-run triage grouped those candidates into 2 root-cause families: a
+  max-boundary standards-compliance edge case and a short-delivering underlying
+  asset integration hazard family.
+- The max-boundary family was reproduced with a local Hardhat PoC. The
+  short-delivery family was treated as a conditional integration caveat, not as
+  an independent OpenZeppelin core vulnerability claim.
+
+A smoke rehearsal note is available at
+[`docs/rehearsals/openzeppelin-erc4626-2026-05.md`](docs/rehearsals/openzeppelin-erc4626-2026-05.md).
+
 Limitations:
 
 - Damn Vulnerable DeFi is an educational target with intentionally planted
   vulnerabilities; this is not evidence of performance on arbitrary production
   repositories.
+- The OpenZeppelin ERC-4626 rehearsal is a local smoke test and is not a
+  vendor-ready audit report.
 - Phase 03 finding counts are property-level signals, not counts of independent
   vulnerabilities.
 - Phase 05 currently selects and structures PoC candidates. It does not yet
