@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 
 from scripts.orchestrator.base import (
@@ -6,7 +8,10 @@ from scripts.orchestrator.base import (
     Phase02cOrchestrator,
     Phase03Orchestrator,
     Phase04Orchestrator,
+    resolve_runner_type,
 )
+from scripts.orchestrator.codex_app_runner import CodexAppRunner
+from scripts.orchestrator.codex_runner import CodexRunner
 from scripts.orchestrator.factory import create_orchestrator
 
 
@@ -31,3 +36,27 @@ def test_create_orchestrator_selects_phase_specific_classes(phase_id, expected_t
 def test_create_orchestrator_rejects_unknown_phase():
     with pytest.raises(ValueError, match="Unknown phase"):
         create_orchestrator("99")
+
+
+def test_orchestrator_defaults_to_codex_app_runner(monkeypatch):
+    monkeypatch.delenv("ORCHESTRATOR_RUNNER", raising=False)
+
+    orchestrator = BaseOrchestrator("01a", num_workers=1, max_concurrent=1)
+    monkeypatch.setattr(orchestrator, "load_items", lambda: [])
+
+    asyncio.run(orchestrator.run())
+
+    assert resolve_runner_type(orchestrator.config) == "codex-app"
+    assert isinstance(orchestrator.runner, CodexAppRunner)
+
+
+def test_orchestrator_runner_env_override_still_works(monkeypatch):
+    monkeypatch.setenv("ORCHESTRATOR_RUNNER", "codex")
+
+    orchestrator = BaseOrchestrator("01a", num_workers=1, max_concurrent=1)
+    monkeypatch.setattr(orchestrator, "load_items", lambda: [])
+
+    asyncio.run(orchestrator.run())
+
+    assert resolve_runner_type(orchestrator.config) == "codex"
+    assert isinstance(orchestrator.runner, CodexRunner)

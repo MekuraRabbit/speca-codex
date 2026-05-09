@@ -19,7 +19,7 @@ if _scripts_dir not in sys.path:
     sys.path.insert(0, _scripts_dir)
 
 from orchestrator import create_orchestrator
-from orchestrator.base import BaseOrchestrator, PhaseAbortError
+from orchestrator.base import BaseOrchestrator, PhaseAbortError, resolve_runner_type
 from orchestrator.codex_gui_model import resolve_codex_gui_settings
 from orchestrator.paths import get_output_root, output_root_context
 from orchestrator.runner import CircuitBreakerTripped, BudgetExceeded
@@ -285,16 +285,11 @@ async def _run_phase(run: RunInfo, manager: RunManager) -> None:
             if inputs.get("worktree_base_ref"):
                 orch.config.worktree_base_ref = str(inputs["worktree_base_ref"])
 
-            effective_runner = (
-                orch.config.runner_type
-                or os.environ.get("ORCHESTRATOR_RUNNER", "claude")
-            ).lower()
+            effective_runner = resolve_runner_type(orch.config)
             codex_runner = effective_runner in {
                 "codex",
                 "codex-app",
-                "codex_app",
                 "app-server",
-                "app_server",
             }
             use_gui_settings = codex_runner and (
                 inputs.get("use_codex_gui_model", True)
