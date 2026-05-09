@@ -3,10 +3,10 @@
 TUI front-end prototype for the [SPECA Codex fork](https://github.com/MekuraRabbit/speca-codex) security-audit pipeline.
 
 > **Status:** early prototype. `version`, `doctor`, `auth login`, and `auth status`
-> exist; run orchestration and browsing are still future work. The broader
-> historical CLI design is in
-> [`docs/SPECA_CLI_SPEC.md`](../docs/SPECA_CLI_SPEC.md); the current Codex App
-> runner path is documented in [`docs/CODEX_APP.md`](../docs/CODEX_APP.md).
+> exist; run orchestration and browsing are still future work. The auth commands
+> are historical prototype surfaces and are not used by the Codex App runner.
+> The current Codex App runner path is documented in
+> [`docs/CODEX_APP.md`](../docs/CODEX_APP.md).
 
 ## Quick start (development)
 
@@ -23,14 +23,13 @@ node dist/cli.js doctor     # run the built bundle
 | Command | Description |
 |---|---|
 | `speca version` | Print the speca-cli version |
-| `speca doctor` | Check Node / uv / git / optional legacy Claude Code / auth status |
-| `speca auth login` | Save Anthropic credentials for legacy Claude-oriented CLI experiments |
+| `speca doctor` | Check Node / uv / git / auth status |
+| `speca auth login` | Historical Anthropic auth prototype; not used by the Codex App runner |
 | `speca auth status` | Show currently saved auth records |
 | `speca help` | Show usage |
 
-Future milestones add `init`, `run`, `browse`, `attach`, `config`, the live
-pipeline dashboard, and the finding browser. See
-[SPEC §11](../docs/SPECA_CLI_SPEC.md#11-implementation-roadmap).
+Future milestones may add `init`, `run`, `browse`, `attach`, `config`, the live
+pipeline dashboard, and the finding browser.
 
 ## Stack
 

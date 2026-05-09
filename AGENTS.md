@@ -1,8 +1,8 @@
 # SPECA Agent Guide
 
 This repository is SPECA: a specification-to-property security audit pipeline.
-It was originally optimized for Claude Code, but it now has Codex-friendly
-entry points as well. Keep the Claude workflow intact when making changes.
+It is maintained here as a Codex App-oriented fork. Keep Codex App behavior and
+authorized-scope safety rails first when making changes.
 
 ## Core Commands
 
@@ -46,9 +46,8 @@ curl -X POST http://127.0.0.1:8000/api/phases/dispatch \
   -d '{"phase_id":"03","workers":2,"max_concurrent":4,"output_dir":"outputs/inst_01"}'
 ```
 
-The app-server default worker runtime is Codex app-server. The CLI keeps the
-historical Claude default unless `--runner codex-app` or `--runner codex` is
-provided, so upstream scripts do not break.
+The app-server default worker runtime is Codex app-server. When using the CLI
+in this fork, prefer an explicit Codex runner.
 
 ```bash
 uv run python scripts/run_phase.py --phase 03 --runner codex-app
@@ -80,8 +79,9 @@ Optional app-server dispatch fields:
 - `scripts/orchestrator/codex_adapter.py` inlines referenced
   `.claude/skills/*/SKILL.md` files into Codex worker prompts. Codex does not
   execute Claude slash skills directly.
-- `scripts/orchestrator/runner.py` is the original Claude CLI runner, retained
-  for backwards compatibility with existing scripts and CI.
+- `scripts/orchestrator/runner.py` is the original Claude CLI runner. It is not
+  the public Codex App path; change it only when needed to keep shared
+  orchestration contracts healthy.
 - `scripts/orchestrator/api_runner.py` is an optional OpenAI-compatible API
   runner for environments that explicitly choose it.
 - `scripts/orchestrator/paths.py` resolves `SPECA_OUTPUT_DIR`. It also supports
@@ -98,8 +98,8 @@ Optional app-server dispatch fields:
 - Treat `outputs/BUG_BOUNTY_SCOPE.json` and `outputs/TARGET_INFO.json` as the
   authorized boundary for a SPECA run. Do not broaden the target to unrelated
   repositories, live services, accounts, or infrastructure.
-- Do not delete or rename `CLAUDE.md`, `.claude/`, or GitHub Actions that invoke
-  Claude Code unless the user explicitly asks.
+- Do not delete or rename `CLAUDE.md` or `.claude/` unless the user explicitly
+  asks; Codex prompt adaptation still reads those skill sources.
 - Preserve partial-result and resume behavior. `outputs/*_PARTIAL_*.json` files
   are first-class state.
 - Do not share one output directory across concurrent runs.

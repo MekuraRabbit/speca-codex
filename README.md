@@ -25,8 +25,8 @@ authorized boundary for each run.
 ## What This Fork Is
 
 This repository is a practical Codex App adaptation of SPECA. The upstream
-project was designed around Claude Code workers; this fork keeps that workflow
-available for compatibility while adding a Codex-oriented path:
+project was designed around Claude Code workers; this fork is maintained as a
+Codex-oriented edition rather than a second Claude distribution:
 
 - Codex App can start the local SPECA API, dispatch phases, watch progress, and
   collect results.
@@ -36,6 +36,11 @@ available for compatibility while adding a Codex-oriented path:
   the reducer/diff endpoint.
 - When an API run omits `model`, SPECA can use the model and reasoning effort
   selected in the Codex App GUI.
+
+If you want the original Claude Code workflow, use
+[NyxFoundation/speca](https://github.com/NyxFoundation/speca). This fork keeps
+some internal compatibility code only where Codex still needs it, but the public
+setup and run path is Codex App first.
 
 For the original research claims, paper results, and full benchmark artifact
 context, refer to the upstream SPECA repository and paper.
@@ -98,7 +103,6 @@ the worker turns.
 - **Python 3.11+** and [`uv`](https://github.com/astral-sh/uv) (`pip install uv`)
 - **Node.js 20+** (for worker CLIs and MCP servers)
 - **Codex CLI** for Codex app-server and local fallback workers (`npm install -g @openai/codex`, or use the Codex desktop app bundle)
-- **Claude Code CLI** only for legacy Claude-runner workflows
 - **`git`** — used to prepare and verify the target checkout pinned in `outputs/TARGET_INFO.json`
 
 ### Install
@@ -348,7 +352,7 @@ In multi-implementation settings, the **left stage executes once** against the s
 The pipeline ships as a reusable **audit harness** under `scripts/orchestrator/` — not a one-off script. The harness provides the infrastructure that every phase needs (queueing, parallel worker dispatch, token-aware batching, resume on partial failure, optional per-phase budget guards for runners that report estimated costs, shared circuit-breaker logic, structured logs, and token-usage telemetry); each phase plugs in a worker prompt and a Pydantic schema and inherits all of the above for free. This separation is what makes the framework reusable: you can drop in a new phase, target a new codebase, or swap a model backbone without touching the harness itself.
 
 Concretely, the harness:
-- **Drives a worker runtime per batch**. Codex App server runs use `codex app-server` threads by default, with `codex exec` as a local fallback and the original Claude Code runner retained for legacy workflows.
+- **Drives a worker runtime per batch**. Codex App server runs use `codex app-server` threads by default, with `codex exec` as a local fallback.
 - **Resumes from `outputs/*_PARTIAL_*.json`** so a 10-implementation RQ1 run that's interrupted at hour 4 picks up exactly where it left off without re-spending tokens.
 - **Tracks token usage and optional budget guards** at the runner level. Normal Codex App summaries report token counts; raw runner/API payloads may still include estimated-cost fields for compatibility, but public summaries should not present them as actual API spend unless an API runner was explicitly used.
 - **Validates leniently by default** — Pydantic schema mismatches generate warnings instead of aborting, so partial results remain first-class recovery state during normal runs.
@@ -360,11 +364,11 @@ In other words: the harness handles the messy parts of running a 100-target audi
 ```
 scripts/
 ├── run_phase.py            # Entry point
-├── setup_mcp.sh            # MCP server registration
+├── setup_mcp.sh            # Legacy/local MCP helper
 └── orchestrator/
     ├── config.py            # Phase definitions (PhaseConfig)
     ├── base.py              # BaseOrchestrator (async pipeline)
-    ├── runner.py            # ClaudeRunner + CircuitBreaker
+    ├── runner.py            # Legacy ClaudeRunner + CircuitBreaker
     ├── batch.py             # Token/count-based batching
     ├── queue.py             # Queue splitting & state
     ├── collector.py         # Result parsing & aggregation
@@ -579,9 +583,9 @@ The orchestrator **requires** `outputs/BUG_BOUNTY_SCOPE.json` and aborts if the 
 | **Prompt** | `prompts/02c_codelocation_worker.md` (inlined — no skill fork) |
 | **Input** | `outputs/01e_PARTIAL_*.json` + `outputs/TARGET_INFO.json` + `outputs/01b_SUBGRAPH_INDEX.json` |
 | **Output** | `outputs/02c_PARTIAL_*.json` |
-| **Worker model** | Legacy Claude default: Sonnet. Codex App runs use the GUI-selected model/reasoning effort unless `model` is passed explicitly. |
+| **Worker model** | Codex App runs use the GUI-selected model/reasoning effort unless `model` is passed explicitly. |
 
-Pre-resolves code locations for each property against the target repository using Tree-sitter MCP (primary) with Glob/Grep fallback. Records file paths, symbol names, and line ranges without extracting code. Applies severity gating (drops `Informational` properties by default). Builds `outputs/01b_SUBGRAPH_INDEX.json` from 01b partials for spec-level context. Reads `outputs/TARGET_INFO.json` (created by 02c workflow before phase runs).
+Pre-resolves code locations for each property against the target repository using Tree-sitter MCP (primary) with Glob/Grep fallback. Records file paths, symbol names, and line ranges without extracting code. Applies severity gating (drops `Informational` properties by default). Builds `outputs/01b_SUBGRAPH_INDEX.json` from 01b partials for spec-level context. Prepare `outputs/TARGET_INFO.json` before running target-code phases.
 
 Reduces token consumption in Phase 03 by ~40-60%.
 
@@ -648,7 +652,7 @@ Reduces token consumption in Phase 03 by ~40-60%.
 | **Prompt** | `prompts/03_auditmap_worker_inline.md` (inlined — no skill fork) |
 | **Input** | `outputs/02c_PARTIAL_*.json` + pinned local checkout from `TARGET_INFO.local_checkout` |
 | **Output** | `outputs/03_PARTIAL_*.json` |
-| **Worker model** | Legacy Claude default: Sonnet. Codex App runs use the GUI-selected model/reasoning effort unless `model` is passed explicitly. |
+| **Worker model** | Codex App runs use the GUI-selected model/reasoning effort unless `model` is passed explicitly. |
 
 Performs a proof-based 3-sub-phase formal audit for each property against the target codebase. **The core method: try to prove the property holds; where the proof breaks, that gap is the bug.** This framing was chosen over an adversarial *"find bugs"* prompt after preliminary experiments showed the adversarial approach produced an **88% false positive rate** — without a structured claim to disprove, the model produced numerous speculative findings with weak grounding.
 
@@ -713,7 +717,7 @@ Compact 6-field output per item: `property_id`, `classification`, `code_path`, `
 | **Prompt** | `prompts/04_review_worker.md` (inlined — no skill fork) |
 | **Input** | `outputs/03_PARTIAL_*.json` + `outputs/BUG_BOUNTY_SCOPE.json` + `outputs/TARGET_INFO.json` |
 | **Output** | `outputs/04_PARTIAL_*.json` |
-| **Worker model** | Legacy Claude default: Sonnet. Codex App runs use the GUI-selected model/reasoning effort unless `model` is passed explicitly. |
+| **Worker model** | Codex App runs use the GUI-selected model/reasoning effort unless `model` is passed explicitly. |
 
 Filters false positives from Phase 03 findings via a recall-safe 3-gate pipeline with early exit. **Only these 3 gates may produce DISPUTED_FP** — no other reasoning may dispute a finding:
 
@@ -819,39 +823,19 @@ Compiles a publication-ready security assessment report covering the selected SP
 
 ## Running on GitHub Actions
 
-The upstream-style CI workflows are still available via **GitHub Actions**
-with `workflow_dispatch` triggers. They are mainly useful for reproduction and
-legacy runner automation. For normal Codex App use, start with the local API
-flow in [Quick Start](#quick-start).
+The public Codex fork does not ship the old Claude phase workflows or the
+public-branch `full-audit` workflow. They were removed because this repository's
+normal run path is local Codex App execution, and public audit-output workflows
+are easy to misuse on third-party targets.
 
-| Workflow | File | Description |
-|---|---|---|
-| 01a. Discovery | `01a-discovery.yml` | Crawl specification URLs |
-| 01b. Subgraph Extraction | `01b-subgraph.yml` | Extract program graphs |
-| 01e. Properties | `01e-properties.yml` | Trust model + property generation |
-| 02c. Code Resolution | `02c-enrich-code.yml` | Pre-resolve code locations |
-| 03. Audit Map | `03-audit-map.yml` | Proof-based 3-phase formal audit |
-| 04. Audit Review | `04-audit-review.yml` | 3-gate FP filter + severity calibration |
+GitHub Actions in this fork are limited to CI and disabled resolver stubs. To
+run an audit, use the local API flow in [Quick Start](#quick-start) so generated
+partials, logs, and findings stay in your local workspace unless you
+intentionally publish a sanitized reproduction note.
 
-Each workflow:
-1. Checks out the repository and syncs the latest `scripts/`, `prompts/`, `.claude/` from the base branch.
-2. Installs the worker CLI selected by the workflow and registers MCP servers via `scripts/setup_mcp.sh`.
-3. Runs the orchestrator, for example: `uv run python scripts/run_phase.py --phase <ID> --runner codex-app --workers N`.
-4. Commits results to an audit branch and uploads logs as artifacts.
-
-For local execution, see [Quick Start](#quick-start) above.
-
-### MCP Servers
-
-The following MCP servers are registered by `scripts/setup_mcp.sh`:
-
-| Server | Command | Used In |
-|---|---|---|
-| `tree_sitter` | `uvx mcp-server-tree-sitter==0.7.0` | 02c |
-| `filesystem` | `npx -y @modelcontextprotocol/server-filesystem@2026.1.14` | 01b, 02c |
-| `fetch` | `uvx mcp-server-fetch==2025.4.7` | 01a |
-
-`scripts/setup_mcp.sh` pins MCP server package specs by default and accepts `MCP_*_SPEC` environment overrides when maintainers intentionally update the toolchain. Note: Phases 01e, 03, and 04 use inlined prompts with no MCP servers (only built-in Read/Write/Grep/Glob tools).
+`scripts/setup_mcp.sh` remains as a pinned legacy/local helper for experiments
+that need MCP server registration, but Codex App runs do not require the removed
+Claude GitHub Actions.
 
 ## Configuration
 
@@ -919,7 +903,6 @@ those aliases.
 
 | Variable | Used By | Purpose |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | Legacy Claude runner | Claude Code authentication |
 | `SPECA_CODEX_MODEL` | Codex runners | Optional explicit Codex model override; API runs normally read the Codex App GUI model when `model` is omitted |
 | `SPECA_CODEX_REASONING_EFFORT` | Codex app-server runner | Optional explicit reasoning effort override (`low`, `medium`, `high`, `xhigh`, etc.) |
 | `SPECA_CODEX_SERVICE_TIER` | Codex app-server runner | Optional service tier override (`fast` or `flex`) |
@@ -938,8 +921,6 @@ those aliases.
 | `SPEC_URLS` | 01a | Comma-separated seed URLs to crawl |
 | `KEYWORDS` | 01a | Optional crawl keyword filter |
 | `FORCE_EXECUTE=1` | All phases | Bypass resume state (set automatically by `--force`) |
-| `CLAUDE_CODE_PERMISSIONS=bypassPermissions` | CI | Skip interactive permission prompts |
-| `CLAUDE_CODE_MAX_OUTPUT_TOKENS=100000` | CI | Raise output cap for long audit traces |
 | `GITHUB_PERSONAL_ACCESS_TOKEN` | Optional | Used by GitHub MCP server when enabled |
 
 ## Upstream Paper And Benchmarks

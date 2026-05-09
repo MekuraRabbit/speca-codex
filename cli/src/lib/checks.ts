@@ -79,14 +79,6 @@ export const checkUv = (): Promise<CheckResult> =>
 export const checkGit = (): Promise<CheckResult> =>
   probeBinary("git", ["--version"], "https://git-scm.com/downloads");
 
-export const checkClaude = (): Promise<CheckResult> =>
-  probeBinary(
-    "claude",
-    ["--version"],
-    "npm install -g @anthropic-ai/claude-code@2.1.136",
-    true,
-  );
-
 export async function runAllChecks(): Promise<CheckResult[]> {
-  return Promise.all([checkNode(), checkUv(), checkGit(), checkClaude(), checkAuth()]);
+  return Promise.all([checkNode(), checkUv(), checkGit(), checkAuth()]);
 }

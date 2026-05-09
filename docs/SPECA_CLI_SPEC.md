@@ -12,7 +12,8 @@
 > TUI design memo. The current Codex-friendly entry point is the Codex App /
 > FastAPI integration documented in [CODEX_APP.md](CODEX_APP.md). The CLI in
 > [`cli/`](../cli/) is still an early prototype and does not implement the full
-> workflow described here.
+> workflow described here. Do not use the Claude-specific installation and auth
+> notes below as current setup guidance for this Codex fork.
 
 ## 1. Overview
 
@@ -734,7 +735,7 @@ doctor` command warns when the linked checkout drifts from the npm version.
 
 | Failure | UX |
 |---|---|
-| Claude Code CLI not installed | Modal: "Claude Code CLI is required. Install via `npm install -g @anthropic-ai/claude-code@2.1.136` and restart." Quit. |
+| Claude Code CLI not installed | Historical draft behavior for the old Claude-first TUI; not part of the current Codex App setup path. |
 | `uv` not installed | Modal with `pip install uv` instructions; offer `--use-pip` fallback (slower) |
 | Network failure during git clone | Retry with exponential backoff (3 attempts), then surface error |
 | Worker batch failure | Per-row inline error; Phase row stays in `error` state; user can retry from the TUI |

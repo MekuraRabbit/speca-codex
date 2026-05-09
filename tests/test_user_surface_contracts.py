@@ -115,9 +115,10 @@ def test_cli_metadata_points_at_codex_fork():
 
     assert "https://github.com/MekuraRabbit/speca-codex" in readme
     assert "auth login" in readme
+    assert "Historical Anthropic auth prototype" in readme
     assert "commands/auth/" in readme
     assert "auth.flow.test.ts" in readme
-    assert "optional legacy Claude Code" in readme
+    assert "optional legacy Claude Code" not in readme
     assert "Stack (M1)" not in readme
     assert package["repository"]["url"] == "https://github.com/MekuraRabbit/speca-codex.git"
     assert "https://github.com/NyxFoundation/speca/issues/3" not in readme
@@ -224,7 +225,7 @@ def test_mcp_setup_does_not_print_project_config_or_unmasked_tokens():
     assert "intentionally not printed" in script
 
 
-def test_public_workflows_pin_worker_tool_installs():
+def test_public_workflows_and_active_cli_do_not_install_legacy_claude_code():
     workflow_text = "\n".join(
         path.read_text(encoding="utf-8")
         for path in Path(".github/workflows").glob("*.yml")
@@ -234,15 +235,15 @@ def test_public_workflows_pin_worker_tool_installs():
         for path in [
             Path("README.md"),
             Path("README.ja.md"),
-            Path("docs/SPECA_CLI_SPEC.md"),
+            Path("cli/README.md"),
             Path("cli/src/lib/checks.ts"),
         ]
     )
     unpinned_claude_install = "npm install -g @anthropic-ai/" + "claude-code"
 
-    assert "@anthropic-ai/claude-code@2.1.136" in workflow_text
-    assert "@anthropic-ai/claude-code@2.1.136" in user_surfaces
-    assert f"{unpinned_claude_install}\n" not in workflow_text
+    assert "@anthropic-ai/claude-code" not in workflow_text
+    assert "CLAUDE_CODE_PERMISSIONS" not in workflow_text
+    assert "@anthropic-ai/claude-code" not in user_surfaces
     assert f"{unpinned_claude_install}`" not in user_surfaces
     assert f'{unpinned_claude_install}",' not in user_surfaces
     assert 'version: "latest"' not in workflow_text

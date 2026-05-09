@@ -43,7 +43,6 @@ This document describes the optimizations implemented to reduce token consumptio
 
 **Location**: 
 - `prompts/02c_worker.md` - Phase 02c worker prompt
-- `.github/workflows/02c-enrich-code.yml` - Phase 02c GitHub Workflow
 - `scripts/orchestrator/schemas.py` - CodeScope type definition
 - `scripts/orchestrator/config.py` - Phase 02c configuration
 - `prompts/03_auditmap_worker_optimized.md` - Phase 03 checks pre-resolved code
@@ -74,21 +73,13 @@ All optimizations are enabled by default. To run the full workflow:
 uv run python3 scripts/run_phase.py --phase 02 --workers 4 --max-concurrent 64
 
 # Step 2: Run Phase 02c (Code Pre-resolution)
-# Via GitHub Workflow (recommended):
-#   Manually trigger "02c. Code Pre-resolution" workflow
-#   Inputs: target_repo, target_ref_type, audit_scope
-#   Creates new branch with TARGET_INFO.json
+# Prepare outputs/TARGET_INFO.json first, then run locally:
+uv run python3 scripts/run_phase.py --phase 02c --workers 4 --max-concurrent 16
 
 # Or via command line (after setting up target_workspace):
 uv run python3 scripts/run_phase.py --phase 02c --workers 4 --max-concurrent 64
 
 # Step 3: Run Phase 03 (Audit Map Generation)
-# Via GitHub Workflow (recommended):
-#   Manually trigger "03. Audit Map" workflow
-#   Input: branch (from Phase 02c)
-#   Auto-reads TARGET_INFO.json and clones same target
-
-# Or via command line:
 uv run python3 scripts/run_phase.py --phase 03 --workers 4 --max-concurrent 64
 ```
 
@@ -205,7 +196,7 @@ Analysis of the `preresolve_prysm_fusaka-audit_238d5c07df_20260216150647` branch
 ### Next Steps
 
 1. ✅ Prompt rewritten with shell-based implementation
-2. ⏳ Push to master branch
-3. ⏳ Run GitHub Actions workflow to test
+2. ⏳ Push to main branch
+3. ⏳ Run local Codex App smoke test
 4. ⏳ Verify resolution rate >80%
 5. ⏳ Measure Phase 03 efficiency improvement
