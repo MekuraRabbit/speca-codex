@@ -39,7 +39,7 @@ PROJECT_ID_TO_NAME = {
     "U5": "unicode-org/icu",
 }
 
-# Commit mapping — matches rq2a-03-audit-map.yml matrix
+# Commit mapping used by the historical RQ2a benchmark dataset.
 PROJECT_ID_TO_COMMIT = {
     "N1": "d5ba564a2e62da1fd71bf763e0cfd6ba5b45245b",
     "N2": "6e167ed083e252cb318b4db3316854be80de1693",

@@ -2,11 +2,10 @@
 
 Japanese version: [CODEX_APP.ja.md](CODEX_APP.ja.md)
 
-SPECA still supports the original Claude Code flow for backwards compatibility.
-Codex App support is added as an app-server layer whose default worker runtime
-is `codex app-server`, so the actual phase work is performed by Codex threads
-while the SPECA phase order, output schemas, resume behavior, and parallel
-batching stay intact. `codex exec` remains available as a local fallback runner.
+This fork is the Codex App edition of SPECA. Its default worker runtime is
+`codex app-server`, so the actual phase work is performed by Codex threads while
+the SPECA phase order, output schemas, resume behavior, and parallel batching
+stay intact. `codex exec` remains available as a local fallback runner.
 
 ## Authorized Use
 
@@ -60,7 +59,7 @@ uv run --no-sync python -m server.app
 ```
 
 The `--no-sync` flag reuses an existing lightweight `.venv` without forcing a
-full project sync of legacy workflow dependencies.
+full project sync of optional resolver extras.
 
 > **Do not expose this API.** The SPECA API is a local single-user control
 > plane that can launch agent worker runs. It is unauthenticated and should
@@ -165,8 +164,8 @@ To use an existing Codex app-server websocket:
 }
 ```
 
-Claude-oriented model aliases left in `PhaseConfig` or `CLAUDE.md` (`sonnet`,
-`opus`, `haiku`, or full Claude model names) are ignored by Codex runners.
+Legacy model aliases left in `PhaseConfig` or `CLAUDE.md` (`sonnet`, `opus`,
+`haiku`, or full Claude model names) are ignored by Codex runners.
 When an API run is launched from Codex App and `model` is omitted, SPECA tries
 to read the latest `turn_context` for the current `CODEX_THREAD_ID` from
 Codex's local session metadata. If found, the GUI-selected model and reasoning
@@ -237,16 +236,6 @@ thread ids, turn ids, token usage, and optional diffs under
 the worker threads in Codex's persistent local thread store. For local debugging
 only, set `SPECA_CODEX_APP_EPHEMERAL_THREADS=0` before dispatching a run.
 
-Explicit Claude fallback for old local/CI workflows:
-
-```json
-{
-  "phase_id": "03",
-  "runner": "claude",
-  "output_dir": "outputs/inst_01"
-}
-```
-
 CLI equivalent for Codex workers:
 
 ```bash
@@ -296,7 +285,7 @@ phase, for example `01e_PARTIAL_*.json`, `BUG_BOUNTY_SCOPE.json`,
 - `server/run_manager.py` allows concurrent runs with distinct output dirs.
 - `PhaseConfig` objects returned by `get_phase_config()` are copies, so per-run
   app-server overrides cannot leak into another run.
-- Codex/Claude debug and MCP config scratch files are written under the selected
-  output root during worker execution.
+- Codex debug and MCP config scratch files are written under the selected output
+  root during worker execution.
 - Discord notifications are optional. Set `SPECA_DISCORD_WEBHOOK_URL` in the
   server environment to enable them; no webhook URL is stored in the repository.
