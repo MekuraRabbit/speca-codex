@@ -76,7 +76,7 @@ def build_poc_candidate_index(output_dir: Path) -> dict[str, Any]:
         "metadata": {
             "phase": "05-candidates",
             "created_at": datetime.now(timezone.utc).isoformat(),
-            "output_dir": output_dir.as_posix(),
+            "output_dir": _output_dir_label(output_dir),
             "source_files": {
                 "phase03_partials": len(list(output_dir.glob("03_PARTIAL_*.json"))),
                 "phase04_partials": len(list(output_dir.glob("04_PARTIAL_*.json"))),
@@ -106,6 +106,12 @@ def _read_optional_json(path: Path) -> dict[str, Any]:
     with path.open(encoding="utf-8-sig") as handle:
         data = json.load(handle)
     return data if isinstance(data, dict) else {}
+
+
+def _output_dir_label(output_dir: Path) -> str:
+    """Return a stable run label without embedding a local absolute path."""
+    name = output_dir.name.strip()
+    return name or "."
 
 
 def _load_phase_items(output_dir: Path, phase: str, key: str) -> list[dict[str, Any]]:
