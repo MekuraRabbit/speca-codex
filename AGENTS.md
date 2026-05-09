@@ -46,11 +46,12 @@ curl -X POST http://127.0.0.1:8000/api/phases/dispatch \
   -d '{"phase_id":"03","workers":2,"max_concurrent":4,"output_dir":"outputs/inst_01"}'
 ```
 
-The app-server default worker runtime is Codex app-server. When using the CLI
-in this fork, prefer an explicit Codex runner.
+The app-server default worker runtime is Codex app-server. The CLI default in
+this fork is also `codex-app`; pass `--runner codex`, `--runner claude`, or
+`--runner api` only when explicitly choosing another runtime.
 
 ```bash
-uv run python scripts/run_phase.py --phase 03 --runner codex-app
+uv run python scripts/run_phase.py --phase 03  # codex app-server default
 uv run python scripts/run_phase.py --phase 03 --runner codex  # codex exec fallback
 ```
 

@@ -30,6 +30,15 @@ from .api_runner import APIRunner
 from .watchdog import CostTracker
 
 
+DEFAULT_RUNNER_TYPE = "codex-app"
+
+
+def resolve_runner_type(config: PhaseConfig) -> str:
+    """Return the normalized worker runtime for this phase config."""
+    raw = config.runner_type or os.environ.get("ORCHESTRATOR_RUNNER") or DEFAULT_RUNNER_TYPE
+    return raw.replace("_", "-").lower()
+
+
 class PhaseAbortError(Exception):
     """Raised when a phase must abort (replaces sys.exit calls)."""
     pass
@@ -200,12 +209,11 @@ class BaseOrchestrator(ABC):
         # Lazily create asyncio primitives now that the event loop is running
         self.semaphore = asyncio.Semaphore(self.max_concurrent)
 
-        # Select runner. CLI/CI keep the historical Claude default unless
-        # explicitly overridden; the SPECA app server sets runner_type=codex-app.
-        # App-server runs set this on their copied PhaseConfig to avoid
-        # process-wide env races while multiple runs are active.
-        runner_type = (self.config.runner_type or os.environ.get("ORCHESTRATOR_RUNNER", "claude")).lower()
-        if runner_type in {"codex-app", "codex_app", "app-server", "app_server"}:
+        # Select runner. This Codex fork defaults to codex app-server. Explicit
+        # config/env overrides still support codex exec, API, and the legacy
+        # Claude runner for local experiments.
+        runner_type = resolve_runner_type(self.config)
+        if runner_type in {"codex-app", "app-server"}:
             self.runner = CodexAppRunner(
                 self.config,
                 self.semaphore,

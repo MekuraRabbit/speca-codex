@@ -47,7 +47,7 @@ _configure_stdio()
 sys.path.insert(0, str(Path(__file__).parent))
 
 from orchestrator import create_orchestrator
-from orchestrator.base import PhaseAbortError
+from orchestrator.base import DEFAULT_RUNNER_TYPE, PhaseAbortError, resolve_runner_type
 from orchestrator.config import get_phase_config, get_phase_chain, PHASE_CONFIGS, resolve_pattern
 from orchestrator.json_events import JsonEventEmitter
 from orchestrator.paths import get_output_root
@@ -284,7 +284,7 @@ async def run_phase(
 
         # Override model from CLI if provided
         if model is not None:
-            if (orchestrator.config.runner_type or os.environ.get("ORCHESTRATOR_RUNNER", "claude")).lower() == "api":
+            if resolve_runner_type(orchestrator.config) == "api":
                 prev = orchestrator.config.runtime_env.get("API_RUNNER_MODEL") or os.environ.get("API_RUNNER_MODEL")
                 orchestrator.config.runtime_env["API_RUNNER_MODEL"] = model
                 print(f"  --model override (API_RUNNER_MODEL): {prev} -> {model}")
@@ -453,9 +453,10 @@ def main():
         "--runner",
         choices=["codex-app", "codex", "claude", "api"],
         default=None,
-        help="Worker runtime. Default is env ORCHESTRATOR_RUNNER or 'claude'. "
+        help=f"Worker runtime. Default is env ORCHESTRATOR_RUNNER or '{DEFAULT_RUNNER_TYPE}'. "
              "'codex-app' uses codex app-server threads. "
              "'codex' uses codex exec as a local fallback. "
+             "'claude' uses the legacy Claude runner. "
              "'api' uses scripts/orchestrator/api_runner.py with API_RUNNER_* "
              "environment variables.",
     )
@@ -520,6 +521,10 @@ def main():
         # Flatten list if nargs=+ was used (['01a', '01b'])
         phases = args.phase
 
+    display_runner = (
+        args.runner or os.environ.get("ORCHESTRATOR_RUNNER") or DEFAULT_RUNNER_TYPE
+    ).replace("_", "-").lower()
+
     print(f"Configuration:")
     print(f"  Workers: {args.workers}")
     print(f"  Max Concurrent: {args.max_concurrent}")
@@ -528,8 +533,7 @@ def main():
     print(f"  Phases: {phases}")
     if args.model:
         print(f"  Model: {args.model}")
-    if args.runner:
-        print(f"  Runner: {args.runner}")
+    print(f"  Runner: {display_runner}")
     if args.app_server_url:
         print(f"  Codex App Server URL: {args.app_server_url}")
     if args.isolated_worktrees:

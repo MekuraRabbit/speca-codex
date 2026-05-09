@@ -240,10 +240,13 @@ CLI equivalent for Codex workers:
 
 ```bash
 SPEC_URLS="https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7594.md" \
-  uv run python scripts/run_phase.py --phase 01a --runner codex-app
+  uv run python scripts/run_phase.py --phase 01a
 SPEC_URLS="https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7594.md" \
   uv run python scripts/run_phase.py --phase 01a --runner codex  # codex exec fallback
 ```
+
+In this fork, the CLI default runner is `codex-app`. Set
+`ORCHESTRATOR_RUNNER` or pass `--runner` only when you want a different runtime.
 
 An OpenAI-compatible API runner remains available for explicit opt-in:
 
