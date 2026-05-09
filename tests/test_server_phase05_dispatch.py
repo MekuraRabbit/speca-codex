@@ -105,3 +105,4 @@ def test_api_phase05_dispatch_builds_candidate_index(tmp_path):
     assert run.status == RunStatus.COMPLETED
     assert run.result["total_results"] == 1
     assert data["metadata"]["candidate_count"] == 1
+    assert data["metadata"]["output_dir"] == "phase05"

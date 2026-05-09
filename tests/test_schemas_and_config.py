@@ -1045,6 +1045,7 @@ class TestCrossPhaseDataFlow:
                             "symbol": "TestFunc",
                             "line_range": {"start": 1, "end": 10},
                             "role": ["L", "primary"],
+                            "note": ["observed", "through accessor"],
                         },
                         {
                             "file": "caller.go",
@@ -1066,6 +1067,7 @@ class TestCrossPhaseDataFlow:
         assert pwc.code_scope.locations[0].role == "primary"
         assert pwc.code_scope.locations[1].role == "caller"
         assert pwc.code_scope.locations[2].role == "primary"
+        assert pwc.code_scope.locations[0].note == "observed; through accessor"
 
     def test_03_audit_to_04_review(self):
         """Audit item from 03 should be parseable as Phase04 input."""
@@ -1539,6 +1541,7 @@ class TestResultCollector:
                                         "symbol": "x",
                                         "line_range": {"start": 1, "end": 2},
                                         "role": ["L", "primary"],
+                                        "note": ["first", "second"],
                                     },
                                     {
                                         "file": "contracts/Y.sol",
@@ -1560,6 +1563,7 @@ class TestResultCollector:
                 locations = data["properties_with_code"][0]["code_scope"]["locations"]
                 assert locations[0]["role"] == "primary"
                 assert locations[1]["role"] == "caller"
+                assert locations[0]["note"] == "first; second"
                 Phase02cPartial.model_validate(data)
             finally:
                 os.chdir(old_cwd)
@@ -1623,8 +1627,56 @@ class TestResultCollector:
                 files = [location["file"] for location in locations]
                 assert files == [
                     "contracts/compromised/TrustfulOracle.sol",
-                    "target_workspace/damn-vulnerable-defi/test/puppet/puppet.challenge.js",
+                    "test/puppet/puppet.challenge.js",
                 ]
+                Phase02cPartial.model_validate(data)
+            finally:
+                os.chdir(old_cwd)
+
+    def test_save_partial_marks_all_filtered_02c_locations_out_of_scope(self):
+        """All-dropped resolved locations should become an out-of-scope early exit."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            old_cwd = os.getcwd()
+            os.chdir(tmpdir)
+            try:
+                output_dir = Path("outputs")
+                output_dir.mkdir()
+                (output_dir / "BUG_BOUNTY_SCOPE.json").write_text(
+                    json.dumps({"in_scope": {"components": ["contracts"]}}),
+                    encoding="utf-8",
+                )
+                (output_dir / "TARGET_INFO.json").write_text(
+                    json.dumps({"local_checkout": "target_workspace/example"}),
+                    encoding="utf-8",
+                )
+
+                config = self._make_config("02c")
+                collector = ResultCollector(config)
+                path = collector.save_partial(
+                    [
+                        {
+                            "property_id": "PROP-001",
+                            "code_scope": {
+                                "locations": [
+                                    {
+                                        "file": "target_workspace/example/docs/README.md",
+                                        "symbol": "README",
+                                        "line_range": {"start": 1, "end": 2},
+                                    }
+                                ],
+                                "resolution_status": "resolved",
+                            },
+                        }
+                    ],
+                    worker_id=0,
+                    batch_index=0,
+                    timestamp=123,
+                )
+
+                data = json.loads(path.read_text(encoding="utf-8"))
+                code_scope = data["properties_with_code"][0]["code_scope"]
+                assert code_scope["locations"] == []
+                assert code_scope["resolution_status"] == "out_of_scope"
                 Phase02cPartial.model_validate(data)
             finally:
                 os.chdir(old_cwd)
@@ -1684,7 +1736,7 @@ class TestResultCollector:
                 files = [location["file"] for location in locations]
                 assert files == [
                     "contracts/compromised/TrustfulOracle.sol",
-                    "target_workspace/damn-vulnerable-defi/test/puppet/puppet.challenge.js",
+                    "test/puppet/puppet.challenge.js",
                 ]
                 Phase02cPartial.model_validate(data)
             finally:
@@ -1702,6 +1754,80 @@ class TestResultCollector:
         assert not ResultCollector._matches_component("contracts/Foo.sol", "contracts/*/")
         assert not ResultCollector._matches_component("contracts/token/ERC20.sol", "contracts/**/")
         assert ResultCollector._matches_component("contracts/token/", "contracts/*/")
+
+    def test_scope_relative_location_strips_absolute_checkout_prefixes(self):
+        """Absolute checkout metadata should still normalize common worker path forms."""
+        components = ["contracts"]
+        checkout = "C:/workspace/target_workspace/example-repo"
+
+        assert ResultCollector._scope_relative_location_path(
+            "C:/workspace/target_workspace/example-repo/contracts/Foo.sol",
+            components,
+            checkout,
+        ) == "contracts/Foo.sol"
+        assert ResultCollector._scope_relative_location_path(
+            "target_workspace/example-repo/contracts/Foo.sol",
+            components,
+            checkout,
+        ) == "contracts/Foo.sol"
+        assert ResultCollector._scope_relative_location_path(
+            "target_workspace/contracts/Legacy.sol",
+            components,
+            checkout,
+        ) is None
+        assert ResultCollector._scope_relative_location_path(
+            "example-repo/contracts/Short.sol",
+            components,
+            checkout,
+        ) is None
+
+    def test_save_partial_does_not_mark_path_normalization_as_dropped_location(self):
+        """Prefix stripping alone should not add an out-of-scope warning."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            old_cwd = os.getcwd()
+            os.chdir(tmpdir)
+            try:
+                output_dir = Path("outputs")
+                output_dir.mkdir()
+                (output_dir / "BUG_BOUNTY_SCOPE.json").write_text(
+                    json.dumps({"in_scope": {"components": ["contracts"]}}),
+                    encoding="utf-8",
+                )
+                (output_dir / "TARGET_INFO.json").write_text(
+                    json.dumps({"local_checkout": "target_workspace/example-repo"}),
+                    encoding="utf-8",
+                )
+
+                config = self._make_config("02c")
+                collector = ResultCollector(config)
+                path = collector.save_partial(
+                    [
+                        {
+                            "property_id": "PROP-001",
+                            "code_scope": {
+                                "locations": [
+                                    {
+                                        "file": "target_workspace/example-repo/contracts/Foo.sol",
+                                        "symbol": "foo",
+                                        "line_range": {"start": 1, "end": 2},
+                                    }
+                                ],
+                                "resolution_status": "resolved",
+                            },
+                        }
+                    ],
+                    worker_id=0,
+                    batch_index=0,
+                    timestamp=123,
+                )
+
+                data = json.loads(path.read_text(encoding="utf-8"))
+                code_scope = data["properties_with_code"][0]["code_scope"]
+                assert code_scope["locations"][0]["file"] == "contracts/Foo.sol"
+                assert "resolution_error" not in code_scope
+                Phase02cPartial.model_validate(data)
+            finally:
+                os.chdir(old_cwd)
 
 
 class TestPhase02cEarlyExit:

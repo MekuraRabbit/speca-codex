@@ -77,6 +77,8 @@ def test_builds_representative_candidates_from_phase04(tmp_path):
 
     index = build_poc_candidate_index(tmp_path)
 
+    assert index["metadata"]["output_dir"] == tmp_path.name
+    assert not Path(index["metadata"]["output_dir"]).is_absolute()
     assert index["metadata"]["reviewed_candidate_items"] == 3
     assert index["metadata"]["candidate_count"] == 2
 

@@ -185,13 +185,13 @@ class ResultCollector:
                 code_scope = dict(code_scope)
                 code_scope["locations"] = [code_scope["locations"]]
                 entry["code_scope"] = code_scope
-            self._normalize_02c_location_roles(entry)
+            self._normalize_02c_location_fields(entry)
             self._filter_02c_locations_to_scope(entry)
             normalized.append(entry)
         return normalized
 
-    def _normalize_02c_location_roles(self, entry: dict[str, Any]) -> None:
-        """Normalize list-shaped 02c location roles before persisting JSON."""
+    def _normalize_02c_location_fields(self, entry: dict[str, Any]) -> None:
+        """Normalize loose 02c code location fields before persisting JSON."""
         code_scope = entry.get("code_scope")
         if not isinstance(code_scope, dict):
             return
@@ -201,17 +201,31 @@ class ResultCollector:
 
         allowed_roles = {"primary", "caller", "callee", "related"}
         for location in locations:
-            if not isinstance(location, dict) or not isinstance(location.get("role"), list):
+            if not isinstance(location, dict):
                 continue
-            role = next(
-                (
-                    item.strip()
-                    for item in location["role"]
-                    if isinstance(item, str) and item.strip() in allowed_roles
-                ),
-                "",
-            )
-            location["role"] = role or "primary"
+
+            if isinstance(location.get("role"), list):
+                role = next(
+                    (
+                        item.strip()
+                        for item in location["role"]
+                        if isinstance(item, str) and item.strip() in allowed_roles
+                    ),
+                    "",
+                )
+                location["role"] = role or "primary"
+
+            note = location.get("note")
+            if isinstance(note, list):
+                location["note"] = "; ".join(
+                    str(item).strip()
+                    for item in note
+                    if item is not None and str(item).strip()
+                )
+            elif note is None:
+                location["note"] = ""
+            elif "note" in location and not isinstance(note, str):
+                location["note"] = str(note)
 
     def _filter_02c_locations_to_scope(self, entry: dict[str, Any]) -> None:
         """Remove 02c code locations outside BUG_BOUNTY_SCOPE components."""
@@ -226,21 +240,41 @@ class ResultCollector:
         if not components:
             return
 
-        kept = [
-            loc for loc in locations
-            if isinstance(loc, dict)
-            and self._is_in_scope_location(str(loc.get("file", "")), components, local_checkout)
-        ]
-        if len(kept) == len(locations):
+        kept = []
+        changed = False
+        dropped_any = False
+        for loc in locations:
+            if not isinstance(loc, dict):
+                changed = True
+                dropped_any = True
+                continue
+
+            scoped_path = self._scope_relative_location_path(
+                str(loc.get("file", "")),
+                components,
+                local_checkout,
+            )
+            if not scoped_path:
+                changed = True
+                dropped_any = True
+                continue
+
+            if scoped_path != loc.get("file"):
+                loc = dict(loc)
+                loc["file"] = scoped_path
+                changed = True
+            kept.append(loc)
+
+        if not changed:
             return
 
         code_scope["locations"] = kept
         if not kept and code_scope.get("resolution_status") == "resolved":
-            code_scope["resolution_status"] = "not_found"
+            code_scope["resolution_status"] = "out_of_scope"
             code_scope["resolution_error"] = (
                 "Resolved locations were outside BUG_BOUNTY_SCOPE in-scope components"
             )
-        elif kept:
+        elif kept and dropped_any:
             note = "Dropped out-of-scope code locations from BUG_BOUNTY_SCOPE filtering"
             existing = str(code_scope.get("resolution_error") or "")
             code_scope["resolution_error"] = f"{existing}; {note}".strip("; ")
@@ -284,15 +318,44 @@ class ResultCollector:
         components: list[str],
         local_checkout: str,
     ) -> bool:
+        return cls._scope_relative_location_path(file_path, components, local_checkout) is not None
+
+    @classmethod
+    def _scope_relative_location_path(
+        cls,
+        file_path: str,
+        components: list[str],
+        local_checkout: str,
+    ) -> str | None:
         candidate = cls._normalize_path_string(file_path)
         candidates = [candidate]
-        if local_checkout and candidate.startswith(local_checkout.rstrip("/") + "/"):
-            candidates.append(candidate[len(local_checkout.rstrip("/") + "/"):])
-        return any(
-            cls._matches_component(path, component)
-            for path in candidates
-            for component in components
-        )
+        checkout = local_checkout.rstrip("/")
+        for prefix in cls._local_checkout_prefixes(checkout):
+            if candidate.startswith(prefix + "/"):
+                candidates.insert(0, candidate[len(prefix) + 1:])
+
+        for path in candidates:
+            if any(cls._matches_component(path, component) for component in components):
+                return path
+        return None
+
+    @staticmethod
+    def _local_checkout_prefixes(local_checkout: str) -> list[str]:
+        prefixes: list[str] = []
+        checkout = local_checkout.rstrip("/")
+        if checkout:
+            prefixes.append(checkout)
+            marker = "target_workspace/"
+            if marker in checkout:
+                prefixes.append(checkout[checkout.index(marker):])
+
+        seen: set[str] = set()
+        unique: list[str] = []
+        for prefix in prefixes:
+            if prefix and prefix not in seen:
+                seen.add(prefix)
+                unique.append(prefix)
+        return unique
 
     @staticmethod
     def _matches_component(path: str, component: str) -> bool:

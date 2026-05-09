@@ -327,20 +327,34 @@ class CodeLocation(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _normalize_role(cls, data: Any) -> Any:
-        """Accept list-shaped role values from older/loose worker outputs."""
-        if isinstance(data, dict) and isinstance(data.get("role"), list):
+    def _normalize_loose_fields(cls, data: Any) -> Any:
+        """Accept loose role/note values from older or noisy worker outputs."""
+        if isinstance(data, dict):
             data = dict(data)
-            allowed_roles = {"primary", "caller", "callee", "related"}
-            role = next(
-                (
-                    item.strip()
-                    for item in data["role"]
-                    if isinstance(item, str) and item.strip() in allowed_roles
-                ),
-                "",
-            )
-            data["role"] = role or "primary"
+
+            if isinstance(data.get("role"), list):
+                allowed_roles = {"primary", "caller", "callee", "related"}
+                role = next(
+                    (
+                        item.strip()
+                        for item in data["role"]
+                        if isinstance(item, str) and item.strip() in allowed_roles
+                    ),
+                    "",
+                )
+                data["role"] = role or "primary"
+
+            note = data.get("note")
+            if isinstance(note, list):
+                data["note"] = "; ".join(
+                    str(item).strip()
+                    for item in note
+                    if item is not None and str(item).strip()
+                )
+            elif note is None:
+                data["note"] = ""
+            elif "note" in data and not isinstance(note, str):
+                data["note"] = str(note)
         return data
 
 
